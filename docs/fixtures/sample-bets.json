@@ -1,16 +1,40 @@
 [
   {
-    "id": "bet-sample-01",
-    "budget_cents": 1200,
-    "total_cost_cents": 1200,
-    "strategy_name": "uniform",
-    "strategy_payload": {
-      "seed": "BASELINE-SEED",
-      "notes": "Baseline uniforme com orçamento de R$12,00"
-    },
-    "dezenas": [
-      [3, 16, 29, 37, 45, 60],
-      [5, 12, 27, 38, 44, 59]
-    ]
+    "seed": "FIXTURE-SEED",
+    "budget_cents": 3000,
+    "ticket_cost_cents": 500,
+    "total_cost_cents": 3000,
+    "strategies": [
+      {
+        "name": "balanced",
+        "generated": 6,
+        "attempts": 6,
+        "failures": 0
+      },
+      {
+        "name": "uniform",
+        "generated": 0,
+        "attempts": 0,
+        "failures": 0
+      }
+    ],
+    "tickets": [
+      [6, 17, 21, 36, 44, 55],
+      [6, 12, 24, 33, 41, 57],
+      [4, 14, 24, 37, 41, 52],
+      [8, 14, 27, 35, 45, 54],
+      [4, 14, 26, 31, 43, 58],
+      [5, 12, 24, 39, 46, 53]
+    ],
+    "metrics": {
+      "average_sum": 180,
+      "average_score": 0.16666666666666666,
+      "parity_spread": 0,
+      "quadrant_coverage": {
+        "min": 6,
+        "max": 6,
+        "average": 6
+      }
+    }
   }
 ]

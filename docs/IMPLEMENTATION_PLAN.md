@@ -103,7 +103,7 @@
   - [ ] Cobertura de pares/trincas mais frequentes com penalização de repetição (post-MVP Stage 6).
   - [ ] Diversificação por recência/soma (roadmap pós-MVP).
 - [ ] Criar solver híbrido (greedy inicial + busca local) com limites de tempo e abort controller; aceitar seed determinístico.
-- [ ] Implementar workflow `generateBatch` com timeout, métricas e deduplicação.
+- [ ] Implementar workflow `generateBatch` com timeout, métricas e deduplicação (núcleo concluído; logging estrutural e schema AJV pendentes).
 - [ ] Persistir apostas (`bets`) com metadata (`strategy_payload`), expor Server Action/rotas para consulta e geração.
 - [ ] Testes de integração: verificar custo total <= orçamento, ausência de duplicatas, consistência com seed.
 - **Critérios de Saída**: Motor gera apostas válidas em cenários simples/múltiplos; testes validam custos e cobertura; logs explicam decisões; revalidações do dashboard configuradas.

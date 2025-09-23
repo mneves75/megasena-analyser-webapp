@@ -30,7 +30,7 @@ const querySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { stat: string } },
+  context: { params: Promise<{ stat: string }> },
 ) {
   const { searchParams } = new URL(request.url);
   const parsed = querySchema.safeParse({
@@ -46,9 +46,10 @@ export async function GET(
   }
 
   const { window, limit } = parsed.data;
-  const stat = params.stat.toLowerCase();
+  const { stat } = await context.params;
+  const normalized = stat.toLowerCase();
 
-  switch (stat) {
+  switch (normalized) {
     case "frequencies":
       return NextResponse.json(await getFrequencies({ window }));
     case "pairs":
@@ -65,7 +66,7 @@ export async function GET(
       return NextResponse.json(await getRecency({}));
     default:
       return NextResponse.json(
-        { message: `Estatística desconhecida: ${params.stat}` },
+        { message: `Estatística desconhecida: ${stat}` },
         { status: 404 },
       );
   }

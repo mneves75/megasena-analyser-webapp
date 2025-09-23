@@ -27,19 +27,19 @@
 
 ## Backlog Detalhado
 
-- [ ] Definir interface `GenerateBatchRequest` (`budgetCents`, `seed`, `strategies`, `k?`, `window?`, `timeoutMs?`).
-- [ ] Implementar pooling de estratégias com fallback `uniform` quando uma retorna erro controlado.
-- [ ] Garantir que cada ticket tenha sequência ordenada e sem duplicatas (Set + sort).
-- [ ] Coletar métricas agregadas:
+- [x] Definir interface `GenerateBatchRequest` (`budgetCents`, `seed`, `strategies`, `k?`, `window?`, `timeoutMs?`).
+- [x] Implementar pooling de estratégias com fallback `uniform` quando uma retorna erro controlado.
+- [x] Garantir que cada ticket tenha sequência ordenada e sem duplicatas (Set + sort).
+- [x] Coletar métricas agregadas:
   - `totalTickets`, `totalCostCents`, `leftoverCents` (do pricing service).
-  - `averageSum`, `averageFrequencyScore`, `quadrantCoverage` (mínimo, máximo, médio).
-  - `paritySpread` (diferença média entre pares/ímpares).
+- [x] `averageSum`, `averageFrequencyScore`, `quadrantCoverage` (mínimo, máximo, médio).
+- [x] `paritySpread` (diferença média entre pares/ímpares).
 - [ ] Em caso de timeout, retornar erro `GENERATION_TIMEOUT` com tickets parciais e logs de auditoria.
 - [ ] Registrar logs Pino (`childLogger({ service: "bets" })`) com seed, estratégias, duração, totais.
 - [ ] Criar migration para coluna JSON em `bets` (`strategy_payload`) com default `{}` e atualizar seed.
 - [ ] Validar payload real contra schema com `ajv` no teste.
-- [ ] Atualizar `docs/fixtures/sample-bets.json` com saída real do `generateBatch` (seed fixa `STG3-BASELINE`).
-- [ ] Documentar passos manuais de validação em `docs/testing/strategies.md` (nova subseção Stage 3).
+- [x] Atualizar `docs/fixtures/sample-bets.json` com saída real do `generateBatch` (seed fixa `STG3-BASELINE`).
+- [x] Documentar passos manuais de validação em `docs/testing/strategies.md` (nova subseção Stage 3).
 
 ## Riscos / Mitigações
 

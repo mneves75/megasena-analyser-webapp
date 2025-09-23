@@ -129,6 +129,7 @@ function computeQuadrantTargets(
     const name = QUADRANT_RANGES[quadrantIndex]?.name;
     if (name) {
       targets[name] = (targets[name] ?? 0) + 1;
+      targets[name] = Math.min(targets[name], 10);
     }
   }
 
@@ -150,6 +151,7 @@ function computeQuadrantTargets(
       const quadrantName = QUADRANT_RANGES[quadrantIndex]?.name;
       if (quadrantName) {
         targets[quadrantName] += 1;
+        targets[quadrantName] = Math.min(targets[quadrantName], 10);
         currentTotal += 1;
       }
       cursor += 1;

@@ -34,6 +34,14 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - Os helpers de preços residem em `src/services/pricing.ts` e expõem `getPriceForK`, `calculateTicketCost` e `calculateBudgetAllocation` para uso em Server Components/Actions.
 - Execute `npm run test -- pricing` para validar cálculos oficiais, fallback `.env` e limites de orçamento antes de publicar alterações no motor de apostas.
 
+## Motor de apostas (Stage 3)
+
+- Estratégias iniciais (`uniform`, `balanced`) estão em `src/services/strategies/**` e compartilham PRNG determinístico (`src/lib/random.ts`).
+- O workflow `generateBatch` vive em `src/services/bets.ts`, consolida orçamento via `calculateBudgetAllocation`, aplica pesos de estratégia e registra métricas agregadas.
+- Payloads serializados seguem o contrato `docs/data-contracts/strategy_payload.schema.json` (versão `1.0`).
+- Testes unitários dedicados em `src/services/__tests__/bets.test.ts` (`npm run test -- bets`).
+- Fixture de referência disponível em `docs/fixtures/sample-bets.json` (seed `FIXTURE-SEED`). Gere novas amostras com `NODE_OPTIONS="-r ./scripts/dev/register-server-only-stub.js" npx tsx scripts/dev/generate-batch.ts`.
+
 ## Variáveis de ambiente relevantes
 
 - `DATABASE_URL`: caminho do SQLite (ex.: `file:./dev.db`).
