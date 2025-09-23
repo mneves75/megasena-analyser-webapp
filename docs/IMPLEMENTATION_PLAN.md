@@ -91,20 +91,21 @@
   - [ ] Documentar fórmulas e exemplos numéricos em `docs/stats.md`.
 - **Critérios de Saída**: APIs respondem <500ms dataset médio; testes verdes; documentação revisada; cache invalidado no sync; backtesting completo pendente.
 
-### Fase 5 — Motor de Apostas _(Status: planejado)_
+### Fase 5 — Motor de Apostas _(Status: em andamento — Stages 0-2 concluídos)_
 
 - **Objetivo**: Gerar apostas otimizadas dentro do orçamento e regras oficiais.
 - **Backlog**:
-  - [ ] Serviço de precificação: buscar dados oficiais; fallback `.env` com aviso legal no dashboard e data de atualização.
-  - [ ] Implementar combinatória `C(k,6)` com memoização e checagem de limites (k permitido) segundo CAIXA.
-  - [ ] Desenvolver estratégias:
-    - Uniforme não enviesada.
-    - Distribuição balanceada por faixas/paridade.
-    - Cobertura de pares/trincas mais frequentes com penalização de repetição.
-    - Diversificação por recência/soma (mix quentes/frias/médias).
-  - [ ] Criar solver híbrido (greedy inicial + busca local) com limites de tempo e abort controller; aceitar seed determinístico.
-  - [ ] Persistir apostas (`bets`) com metadata (estratégia, custo, seed, timestamp, orçamento usado) e expor Server Actions/rotas para consulta e geração.
-  - [ ] Testes de integração: verificar custo total <= orçamento, ausência de duplicatas, consistência com seed.
+- [x] Serviço de precificação: buscar dados oficiais; fallback `.env` com aviso legal/documentação.
+- [x] Implementar combinatória `C(k,6)` com validação de limites (ver `strategy-limits.ts`).
+- [x] Desenvolver estratégias iniciais:
+  - [x] Uniforme não enviesada.
+  - [x] Distribuição balanceada por faixas/paridade.
+  - [ ] Cobertura de pares/trincas mais frequentes com penalização de repetição (post-MVP Stage 6).
+  - [ ] Diversificação por recência/soma (roadmap pós-MVP).
+- [ ] Criar solver híbrido (greedy inicial + busca local) com limites de tempo e abort controller; aceitar seed determinístico.
+- [ ] Implementar workflow `generateBatch` com timeout, métricas e deduplicação.
+- [ ] Persistir apostas (`bets`) com metadata (`strategy_payload`), expor Server Action/rotas para consulta e geração.
+- [ ] Testes de integração: verificar custo total <= orçamento, ausência de duplicatas, consistência com seed.
 - **Critérios de Saída**: Motor gera apostas válidas em cenários simples/múltiplos; testes validam custos e cobertura; logs explicam decisões; revalidações do dashboard configuradas.
 
 ### Fase 6 — Dashboard & UX _(Status: planejado)_
@@ -177,7 +178,7 @@
 - [ ] Definir níveis de log e correlação (`requestId`, `spanId`) para sync, stats, motor; registrar em `docs/operations.md`.
 - [ ] Criar wireframes mobile/desktop e salvar em `docs/design/wireframes/` com comentários de UX.
 - [x] Elaborar seed inicial de preços com data + URL oficial e rotina de atualização manual.
-- [ ] Especificar cenários de teste para cada estratégia em `docs/testing/strategies.md` (baseline, limites, edge cases).
+- [x] Especificar cenários de teste para cada estratégia em `docs/testing/strategies.md` (baseline, limites, edge cases).
 - [ ] Configurar pipeline CI mínima (lint + build) enquanto suíte completa não estiver pronta.
 - [ ] Planejar dataset sintético determinístico para e2e, armazenando seed em `docs/fixtures/README.md`.
 - [ ] Mapear requisitos legais (avisos, termos, LGPD) em `docs/legal/analysis.md`.

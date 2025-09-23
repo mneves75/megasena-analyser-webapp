@@ -216,15 +216,16 @@ Buffer para Stage 6 (roadmap) caso o sprint permita.
 
 Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mantêm dias úteis; quando cair em fim de semana, mover para a próxima segunda-feira.
 
-| Stage | Issue (STG-#)                                 | Data limite | Estimativa | Owner            | Dependências        |
-| ----- | --------------------------------------------- | ----------- | ---------- | ---------------- | ------------------- |
-| 0     | STG-0 — Preparar pricing seed e limites MVP   | 23/09/2025  | 4h         | Estratégia/Dados | -                   |
-| 1     | STG-1 — Service de pricing e testes           | 23/09/2025  | 6h         | Backend          | STG-0               |
-| 2     | STG-2 — Estratégias uniform/balanced com PRNG | 24/09/2025  | 8h         | Backend + Dados  | STG-1, dados Fase 4 |
-| 3     | STG-3 — Workflow generateBatch e validações   | 25/09/2025  | 7h         | Backend          | STG-2               |
-| 4     | STG-4 — APIs e persistência de apostas        | 26/09/2025  | 8h         | Backend + Infra  | STG-3               |
-| 5     | STG-5 — Testes integração, fixtures e docs    | 29/09/2025  | 6h         | QA + Docs        | STG-4               |
-| 6     | STG-6 — Roadmap pós-MVP documentado           | 30/09/2025  | 4h         | Estratégia       | STG-5               |
+| Stage | Issue (STG-#) | Data limite | Estimativa | Owner | Dependências |
+| Stage | Issue (STG-#) | Data limite | Estimativa | Owner | Dependências | Status |
+| ----- | --------------------------------------------- | ----------- | ---------- | ---------------- | ------------------- | ------ |
+| 0 | STG-0 — Preparar pricing seed e limites MVP | 23/09/2025 | 4h | Estratégia/Dados | - | ✅ Concluído |
+| 1 | STG-1 — Service de pricing e testes | 23/09/2025 | 6h | Backend | STG-0 | ✅ Concluído |
+| 2 | STG-2 — Estratégias uniform/balanced com PRNG | 24/09/2025 | 8h | Backend + Dados | STG-1, dados Fase 4 | ✅ Concluído |
+| 3 | STG-3 — Workflow generateBatch e validações | 25/09/2025 | 7h | Backend | STG-2 | 🚧 Em planejamento |
+| 4 | STG-4 — APIs e persistência de apostas | 26/09/2025 | 8h | Backend + Infra | STG-3 | ⏳ Pendente |
+| 5 | STG-5 — Testes integração, fixtures e docs | 29/09/2025 | 6h | QA + Docs | STG-4 | ⏳ Pendente |
+| 6 | STG-6 — Roadmap pós-MVP documentado | 30/09/2025 | 4h | Estratégia | STG-5 | ⏳ Pendente |
 
 ### STG-0 — Preparar pricing seed e limites MVP
 
@@ -248,6 +249,8 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 - Critérios de aceite: testes unitários com seed fixa produzindo conjuntos determinísticos, sem bilhetes duplicados.
 
 ### STG-3 — Workflow generateBatch e validações
+
+> Detalhamento operativo: `docs/PHASE5_STAGE3_PLAN.md`.
 
 - Construir `services/bets.ts` com `generateTicket`, `generateBatch`, `chooseStrategies` e validações de orçamento/limites.
 - Implementar timeout com `AbortController` (3s) e métricas de diversidade.

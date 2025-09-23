@@ -24,3 +24,6 @@
 
 - `npm run dev` + `POST /api/bets/generate` com payload baseline — comparar tickets com fixture em `docs/fixtures/sample-bets.json`.
 - Rodar ação de servidor via script CLI e verificar persistência no SQLite efêmero (`bets`, `bet_dezenas`).
+- Após implementação do Stage 3, validar também:
+  - `generateBatch` com múltiplas estratégias retorna tickets únicos e métricas agregadas (`totalTickets`, `averageFrequency`).
+  - Timeout configurável (ex.: `timeoutMs=10`) retorna erro `GENERATION_TIMEOUT` sem travar o processo.

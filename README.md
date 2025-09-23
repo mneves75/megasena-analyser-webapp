@@ -80,6 +80,7 @@ docs/             # Planejamento, prompts e tokens de design
 - Tokens e referências de UI: `docs/design/tokens.md`.
 - Plano de remediação do sync: `docs/SYNC_REMEDIATION_PLAN.md`.
 - Estratégia balanceada documentada: `docs/strategies/balanced.md`.
+- Plano Stage 3 do motor: `docs/PHASE5_STAGE3_PLAN.md`.
 
 ## API de Estatísticas
 
