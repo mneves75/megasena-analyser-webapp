@@ -22,6 +22,8 @@
 
 # misc
 .DS_Store
+.cursor/
+.vscode/
 *.pem
 
 # debug
@@ -42,3 +44,5 @@ next-env.d.ts
 
 /src/generated/prisma
 prisma/*.db
+*.sqlite
+*.sqlite-journal
