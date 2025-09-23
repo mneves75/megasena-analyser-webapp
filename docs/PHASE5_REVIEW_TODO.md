@@ -43,8 +43,7 @@
 
 ### Stage 6 (Roadmap pós-MVP)
 
-- [ ] Planejar suporte para `k > 6` (ajustar heurísticas, custo combinatório, otimização de quadrantes).
-- [ ] Mapear necessidades de backtesting (comparar apostas geradas vs concursos históricos).
+- [x] Planejar suporte para `k > 6`, estratégias avançadas, backtesting e observabilidade em `docs/PHASE5_STAGE6_ROADMAP.md`.
 - [ ] Avaliar limites configuráveis (`maxBudgetCents`, `maxTicketsPerBatch`) via meta/config persistida.
 
 ## Riscos e Mitigações

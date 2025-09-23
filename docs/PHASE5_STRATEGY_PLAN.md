@@ -278,8 +278,7 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 
 ### STG-6 — Roadmap pós-MVP documentado
 
-- Elaborar resumo das evoluções (estratégias avançadas, k>6, backtesting) com complexidade e riscos.
-- Atualizar `docs/PHASE5_STRATEGY_PLAN.md` Stage 6 com milestones, dependências e métricas futuras.
+- Roadmap consolidado em `docs/PHASE5_STAGE6_ROADMAP.md` com iniciativas (k>6, estratégias avançadas, backtesting, limites dinâmicos, observabilidade).
 - Registrar decisões de adiamento e critérios para retomada no backlog principal.
 - Critérios de aceite: roadmap validado com Product/Stakeholders e anexado ao próximo sprint planning.
 
