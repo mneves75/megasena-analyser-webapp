@@ -90,6 +90,7 @@ docs/             # Planejamento, prompts e tokens de design
 - Plano de remediação do sync: `docs/SYNC_REMEDIATION_PLAN.md`.
 - Estratégia balanceada documentada: `docs/strategies/balanced.md`.
 - Plano Stage 3 do motor: `docs/PHASE5_STAGE3_PLAN.md`.
+- API do motor: `docs/API_BET_ENGINE.md`.
 
 ## API de Estatísticas
 

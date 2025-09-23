@@ -271,10 +271,10 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 
 ### STG-5 — Testes integração, fixtures e docs
 
-- Escrever teste integração Vitest ou script E2E que roda action com banco efêmero.
-- Regenerar fixtures em `docs/fixtures/sample-bets.json` com resultados reais do motor.
-- Atualizar README + `docs/IMPLEMENTATION_PLAN.md` com APIs, parâmetros e novos riscos.
-- Critérios de aceite: documentação revisada, teste integração executado localmente e registrado manualmente.
+- Teste de integração (`bet-store.test.ts`) valida persistência + consulta em banco efêmero.
+- Fixture `docs/fixtures/sample-bets.json` alinhada ao script CLI (`scripts/dev/generate-batch.ts`).
+- README e `docs/API_BET_ENGINE.md` documentam endpoints e fluxo; checklist manual atualizado em `docs/testing/strategies.md`.
+- **Próximo**: documentar smoke manual no repositório (prints / `curl`), gerar vídeo curto para Product.
 
 ### STG-6 — Roadmap pós-MVP documentado
 

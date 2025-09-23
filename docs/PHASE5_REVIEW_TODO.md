@@ -39,6 +39,7 @@
 - [x] Criar script CLI para gerar apostas e alimentar fixtures (atualizar `docs/fixtures/sample-bets.json`).
 - [x] Documentar contratos HTTP no README + `docs/IMPLEMENTATION_PLAN.md` e atualizar checklist de smoke manual.
 - [x] Adicionar testes de integração (Vitest) usando banco efêmero cobrindo persistência e filtros básicos em `/api/bets`.
+- [x] Publicar guia detalhado da API em `docs/API_BET_ENGINE.md` com exemplos de request/response.
 
 ### Stage 6 (Roadmap pós-MVP)
 
