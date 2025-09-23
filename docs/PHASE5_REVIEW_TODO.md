@@ -26,11 +26,11 @@
 
 ### Stage 3
 
-- [ ] Implementar `services/bets.ts` com `generateTicket`, `generateBatch`, `chooseStrategies` e validações globais (orçamento, duplicidade cross-strategy).
-- [ ] Incluir timeout configurável (`AbortController`) e métricas agregadas (diversidade de quadrantes, média de frequência, soma).
-- [ ] Definir schema `strategy_payload` em `docs/data-contracts/strategy_payload.schema.json` e criar migration Prisma compatível.
-- [ ] Cobrir com testes Vitest (incluindo cenário de dupla estratégia e erros `BUDGET_BELOW_MIN`, `MAX_TICKETS_ENFORCED`).
-- [ ] Garantir que targets de quadrante nunca excedam 10 dezenas; adicionar guardas e testes de regressão.
+- [x] Implementar `services/bets.ts` com `generateTicket`, `generateBatch`, `chooseStrategies` e validações globais (orçamento, duplicidade cross-strategy).
+- [x] Incluir timeout configurável (`AbortController`) e métricas agregadas (diversidade de quadrantes, média de frequência, soma).
+- [x] Definir schema `strategy_payload` em `docs/data-contracts/strategy_payload.schema.json` e criar validação AJV; avaliar se migration adicional é necessária (coluna existente no schema atual).
+- [x] Cobrir com testes Vitest (incluindo cenário de dupla estratégia e erros `BUDGET_BELOW_MIN`, `MAX_TICKETS_ENFORCED`).
+- [x] Garantir que targets de quadrante nunca excedam 10 dezenas; adicionar guardas e testes de regressão.
 
 ### Stage 4-5
 
@@ -54,9 +54,8 @@
 
 ## Próximos Passos Imediatos (23/09/2025)
 
-1. Iniciar implementação do workflow `generateBatch` (prioridade Stage 3).
-2. Draft do schema `strategy_payload` + migration inicial para revisão.
-3. Atualizar `docs/IMPLEMENTATION_PLAN.md` com o status dos Stages 0-2 e novos riscos identificados.
-4. Desenhar formato de logging (estrutura Pino) e validar com Product/Observability.
+1. Avaliar necessidade de migration complementar para `strategy_payload` (default/config extras) e alinhar com Dados.
+2. Desenhar integração da persistência/APIs (Stage 4) incluindo logging Pino + storage (bets).
+3. Atualizar scripts e smoke tests para cobrir Server Action/rotas assim que o Stage 4 iniciar.
 
 > Revisão concluída e alinhada com guidelines RSC. Atualize este documento ao concluir cada bloco de tarefas.

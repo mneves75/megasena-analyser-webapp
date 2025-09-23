@@ -2,6 +2,10 @@ import "server-only";
 
 import type { PrismaClient } from "@prisma/client";
 
+import Ajv from "ajv/dist/2020";
+import type { Logger } from "pino";
+
+import { childLogger } from "@/lib/logger";
 import { mulberry32 } from "@/lib/random";
 import { calculateBudgetAllocation, PricingError } from "@/services/pricing";
 import { BETTING_LIMITS } from "@/services/strategy-limits";
@@ -13,6 +17,7 @@ import {
   type StrategyMetadata,
   uniformStrategy,
 } from "@/services/strategies";
+import { strategyPayloadSchema } from "@/data-contracts/strategy-payload-schema";
 
 const STRATEGY_HANDLERS: Record<StrategyName, StrategyHandler> = {
   uniform: uniformStrategy,
@@ -26,6 +31,10 @@ const DEFAULT_STRATEGIES: StrategyRequest[] = [
 
 const MAX_ATTEMPTS_PER_TICKET = 100;
 const SCHEMA_VERSION = "1.0" as const;
+const ajv = new Ajv({ allErrors: true, strict: false });
+const validateStrategyPayload = ajv.compile<StrategyPayload>(
+  strategyPayloadSchema,
+);
 
 export type StrategyRequest = {
   name: StrategyName;
@@ -130,6 +139,9 @@ export async function generateBatch(
 ): Promise<BatchGenerationResult> {
   assertSeed(request.seed);
 
+  const logger = childLogger({ service: "bets", seed: request.seed });
+  const startedAt = Date.now();
+
   const normalizedStrategies = normalizeStrategies(request.strategies);
   if (normalizedStrategies.length === 0) {
     throw new BatchGenerationError(
@@ -140,7 +152,18 @@ export async function generateBatch(
 
   const { budgetCents, k = BETTING_LIMITS.defaultDezenaCount } = request;
   const timeoutMs = request.timeoutMs ?? 3_000;
-  const deadline = Date.now() + timeoutMs;
+  const deadline = startedAt + timeoutMs;
+
+  logger.info(
+    {
+      budgetCents,
+      k,
+      strategies: normalizedStrategies.map((item) => item.name),
+      timeoutMs,
+      window: request.window,
+    },
+    "Iniciando geração de apostas",
+  );
 
   const allocation = await calculateBudgetAllocation(budgetCents, {
     k,
@@ -168,6 +191,14 @@ export async function generateBatch(
     ticketIndex += 1
   ) {
     if (Date.now() > deadline) {
+      logger.error(
+        {
+          ticketIndex,
+          durationMs: Date.now() - startedAt,
+          ticketsGenerated: tickets.length,
+        },
+        "Tempo limite excedido durante a geração",
+      );
       throw new BatchGenerationError(
         "GENERATION_TIMEOUT",
         "Tempo limite atingido durante a geração de apostas",
@@ -181,6 +212,7 @@ export async function generateBatch(
           seed: request.seed,
           request,
           normalizedStrategies,
+          logger,
         }),
       );
     }
@@ -223,6 +255,14 @@ export async function generateBatch(
           warnings.add(
             `Falha ao gerar aposta com estratégia ${strategyEntry.name}, aplicando fallback uniforme`,
           );
+          logger.warn(
+            {
+              strategy: strategyEntry.name,
+              ticketIndex,
+              attempts,
+            },
+            "Erro ao gerar aposta; tentando fallback uniforme",
+          );
           const fallback = normalizedStrategies.find(
             (candidate) => candidate.name === "uniform",
           );
@@ -238,6 +278,7 @@ export async function generateBatch(
               duplicates,
               metricsAccumulator,
               fallbackSummary,
+              logger,
             );
             break;
           }
@@ -262,6 +303,7 @@ export async function generateBatch(
           duplicates,
           metricsAccumulator,
           fallbackSummary,
+          logger,
         );
       }
     }
@@ -285,7 +327,19 @@ export async function generateBatch(
     seed: request.seed,
     request,
     normalizedStrategies,
+    logger,
   });
+
+  logger.info(
+    {
+      ticketsGenerated: result.tickets.length,
+      totalCostCents: result.totalCostCents,
+      leftoverCents: result.leftoverCents,
+      warnings: result.warnings,
+      durationMs: Date.now() - startedAt,
+    },
+    "Geração de apostas concluída",
+  );
 
   return result;
 }
@@ -300,6 +354,7 @@ async function executeFallback(
   duplicates: Set<string>,
   accumulator: MetricsAccumulator,
   summary: MutableStrategyExecutionSummary,
+  logger: Logger,
 ): Promise<StrategyTicket | null> {
   const derivedSeed = `${request.seed}:${ticketIndex}:${fallback.name}:fallback:${attempt}`;
   try {
@@ -312,11 +367,27 @@ async function executeFallback(
     });
     const key = result.dezenas.join("-");
     if (duplicates.has(key)) {
+      logger.debug(
+        {
+          strategy: fallback.name,
+          ticketIndex,
+          derivedSeed,
+        },
+        "Ticket duplicado detectado no fallback",
+      );
       return null;
     }
     duplicates.add(key);
     summary.generated += 1;
     accumulator.add(result.metadata);
+    logger.debug(
+      {
+        strategy: fallback.name,
+        ticketIndex,
+        derivedSeed,
+      },
+      "Ticket gerado via fallback",
+    );
     return {
       strategy: fallback.name,
       dezenas: result.dezenas,
@@ -326,6 +397,14 @@ async function executeFallback(
     };
   } catch {
     summary.failures += 1;
+    logger.warn(
+      {
+        strategy: fallback.name,
+        ticketIndex,
+        derivedSeed,
+      },
+      "Fallback uniforme falhou",
+    );
     return null;
   }
 }
@@ -524,6 +603,7 @@ type BuildResultInput = {
   seed: string;
   request: GenerateBatchRequest;
   normalizedStrategies: StrategyRequest[];
+  logger: Logger;
 };
 
 function buildResult({
@@ -536,6 +616,7 @@ function buildResult({
   seed,
   request,
   normalizedStrategies,
+  logger,
 }: BuildResultInput): BatchGenerationResult {
   const metrics = metricsAccumulator.build();
   const totalCost = tickets.length * ticketCost;
@@ -559,6 +640,8 @@ function buildResult({
     warnings: Array.from(warnings.values()),
   };
 
+  assertStrategyPayloadSchema(payload, logger);
+
   return {
     tickets,
     ticketCostCents: ticketCost,
@@ -572,4 +655,16 @@ function buildResult({
 
 function buildPartialResult(input: BuildResultInput): BatchGenerationResult {
   return buildResult(input);
+}
+
+function assertStrategyPayloadSchema(payload: StrategyPayload, logger: Logger) {
+  if (validateStrategyPayload(payload)) {
+    return;
+  }
+
+  const errors = validateStrategyPayload.errors ?? [];
+  logger.error({ errors }, "Payload de estratégia inválido");
+  throw new Error(
+    `Strategy payload inválido: ${ajv.errorsText(errors, { separator: "; " })}`,
+  );
 }

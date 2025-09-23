@@ -252,8 +252,9 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 
 > Detalhamento operativo: `docs/PHASE5_STAGE3_PLAN.md`.
 
-- Implementação inicial de `generateBatch`, `StrategyPayload` e testes unitários concluída.
-- **Pendente**: integração de logs estruturados (`childLogger`), validação `ajv` do payload e definição de schema/migration definitiva.
+- `generateBatch` implementado com métricas agregadas, fallback e logging estruturado.
+- Payload validado via AJV (schema 1.0 em `docs/data-contracts/strategy_payload.schema.json`).
+- **Pendente**: avaliar necessidade de migration complementar para `strategy_payload` (coluna já existe) e preparar logging persistente/metadados adicionais para Stage 4.
 
 - Construir `services/bets.ts` com `generateTicket`, `generateBatch`, `chooseStrategies` e validações de orçamento/limites.
 - Implementar timeout com `AbortController` (3s) e métricas de diversidade.

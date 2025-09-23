@@ -34,10 +34,10 @@
   - `totalTickets`, `totalCostCents`, `leftoverCents` (do pricing service).
 - [x] `averageSum`, `averageFrequencyScore`, `quadrantCoverage` (mínimo, máximo, médio).
 - [x] `paritySpread` (diferença média entre pares/ímpares).
-- [ ] Em caso de timeout, retornar erro `GENERATION_TIMEOUT` com tickets parciais e logs de auditoria.
-- [ ] Registrar logs Pino (`childLogger({ service: "bets" })`) com seed, estratégias, duração, totais.
-- [ ] Criar migration para coluna JSON em `bets` (`strategy_payload`) com default `{}` e atualizar seed.
-- [ ] Validar payload real contra schema com `ajv` no teste.
+- [x] Em caso de timeout, retornar erro `GENERATION_TIMEOUT` com tickets parciais e logs de auditoria.
+- [x] Registrar logs Pino (`childLogger({ service: "bets" })`) com seed, estratégias, duração, totais.
+- [ ] Criar migration para coluna JSON em `bets` (`strategy_payload`) com default `{}` e atualizar seed (coluna já disponível; avaliar se ajustes adicionais são necessários).
+- [x] Validar payload real contra schema com `ajv` no teste (validação automática dentro de `generateBatch`).
 - [x] Atualizar `docs/fixtures/sample-bets.json` com saída real do `generateBatch` (seed fixa `STG3-BASELINE`).
 - [x] Documentar passos manuais de validação em `docs/testing/strategies.md` (nova subseção Stage 3).
 
