@@ -16,6 +16,7 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --skip-seed",
     "sync": "tsx scripts/sync.ts",
+    "limits": "tsx scripts/limits.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

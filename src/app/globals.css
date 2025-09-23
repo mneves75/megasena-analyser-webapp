@@ -2,10 +2,10 @@
 
 :root {
   color-scheme: light;
-  --background: 245 246 248;
+  --background: 250 250 252;
   --foreground: 17 24 39;
   --surface-muted: 255 255 255;
-  --surface-elevated: 241 244 248;
+  --surface-elevated: 244 247 252;
   --brand-500: 47 123 255;
   --brand-600: 31 95 230;
 }

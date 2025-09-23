@@ -42,3 +42,7 @@ Objetivo do Stage 6 é planejar evoluções avançadas do motor de apostas, defi
 1. Apresentar roadmap em reunião de planning (30/09/2025).
 2. Criar issues STG-6.# referenciando esta página.
 3. Definir ownership cruzado (Backend, Dados, Produto) e métricas de sucesso.
+
+## Atualizações Recentes
+
+- **23/09/2025** — Disponibilizado script `npm run limits` para leitura/alteração dos limites operacionais do motor. O comando suporta `--show`, múltiplos `--set=chave=valor`, `--reset` e `--history`, validando `DATABASE_URL`. Cada alteração registra auditoria na nova tabela `BettingLimitAudit` (campos `origin`, `actor`, `note`, `previous`, `next`, `overrides`), atendendo ao requisito de rastreabilidade antes da futura UI administrativa.

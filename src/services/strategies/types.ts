@@ -2,7 +2,10 @@ import "server-only";
 
 import type { PrismaClient } from "@prisma/client";
 
-import { BETTING_LIMITS } from "@/services/strategy-limits";
+import {
+  DEFAULT_BETTING_LIMITS,
+  type BettingLimits,
+} from "@/services/strategy-limits";
 
 export const MEGASENA_MIN_DEZENA = 1;
 export const MEGASENA_MAX_DEZENA = 60;
@@ -24,6 +27,7 @@ export type StrategyContext = {
   k?: number;
   window?: number;
   client?: PrismaClient;
+  limits?: BettingLimits;
 };
 
 export type QuadrantDistribution = {
@@ -55,17 +59,24 @@ export type StrategyResult = {
 export type StrategyHandler = (ctx: StrategyContext) => Promise<StrategyResult>;
 
 export function resolveK(k?: number): number {
+  return resolveKWithLimits(k, DEFAULT_BETTING_LIMITS);
+}
+
+export function resolveKWithLimits(
+  k: number | undefined,
+  limits: BettingLimits,
+): number {
   if (k === undefined || k === null) {
-    return BETTING_LIMITS.defaultDezenaCount;
+    return limits.defaultDezenaCount;
   }
 
   if (
-    k < BETTING_LIMITS.minDezenaCount ||
-    k > BETTING_LIMITS.maxDezenaCount ||
+    k < limits.minDezenaCount ||
+    k > limits.maxDezenaCount ||
     !Number.isInteger(k)
   ) {
     throw new Error(
-      `Valor de k inválido: ${k}. Permitido entre ${BETTING_LIMITS.minDezenaCount} e ${BETTING_LIMITS.maxDezenaCount}.`,
+      `Valor de k inválido: ${k}. Permitido entre ${limits.minDezenaCount} e ${limits.maxDezenaCount}.`,
     );
   }
 

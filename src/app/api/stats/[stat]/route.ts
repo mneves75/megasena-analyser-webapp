@@ -28,10 +28,9 @@ const querySchema = z.object({
     }),
 });
 
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ stat: string }> },
-) {
+type StatsRouteContext = { params: Promise<{ stat: string }> };
+
+export async function GET(request: NextRequest, context: StatsRouteContext) {
   const { searchParams } = new URL(request.url);
   const parsed = querySchema.safeParse({
     window: searchParams.get("window"),

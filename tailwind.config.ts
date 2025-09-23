@@ -8,19 +8,19 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: "#ecf3ff",
-          100: "#d5e5ff",
-          200: "#abcaff",
-          300: "#7faeff",
-          400: "#5694ff",
+          50: "#eef5ff",
+          100: "#d9e9ff",
+          200: "#b6d3ff",
+          300: "#90bcff",
+          400: "#6aa5ff",
           500: "#2f7bff",
           600: "#1f5fe6",
-          700: "#1649b4",
-          800: "#103482",
-          900: "#091f51",
+          700: "#184ab8",
+          800: "#123789",
+          900: "#0c255b",
         },
         surface: {
-          DEFAULT: "#f5f6f8",
+          DEFAULT: "#fafafc",
           dark: "#0f1014",
         },
         border: "rgba(17, 25, 40, 0.12)",

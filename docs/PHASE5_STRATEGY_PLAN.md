@@ -76,6 +76,13 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 - [ ] Backtesting determinístico comparando estratégias (integração com RF-5).
 - [ ] Exportação CSV/PDF a partir das apostas geradas (Fase 8).
 
+#### Stage 6 Kickoff (23/09/2025)
+
+- [x] Introduzir serviço de limites dinâmicos (`getBettingLimits`, `upsertBettingLimits`, `resetBettingLimits`) com fallback seguro.
+- [x] Criar trilha de auditoria (`BettingLimitAudit`) para toda alteração de limites.
+- [x] Disponibilizar CLI `npm run limits` com `--show`, `--set`, `--reset`, `--history`, validação de input e registro de ator/origem.
+- [x] Atualizar documentação (README + roadmap Stage 6) com fluxo operacional e requisitos de rastreabilidade.
+
 ## 4. Checklist Consolidada
 
 - [ ] Stage 0 pré-requisitos

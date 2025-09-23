@@ -64,6 +64,19 @@ model Meta {
   updated_at DateTime @default(now()) @updatedAt
 }
 
+model BettingLimitAudit {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+  origin     String
+  actor      String?
+  note       String?
+  previous   Json
+  next       Json
+  overrides  Json?
+
+  @@index([created_at])
+}
+
 model Price {
   k              Int    @id
   valor_cents    Int

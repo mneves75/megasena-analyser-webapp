@@ -17,6 +17,7 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - `npm run db:seed`: popula metadados e tabela de preços oficiais.
 - `npm run db:reset`: recria o banco SQLite do zero (atenção: apaga dados locais).
 - `npm run sync`: executa sincronização da Mega-Sena via CLI (`--full` para backfill limitado, `--limit=N` para ajustar janela).
+- `npm run limits`: inspeciona e altera limites operacionais do motor (`--show`, `--set=maxTicketsPerBatch=120`, `--reset`, `--history`).
 - `npm test`: roda a suíte de testes unitários (Vitest).
 
 ## Banco de dados
@@ -25,6 +26,7 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - Configure variáveis em `.env` (`DATABASE_URL="file:./dev.db"`).
 - Após clonar o repositório, execute `npm run db:migrate` seguido de `npm run db:seed`.
 - Seeds criam registros em `meta` (`schema_version`, `last_sync`, `price_last_checked`) e na tabela `Price` com custos combinatórios atualizados.
+- Alterações de limites operacionais são registradas na tabela `BettingLimitAudit`, permitindo trilha de auditoria (script `npm run limits`).
 - Camada de acesso ao banco fica em `src/data/**`, com módulos marcados com `server-only`.
 - Rota protegida `POST /api/sync` e o script `npm run sync` utilizam o mesmo serviço (`src/services/sync.ts`). Defina `SYNC_TOKEN` no `.env` para autenticação quando exposto publicamente.
 

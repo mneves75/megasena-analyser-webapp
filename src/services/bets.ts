@@ -8,7 +8,10 @@ import type { Logger } from "pino";
 import { childLogger } from "@/lib/logger";
 import { mulberry32 } from "@/lib/random";
 import { calculateBudgetAllocation, PricingError } from "@/services/pricing";
-import { BETTING_LIMITS } from "@/services/strategy-limits";
+import {
+  getBettingLimits,
+  type BettingLimits,
+} from "@/services/strategy-limits";
 import {
   balancedStrategy,
   type StrategyContext,
@@ -148,6 +151,8 @@ export async function generateBatch(
   const logger = childLogger({ service: "bets", seed: request.seed });
   const startedAt = Date.now();
 
+  const limits = await getBettingLimits({ client: request.client });
+
   const normalizedStrategies = normalizeStrategies(request.strategies);
   if (normalizedStrategies.length === 0) {
     throw new BatchGenerationError(
@@ -156,7 +161,8 @@ export async function generateBatch(
     );
   }
 
-  const { budgetCents, k = BETTING_LIMITS.defaultDezenaCount } = request;
+  const { budgetCents } = request;
+  const k = request.k ?? limits.defaultDezenaCount;
   const timeoutMs = request.timeoutMs ?? 3_000;
   const deadline = startedAt + timeoutMs;
 
@@ -174,6 +180,7 @@ export async function generateBatch(
   const allocation = await calculateBudgetAllocation(budgetCents, {
     k,
     client: request.client,
+    limits,
   });
   const ticketCost = allocation.ticketCostCents;
   if (allocation.maxTickets <= 0) {
@@ -219,6 +226,7 @@ export async function generateBatch(
           request,
           normalizedStrategies,
           logger,
+          limits,
         }),
       );
     }
@@ -237,6 +245,7 @@ export async function generateBatch(
           k,
           window: strategyEntry.window ?? request.window,
           client: request.client,
+          limits,
         });
 
         const key = result.dezenas.join("-");
@@ -285,6 +294,7 @@ export async function generateBatch(
               metricsAccumulator,
               fallbackSummary,
               logger,
+              limits,
             );
             break;
           }
@@ -310,6 +320,7 @@ export async function generateBatch(
           metricsAccumulator,
           fallbackSummary,
           logger,
+          limits,
         );
       }
     }
@@ -334,6 +345,7 @@ export async function generateBatch(
     request,
     normalizedStrategies,
     logger,
+    limits,
   });
 
   logger.info(
@@ -361,6 +373,7 @@ async function executeFallback(
   accumulator: MetricsAccumulator,
   summary: MutableStrategyExecutionSummary,
   logger: Logger,
+  limits: BettingLimits,
 ): Promise<StrategyTicket | null> {
   const derivedSeed = `${request.seed}:${ticketIndex}:${fallback.name}:fallback:${attempt}`;
   try {
@@ -370,6 +383,7 @@ async function executeFallback(
       k,
       window: fallback.window ?? request.window,
       client: request.client,
+      limits,
     });
     const key = result.dezenas.join("-");
     if (duplicates.has(key)) {
@@ -447,12 +461,14 @@ export async function generateTicket(
     throw new Error("Estratégia inválida");
   }
 
-  const k = options.k ?? BETTING_LIMITS.defaultDezenaCount;
+  const limits = await getBettingLimits({ client: options.client });
+  const k = options.k ?? limits.defaultDezenaCount;
   const result = await executeStrategy(normalizedStrategy, {
     seed: options.seed,
     k,
     window: normalizedStrategy.window ?? options.window,
     client: options.client,
+    limits,
   });
 
   return {
@@ -610,6 +626,7 @@ type BuildResultInput = {
   request: GenerateBatchRequest;
   normalizedStrategies: StrategyRequest[];
   logger: Logger;
+  limits: BettingLimits;
 };
 
 function buildResult({
@@ -623,6 +640,7 @@ function buildResult({
   request,
   normalizedStrategies,
   logger,
+  limits,
 }: BuildResultInput): BatchGenerationResult {
   const metrics = metricsAccumulator.build();
   const totalCost = tickets.length * ticketCost;
@@ -639,7 +657,7 @@ function buildResult({
     metrics,
     config: {
       strategies: normalizedStrategies,
-      k: request.k ?? BETTING_LIMITS.defaultDezenaCount,
+      k: request.k ?? limits.defaultDezenaCount,
       window: request.window,
       timeoutMs: request.timeoutMs ?? 3_000,
     },

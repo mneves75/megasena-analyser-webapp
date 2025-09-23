@@ -3,7 +3,11 @@ import "server-only";
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
-import { BETTING_LIMITS } from "@/services/strategy-limits";
+import {
+  DEFAULT_BETTING_LIMITS,
+  getBettingLimits,
+  type BettingLimits,
+} from "@/services/strategy-limits";
 
 const DEFAULT_BASE_PRICE_CENTS = 600;
 
@@ -32,6 +36,7 @@ export type PriceInfo = {
 
 export type GetPriceOptions = {
   client?: PrismaClient;
+  limits?: BettingLimits;
 };
 
 export type PricingMetadata = {
@@ -65,10 +70,11 @@ export async function getPricingMetadata({
 
 export async function getPriceForK(
   k: number,
-  { client = prisma }: GetPriceOptions = {},
+  { client = prisma, limits: providedLimits }: GetPriceOptions = {},
 ): Promise<PriceInfo> {
   assertServerEnvironment();
-  assertKInRange(k);
+  const limits = providedLimits ?? (await getBettingLimits({ client }));
+  assertKInRange(k, limits);
 
   const priceRecord = await client.price.findUnique({ where: { k } });
 
@@ -81,7 +87,7 @@ export async function getPriceForK(
     };
   }
 
-  const fallbackCost = calculateCombinationCost(k, getBasePriceCents());
+  const fallbackCost = calculateCombinationCost(k, getBasePriceCents(), limits);
 
   return {
     k,
@@ -110,20 +116,26 @@ export type BudgetAllocationResult = {
 export type BudgetAllocationOptions = {
   k?: number;
   client?: PrismaClient;
+  limits?: BettingLimits;
 };
 
 export async function calculateBudgetAllocation(
   budgetCents: number,
   {
-    k = BETTING_LIMITS.defaultDezenaCount,
+    k = DEFAULT_BETTING_LIMITS.defaultDezenaCount,
     client,
+    limits: providedLimits,
   }: BudgetAllocationOptions = {},
 ): Promise<BudgetAllocationResult> {
   assertServerEnvironment();
-  assertBudgetWithinRange(budgetCents);
-  assertKInRange(k);
+  const limits = providedLimits ?? (await getBettingLimits({ client }));
+  assertBudgetWithinRange(budgetCents, limits);
+  assertKInRange(k, limits);
 
-  const ticketCostCents = await calculateTicketCost(k, { client });
+  const ticketCostCents = await calculateTicketCost(k, {
+    client,
+    limits,
+  });
   const maxTicketsByBudget = Math.floor(budgetCents / ticketCostCents);
 
   if (maxTicketsByBudget <= 0) {
@@ -133,10 +145,7 @@ export async function calculateBudgetAllocation(
     );
   }
 
-  const maxTickets = Math.min(
-    maxTicketsByBudget,
-    BETTING_LIMITS.maxTicketsPerBatch,
-  );
+  const maxTickets = Math.min(maxTicketsByBudget, limits.maxTicketsPerBatch);
 
   const leftoverCents = budgetCents - maxTickets * ticketCostCents;
 
@@ -162,8 +171,12 @@ function combination(n: number, k: number): number {
   return Math.round(result);
 }
 
-function calculateCombinationCost(k: number, basePriceCents: number): number {
-  return combination(k, BETTING_LIMITS.minDezenaCount) * basePriceCents;
+function calculateCombinationCost(
+  k: number,
+  basePriceCents: number,
+  limits: BettingLimits,
+): number {
+  return combination(k, limits.minDezenaCount) * basePriceCents;
 }
 
 function assertServerEnvironment() {
@@ -172,35 +185,35 @@ function assertServerEnvironment() {
   }
 }
 
-function assertKInRange(k: number) {
+function assertKInRange(k: number, limits: BettingLimits) {
   if (
     Number.isNaN(k) ||
-    k < BETTING_LIMITS.minDezenaCount ||
-    k > BETTING_LIMITS.maxDezenaCount
+    k < limits.minDezenaCount ||
+    k > limits.maxDezenaCount
   ) {
     throw new PricingError(
       "K_OUT_OF_RANGE",
-      `Valor de k inválido: ${k}. Permitido entre ${BETTING_LIMITS.minDezenaCount} e ${BETTING_LIMITS.maxDezenaCount}.`,
+      `Valor de k inválido: ${k}. Permitido entre ${limits.minDezenaCount} e ${limits.maxDezenaCount}.`,
     );
   }
 }
 
-function assertBudgetWithinRange(budgetCents: number) {
+function assertBudgetWithinRange(budgetCents: number, limits: BettingLimits) {
   if (Number.isNaN(budgetCents)) {
     throw new PricingError("BUDGET_BELOW_MIN", "Orçamento inválido");
   }
 
-  if (budgetCents < BETTING_LIMITS.minBudgetCents) {
+  if (budgetCents < limits.minBudgetCents) {
     throw new PricingError(
       "BUDGET_BELOW_MIN",
-      `Orçamento mínimo é ${BETTING_LIMITS.minBudgetCents} centavos`,
+      `Orçamento mínimo é ${limits.minBudgetCents} centavos`,
     );
   }
 
-  if (budgetCents > BETTING_LIMITS.maxBudgetCents) {
+  if (budgetCents > limits.maxBudgetCents) {
     throw new PricingError(
       "BUDGET_ABOVE_MAX",
-      `Orçamento máximo permitido é ${BETTING_LIMITS.maxBudgetCents} centavos`,
+      `Orçamento máximo permitido é ${limits.maxBudgetCents} centavos`,
     );
   }
 }

@@ -118,15 +118,15 @@ describe("generateBatch", () => {
     nowSpy.mockReturnValueOnce(1_000);
     nowSpy.mockImplementation(() => 5_000);
 
-    await expect(
-      generateBatch({
-        budgetCents: 3_000,
-        seed: "TIMEOUT-SEED",
-        strategies: [{ name: "uniform" }],
-        timeoutMs: 10,
-        client,
-      }),
-    ).rejects.toBeInstanceOf(BatchGenerationError);
+    const promise = generateBatch({
+      budgetCents: 3_000,
+      seed: "TIMEOUT-SEED",
+      strategies: [{ name: "uniform" }],
+      timeoutMs: 10,
+      client,
+    });
+
+    await expect(promise).rejects.toBeInstanceOf(BatchGenerationError);
 
     nowSpy.mockRestore();
   });

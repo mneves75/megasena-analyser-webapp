@@ -1,12 +1,13 @@
 import "server-only";
 
 import { mulberry32, sampleUniqueIntegers } from "@/lib/random";
+import { DEFAULT_BETTING_LIMITS } from "@/services/strategy-limits";
 import { buildMetadata } from "@/services/strategies/utils";
 import {
   MEGASENA_MAX_DEZENA,
   MEGASENA_MIN_DEZENA,
   normalizeSeed,
-  resolveK,
+  resolveKWithLimits,
   type StrategyContext,
   type StrategyResult,
 } from "@/services/strategies/types";
@@ -15,7 +16,8 @@ export async function uniformStrategy(
   context: StrategyContext,
 ): Promise<StrategyResult> {
   const seed = normalizeSeed(context.seed);
-  const k = resolveK(context.k);
+  const limits = context.limits ?? DEFAULT_BETTING_LIMITS;
+  const k = resolveKWithLimits(context.k, limits);
 
   const prng = mulberry32(seed);
   const dezenas = sampleUniqueIntegers(prng, {
