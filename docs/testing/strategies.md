@@ -27,3 +27,6 @@
 - Após implementação do Stage 3, validar também:
   - `generateBatch` com múltiplas estratégias retorna tickets únicos e métricas agregadas (`totalTickets`, `averageFrequency`).
   - Timeout configurável (ex.: `timeoutMs=10`) retorna erro `GENERATION_TIMEOUT` sem travar o processo.
+- Stage 4:
+  - `POST /api/bets/generate` autenticado (Bearer `SYNC_TOKEN`) persiste registros consultáveis via `GET /api/bets`.
+  - Consultar `/api/bets?strategy=balanced&limit=5` e conferir retorno ordenado, incluindo payload `ticket` com metadados e dezenas ordenadas.

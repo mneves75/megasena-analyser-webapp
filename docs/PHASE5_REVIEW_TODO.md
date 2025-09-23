@@ -34,11 +34,11 @@
 
 ### Stage 4-5
 
-- [ ] Implementar Server Action `generateBetsAction` reutilizando `generateBatch` e expondo `/api/bets/generate` (POST) e `/api/bets` (GET) com token opcional.
-- [ ] Registrar logs estruturados (Pino) contendo seed, estratégias usadas, tempo de execução e score médio; definir formato padronizado.
-- [ ] Criar script CLI para gerar apostas e alimentar fixtures (atualizar `docs/fixtures/sample-bets.json`).
-- [ ] Documentar contratos HTTP no README + `docs/IMPLEMENTATION_PLAN.md` e atualizar checklist de smoke manual.
-- [ ] Adicionar testes de integração (Vitest) usando banco efêmero cobrindo persistência e filtros básicos em `/api/bets`.
+- [x] Implementar Server Action `generateBetsAction` reutilizando `generateBatch` e expondo `/api/bets/generate` (POST) e `/api/bets` (GET) com token opcional.
+- [x] Registrar logs estruturados (Pino) contendo seed, estratégias usadas, tempo de execução e score médio; definir formato padronizado.
+- [x] Criar script CLI para gerar apostas e alimentar fixtures (atualizar `docs/fixtures/sample-bets.json`).
+- [x] Documentar contratos HTTP no README + `docs/IMPLEMENTATION_PLAN.md` e atualizar checklist de smoke manual.
+- [x] Adicionar testes de integração (Vitest) usando banco efêmero cobrindo persistência e filtros básicos em `/api/bets`.
 
 ### Stage 6 (Roadmap pós-MVP)
 

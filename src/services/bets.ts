@@ -98,6 +98,12 @@ export type StrategyPayload = {
     timeoutMs: number;
   };
   warnings: string[];
+  ticket?: {
+    strategy: StrategyName;
+    metadata: StrategyMetadata;
+    seed: string;
+    costCents: number;
+  };
 };
 
 export type BatchGenerationResult = {

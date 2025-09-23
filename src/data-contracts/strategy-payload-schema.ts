@@ -111,6 +111,20 @@ export const strategyPayloadSchema = {
       type: "array",
       items: { type: "string" },
     },
+    ticket: {
+      type: "object",
+      required: ["strategy", "metadata", "seed", "costCents"],
+      properties: {
+        strategy: { type: "string" },
+        seed: { type: "string" },
+        costCents: { type: "integer", minimum: 0 },
+        metadata: {
+          type: "object",
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: false,
+    },
   },
   additionalProperties: false,
 } as const;

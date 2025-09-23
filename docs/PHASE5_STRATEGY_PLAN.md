@@ -263,10 +263,11 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 
 ### STG-4 — APIs e persistência de apostas
 
-- Implementar Server Action `generateBetsAction` e rotas `/api/bets/generate` (POST) e `/api/bets` (GET).
-- Persistir `bets`/`bet_dezenas` com `strategy_payload` e metadados.
-- Configurar autenticação/token opcional seguindo padrão de sync.
-- Critérios de aceite: chamadas via `curl` armazenam bilhetes, `GET /api/bets` retorna filtros básicos, logs registram duração.
+- Server Action `generateBetsAction`, rotas `/api/bets/generate` (POST) e `/api/bets` (GET) implementadas com parsing via Zod.
+- Persistência em `bets`/`bet_dezenas` consolidada por `persistBatch`, armazenando payload validado e dezenas ordenadas.
+- Reuso do token `SYNC_TOKEN` para proteger a geração via API (opcional).
+- Teste de integração (`bet-store.test.ts`) garante que `persistBatch` + `listBets` funcionam em SQLite efêmero.
+- **Próximo**: evoluir filtros avançados (orçamento mínimo/máximo) e documentação de response detalhada para frontend/Product.
 
 ### STG-5 — Testes integração, fixtures e docs
 

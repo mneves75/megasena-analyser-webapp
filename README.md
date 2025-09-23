@@ -41,6 +41,7 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - Payloads serializados seguem o contrato `docs/data-contracts/strategy_payload.schema.json` (versão `1.0`).
 - Testes unitários dedicados em `src/services/__tests__/bets.test.ts` (`npm run test -- bets`).
 - Fixture de referência disponível em `docs/fixtures/sample-bets.json` (seed `FIXTURE-SEED`). Gere novas amostras com `NODE_OPTIONS="-r ./scripts/dev/register-server-only-stub.js" npx tsx scripts/dev/generate-batch.ts`.
+- Persistência e APIs: `persistBatch`/`listBets` em `src/services/bet-store.ts`, rotas `/api/bets/generate` (POST protegido por `SYNC_TOKEN`) e `/api/bets` (GET com filtros básicos) para integração externa.
 
 ## Variáveis de ambiente relevantes
 
