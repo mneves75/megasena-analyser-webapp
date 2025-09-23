@@ -24,9 +24,15 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - O projeto usa SQLite via Prisma (arquivo padrão `./dev.db`).
 - Configure variáveis em `.env` (`DATABASE_URL="file:./dev.db"`).
 - Após clonar o repositório, execute `npm run db:migrate` seguido de `npm run db:seed`.
-- Seeds criam registros em `meta` (`schema_version`, `last_sync`) e tabela `prices` com custos combinatórios.
+- Seeds criam registros em `meta` (`schema_version`, `last_sync`, `price_last_checked`) e na tabela `Price` com custos combinatórios atualizados.
 - Camada de acesso ao banco fica em `src/data/**`, com módulos marcados com `server-only`.
 - Rota protegida `POST /api/sync` e o script `npm run sync` utilizam o mesmo serviço (`src/services/sync.ts`). Defina `SYNC_TOKEN` no `.env` para autenticação quando exposto publicamente.
+
+## Preços oficiais
+
+- Valor mínimo (k = 6) atualizado para **R$ 6,00** em 12 de julho de 2025 (fonte CAIXA). Custos para demais valores de `k` são obtidos via `C(k, 6) * preço base` e já estão semeados na tabela `Price`.
+- Os helpers de preços residem em `src/services/pricing.ts` e expõem `getPriceForK`, `calculateTicketCost` e `calculateBudgetAllocation` para uso em Server Components/Actions.
+- Execute `npm run test -- pricing` para validar cálculos oficiais, fallback `.env` e limites de orçamento antes de publicar alterações no motor de apostas.
 
 ## Variáveis de ambiente relevantes
 
@@ -36,6 +42,8 @@ Aplicação Next.js (App Router) para sincronizar concursos oficiais da Mega-Sen
 - `CAIXA_MAX_RETRIES` e `CAIXA_RETRY_DELAY_MS` (opcionais): configuram política de retry do cliente CAIXA.
 - `LOG_LEVEL`: nível de log aceito pelo Pino (`info`, `debug`, etc.).
 - `SYNC_BACKFILL_WINDOW`: limite padrão de concursos buscados quando o banco está vazio (default 50).
+- `MEGASENA_BASE_PRICE_CENTS` (opcional): sobrescreve o valor-base utilizado para calcular apostas quando não houver registro na tabela `Price` (default `600`).
+- `MEGASENA_PRICE_FALLBACK_UPDATED_AT` (opcional): ISO date/time utilizada ao informar o fallback de preço via ambiente.
 
 Exemplo de `.env` local:
 

@@ -1,12 +1,12 @@
 [
   {
     "id": "bet-sample-01",
-    "budget_cents": 3000,
-    "total_cost_cents": 3000,
-    "strategy_name": "uniforme",
+    "budget_cents": 1200,
+    "total_cost_cents": 1200,
+    "strategy_name": "uniform",
     "strategy_payload": {
-      "seed": 12345,
-      "notes": "Baseline uniforme com orçamento de R$30,00"
+      "seed": "BASELINE-SEED",
+      "notes": "Baseline uniforme com orçamento de R$12,00"
     },
     "dezenas": [
       [3, 16, 29, 37, 45, 60],

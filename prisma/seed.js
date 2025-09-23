@@ -14,9 +14,10 @@ function combination(n, k) {
 
 async function main() {
   const fonte =
-    "https://loterias.caixa.gov.br/wps/portal/loterias/landing/megasena";
-  const dataAtualizacao = new Date("2024-09-01T00:00:00Z");
-  const precoBaseCents = 500;
+    "https://caixanoticias.caixa.gov.br/Paginas/Noticias/2025/07-JULHO/Apostas-das-Loterias-CAIXA-terao-novos-valores.aspx";
+  const dataAtualizacao = new Date("2025-07-12T00:00:00Z");
+  const dataConsulta = new Date("2025-09-23T00:00:00Z");
+  const precoBaseCents = 600;
 
   await prisma.meta.upsert({
     where: { key: "schema_version" },
@@ -28,6 +29,12 @@ async function main() {
     where: { key: "last_sync" },
     update: { value: "never" },
     create: { key: "last_sync", value: "never" },
+  });
+
+  await prisma.meta.upsert({
+    where: { key: "price_last_checked" },
+    update: { value: dataConsulta.toISOString() },
+    create: { key: "price_last_checked", value: dataConsulta.toISOString() },
   });
 
   const priceEntries = Array.from({ length: 10 }, (_, idx) => idx + 6).map(
