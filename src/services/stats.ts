@@ -1,3 +1,5 @@
+import "server-only";
+
 import { PrismaClient, Prisma } from "@prisma/client";
 import { cache } from "react";
 
@@ -84,7 +86,7 @@ export const getFrequencies = cache(
         hits: bigint;
       }[]
     >`
-      SELECT dd.dezena AS dezena, COUNT(*)::bigint AS hits
+      SELECT dd.dezena AS dezena, COUNT(*) AS hits
       FROM "DrawDezena" dd
       INNER JOIN "Draw" d ON d.concurso = dd.concurso
       ${condition}
@@ -128,7 +130,7 @@ export const getPairs = cache(
         hits: bigint;
       }[]
     >`
-      SELECT dd1.dezena AS a, dd2.dezena AS b, COUNT(*)::bigint AS hits
+      SELECT dd1.dezena AS a, dd2.dezena AS b, COUNT(*) AS hits
       FROM "DrawDezena" dd1
       INNER JOIN "DrawDezena" dd2
         ON dd1.concurso = dd2.concurso AND dd1.ordem < dd2.ordem
@@ -167,7 +169,7 @@ export const getTriplets = cache(
         hits: bigint;
       }[]
     >`
-      SELECT dd1.dezena AS a, dd2.dezena AS b, dd3.dezena AS c, COUNT(*)::bigint AS hits
+      SELECT dd1.dezena AS a, dd2.dezena AS b, dd3.dezena AS c, COUNT(*) AS hits
       FROM "DrawDezena" dd1
       INNER JOIN "DrawDezena" dd2
         ON dd1.concurso = dd2.concurso AND dd1.ordem < dd2.ordem

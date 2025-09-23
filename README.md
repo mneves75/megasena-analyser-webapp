@@ -79,6 +79,7 @@ docs/             # Planejamento, prompts e tokens de design
 - Prompt operacional e restrições: `docs/PROMPT MEGASENA APP.md`.
 - Tokens e referências de UI: `docs/design/tokens.md`.
 - Plano de remediação do sync: `docs/SYNC_REMEDIATION_PLAN.md`.
+- Estratégia balanceada documentada: `docs/strategies/balanced.md`.
 
 ## API de Estatísticas
 

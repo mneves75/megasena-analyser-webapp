@@ -244,7 +244,7 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 
 - Criar `src/lib/random.ts` com PRNG determinístico (mulberry32 ou equivalente) validado via snapshot.
 - Implementar `uniformStrategy` e `balancedStrategy` conforme Stage 2, retornando metadados.
-- Documentar heurística detalhada em `docs/strategies/balanced.md` (novo) com exemplos.
+- Documentar heurística detalhada em `docs/strategies/balanced.md` (novo) com exemplos e métricas (freq. média, paridade, quadrantes).
 - Critérios de aceite: testes unitários com seed fixa produzindo conjuntos determinísticos, sem bilhetes duplicados.
 
 ### STG-3 — Workflow generateBatch e validações

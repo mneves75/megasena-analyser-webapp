@@ -1,3 +1,5 @@
+import "server-only";
+
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { fetchConcurso, type NormalizedConcurso } from "@/data/caixa-client";
