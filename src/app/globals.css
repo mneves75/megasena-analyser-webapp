@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: 245 246 248;
+  --foreground: 17 24 39;
+  --surface-muted: 255 255 255;
+  --surface-elevated: 241 244 248;
+  --brand-500: 47 123 255;
+  --brand-600: 31 95 230;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  color-scheme: dark;
+  --background: 15 16 20;
+  --foreground: 229 231 235;
+  --surface-muted: 24 27 33;
+  --surface-elevated: 19 21 26;
+  --brand-500: 86 148 255;
+  --brand-600: 47 123 255;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  letter-spacing: -0.02em;
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: rgb(var(--brand-500));
+  transition: color 150ms ease;
+}
+
+a:hover {
+  color: rgb(var(--brand-600));
+}
+
+::selection {
+  background: rgba(47, 123, 255, 0.18);
+  color: rgb(var(--foreground));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+[data-card] {
+  border-radius: 1.75rem;
+  background: rgba(var(--surface-muted), 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.dark [data-card] {
+  background: rgba(var(--surface-elevated), 0.75);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 44px rgba(3, 7, 18, 0.25);
 }
