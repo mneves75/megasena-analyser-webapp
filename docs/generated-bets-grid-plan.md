@@ -38,3 +38,4 @@
 - Ação "Copiar todas" adicionada e com aviso degradável quando Clipboard API falhar.
 - Highlight "Soma média" agora exibe `—` quando não há dados, mantendo descrição "Sem dados suficientes".
 - `npm run lint` executado com sucesso após ajustes incrementais.
+- Página `/bets` passou a consumir DataGrid unificado com copias rápidas, seed copiável e metadados derivados na mesma interface.

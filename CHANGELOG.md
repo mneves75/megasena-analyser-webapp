@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resultados do gerador exibidos em grade virtualizada com metadados contextuais, mantendo exportação do payload e feedback visual responsivo.
 - Home page ajustada para exibir `—` na highlight de soma média quando não há dados, evitando ruído junto à mensagem "Sem dados suficientes".
+- Histórico `/bets` remodelado com DataGrid compartilhado, incluindo cópia rápida das dezenas e metadados auditáveis em cada linha.
 
 ### Fixed
 
