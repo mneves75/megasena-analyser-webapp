@@ -57,12 +57,14 @@
 - [x] Reorganizar cards superiores em 2 colunas (sm) e 4 colunas apenas >=1536px; aumentar padding interno.
 - [x] Criar componente `StatList` para números quentes/frios (tabela responsiva) substituindo estruturas antigas.
 - [x] Ajustar `Chart` para comportar altura responsiva (`h-[220px]` mobile, `h-[260px]` desktop) com padding adequado.
+- [ ] Adicionar fallback `EmptyState` quando não houver dados e linkar para `/generate` com base nos insights.
 
 ### Fase C — Gerador de apostas
 
 - [x] Dividir formulário em duas colunas somente >=1024px; inputs menores (`h-11`, radius `xl`).
 - [ ] Implementar componente `TicketBadges` com grid responsiva (wrap de 3 colunas mobile, 6 desktop).
 - [x] Mover CTAs secundárias para barra inferior com `Button` variante `link`, mantendo primária destacada.
+- [ ] Ajustar hierarquia das ações pós-resultado (Salvar/Regenerar) e oferecer opção de detalhar bilhete (accordion / drawer).
 
 ### Fase D — Histórico
 
@@ -77,6 +79,12 @@
 - [ ] Atualizar `Button` para remover ripple e reforçar estados hover/focus.
 - [ ] Criar `Stack` utilitário (`flex flex-col gap-6 sm:gap-8`) para seções, reduzindo repetição.
 - [ ] Revisar tokens em `globals.css` (line-height, font-size base 15px? → manter 16px, ajustar heading letter-spacing).
+
+### Backlog complementar
+
+- [ ] Ajustar descrição do preço base na Home para ocultar fontes técnicas (`env:`) e exibir rótulos legíveis.
+- [ ] Converter “Números em destaque” da Home para ranking reutilizando `StatList` (incluindo variação / tempo desde última aparição).
+- [ ] Atualizar README com prints Light/Dark quando o redesign estiver completo.
 
 ## 4. Critérios de Aceite
 
