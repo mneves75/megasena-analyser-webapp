@@ -169,7 +169,7 @@ export default async function Home() {
 
   return (
     <div className="relative z-10 flex flex-col gap-16">
-      <section className="grid gap-12 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)] xl:items-start">
+      <section className="grid gap-14 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] xl:items-start">
         <div
           data-card
           className="rounded-3xl border border-white/10 bg-[rgba(var(--surface-muted),0.92)] p-6 sm:p-8 xl:p-10 dark:border-white/5 dark:bg-[rgba(var(--surface-elevated),0.8)]"
@@ -194,7 +194,7 @@ export default async function Home() {
               Ver estatísticas
             </Link>
           </div>
-          <dl className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <dl className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {homeData.highlights.map((item) => (
               <div
                 key={item.label}

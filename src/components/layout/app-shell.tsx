@@ -13,8 +13,8 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="relative min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))]">
       <BackgroundAura />
-      <div className="mx-auto flex min-h-screen w-full max-w-[1280px] flex-col gap-12 px-6 pb-14 pt-8 sm:gap-14 sm:px-10 sm:pt-10 lg:px-12">
-        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-[rgba(var(--surface-muted),0.88)] px-6 py-3.5 text-sm shadow-soft backdrop-blur-md sm:px-8 sm:py-4 dark:border-white/10 dark:bg-[rgba(var(--surface-elevated),0.78)]">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-14 px-6 pb-16 pt-10 sm:gap-16 sm:px-12 sm:pt-12 lg:px-16">
+        <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-[rgba(var(--surface-muted),0.9)] px-6 py-4 text-sm shadow-soft backdrop-blur-md sm:px-10 sm:py-5 dark:border-white/10 dark:bg-[rgba(var(--surface-elevated),0.82)]">
           <Link
             href="/"
             className="flex items-center gap-3"
@@ -44,7 +44,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </header>
         <main className="flex-1">{children}</main>
-        <footer className="rounded-2xl border border-white/20 bg-[rgba(var(--surface-muted),0.92)] px-6 py-6 text-sm text-slate-500 shadow-soft backdrop-blur sm:px-8 sm:py-7 dark:border-white/10 dark:bg-[rgba(var(--surface-elevated),0.82)] dark:text-slate-300">
+        <footer className="rounded-2xl border border-white/20 bg-[rgba(var(--surface-muted),0.92)] px-6 py-6 text-sm text-slate-500 shadow-soft backdrop-blur sm:px-10 sm:py-7 dark:border-white/10 dark:bg-[rgba(var(--surface-elevated),0.82)] dark:text-slate-300">
           <p className="font-medium text-slate-600 dark:text-slate-200">
             Aviso legal
           </p>
