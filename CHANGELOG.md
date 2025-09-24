@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Planejado: Fases B–E do redesign de UI (dashboards, formulários, componentes compartilhados).
+- Dashboard de estatísticas refinado com cards responsivos, componente `StatList` para números quentes/frios e gráficos com altura adaptativa.
+- Formulário do gerador reorganizado (layout duas colunas em desktop, inputs compactos, resultados em grid com exportação destacada).
+- Planejado: etapas remanescentes do redesign (TicketBadges dedicado, histórico paginado e padronização de componentes compartilhados).
 
 ## [0.2.0] - 2025-09-24
 

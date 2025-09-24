@@ -79,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={type}
             className={cn(
-              "flex h-12 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-400 dark:focus:bg-slate-800",
+              "flex h-11 w-full rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-400 dark:focus:bg-slate-800",
               leftIcon && "pl-10",
               rightIcon && "pr-10",
               error &&
@@ -106,7 +106,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               className={cn(
                 "absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400 transition-all duration-200 ease-out pointer-events-none",
                 (isFocused || hasValue) &&
-                  "top-2 translate-y-0 text-xs text-brand-600 dark:text-brand-400",
+                  "top-1.5 translate-y-0 text-xs text-brand-600 dark:text-brand-400",
                 error && (isFocused || hasValue) && "text-red-500",
               )}
             >

@@ -54,15 +54,15 @@
 
 ### Fase B — Dashboard de estatísticas
 
-- [ ] Reorganizar cards superiores em 2 colunas (sm) e 4 colunas apenas >=1536px; aumentar padding interno.
-- [ ] Criar componente `StatList` para números quentes/frios (tabela responsiva) substituindo `div`/`Progress` atual.
-- [ ] Ajustar `Chart` para receber `maxHeight` responsivo (`h-[220px]` mobile, `h-[280px]` desktop) e padding 20px.
+- [x] Reorganizar cards superiores em 2 colunas (sm) e 4 colunas apenas >=1536px; aumentar padding interno.
+- [x] Criar componente `StatList` para números quentes/frios (tabela responsiva) substituindo estruturas antigas.
+- [x] Ajustar `Chart` para comportar altura responsiva (`h-[220px]` mobile, `h-[260px]` desktop) com padding adequado.
 
 ### Fase C — Gerador de apostas
 
-- [ ] Dividir formulário em duas colunas somente >=1024px; inputs menores (`h-11`, radius `xl`).
+- [x] Dividir formulário em duas colunas somente >=1024px; inputs menores (`h-11`, radius `xl`).
 - [ ] Implementar componente `TicketBadges` com grid responsiva (wrap de 3 colunas mobile, 6 desktop).
-- [ ] Mover CTAs secundárias para barra inferior com `Button` variante `link`, mantendo primária destacada.
+- [x] Mover CTAs secundárias para barra inferior com `Button` variante `link`, mantendo primária destacada.
 
 ### Fase D — Histórico
 

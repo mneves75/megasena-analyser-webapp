@@ -5,9 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Chart, type ChartData } from "@/components/ui/chart";
+import { StatList } from "@/components/dashboard/stat-list";
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", {
@@ -73,8 +72,8 @@ export function StatsDashboard({
   }, null);
 
   return (
-    <div className="space-y-12">
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-14">
+      <div className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -169,13 +168,15 @@ export function StatsDashboard({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Chart
-              data={quadrantChart}
-              type="bar"
-              height={260}
-              showLabels
-              showValues
-            />
+            <div className="h-[220px] sm:h-[260px]">
+              <Chart
+                data={quadrantChart}
+                type="bar"
+                height={260}
+                showLabels
+                showValues
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -187,104 +188,41 @@ export function StatsDashboard({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Chart
-              data={quadrantChart}
-              type="donut"
-              height={260}
-              showLabels
-              showValues
-            />
+            <div className="h-[220px] sm:h-[260px]">
+              <Chart
+                data={quadrantChart}
+                type="donut"
+                height={260}
+                showLabels
+                showValues
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Números quentes
-              <Badge variant="success" size="sm">
-                Top 5
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Maior frequência na janela analisada.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {hotNumbers.map((item) => (
-              <div
-                key={`hot-${item.dezena}`}
-                className="flex items-center justify-between rounded-xl bg-green-50 p-3 dark:bg-green-900/10"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 text-white text-sm font-semibold">
-                    {item.dezena.toString().padStart(2, "0")}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      {numberFormatter.format(item.hits)} ocorrências
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      {percentFormatter.format(item.percentage)} dos concursos
-                      {item.contestsSinceLast !== null
-                        ? ` · há ${item.contestsSinceLast} concursos`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-                <Progress
-                  value={item.percentage * 100}
-                  size="sm"
-                  variant="success"
-                  className="w-20"
-                />
-              </div>
-            ))}
+          <CardContent className="space-y-6 p-6">
+            <StatList
+              title="Números quentes"
+              description="Maior frequência na janela analisada."
+              badge={{ label: "Top 5", variant: "success" }}
+              items={hotNumbers}
+              accent="hot"
+            />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              Números frios
-              <Badge variant="secondary" size="sm">
-                Top 5
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Menor incidência recente — úteis para diversificação.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {coldNumbers.map((item) => (
-              <div
-                key={`cold-${item.dezena}`}
-                className="flex items-center justify-between rounded-xl bg-slate-100 p-3 dark:bg-slate-800/40"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white text-sm font-semibold dark:bg-slate-200 dark:text-slate-900">
-                    {item.dezena.toString().padStart(2, "0")}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      {numberFormatter.format(item.hits)} ocorrências
-                    </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">
-                      {percentFormatter.format(item.percentage)} dos concursos
-                      {item.contestsSinceLast !== null
-                        ? ` · há ${item.contestsSinceLast} concursos`
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-                <Progress
-                  value={item.percentage * 100}
-                  size="sm"
-                  className="w-20"
-                />
-              </div>
-            ))}
+          <CardContent className="space-y-6 p-6">
+            <StatList
+              title="Números frios"
+              description="Menor incidência recente — úteis para diversificação."
+              badge={{ label: "Top 5", variant: "secondary" }}
+              items={coldNumbers}
+              accent="cold"
+            />
           </CardContent>
         </Card>
       </div>

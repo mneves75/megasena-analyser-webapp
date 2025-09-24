@@ -113,22 +113,22 @@ export function BetGeneratorForm() {
   const leftoverDisplay = formatCurrency(leftover);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <form action={formAction} className="space-y-8">
         <input
           type="hidden"
           name="budgetCents"
           value={budgetCents > 0 ? budgetCents : ""}
         />
-        <Card>
+        <Card className="mx-auto max-w-4xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalculatorIcon className="h-5 w-5" />
               Configuração da estratégia
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
+          <CardContent className="space-y-8">
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="space-y-4">
                 <Select
                   name="strategy"
@@ -141,7 +141,7 @@ export function BetGeneratorForm() {
                 />
 
                 {selectedStrategy && (
-                  <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                  <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-800/50">
                     <h4 className="mb-1 text-sm font-medium text-slate-900 dark:text-white">
                       {selectedStrategy.label}
                     </h4>
@@ -212,7 +212,7 @@ export function BetGeneratorForm() {
               />
             </div>
 
-            <div className="flex flex-col gap-3 rounded-xl bg-brand-50 p-4 dark:bg-brand-900/10 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 rounded-2xl bg-brand-50 p-5 dark:bg-brand-900/10 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   Orçamento selecionado
@@ -247,7 +247,7 @@ export function BetGeneratorForm() {
       </form>
 
       {isPending && (
-        <Card>
+        <Card className="mx-auto max-w-4xl">
           <CardContent className="py-12">
             <div className="space-y-4 text-center">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/20">
@@ -269,7 +269,7 @@ export function BetGeneratorForm() {
       )}
 
       {!isPending && state.status === "success" && (
-        <Card>
+        <Card className="mx-auto max-w-4xl">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Resultados da geração</span>
@@ -284,11 +284,11 @@ export function BetGeneratorForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               {tickets.map((ticket, index) => (
                 <div
                   key={`${ticket.seed}-${index}`}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 dark:bg-slate-800/40"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/60 bg-white/90 p-4 shadow-soft dark:border-slate-700/40 dark:bg-slate-800/40"
                 >
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
@@ -298,7 +298,7 @@ export function BetGeneratorForm() {
                       {ticket.dezenas.map((dezena) => (
                         <span
                           key={`${ticket.seed}-${dezena}`}
-                          className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm font-medium text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-medium text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white"
                         >
                           {dezena.toString().padStart(2, "0")}
                         </span>
@@ -316,7 +316,7 @@ export function BetGeneratorForm() {
               ))}
             </div>
 
-            <div className="grid gap-4 rounded-2xl bg-brand-50 p-4 text-sm text-slate-700 dark:bg-brand-900/10 dark:text-slate-300 md:grid-cols-3">
+            <div className="grid gap-4 rounded-2xl bg-brand-50 p-5 text-sm text-slate-700 dark:bg-brand-900/10 dark:text-slate-300 md:grid-cols-3">
               <div>
                 <p className="text-xs uppercase tracking-wide text-brand-700 dark:text-brand-300">
                   Orçamento processado

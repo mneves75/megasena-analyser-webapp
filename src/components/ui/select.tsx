@@ -73,7 +73,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             className={cn(
-              "flex h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 pr-10 text-sm text-slate-900 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:focus:border-brand-400 dark:focus:bg-slate-800",
+              "flex h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 pr-10 text-sm text-slate-900 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:focus:border-brand-400 dark:focus:bg-slate-800",
               error &&
                 "border-red-500 focus:border-red-500 focus:ring-red-500/20",
               className,
