@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { buttonStyles } from "@/components/ui/button-variants";
+import { Stack } from "@/components/ui/stack";
 import { getFrequencies, getSums, getRecency } from "@/services/stats";
 import { getPriceForK, getPricingMetadata } from "@/services/pricing";
 import { prisma } from "@/lib/prisma";
@@ -31,6 +32,19 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
+
+function formatSource(urlOrLabel: string | null | undefined) {
+  if (!urlOrLabel) {
+    return "Fonte oficial";
+  }
+
+  try {
+    const parsed = new URL(urlOrLabel);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return urlOrLabel;
+  }
+}
 
 function formatDate(value: Date | null | undefined) {
   if (!value || Number.isNaN(value.getTime())) {
@@ -93,6 +107,9 @@ async function loadHomeData(): Promise<HomeData> {
         (sums.parity.odd / totalParity) * 100,
       )}% ímpares`
     : "Sem dados suficientes";
+  const hasAverageSum =
+    typeof sums.average === "number" && !Number.isNaN(sums.average);
+  const averageSumValue = hasAverageSum ? Math.round(sums.average) : null;
 
   const highlights: Highlight[] = [
     {
@@ -114,13 +131,16 @@ async function loadHomeData(): Promise<HomeData> {
       value: currencyFormatter.format(priceK6.costCents / 100),
       description: pricingMeta.lastOfficialUpdate
         ? `Atualizado em ${formatDate(pricingMeta.lastOfficialUpdate)}${
-            priceK6.fonte ? ` · Fonte: ${priceK6.fonte}` : ""
+            priceK6.fonte ? ` · Fonte: ${formatSource(priceK6.fonte)}` : ""
           }`
         : "Use `npm run db:seed` para registrar os valores.",
     },
     {
       label: `Soma média (janela ${frequencyWindow})`,
-      value: numberFormatter.format(Math.round(sums.average ?? 0)),
+      value:
+        averageSumValue !== null
+          ? numberFormatter.format(averageSumValue)
+          : "—",
       description: paritySummary,
     },
   ];
@@ -140,7 +160,7 @@ async function loadHomeData(): Promise<HomeData> {
     highlights,
     topNumbers,
     totalDraws: frequencies.totalDraws,
-    averageSum: Math.round(sums.average ?? 0),
+    averageSum: averageSumValue ?? 0,
     lastSyncDate,
     paritySummary,
     windowSize: frequencyWindow,
@@ -149,6 +169,7 @@ async function loadHomeData(): Promise<HomeData> {
 
 export default async function Home() {
   const homeData = await loadHomeData();
+  const showOnboardingBanner = homeData.totalDraws === 0;
   const workflow = [
     {
       title: "Sincronize os concursos",
@@ -168,7 +189,36 @@ export default async function Home() {
   ];
 
   return (
-    <div className="relative z-10 flex flex-col gap-16">
+    <Stack className="relative z-10" gap="xl">
+      {showOnboardingBanner && (
+        <Card
+          variant="comfortable"
+          className="border border-dashed border-brand-500/40 bg-brand-500/10 text-slate-900 dark:border-brand-400/30 dark:bg-brand-500/15 dark:text-white"
+        >
+          <CardHeader className="gap-3">
+            <CardTitle className="text-xl font-semibold">
+              Sincronize os concursos para liberar análises
+            </CardTitle>
+            <CardDescription className="text-sm text-slate-700 dark:text-white/70">
+              Ainda não encontramos concursos no banco local. Rode{" "}
+              <code className="rounded bg-white/80 px-1.5 py-0.5 text-xs font-medium text-slate-900 dark:bg-white/10 dark:text-white">
+                npm run sync -- --full --limit=4000
+              </code>{" "}
+              ou consulte o guia de instalação para popular os dados oficiais
+              antes de explorar as estatísticas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Link href="/docs" className={buttonStyles("primary", "md")}>
+              Abrir manual de instalação
+            </Link>
+            <Link href="/stats" className={buttonStyles("ghost", "md")}>
+              Ver plano Stage 6
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       <section className="grid gap-14 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] xl:items-start">
         <div
           data-card
@@ -194,19 +244,19 @@ export default async function Home() {
               Ver estatísticas
             </Link>
           </div>
-          <dl className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <dl className="mt-12 grid gap-7 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
             {homeData.highlights.map((item) => (
               <div
                 key={item.label}
-                className="min-h-[168px] rounded-2xl border border-white/20 bg-white/70 p-6 shadow-soft backdrop-blur dark:border-white/5 dark:bg-white/10"
+                className="rounded-3xl border border-white/20 bg-white/75 p-7 shadow-soft backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/5 dark:bg-white/10"
               >
                 <dt className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   {item.label}
                 </dt>
-                <dd className="mt-3 text-2xl font-semibold tracking-tightest text-slate-900 dark:text-white">
+                <dd className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tightest text-slate-900 dark:text-white">
                   {item.value}
                 </dd>
-                <p className="mt-1 text-sm tracking-tight text-slate-500 dark:text-slate-300">
+                <p className="mt-2 text-sm leading-relaxed tracking-tight text-slate-600 break-words dark:text-slate-300">
                   {item.description}
                 </p>
               </div>
@@ -214,7 +264,10 @@ export default async function Home() {
           </dl>
         </div>
         <aside className="flex flex-col gap-5">
-          <Card className="rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10">
+          <Card
+            variant="compact"
+            className="rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10"
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
                 Números em destaque
@@ -249,7 +302,10 @@ export default async function Home() {
               </ul>
             </CardContent>
           </Card>
-          <Card className="h-full rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10">
+          <Card
+            variant="compact"
+            className="h-full rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10"
+          >
             <CardHeader>
               <CardTitle>Fases do roadmap</CardTitle>
               <CardDescription>
@@ -279,6 +335,7 @@ export default async function Home() {
         {workflow.map((item) => (
           <Card
             key={item.title}
+            variant="compact"
             className="rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10"
           >
             <CardHeader>
@@ -313,6 +370,6 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-    </div>
+    </Stack>
   );
 }

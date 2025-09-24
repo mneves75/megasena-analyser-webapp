@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Integração do `react-data-grid` para listar apostas geradas, com seleção de texto preservada e botões de cópia por linha e para o lote inteiro.
+
+### Changed
+
+- Resultados do gerador exibidos em grade virtualizada com metadados contextuais, mantendo exportação do payload e feedback visual responsivo.
+- Home page ajustada para exibir `—` na highlight de soma média quando não há dados, evitando ruído junto à mensagem "Sem dados suficientes".
+
+### Fixed
+
+- Falha de build Turbopack causada por importação padrão inexistente de `react-data-grid` corrigida com uso da exportação nomeada.
+
+### Planned
+
 - Dashboard de estatísticas refinado com cards responsivos, componente `StatList` para números quentes/frios e gráficos com altura adaptativa.
-- Formulário do gerador reorganizado (layout duas colunas em desktop, inputs compactos, resultados em grid com exportação destacada).
 - Planejado: etapas remanescentes do redesign (TicketBadges dedicado, histórico paginado e padronização de componentes compartilhados).
 
 ## [0.2.0] - 2025-09-24
