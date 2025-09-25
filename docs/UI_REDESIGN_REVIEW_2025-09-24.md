@@ -1,4 +1,4 @@
-# UI Redesign Review — 24/09/2025
+# UI Redesign Review – 24/09/2025
 
 ## Escopo da revisão
 

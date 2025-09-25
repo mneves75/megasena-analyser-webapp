@@ -1,6 +1,6 @@
 # Plano de Redesign de Layout · Mega-Sena Analyzer
 
-> Atualizado em 24/09/2025 — responsável: React Server Components Expert.
+> Atualizado em 24/09/2025 – responsável: React Server Components Expert.
 
 ## 1. Diagnóstico (24/09/2025)
 
@@ -45,45 +45,45 @@
 
 ## 3. Guia de Redesign (Prioridade Alta → Média)
 
-### Fase A — Layout e tipografia (alta prioridade)
+### Fase A – Layout e tipografia (alta prioridade)
 
 - [x] Introduzir container global com `max-w-5xl` (~1120px) e gutters 24/32px, aplicando em `AppShell`.
 - [x] Ajustar grid da Home: hero 2 colunas só em `xl` (>=1280), highlights em `md:grid-cols-2, xl:grid-cols-4` com `min-h-[160px]` e `text-base`.
 - [x] Atualizar sessão “Números em alta” com cards horizontais (avatar + info + badges) e espaçamento 16px.
 - [x] Reduzir animações `animate-slide-up` para apenas CTA final ou remover até novo guideline.
 
-### Fase B — Dashboard de estatísticas
+### Fase B – Dashboard de estatísticas
 
 - [x] Reorganizar cards superiores em 2 colunas (sm) e 4 colunas apenas >=1536px; aumentar padding interno.
 - [x] Criar componente `StatList` para números quentes/frios (tabela responsiva) substituindo estruturas antigas.
 - [x] Ajustar `Chart` para comportar altura responsiva (`h-[220px]` mobile, `h-[260px]` desktop) com padding adequado.
-- [ ] Adicionar fallback `EmptyState` quando não houver dados e linkar para `/generate` com base nos insights.
+- [x] Adicionar fallback `EmptyState` quando não houver dados e linkar para `/generate` com base nos insights.
 
-### Fase C — Gerador de apostas
+### Fase C – Gerador de apostas
 
 - [x] Dividir formulário em duas colunas somente >=1024px; inputs menores (`h-11`, radius `xl`).
-- [ ] Implementar componente `TicketBadges` com grid responsiva (wrap de 3 colunas mobile, 6 desktop).
+- [x] Implementar componente `TicketBadges` com grid responsiva (wrap de 3 colunas mobile, 6 desktop).
 - [x] Mover CTAs secundárias para barra inferior com `Button` variante `link`, mantendo primária destacada.
-- [ ] Ajustar hierarquia das ações pós-resultado (Salvar/Regenerar) e oferecer opção de detalhar bilhete (accordion / drawer).
+- [x] Ajustar hierarquia das ações pós-resultado (Salvar/Regenerar) e oferecer opção de detalhar bilhete (accordion / drawer).
 
-### Fase D — Histórico
+### Fase D – Histórico
 
-- [ ] Adicionar filtros básicos (strategy select, datas) acima da lista.
-- [ ] Agrupar cartões por data (seção com heading) e aplicar layout `grid md:grid-cols-2`.
-- [ ] Substituir texto XS por `text-sm`, seed mascarada (`seed.slice(0,6)…`).
-- [ ] Integrar CTA no `EmptyState` via prop `action` (já existente) com `LinkButton` reutilizável.
+- [x] Adicionar filtros básicos (strategy select, datas) acima da lista.
+- [x] Agrupar cartões por data (seção com heading) e aplicar layout `grid md:grid-cols-2`.
+- [x] Substituir texto XS por `text-sm`, seed mascarada (`seed.slice(0,6)…`).
+- [x] Integrar CTA no `EmptyState` via prop `action` (já existente) com `LinkButton` reutilizável.
 
-### Fase E — Componentes compartilhados
+### Fase E – Componentes compartilhados
 
-- [ ] Definir `cardVariants` (`compact`, `comfortable`) e aplicar nas páginas.
-- [ ] Atualizar `Button` para remover ripple e reforçar estados hover/focus.
-- [ ] Criar `Stack` utilitário (`flex flex-col gap-6 sm:gap-8`) para seções, reduzindo repetição.
-- [ ] Revisar tokens em `globals.css` (line-height, font-size base 15px? → manter 16px, ajustar heading letter-spacing).
+- [x] Definir `cardVariants` (`compact`, `comfortable`) e aplicar nas páginas.
+- [x] Atualizar `Button` para remover ripple e reforçar estados hover/focus.
+- [x] Criar `Stack` utilitário (`flex flex-col gap-6 sm:gap-8`) para seções, reduzindo repetição.
+- [x] Revisar tokens em `globals.css` (line-height, font-size base 15px? → manter 16px, ajustar heading letter-spacing).
 
 ### Backlog complementar
 
-- [ ] Ajustar descrição do preço base na Home para ocultar fontes técnicas (`env:`) e exibir rótulos legíveis.
-- [ ] Converter “Números em destaque” da Home para ranking reutilizando `StatList` (incluindo variação / tempo desde última aparição).
+- [x] Ajustar descrição do preço base na Home para ocultar fontes técnicas (`env:`) e exibir rótulos legíveis.
+- [x] Converter “Números em destaque” da Home para ranking reutilizando `StatList` (incluindo variação / tempo desde última aparição).
 - [ ] Atualizar README com prints Light/Dark quando o redesign estiver completo.
 
 ## 4. Critérios de Aceite

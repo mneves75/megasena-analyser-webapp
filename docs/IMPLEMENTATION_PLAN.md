@@ -33,14 +33,25 @@
 
 ## Resumo de Progresso Atual
 
-- **Fase 1**: quase concluída — tooling, tokens e layout base entregues; falta auditoria de acessibilidade e baseline visual.
-- **Fase 2**: concluída — Prisma/SQLite, seeds oficiais, fixtures e documentação `docs/data-contracts` prontas.
-- **Fase 3**: em andamento — cliente CAIXA, rota `/api/sync`, CLI e logging entregues; testes automatizados ainda pendentes.
+- **Fase 1**: quase concluída – tooling, tokens e layout base entregues; falta auditoria de acessibilidade e baseline visual.
+- **Fase 2**: concluída – Prisma/SQLite, seeds oficiais, fixtures e documentação `docs/data-contracts` prontas.
+- **Fase 3**: em andamento – cliente CAIXA, rota `/api/sync`, CLI e logging entregues; testes automatizados ainda pendentes.
 - **Fases 4-8**: planejadas e dependem da finalização da Fase 3 e posterior priorização.
+
+## Plano de Execução Sprint 3 (22 set – 03 out 2025)
+
+| Tarefa                                                                                     | Owner             | Data limite | Estado       | Notas                                                                                        |
+| ------------------------------------------------------------------------------------------ | ----------------- | ----------- | ------------ | -------------------------------------------------------------------------------------------- |
+| Validar ingestão completa com histórico oficial (rodada batch + verificação em `meta`)     | Backend           | 27 set      | Em andamento | Necessário capturar hash das respostas CAIXA e anexar no log estruturado.                    |
+| Codificar testes de integração para `services/sync` garantindo idempotência e deduplicação | Backend/Dados     | 30 set      | Pendente     | Reutilizar fixtures sintéticas e registrar comandos manuais em `docs/testing/strategies.md`. |
+| Instrumentar correlação (`requestId`, `spanId`) em todas as chamadas de sync/stats/motor   | Backend           | 29 set      | Pendente     | Depende de definir formato no `docs/operations.md`.                                          |
+| Atualizar `strategy_payload` schema + revisar com Produto                                  | Produto + Backend | 02 out      | Agendado     | Necessário preparar amostras reais (`docs/fixtures/sample-bets.json`).                       |
+| Registrar baseline de acessibilidade (axe DevTools mobile/desktop)                         | Frontend          | 01 out      | Pendente     | Exportar relatório e salvar em `docs/design/a11y/baseline-2025-10.md`.                       |
+| Ajustar headers do cliente CAIXA para evitar HTTP 403                                      | Backend           | 24 set      | Concluído    | UA, Referer, Origin e Accept-Language com overrides via `.env`.                              |
 
 ## Detalhamento por Fase com Backlog e Critérios
 
-### Fase 1 — Fundamentos do Projeto _(Status: quase concluída)_
+### Fase 1 – Fundamentos do Projeto _(Status: quase concluída)_
 
 - **Objetivo**: Base consistente para colaboração e design premium.
 - **Backlog atualizado**:
@@ -53,7 +64,7 @@
   - [ ] Registrar screenshots comparativos (mobile/desktop) para servir como baseline visual.
 - **Critérios de Saída**: `npm run lint`/`build` estáveis (✅), layout responsivo funcional (✅), tokens documentados (✅), checklist de acessibilidade inicial e baseline visual capturados (pendente).
 
-### Fase 2 — Persistência & Schema _(Status: próximo sprint)_
+### Fase 2 – Persistência & Schema _(Status: próximo sprint)_
 
 - **Objetivo**: Banco modelado, migrations reproduzíveis, seeds mínimas alinhadas ao domínio da Mega-Sena.
 - **Backlog**:
@@ -66,7 +77,7 @@
   - [x] Atualizar README com instruções de banco, scripts e política de seeds/fixtures.
 - **Critérios de Saída**: Migrations executam sem falhas (✅); seeds idempotentes (✅); camada `src/data` disponível (✅); documentação e fixtures prontos (✅).
 
-### Fase 3 — Ingestão CAIXA _(Status: em andamento)_
+### Fase 3 – Ingestão CAIXA _(Status: em andamento)_
 
 - **Objetivo**: Sincronizar histórico oficial com resiliência e aderência ao guia RSC.
 - **Backlog**:
@@ -79,7 +90,7 @@
   - [x] Testes unitários (Vitest) cobrindo parsing/retries e geração de payload usando fixtures sintéticas.
 - **Critérios de Saída**: Histórico completo persistido (parcial: depende de execução real); reexecução incremental sem duplicatas; logs auditáveis; contratos documentados; testes de integração completos ainda planejados.
 
-### Fase 4 — Estatísticas & Backtests _(Status: planejado)_
+### Fase 4 – Estatísticas & Backtests _(Status: planejado)_
 
 - **Objetivo**: Expor métricas determinísticas e histórico de cobertura.
 - **Backlog**:
@@ -91,7 +102,7 @@
   - [ ] Documentar fórmulas e exemplos numéricos em `docs/stats.md`.
 - **Critérios de Saída**: APIs respondem <500ms dataset médio; testes verdes; documentação revisada; cache invalidado no sync; backtesting completo pendente.
 
-### Fase 5 — Motor de Apostas _(Status: em andamento — Stages 0-2 concluídos)_
+### Fase 5 – Motor de Apostas _(Status: em andamento – Stages 0-2 concluídos)_
 
 - **Objetivo**: Gerar apostas otimizadas dentro do orçamento e regras oficiais.
 - **Backlog**:
@@ -108,7 +119,7 @@
 - [ ] Testes de integração: verificar custo total <= orçamento, ausência de duplicatas, consistência com seed.
 - **Critérios de Saída**: Motor gera apostas válidas em cenários simples/múltiplos; testes validam custos e cobertura; logs explicam decisões; revalidações do dashboard configuradas.
 
-### Fase 6 — Dashboard & UX _(Status: planejado)_
+### Fase 6 – Dashboard & UX _(Status: planejado)_
 
 - **Objetivo**: UI premium conectada aos dados com microinterações fluidas.
 - **Backlog**:
@@ -119,7 +130,7 @@
   - [ ] Garantir suporte mobile/desktop, dark/light mode, testes manuais de acessibilidade (teclado, leitor de tela).
 - **Critérios de Saída**: Lighthouse >90 (performance/acessibilidade); QA UX aprovado; strings PT-BR revisadas; microinterações documentadas.
 
-### Fase 7 — Automação & Qualidade _(Status: planejado)_
+### Fase 7 – Automação & Qualidade _(Status: planejado)_
 
 - **Objetivo**: Operação confiável end-to-end.
 - **Backlog**:
@@ -131,7 +142,7 @@
   - [ ] Documentar runbooks, rotações de segredo e processo de incidentes em `docs/operations.md`.
 - **Critérios de Saída**: CI verde; cron validado; logs detalhados; cobertura inicial atingida; playbooks publicados.
 
-### Fase 8 — Entrega & Documentação _(Status: planejado)_
+### Fase 8 – Entrega & Documentação _(Status: planejado)_
 
 - **Objetivo**: Preparação final para release público.
 - **Backlog**:
@@ -175,13 +186,62 @@
 ## Todo Tracker Global
 
 - [x] Confirmar contrato da API CAIXA (campos nulos, ranges, paginação) e documentar em `docs/data-contracts/`.
-- [ ] Definir níveis de log e correlação (`requestId`, `spanId`) para sync, stats, motor; registrar em `docs/operations.md`.
+- [x] Definir níveis de log e correlação (`requestId`, `spanId`) para sync, stats, motor; registrar em `docs/operations.md`.
 - [ ] Criar wireframes mobile/desktop e salvar em `docs/design/wireframes/` com comentários de UX.
 - [x] Elaborar seed inicial de preços com data + URL oficial e rotina de atualização manual.
 - [x] Especificar cenários de teste para cada estratégia em `docs/testing/strategies.md` (baseline, limites, edge cases).
 - [ ] Configurar pipeline CI mínima (lint + build) enquanto suíte completa não estiver pronta.
 - [ ] Planejar dataset sintético determinístico para e2e, armazenando seed em `docs/fixtures/README.md`.
 - [ ] Mapear requisitos legais (avisos, termos, LGPD) em `docs/legal/analysis.md`.
-- [ ] Definir SLAs e indicadores detalhados em `docs/operations.md` com plano de monitoração.
+- [x] Definir SLAs e indicadores detalhados em `docs/operations.md` com plano de monitoração.
 - [ ] Avaliar bibliotecas Chart.js vs alternativas (recharts, nivo) e justificar escolha final no README.
 - [x] Implementar testes automáticos (Vitest) para `@/data/caixa-client` e `@/services/sync` usando fixtures sintéticas.
+
+## Cronograma Detalhado (Datas)
+
+| Sprint | Janela (2025)   | Fase/Foco             | Estado       | Observações                                                                                      | Responsável principal |
+| ------ | --------------- | --------------------- | ------------ | ------------------------------------------------------------------------------------------------ | --------------------- |
+| 0      | 11 ago – 22 ago | Planejamento          | Concluído    | Requisitos alinhados, tokens definidos, fluxo de aprovação CAIXA validado.                       | Produto + Design      |
+| 1      | 25 ago – 05 set | Fase 1 (Fundamentos)  | Concluído    | Tooling instalado, componentes base entregues, lint/build estáveis.                              | Frontend              |
+| 2      | 08 set – 19 set | Fase 2 (Persistência) | Concluído    | Prisma + seeds oficiais no ar, documentação `data-contracts` atualizada.                         | Backend/Dados         |
+| 3      | 22 set – 03 out | Fase 3 (Ingestão)     | Em andamento | Cliente CAIXA + rota `/api/sync` em validação; testes end-to-end agendados para 30 set.          | Backend               |
+| 4      | 06 out – 17 out | Fase 4 (Estatísticas) | Planejado    | Priorizar backtesting determinístico e cache; depende de sync estável até 03 out.                | Dados                 |
+| 5      | 20 out – 31 out | Fase 5 (Motor)        | Planejado    | Finalizar solver híbrido, logging AJV e testes integração; requer métricas disponíveis (Fase 4). | Backend               |
+| 6      | 03 nov – 14 nov | Fase 6 (Dashboard)    | Planejado    | Conectar métricas ao front, definir lib de gráficos, garantir acessibilidade mobile-first.       | Frontend + Design     |
+| 7      | 17 nov – 28 nov | Fase 7 (Automação)    | Planejado    | Cron + CI/CD completos, monitoramento básico e runbooks.                                         | DevOps                |
+| 8      | 01 dez – 12 dez | Fase 8 (Entrega)      | Planejado    | Documentação final, exportação, checklist legal e release review.                                | Produto + Engenharia  |
+
+## Mapeamento de Responsabilidades
+
+| Tema                        | Líder    | Suporte          | Notas                                                                                            |
+| --------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------ |
+| Ingestão CAIXA e sync       | Backend  | Dados            | Revisar timeouts e contratos a cada alteração de schema (check quinzenal).                       |
+| Estatísticas & backtests    | Dados    | Backend          | Garantir fórmulas documentadas antes de expor via API (due 11 out 2025).                         |
+| Motor de apostas            | Backend  | Dados + Produto  | Monitorar limites combinatórios; planejar fallback uniforme para casos extremos.                 |
+| UI/UX premium               | Frontend | Design           | Alinhar microinterações com guia `docs/PREMIUM_UI_DESIGN_PLAN.md`; registrar audit trail visual. |
+| Automação & observabilidade | DevOps   | Backend          | Definir SLAs em `docs/operations.md` (due 24 out 2025) e configurar alertas básicos.             |
+| Compliance legal/LGPD       | Produto  | Jurídico externo | Mapear bases legais e avisos obrigatórios até 14 nov 2025.                                       |
+
+## Decisões Pendentes e Checkpoints
+
+- [ ] Selecionar biblioteca de gráficos (Chart.js, Recharts ou Nivo) com benchmark de performance e acessibilidade – prazo 10 out 2025 para destravar Sprint 6.
+- [ ] Escolher estratégia padrão de cache (Redis vs cache em arquivo) para ambiente de produção – decisão conjunta Backend/DevOps até 17 out 2025.
+- [ ] Validar política de preços e reajustes automáticos com fonte oficial da CAIXA – revisão documental em 07 out 2025.
+- [ ] Aprovar schema final do `strategy_payload` com Produto – sessão de revisão 02 out 2025.
+- [ ] Definir abordagem para exportação PDF (PDFKit vs headless Chromium) – spike técnico até 21 nov 2025.
+
+## Dependências Externas & SLAs Complementares
+
+- API CAIXA: monitorar alterações de contrato semanalmente; manter fallback manual documentado.
+- Serviços de email/SMS futuros: levantar provedores e custos antes da Fase 7.
+- Hospedagem (Vercel): validar limites de cron e cache edge; registrar plano de contingência no `DEV_SERVER_RECOVERY_PLAN` até 31 out 2025.
+- Biblioteca de gráficos escolhida: assegurar licença compatível (MIT preferencial) e suporte a SSR.
+- Ferramentas de observabilidade (Logtail/BetterStack ou alternativa self-hosted): confirmar budget e provisionamento até 24 out 2025.
+
+## Estratégias de Redução de Complexidade
+
+- Consolidar validações JSON com schemas compartilhados (`@/schemas`) para evitar duplicação entre API e server actions.
+- Reaproveitar hooks server-side (`cache()`, `revalidatePath`) para minimizar chamadas redundantes em componentes cliente.
+- Antecipar limites em combinatória aplicando heurísticas simples (ex.: pruning por soma/paridade) antes de tentativas mais custosas.
+- Priorizar módulos server-only para lógica de negócio, diminuindo necessidade de `'use client'` e reduzindo código duplicado.
+- Catalogar utilitários numéricos compartilhados em `src/lib/math.ts` para facilitar testes e manutenção.

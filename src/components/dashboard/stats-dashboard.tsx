@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   Card,
   CardContent,
@@ -7,6 +9,8 @@ import {
 } from "@/components/ui/card";
 import { Chart, type ChartData } from "@/components/ui/chart";
 import { StatList } from "@/components/dashboard/stat-list";
+import { EmptyState } from "@/components/ui/empty-state";
+import { buttonStyles } from "@/components/ui/button-variants";
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", {
@@ -61,6 +65,7 @@ export function StatsDashboard({
       color: quadrantColor(index),
     }),
   );
+  const hasData = totalDraws > 0;
   const strongestQuadrant = quadrantDistribution.reduce<{
     range: string;
     total: number;
@@ -71,10 +76,46 @@ export function StatsDashboard({
     return acc;
   }, null);
 
+  if (!hasData) {
+    return (
+      <Card className="border border-dashed border-slate-300 bg-white/60 dark:border-slate-700 dark:bg-white/5">
+        <CardContent className="px-6 py-10">
+          <EmptyState
+            title="Sincronize concursos para liberar estatísticas"
+            description="Assim que os concursos oficiais forem carregados, exibiremos frequências, pares e quadrantes atualizados em tempo real."
+            icon={
+              <svg
+                className="h-12 w-12 text-brand-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9.75 17L9 20l-.75-3m.75 3h6l-.75-3m-4.5 0h3m-7.112-9.445l.53 3.182a9 9 0 0015.175 4.2l.656-.656a1.125 1.125 0 00-.819-1.92H18.75V4.184a1.125 1.125 0 00-1.394-1.09 12.75 12.75 0 00-8.719 6.461z"
+                />
+              </svg>
+            }
+          />
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link href="/generate" className={buttonStyles("primary", "md")}>
+              Gerar apostas
+            </Link>
+            <Link href="/docs" className={buttonStyles("ghost", "md")}>
+              Ver plano de sincronização
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-14">
-      <div className="grid gap-6 sm:grid-cols-2 2xl:grid-cols-4">
-        <Card>
+      <div className="grid gap-6 sm:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+        <Card variant="compact">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Concursos carregados
@@ -91,7 +132,7 @@ export function StatsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="compact">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Soma média (janela)
@@ -109,7 +150,7 @@ export function StatsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="compact">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Quadrante mais forte
@@ -134,7 +175,7 @@ export function StatsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="compact">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Pares em destaque
@@ -218,7 +259,7 @@ export function StatsDashboard({
           <CardContent className="space-y-6 p-6">
             <StatList
               title="Números frios"
-              description="Menor incidência recente — úteis para diversificação."
+              description="Menor incidência recente – úteis para diversificação."
               badge={{ label: "Top 5", variant: "secondary" }}
               items={coldNumbers}
               accent="cold"

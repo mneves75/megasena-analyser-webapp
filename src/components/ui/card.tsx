@@ -2,20 +2,31 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    data-card
-    className={cn(
-      "flex flex-col gap-4 border border-white/20 bg-white/80 p-6 shadow-card transition-colors dark:border-white/10 dark:bg-white/5",
-      className,
-    )}
-    {...props}
-  />
-));
+type CardVariant = "default" | "compact" | "comfortable";
+
+type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  variant?: CardVariant;
+};
+
+const variantStyles: Record<CardVariant, string> = {
+  default: "gap-4 p-6",
+  compact: "gap-3 p-4",
+  comfortable: "gap-6 p-8",
+};
+
+const baseStyles =
+  "flex flex-col border border-white/20 bg-white/80 shadow-card transition-transform duration-150 ease-out hover:-translate-y-1 hover:shadow-hover dark:border-white/10 dark:bg-white/5 dark:hover:shadow-hover-dark";
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "default", ...props }, ref) => (
+    <div
+      ref={ref}
+      data-card
+      className={cn(baseStyles, variantStyles[variant], className)}
+      {...props}
+    />
+  ),
+);
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
@@ -40,7 +51,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg font-semibold tracking-tight text-slate-900 dark:text-white",
+      "text-lg font-semibold tracking-tightest text-slate-900 dark:text-white",
       className,
     )}
     {...props}
@@ -88,3 +99,5 @@ export {
   CardHeader,
   CardTitle,
 };
+
+export type { CardVariant };

@@ -6,6 +6,7 @@
 - Introduce `src/lib` once multiple features share analytics helpers; keep accompanying notes in `docs/`.
 - Global styles stay in `src/app/globals.css`, and all static assets or mock CSVs belong in `public/` for root-level serving.
 - Capture planning updates and data dictionaries in `docs/` whenever you add a new lottery model or pipeline.
+- John carmack always will review your work!
 
 ## Build, Test, and Development Commands
 
@@ -21,11 +22,28 @@
 - Keep 2-space indentation, rely on format-on-save, and let ESLint handle spacing and import order.
 - Use `kebab-case` for files and directories (`draw-frequency-table.tsx`). Favor Tailwind utilities and extend the Tailwind config instead of adding global CSS.
 
+### React useEffect Guidelines
+
+**Before using useEffect, read:**IYou Might Not Need an Effectl(https://react.dev/learn/you-might-not-ne
+ed-an-effect) / read @docs/react-guidelines.md
+
+Common cases where 'useEffect" is NOT needed:
+
+- Transforming data for rendering (use variables or useMemo instead)
+- Handling user events (use event handlers instead)
+- Resetting state when props change (use key prop or calculate during render)
+- Updating state based on props/state changes (calculate during render)
+
+Only use 'useEffect" for:
+
+- Synchronizing with external systems (APIs, DOM, third-party libraries)
+- Cleanup that must happen when component unmounts
+
 ## Testing Guidelines
 
 - Automated tests are not configured yet; place new specs as `*.test.ts(x)` beside the code or under `src/__tests__/` and register the script in `package.json`.
 - Cover deterministic logic first (e.g., probability aggregations) and ship lightweight fixtures near the tests or in `public/mock-data/`.
-- Until a runner exists, document manual verification—inputs tried, edge cases, screenshots—in every PR.
+- Until a runner exists, document manual verification–inputs tried, edge cases, screenshots–in every PR.
 
 ## Commit & Pull Request Guidelines
 
@@ -46,13 +64,13 @@
 - `'use client'` abre uma porta para rodar UI no navegador; `'use server'` expõe chamadas RPC tipadas a partir do cliente.
 - Priorize componentes de servidor e mova lógica de banco/estatística para módulos server-only (`@/data`, `@/lib`).
 
-## `'use client'` — Quando e Como
+## `'use client'` – Quando e Como
 
 - Use apenas se houver eventos, estado, `useEffect`, APIs do navegador ou bibliotecas imperativas.
 - A diretiva deve ser a primeira linha do arquivo; mantenha props serializáveis (strings, numbers, boolean, arrays, objetos plain).
 - Extraia utilitários puros para módulos compartilhados e passe dados via props ou contextos cliente.
 
-## `'use server'` — Server Actions
+## `'use server'` – Server Actions
 
 - Coloque `'use server'` na primeira linha do arquivo de ações; exporte funções `async` que retornem dados serializáveis.
 - Utilize formulários (`<form action={serverAction}>`) ou `useTransition` para estados de envio e chame `revalidatePath`/`revalidateTag` após mutações.
@@ -104,7 +122,7 @@ You are a highly capable, thoughtful, and precise assistant. Your goal is to dee
 2. DEPTH OF REASONING
    Freely describe and reflect on what you know so far, things that you tried, and how that aligns with your objective and the user's intent. You can play through different scenarios, weigh options, and reason about possible next next steps. The user will not see any of your thoughts here, so you can think freely.
 
-- Think insanely deeply — come up with an optimal plan to do so without mistakes. John Carmack will be reviewing this plan before you implement it, so it needs to be up to his ridiculously high standards.
+- Think insanely deeply – come up with an optimal plan to do so without mistakes. John Carmack will be reviewing this plan before you implement it, so it needs to be up to his ridiculously high standards.
 - When transitioning from exploring code and understanding it to actually making code changes. You should ask yourself whether you have actually gathered all the necessary context, found all locations to edit, inspected references, types, relevant definitions, ...
 - Before reporting completion to the user. You must critically exmine your work so far and ensure that you completely fulfilled the user's request and intent. Make sure you completed all verification steps that were expected of you, such as linting and/or testing. For tasks that require modifying many locations in the code, verify that you successfully edited all relevant locations before telling the user that you're done.
 - if there is no clear next step

@@ -1,4 +1,4 @@
-# Generated Bets Grid Plan — 24/09/2025
+# Generated Bets Grid Plan – 24/09/2025
 
 ## Context
 
@@ -14,10 +14,10 @@
 
 ## Escopo e entregáveis
 
-1. **Grade copiable no gerador** — substituir o bloco atual de cards individuais por tabela responsiva utilizando `react-data-grid`, mantendo metadados acessíveis via `<details>`.
-2. **Ação de copiar** — botão para copiar dezenas de cada ticket (formato `01 02 03 04 05 06`) e botão extra para copiar todas as combinações de uma vez.
-3. **Fallback da soma média** — quando `sums.average` estiver vazio/NaN, exibir `—` como valor e manter mensagem de "Sem dados suficientes".
-4. **Documentação** — atualizar este plano e registrar pendências/resultados após implementação.
+1. **Grade copiable no gerador** – substituir o bloco atual de cards individuais por tabela responsiva utilizando `react-data-grid`, mantendo metadados acessíveis via `<details>`.
+2. **Ação de copiar** – botão para copiar dezenas de cada ticket (formato `01 02 03 04 05 06`) e botão extra para copiar todas as combinações de uma vez.
+3. **Fallback da soma média** – quando `sums.average` estiver vazio/NaN, exibir `–` como valor e manter mensagem de "Sem dados suficientes".
+4. **Documentação** – atualizar este plano e registrar pendências/resultados após implementação.
 
 ## Todo
 
@@ -32,10 +32,10 @@
 - Botões de cópia dependem da API Clipboard; precisamos fallback discreto para ambientes sem suporte (graceful degradation).
 - Manter deduplicação de tickets e legibilidade mesmo com lotes grandes (até limite atual de estratégias).
 
-## Resultados — 24/09/2025
+## Resultados – 24/09/2025
 
 - Grade tabular responsiva criada com `react-data-grid` (`TicketsGrid`) e ações de cópia por linha.
 - Ação "Copiar todas" adicionada e com aviso degradável quando Clipboard API falhar.
-- Highlight "Soma média" agora exibe `—` quando não há dados, mantendo descrição "Sem dados suficientes".
+- Highlight "Soma média" agora exibe `–` quando não há dados, mantendo descrição "Sem dados suficientes".
 - `npm run lint` executado com sucesso após ajustes incrementais.
 - Página `/bets` passou a consumir DataGrid unificado com copias rápidas, seed copiável e metadados derivados na mesma interface.

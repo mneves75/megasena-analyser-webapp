@@ -14,6 +14,7 @@ import { PrismaClient } from "@prisma/client";
 
 import {
   generateBatch,
+  generateTicket,
   type StrategyRequest,
   BatchGenerationError,
 } from "@/services/bets";
@@ -73,6 +74,8 @@ describe("generateBatch", () => {
     ).toBe(4);
     expect(result.payload.metrics.averageSum).toBeGreaterThan(0);
     expect(result.payload.config.k).toBe(6);
+    expect(result.payload.averageTicketCostCents).toBe(600);
+    expect(result.payload.config.spreadBudget).toBe(false);
   });
 
   it("combina estratégias e coleta métricas agregadas", async () => {
@@ -100,6 +103,32 @@ describe("generateBatch", () => {
     expect(result.payload.metrics.paritySpread).toBeLessThanOrEqual(3);
     expect(result.payload.metrics.averageScore).toBeGreaterThanOrEqual(0);
     expect(result.payload.config.strategies).toHaveLength(2);
+    expect(result.payload.config.spreadBudget).toBe(false);
+    expect(result.payload.averageTicketCostCents).toBeGreaterThan(0);
+  });
+
+  it("distribui orçamento em múltiplos k quando solicitado", async () => {
+    const result = await generateBatch({
+      budgetCents: 20_000,
+      seed: "SPREAD-SEED",
+      strategies: [{ name: "uniform", weight: 1 }],
+      spreadBudget: true,
+      client,
+    });
+
+    expect(result.tickets.length).toBeGreaterThan(0);
+    expect(result.payload.config.spreadBudget).toBe(true);
+    expect(result.payload.ticketCostBreakdown?.length ?? 0).toBeGreaterThan(1);
+    const breakdownKs = new Set(
+      (result.payload.ticketCostBreakdown ?? []).map((entry) => entry.k),
+    );
+    expect(breakdownKs.has(6)).toBe(true);
+    expect(breakdownKs.size).toBeGreaterThan(1);
+    expect(result.payload.averageTicketCostCents).toBeGreaterThanOrEqual(600);
+    expect(result.payload.averageTicketCostCents).not.toBe(
+      result.payload.ticketCostCents,
+    );
+    expect(result.ticketCostBreakdown?.length ?? 0).toBeGreaterThan(1);
   });
 
   it("propaga erro de orçamento insuficiente", async () => {
@@ -129,6 +158,64 @@ describe("generateBatch", () => {
     await expect(promise).rejects.toBeInstanceOf(BatchGenerationError);
 
     nowSpy.mockRestore();
+  });
+
+  it("ajusta custos quando kOverride aumenta o preço e respeita orçamento restante", async () => {
+    const result = await generateBatch({
+      budgetCents: 5_000,
+      seed: "KOVERRIDE-SEED",
+      strategies: [{ name: "uniform", weight: 1, kOverride: 7 }],
+      client,
+    });
+
+    expect(result.totalCostCents).toBe(4_800);
+    expect(result.leftoverCents).toBe(200);
+
+    const counts = result.tickets.reduce(
+      (acc, ticket) => {
+        acc[ticket.dezenas.length] = (acc[ticket.dezenas.length] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<number, number>,
+    );
+
+    expect(counts[7]).toBe(1);
+    expect(counts[6]).toBe(1);
+
+    const costByK = new Map(
+      result.tickets.map((ticket) => [ticket.dezenas.length, ticket.costCents]),
+    );
+    expect(costByK.get(7)).toBeGreaterThan(costByK.get(6) ?? 0);
+
+    const breakdown = result.payload.ticketCostBreakdown ?? [];
+    expect(breakdown).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ k: 7, emitted: 1 }),
+        expect.objectContaining({ k: 6, emitted: 1 }),
+      ]),
+    );
+    const mixEntry = breakdown.find((entry) => entry.k === 7);
+    expect(mixEntry?.planned ?? 0).toBeGreaterThanOrEqual(0);
+
+    expect(result.payload.warnings).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "Estratégia uniform usando k=6 por limitação de orçamento",
+        ),
+      ]),
+    );
+  });
+});
+
+describe("generateTicket", () => {
+  it("atribui custo real ao bilhete retornado", async () => {
+    const ticket = await generateTicket(
+      { name: "uniform", weight: 1 },
+      { seed: "SINGLE", client },
+    );
+
+    expect(ticket.costCents).toBe(600);
+    expect(ticket.dezenas).toHaveLength(6);
   });
 });
 

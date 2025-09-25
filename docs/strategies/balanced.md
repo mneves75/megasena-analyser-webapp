@@ -1,4 +1,4 @@
-# Estratégia Balanceada — Mega-Sena
+# Estratégia Balanceada – Mega-Sena
 
 ## Contexto
 
@@ -12,24 +12,24 @@
 Construir apostas com seis dezenas que:
 
 1. Cubram os seis quadrantes (01-10, 11-20, ..., 51-60) sempre que `k ≥ 6`.
-2. Respeitem paridade "razoável" — diferença máxima de 2 entre quantidades pares e ímpares.
+2. Respeitem paridade "razoável" – diferença máxima de 2 entre quantidades pares e ímpares.
 3. Ponderem a escolha das dezenas por frequência histórica (janela configurável), mantendo determinismo por `seed`.
 
 ## Algoritmo
 
-1. **Seed & PRNG** — inicializamos `mulberry32(seed)` (ver `src/lib/random.ts`) para garantir reprodutibilidade.
-2. **Targets por quadrante** —
+1. **Seed & PRNG** – inicializamos `mulberry32(seed)` (ver `src/lib/random.ts`) para garantir reprodutibilidade.
+2. **Targets por quadrante** –
    - Base = `floor(k / 6)`.
    - Distribuímos o restante (`k % 6`) para os quadrantes com maior total histórico.
    - Quando `k ≥ 6`, garantimos pelo menos uma dezena por quadrante e ajustamos até somar `k`.
-3. **Mapa de frequências** —
+3. **Mapa de frequências** –
    - `getFrequencies` retorna frequência relativa de cada dezena.
    - Dezenas não sorteadas recebem peso zero.
-4. **Seleção iterativa** — para cada quadrante:
+4. **Seleção iterativa** – para cada quadrante:
    - Filtramos dezenas ainda não usadas.
    - Escolhemos a paridade preferencial respeitando metas (≈ metade par, metade ímpar).
    - Aplicamos `weightedPick` com peso `frequency + 1` para evitar zeros absolutos.
-5. **Metadados & score** —
+5. **Metadados & score** –
    - Calculamos soma total, paridade, distribuição por quadrante e pontuação média (`avg frequency`).
 
 ## Exemplo gerado

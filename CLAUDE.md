@@ -26,6 +26,7 @@ This is a Next.js 15 application for analyzing Mega Sena lottery data, built wit
 - `npm run db:seed` - Populate metadata and pricing tables
 - `npm run db:reset` - Reset SQLite database (destroys local data)
 - `npm run sync` - Sync Mega-Sena data via CLI (supports `--full` and `--limit=N`)
+- `npm run limits` - Inspect/modify betting engine limits (`--show`, `--set=key=value`, `--reset`, `--history`)
 
 ## Project Architecture
 
@@ -114,10 +115,14 @@ Project uses Vitest for unit testing:
 - `DATABASE_URL="file:./dev.db"` - SQLite database path
 - `SYNC_TOKEN` - Bearer token for protected `/api/sync` endpoint
 - `CAIXA_API_URL` - Override official Mega-Sena API endpoint
+- `CAIXA_MAX_RETRIES` and `CAIXA_RETRY_DELAY_MS` - Retry policy configuration
 - `LOG_LEVEL` - Pino logging level (`info`, `debug`, etc.)
-- `MEGASENA_BASE_PRICE_CENTS` - Fallback pricing when DB unavailable
+- `LOG_PRETTY=1` - Enable formatted logs for CLI scripts (not during `next dev`)
+- `SYNC_BACKFILL_WINDOW` - Default contest limit when DB is empty (default 50)
+- `MEGASENA_BASE_PRICE_CENTS` - Fallback pricing when DB unavailable (default 600)
+- `MEGASENA_PRICE_FALLBACK_UPDATED_AT` - ISO date for fallback pricing info
 - Store secrets in `.env.local` (never commit)
-- Each variable must be on separate line to avoid Prisma issues
+- **Important**: Each variable must be on separate line to avoid Prisma issues
 
 ## API Endpoints
 
@@ -139,12 +144,23 @@ Project uses Vitest for unit testing:
 - Also available via CLI: `npm run sync`
 - Supports `--full` for backfill and `--limit=N` for window control
 
-## Official Pricing System
+## Betting Engine & Pricing System
 
-- Base price: R$ 6.00 (6 numbers, updated July 2025)
+### Official Pricing
+
+- Base price: R$ 6.00 (6 numbers, updated July 12, 2025)
 - Combinatorial pricing: `C(k, 6) * base_price` for k > 6
 - Price helpers in `src/services/pricing.ts`
 - Run `npm run test -- pricing` to validate calculations
+
+### Betting Engine (Stage 3)
+
+- Strategies in `src/services/strategies/` (`uniform`, `balanced`) with deterministic PRNG
+- Core workflow: `generateBatch` in `src/services/bets.ts` handles budget allocation
+- Payloads follow `docs/data-contracts/strategy_payload.schema.json` (v1.0)
+- Run `npm run test -- bets` for betting engine tests
+- API endpoints: `POST /api/bets/generate` (protected), `GET /api/bets` (public listing)
+- Reference fixture: `docs/fixtures/sample-bets.json` with seed `FIXTURE-SEED`
 
 ## Pre-commit Hooks
 
@@ -152,3 +168,17 @@ Lint-staged runs on commit:
 
 - TypeScript/JavaScript files: ESLint + Prettier
 - Other files (JSON, MD, CSS): Prettier formatting
+
+## Troubleshooting
+
+### Common Issues
+
+- **Dev server error (`_buildManifest.js.tmp`)**: Kill processes on port 3000, delete `.next`, restart server
+- **Betting generator unresponsive**: Ensure dev server runs without Turbopack, verify DB seeded and synced
+- **Prisma deprecation warning**: Migration to `prisma.config.ts` planned (see `docs/DEV_SERVER_RECOVERY_PLAN.md`)
+
+### Language & Documentation
+
+- All UI, documentation, and user experience in Brazilian Portuguese
+- This is a Mega-Sena lottery analysis application with statistical focus
+- No lottery predictions - focus on statistical analysis and responsible budgeting

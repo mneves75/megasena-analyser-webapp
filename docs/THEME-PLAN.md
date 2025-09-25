@@ -42,11 +42,11 @@ Escala `brand` no Tailwind permanece; botões/links usam `brand-500/600`.
 
 ### TODO
 
-- [ ] Refinar paleta clara em `globals.css`
-- [ ] Adicionar Script de init de tema (`beforeInteractive`)
-- [ ] Criar `ThemeToggle` com persistência
-- [ ] Integrar Toggle no `AppShell`
-- [ ] Rodar lint/typecheck/build
+- [x] Refinar paleta clara em `globals.css` (tokens alinhados ao blueprint de Stage 6)
+- [x] Adicionar Script de init de tema (`beforeInteractive`) em `layout.tsx`
+- [x] Criar `ThemeToggle` com persistência (`localStorage` + `prefers-color-scheme`)
+- [x] Integrar Toggle no `AppShell` (header do layout principal)
+- [x] Rodar lint/typecheck/build (`npm run lint`, `npm run build`)
 
 ### Critérios de aceite
 
@@ -57,5 +57,6 @@ Escala `brand` no Tailwind permanece; botões/links usam `brand-500/600`.
 
 ### Riscos/Notas
 
-- Evitar `any` em TS; manter ações no cliente restritas ao Toggle
-- Se no futuro houver SSR por cookie, mover lógica de leitura para server
+- Evitar `any` em TS; manter ações no cliente restritas ao Toggle (cumprido)
+- Se no futuro houver SSR/cookies, mover lógica de leitura para server action
+- Avaliar fallback sem `localStorage` para ambientes restritos (feature flag futura)

@@ -1,6 +1,6 @@
 # API do Motor de Apostas
 
-> Atualizado em 23/09/2025 — reflete o MVP entregue nas fases 3/4 do motor.
+> Atualizado em 23/09/2025 – reflete o MVP entregue nas fases 3/4 do motor.
 
 ## Autenticação
 
@@ -139,7 +139,7 @@ Resposta reduzida:
 
 ## Scripts auxiliares
 
-- `NODE_OPTIONS="-r ./scripts/dev/register-server-only-stub.js" npx tsx scripts/dev/generate-batch.ts` — gera amostras determinísticas sem dependência do bundler RSC.
+- `NODE_OPTIONS="-r ./scripts/dev/register-server-only-stub.js" npx tsx scripts/dev/generate-batch.ts` – gera amostras determinísticas sem dependência do bundler RSC.
 
 ## Testes automatizados
 

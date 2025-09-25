@@ -23,7 +23,7 @@ export async function persistBatch(
       await tx.bet.create({
         data: {
           budget_cents: batch.budgetCents,
-          total_cost_cents: ticket.costCents,
+          total_cost_cents: batch.totalCostCents,
           strategy_name: ticket.strategy,
           strategy_payload: buildTicketPayload(
             batch.payload,
@@ -56,6 +56,7 @@ export type StoredBet = {
   strategyName: string;
   budgetCents: number;
   totalCostCents: number;
+  ticketCostCents: number;
   dezenas: number[];
   payload: StrategyPayload;
 };
@@ -94,15 +95,46 @@ export async function listBets(
     },
   });
 
-  return bets.map((bet) => ({
-    id: bet.id,
-    createdAt: bet.created_at,
-    strategyName: bet.strategy_name,
-    budgetCents: bet.budget_cents,
-    totalCostCents: bet.total_cost_cents,
-    dezenas: bet.numeros.map((numero) => numero.dezena),
-    payload: bet.strategy_payload as StrategyPayload,
-  }));
+  return bets.map((bet) => {
+    const payload = bet.strategy_payload as StrategyPayload;
+    const payloadTotal = Number(payload.totalCostCents ?? 0);
+    const normalizedTotal = normalizeTotalCost(
+      bet.total_cost_cents,
+      payloadTotal,
+    );
+    const ticketCostCents = resolveTicketCost(payload);
+
+    return {
+      id: bet.id,
+      createdAt: bet.created_at,
+      strategyName: bet.strategy_name,
+      budgetCents: bet.budget_cents,
+      totalCostCents: normalizedTotal,
+      ticketCostCents,
+      dezenas: bet.numeros.map((numero) => numero.dezena),
+      payload,
+    } satisfies StoredBet;
+  });
+}
+
+function normalizeTotalCost(stored: number, payloadTotal: number) {
+  if (payloadTotal > 0 && stored > 0) {
+    return Math.max(stored, payloadTotal);
+  }
+  if (payloadTotal > 0) {
+    return payloadTotal;
+  }
+  return stored;
+}
+
+function resolveTicketCost(payload: StrategyPayload): number {
+  if (payload.ticket?.costCents) {
+    return payload.ticket.costCents;
+  }
+  if (payload.ticketCostBreakdown && payload.ticketCostBreakdown.length > 0) {
+    return payload.ticketCostBreakdown[0]?.costCents ?? 0;
+  }
+  return 0;
 }
 
 function buildTicketPayload(

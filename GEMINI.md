@@ -10,10 +10,10 @@ Diretrizes para agentes Gemini Code atuarem neste repositório.
 
 ## Comandos úteis
 
-- `npm run dev` — inicia o servidor com Turbopack.
-- `npm run lint` — ESLint com `--max-warnings=0` (falha em qualquer aviso).
-- `npm run test -- <pattern>` — Vitest ambiente Node; alias `@` aponta para `src/`.
-- `npm run build` / `npm run start` — gerar e validar o bundle de produção.
+- `npm run dev` – inicia o servidor com Turbopack.
+- `npm run lint` – ESLint com `--max-warnings=0` (falha em qualquer aviso).
+- `npm run test -- <pattern>` – Vitest ambiente Node; alias `@` aponta para `src/`.
+- `npm run build` / `npm run start` – gerar e validar o bundle de produção.
 
 ## Convenções fundamentais
 
@@ -24,10 +24,10 @@ Diretrizes para agentes Gemini Code atuarem neste repositório.
 
 ## Estrutura principal
 
-- `src/app/` — rotas, layouts e server actions.
-- `src/services/` — módulos de domínio (stats, pricing, strategies, sync).
-- `src/lib/` — utilidades compartilhadas (ex.: PRNG determinístico em `random.ts`).
-- `docs/` — planos de fase, guias de estratégia (`docs/strategies/balanced.md`) e testes manuais.
+- `src/app/` – rotas, layouts e server actions.
+- `src/services/` – módulos de domínio (stats, pricing, strategies, sync).
+- `src/lib/` – utilidades compartilhadas (ex.: PRNG determinístico em `random.ts`).
+- `docs/` – planos de fase, guias de estratégia (`docs/strategies/balanced.md`) e testes manuais.
 
 ## Boas práticas específicas
 

@@ -28,48 +28,42 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const [isFocused, setIsFocused] = React.useState(false);
-    const [hasValue, setHasValue] = React.useState(false);
-
+    // React.useId guarantees hydration-safe IDs even when there are multiple inputs rendered at once.
     const generatedId = React.useId();
     const inputId = id || generatedId;
     const errorId = `${inputId}-error`;
     const helperId = `${inputId}-helper`;
 
-    React.useEffect(() => {
-      if (props.value !== undefined) {
-        setHasValue(!!props.value);
-      }
-    }, [props.value]);
-
+    // Track focus so we can adapt styling (placeholder weight, ring, etc.) without relying solely on :focus CSS.
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(true);
       props.onFocus?.(e);
     };
 
+    // Persist whether the field keeps content after blur to fine-tune helper visibility.
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      setHasValue(!!e.target.value);
       props.onBlur?.(e);
     };
 
+    // Keep optimistic value tracking even for controlled inputs where parent manages state.
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setHasValue(!!e.target.value);
       props.onChange?.(e);
     };
 
+    // Layout: stack label + field with consistent vertical rhythm so long labels never collide with the value slot.
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {label && (
           <label
             htmlFor={inputId}
-            className="text-sm font-medium text-slate-700 dark:text-slate-300"
+            // The label stays outside of the field to avoid cramped compositions when the copy is verbose.
+            className="block text-sm font-semibold tracking-tight text-slate-700 dark:text-slate-200"
           >
             {label}
           </label>
         )}
         <div className="relative">
           {leftIcon && (
+            // Icon container uses absolute centering so the clickable area remains predictable.
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               {leftIcon}
             </div>
@@ -79,9 +73,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={type}
             className={cn(
-              "flex h-11 w-full rounded-xl border border-slate-200 bg-white/85 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-400 dark:focus:bg-slate-800",
-              leftIcon && "pl-10",
-              rightIcon && "pr-10",
+              // Taller field + rounded-2xl keeps parity with card aesthetics and fixes cramped vertical padding for long labels.
+              "flex h-12 w-full rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-slate-800/80 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-400 dark:focus:bg-slate-900/60",
+              leftIcon && "pl-11",
+              rightIcon && "pr-11",
               error &&
                 "border-red-500 focus:border-red-500 focus:ring-red-500/20",
               className,
@@ -96,33 +91,24 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightIcon && (
+            // Right affordance slot accepts buttons (e.g., regenerate seed) without affecting internal padding.
             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
               {rightIcon}
             </div>
           )}
-          {/* Floating label effect */}
-          {label && (
-            <div
-              className={cn(
-                "absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400 transition-all duration-200 ease-out pointer-events-none",
-                (isFocused || hasValue) &&
-                  "top-1.5 translate-y-0 text-xs text-brand-600 dark:text-brand-400",
-                error && (isFocused || hasValue) && "text-red-500",
-              )}
-            >
-              {label}
-            </div>
-          )}
         </div>
         {error && (
-          <p id={errorId} className="text-sm text-red-600 dark:text-red-400">
+          <p
+            id={errorId}
+            className="mt-1 text-sm text-red-600 dark:text-red-400"
+          >
             {error}
           </p>
         )}
         {helperText && !error && (
           <p
             id={helperId}
-            className="text-sm text-slate-500 dark:text-slate-400"
+            className="mt-1 text-sm text-slate-500 dark:text-slate-400"
           >
             {helperText}
           </p>

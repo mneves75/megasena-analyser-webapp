@@ -5,7 +5,7 @@ import {
   CalendarDaysIcon,
   DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
-import { DataGrid, type Column } from "react-data-grid";
+import { DataGrid, type Column, type SortColumn } from "react-data-grid";
 import "react-data-grid/lib/styles.css";
 
 import { buttonStyles } from "@/components/ui/button-variants";
@@ -22,6 +22,110 @@ export type GeneratedTicketLike = {
   costCents: number;
   seed: string;
 };
+
+type BaseGeneratedRow = {
+  id: string;
+  originalOrder: number;
+  ticketIndex: number;
+  dezenasText: string;
+  strategy: string;
+  seed: string;
+  costCents: number;
+  metadata: Record<string, unknown> | null | undefined;
+};
+
+type GeneratedGridRow = BaseGeneratedRow & {
+  displayIndex: number;
+};
+
+type BaseHistoryRow = {
+  id: string;
+  originalOrder: number;
+  dezenasText: string;
+  strategy: string;
+  budgetCents: number;
+  totalCostCents: number;
+  ticketCostCents: number;
+  createdAtIso: string;
+  createdAt: Date;
+  ticketsGenerated: number;
+  batchSeed: string;
+  ticketSeed?: string | null;
+  metadata: Record<string, unknown> | null | undefined;
+  score?: number;
+  window?: number | null;
+};
+
+type HistoryGridRow = BaseHistoryRow & {
+  displayIndex: number;
+  createdAtLabel: string;
+};
+
+type SortComparators<Row> = Record<string, (a: Row, b: Row) => number>;
+
+const collator = new Intl.Collator("pt-BR");
+
+function compareString<Row>(
+  selector: (row: Row) => string | null | undefined,
+): (a: Row, b: Row) => number {
+  return (a, b) => collator.compare(selector(a) ?? "", selector(b) ?? "");
+}
+
+function compareNumber<Row>(
+  selector: (row: Row) => number | null | undefined,
+): (a: Row, b: Row) => number {
+  return (a, b) => {
+    const valueA = selector(a);
+    const valueB = selector(b);
+    const resolvedA =
+      valueA === null || valueA === undefined || Number.isNaN(valueA)
+        ? Number.POSITIVE_INFINITY
+        : valueA;
+    const resolvedB =
+      valueB === null || valueB === undefined || Number.isNaN(valueB)
+        ? Number.POSITIVE_INFINITY
+        : valueB;
+    return resolvedA - resolvedB;
+  };
+}
+
+function compareDate<Row>(
+  selector: (row: Row) => Date,
+): (a: Row, b: Row) => number {
+  return (a, b) => selector(a).getTime() - selector(b).getTime();
+}
+
+function applySorting<Row extends { originalOrder: number }>(
+  rows: readonly Row[],
+  sortColumns: readonly SortColumn[],
+  comparators: SortComparators<Row>,
+): Row[] {
+  if (sortColumns.length === 0) {
+    return [...rows];
+  }
+
+  const sorted = [...rows];
+
+  sorted.sort((a, b) => {
+    for (const sort of sortColumns) {
+      if (sort.direction !== "ASC" && sort.direction !== "DESC") {
+        continue;
+      }
+      const comparator = comparators[sort.columnKey];
+      if (!comparator) {
+        continue;
+      }
+      const result = comparator(a, b);
+      if (result !== 0) {
+        return sort.direction === "ASC" ? result : -result;
+      }
+    }
+    // Preserve order when comparators result in empate.
+    return a.originalOrder - b.originalOrder;
+  });
+
+  return sorted;
+}
 
 export function formatTicketNumbers(numbers: number[]) {
   return numbers.map((value) => value.toString().padStart(2, "0")).join(" ");
@@ -71,7 +175,7 @@ export function TicketMetadataDetails({
     effectiveScore !== undefined;
 
   if (!detailsAvailable) {
-    return <span className="text-slate-400 dark:text-slate-500">—</span>;
+    return <span className="text-slate-400 dark:text-slate-500">–</span>;
   }
 
   return (
@@ -82,7 +186,7 @@ export function TicketMetadataDetails({
       <div className="mt-2 space-y-1">
         <p>
           <span className="font-medium text-slate-600 dark:text-slate-200">
-            Seed derivada:
+            Semente derivada:
           </span>{" "}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900/60">
             {seed}
@@ -117,7 +221,7 @@ export function TicketMetadataDetails({
         {effectiveScore !== undefined && (
           <p>
             <span className="font-medium text-slate-600 dark:text-slate-200">
-              Score:
+              Pontuação:
             </span>{" "}
             {effectiveScore.toFixed(2)}
           </p>
@@ -138,10 +242,12 @@ export function GeneratedTicketsGrid({
   copiedTicketIndex,
   onCopyTicket,
 }: GeneratedTicketsGridProps) {
-  const rows = React.useMemo(() => {
+  const [sortColumns, setSortColumns] = React.useState<SortColumn[]>([]);
+
+  const baseRows = React.useMemo<BaseGeneratedRow[]>(() => {
     return tickets.map((ticket, index) => ({
       id: `${ticket.seed}-${index}`,
-      displayIndex: index + 1,
+      originalOrder: index,
       ticketIndex: index,
       dezenasText: formatTicketNumbers(ticket.dezenas),
       strategy: ticket.strategy,
@@ -151,6 +257,28 @@ export function GeneratedTicketsGrid({
     }));
   }, [tickets]);
 
+  const comparators = React.useMemo<SortComparators<BaseGeneratedRow>>(
+    () => ({
+      dezenasText: compareString<BaseGeneratedRow>((row) => row.dezenasText),
+      strategy: compareString<BaseGeneratedRow>((row) => row.strategy),
+      seed: compareString<BaseGeneratedRow>((row) => row.seed),
+      costCents: compareNumber<BaseGeneratedRow>((row) => row.costCents),
+    }),
+    [],
+  );
+
+  const sortedBaseRows = React.useMemo(
+    () => applySorting(baseRows, sortColumns, comparators),
+    [baseRows, sortColumns, comparators],
+  );
+
+  const rows = React.useMemo<GeneratedGridRow[]>(() => {
+    return sortedBaseRows.map((row, index) => ({
+      ...row,
+      displayIndex: index + 1,
+    }));
+  }, [sortedBaseRows]);
+
   const gridHeight = React.useMemo(() => {
     const visibleRows = Math.min(rows.length, 8);
     const headerHeight = 44;
@@ -158,18 +286,16 @@ export function GeneratedTicketsGrid({
     return headerHeight + visibleRows * rowHeight + 2;
   }, [rows.length]);
 
-  const rowKeyGetter = React.useCallback(
-    (row: (typeof rows)[number]) => row.id,
-    [],
-  );
+  const rowKeyGetter = React.useCallback((row: GeneratedGridRow) => row.id, []);
 
-  const columns = React.useMemo<Column<(typeof rows)[number]>[]>(
+  const columns = React.useMemo<Column<GeneratedGridRow>[]>(
     () => [
       {
         key: "displayIndex",
         name: "#",
         width: 50,
         resizable: false,
+        sortable: false,
         renderCell: ({ row }) => (
           <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">
             {row.displayIndex}
@@ -180,6 +306,7 @@ export function GeneratedTicketsGrid({
         key: "dezenasText",
         name: "Dezenas",
         minWidth: 220,
+        sortable: true,
         renderCell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
             <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
@@ -204,6 +331,7 @@ export function GeneratedTicketsGrid({
         key: "strategy",
         name: "Estratégia",
         minWidth: 140,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">
             {row.strategy}
@@ -212,8 +340,9 @@ export function GeneratedTicketsGrid({
       },
       {
         key: "seed",
-        name: "Seed",
+        name: "Semente",
         minWidth: 160,
+        sortable: true,
         renderCell: ({ row }) => (
           <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600 dark:bg-slate-900/60 dark:text-slate-200">
             {row.seed.length > 10 ? `${row.seed.slice(0, 10)}…` : row.seed}
@@ -221,10 +350,11 @@ export function GeneratedTicketsGrid({
         ),
       },
       {
-        key: "cost",
+        key: "costCents",
         name: "Custo",
         width: 120,
         resizable: false,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="block text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
             {formatCurrency(row.costCents)}
@@ -235,6 +365,7 @@ export function GeneratedTicketsGrid({
         key: "metadata",
         name: "Metadados",
         minWidth: 200,
+        sortable: false,
         renderCell: ({ row }) => (
           <TicketMetadataDetails seed={row.seed} metadata={row.metadata} />
         ),
@@ -277,7 +408,9 @@ export function GeneratedTicketsGrid({
         rowKeyGetter={rowKeyGetter}
         rowHeight={48}
         headerRowHeight={44}
-        defaultColumnOptions={{ resizable: true }}
+        defaultColumnOptions={{ resizable: true, sortable: true }}
+        sortColumns={sortColumns}
+        onSortColumnsChange={setSortColumns}
         style={gridStyle}
       />
     </div>
@@ -290,6 +423,7 @@ export type HistoryTicketRow = {
   strategy: string;
   budgetCents: number;
   totalCostCents: number;
+  ticketCostCents: number;
   createdAtIso: string;
   ticketsGenerated: number;
   batchSeed: string;
@@ -312,20 +446,67 @@ export type HistoryTicketsGridProps = {
 };
 
 export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
-  const [copiedTicketIndex, setCopiedTicketIndex] = React.useState<
-    number | null
-  >(null);
+  const [copiedRowId, setCopiedRowId] = React.useState<string | null>(null);
   const [copiedAll, setCopiedAll] = React.useState(false);
   const [copyError, setCopyError] = React.useState<string | null>(null);
+  const [sortColumns, setSortColumns] = React.useState<SortColumn[]>([]);
 
-  const enhancedRows = React.useMemo(() => {
-    return rows.map((row, index) => ({
+  const baseRows = React.useMemo<BaseHistoryRow[]>(() => {
+    return rows.map((row, index) => {
+      const createdAt = new Date(row.createdAtIso);
+      return {
+        id: row.id,
+        originalOrder: index,
+        dezenasText: formatTicketNumbers(row.dezenas),
+        strategy: row.strategy,
+        budgetCents: row.budgetCents,
+        totalCostCents: row.totalCostCents,
+        ticketCostCents: row.ticketCostCents,
+        createdAtIso: row.createdAtIso,
+        createdAt,
+        ticketsGenerated: row.ticketsGenerated,
+        batchSeed: row.batchSeed,
+        ticketSeed: row.ticketSeed,
+        metadata: row.metadata,
+        score: row.score,
+        window: row.window,
+      };
+    });
+  }, [rows]);
+
+  const comparators = React.useMemo<SortComparators<BaseHistoryRow>>(
+    () => ({
+      createdAtLabel: compareDate<BaseHistoryRow>((row) => row.createdAt),
+      dezenasText: compareString<BaseHistoryRow>((row) => row.dezenasText),
+      strategy: compareString<BaseHistoryRow>((row) => row.strategy),
+      budgetCents: compareNumber<BaseHistoryRow>((row) => row.budgetCents),
+      totalCostCents: compareNumber<BaseHistoryRow>(
+        (row) => row.totalCostCents,
+      ),
+      ticketCostCents: compareNumber<BaseHistoryRow>(
+        (row) => row.ticketCostCents,
+      ),
+      ticketsGenerated: compareNumber<BaseHistoryRow>(
+        (row) => row.ticketsGenerated,
+      ),
+      window: compareNumber<BaseHistoryRow>((row) => row.window ?? null),
+      batchSeed: compareString<BaseHistoryRow>((row) => row.batchSeed),
+    }),
+    [],
+  );
+
+  const sortedBaseRows = React.useMemo(
+    () => applySorting(baseRows, sortColumns, comparators),
+    [baseRows, sortColumns, comparators],
+  );
+
+  const enhancedRows = React.useMemo<HistoryGridRow[]>(() => {
+    return sortedBaseRows.map((row, index) => ({
       ...row,
       displayIndex: index + 1,
-      dezenasText: formatTicketNumbers(row.dezenas),
-      createdAtLabel: historyDateFormatter.format(new Date(row.createdAtIso)),
+      createdAtLabel: historyDateFormatter.format(row.createdAt),
     }));
-  }, [rows]);
+  }, [sortedBaseRows]);
 
   const gridHeight = React.useMemo(() => {
     const visibleRows = Math.min(enhancedRows.length, 10);
@@ -334,10 +515,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
     return headerHeight + visibleRows * rowHeight + 2;
   }, [enhancedRows.length]);
 
-  const rowKeyGetter = React.useCallback(
-    (row: (typeof enhancedRows)[number]) => row.id,
-    [],
-  );
+  const rowKeyGetter = React.useCallback((row: HistoryGridRow) => row.id, []);
 
   const copyToClipboard = React.useCallback(
     async (text: string, onSuccess: () => void) => {
@@ -363,11 +541,11 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
   );
 
   const handleCopyTicket = React.useCallback(
-    (rowIndex: number, dezenasText: string) => {
+    (rowId: string, dezenasText: string) => {
       copyToClipboard(dezenasText, () => {
-        setCopiedTicketIndex(rowIndex);
+        setCopiedRowId(rowId);
         setCopiedAll(false);
-        window.setTimeout(() => setCopiedTicketIndex(null), 2000);
+        window.setTimeout(() => setCopiedRowId(null), 2000);
       });
     },
     [copyToClipboard],
@@ -380,18 +558,19 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
     }
     copyToClipboard(concatenated, () => {
       setCopiedAll(true);
-      setCopiedTicketIndex(null);
+      setCopiedRowId(null);
       window.setTimeout(() => setCopiedAll(false), 2000);
     });
   }, [copyToClipboard, enhancedRows]);
 
-  const columns = React.useMemo<Column<(typeof enhancedRows)[number]>[]>(
+  const columns = React.useMemo<Column<HistoryGridRow>[]>(
     () => [
       {
         key: "displayIndex",
         name: "#",
         width: 48,
         resizable: false,
+        sortable: false,
         renderCell: ({ row }) => (
           <span className="text-sm font-semibold text-slate-500 dark:text-slate-300">
             {row.displayIndex}
@@ -402,6 +581,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         key: "createdAtLabel",
         name: "Criada em",
         minWidth: 170,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-300">
             <CalendarDaysIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
@@ -413,6 +593,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         key: "dezenasText",
         name: "Dezenas",
         minWidth: 220,
+        sortable: true,
         renderCell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
             <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
@@ -425,14 +606,10 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
                 "sm",
                 "gap-1 text-xs text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300",
               )}
-              onClick={() =>
-                handleCopyTicket(row.displayIndex - 1, row.dezenasText)
-              }
+              onClick={() => handleCopyTicket(row.id, row.dezenasText)}
             >
               <DocumentDuplicateIcon className="h-4 w-4" />
-              {copiedTicketIndex === row.displayIndex - 1
-                ? "Copiado"
-                : "Copiar"}
+              {copiedRowId === row.id ? "Copiado" : "Copiar"}
             </button>
           </div>
         ),
@@ -441,6 +618,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         key: "strategy",
         name: "Estratégia",
         minWidth: 120,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">
             {row.strategy}
@@ -451,6 +629,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         key: "budgetCents",
         name: "Orçamento",
         width: 120,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="block text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
             {formatCurrency(row.budgetCents)}
@@ -458,9 +637,21 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         ),
       },
       {
+        key: "ticketCostCents",
+        name: "Custo ticket",
+        width: 120,
+        sortable: true,
+        renderCell: ({ row }) => (
+          <span className="block text-right text-sm font-medium text-slate-600 dark:text-slate-300">
+            {formatCurrency(row.ticketCostCents)}
+          </span>
+        ),
+      },
+      {
         key: "totalCostCents",
-        name: "Custo",
-        width: 110,
+        name: "Custo total",
+        width: 130,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="block text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
             {formatCurrency(row.totalCostCents)}
@@ -469,8 +660,9 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
       },
       {
         key: "ticketsGenerated",
-        name: "Tickets",
+        name: "Apostas",
         width: 90,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="block text-center text-sm font-medium text-slate-600 dark:text-slate-300">
             {row.ticketsGenerated}
@@ -481,22 +673,25 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         key: "window",
         name: "Janela",
         width: 90,
+        sortable: true,
         renderCell: ({ row }) => (
           <span className="block text-center text-sm text-slate-500 dark:text-slate-300">
-            {row.window ?? "—"}
+            {row.window ?? "–"}
           </span>
         ),
       },
       {
         key: "batchSeed",
-        name: "Seed",
+        name: "Semente",
         minWidth: 150,
+        sortable: true,
         renderCell: ({ row }) => <CopySeedButton seed={row.batchSeed} />,
       },
       {
         key: "metadata",
         name: "Metadados",
         minWidth: 220,
+        sortable: false,
         renderCell: ({ row }) => (
           <TicketMetadataDetails
             seed={row.ticketSeed ?? row.batchSeed}
@@ -506,7 +701,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         ),
       },
     ],
-    [copiedTicketIndex, handleCopyTicket],
+    [copiedRowId, handleCopyTicket],
   );
 
   const gridStyle = React.useMemo(
@@ -563,7 +758,9 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
           rowKeyGetter={rowKeyGetter}
           rowHeight={52}
           headerRowHeight={44}
-          defaultColumnOptions={{ resizable: true }}
+          defaultColumnOptions={{ resizable: true, sortable: true }}
+          sortColumns={sortColumns}
+          onSortColumnsChange={setSortColumns}
           style={gridStyle}
         />
       </div>

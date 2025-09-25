@@ -40,9 +40,17 @@ type GenerationPayload = {
   requestedBudgetCents: number;
   ticketsGenerated: number;
   strategies: Array<{ name: string; generated: number }>;
+  ticketCostBreakdown?: Array<{
+    k: number;
+    costCents: number;
+    planned: number;
+    emitted: number;
+  }>;
+  averageTicketCostCents: number;
   config: {
     k: number;
     strategies: Array<{ name: string; weight?: number }>;
+    spreadBudget: boolean;
   };
 };
 
@@ -75,6 +83,18 @@ const strategies = [
     description:
       "Distribui dezenas uniformemente entre as faixas para servir como baseline auditável.",
   },
+  {
+    value: "hot-streak",
+    label: "Sequência aquecida",
+    description:
+      "Prioriza dezenas com maior frequência recente para apostar em momentum estatístico controlado.",
+  },
+  {
+    value: "cold-surge",
+    label: "Onda fria",
+    description:
+      "Favorece dezenas há mais tempo sem aparecer, promovendo combinações anticorrelacionadas ao padrão atual.",
+  },
 ];
 
 const budgetOptions = [
@@ -82,9 +102,10 @@ const budgetOptions = [
   { value: "10000", label: "R$ 100,00" },
   { value: "20000", label: "R$ 200,00" },
   { value: "50000", label: "R$ 500,00" },
-  { value: "100000", label: "R$ 1.000,00" },
   { value: "custom", label: "Valor personalizado" },
 ];
+
+const MAX_BUDGET_CENTS = 50_000;
 
 export function BetGeneratorForm() {
   const [state, formAction, isPending] = React.useActionState(actionHandler, {
@@ -97,6 +118,7 @@ export function BetGeneratorForm() {
   const [strategy, setStrategy] = React.useState("balanced");
   const [seed, setSeed] = React.useState(() => createSeed());
   const [windowValue, setWindowValue] = React.useState("200");
+  const [spreadBudget, setSpreadBudget] = React.useState(false);
   const [copiedTicketIndex, setCopiedTicketIndex] = React.useState<
     number | null
   >(null);
@@ -167,7 +189,8 @@ export function BetGeneratorForm() {
     });
   }, [copyToClipboard, tickets.length, ticketsAsText]);
 
-  const disableSubmit = isPending || budgetCents < 600;
+  const budgetAboveLimit = budgetCents > MAX_BUDGET_CENTS;
+  const disableSubmit = isPending || budgetCents < 600 || budgetAboveLimit;
   const totalCost = payload?.totalCostCents ?? 0;
   const leftover = payload?.leftoverCents ?? 0;
   const budgetDisplay = formatCurrency(
@@ -175,6 +198,8 @@ export function BetGeneratorForm() {
   );
   const totalCostDisplay = formatCurrency(totalCost);
   const leftoverDisplay = formatCurrency(leftover);
+  const distributionActive = payload?.config.spreadBudget ?? spreadBudget;
+  const ticketCostBreakdown = payload?.ticketCostBreakdown ?? [];
 
   return (
     <div className="space-y-12">
@@ -184,7 +209,7 @@ export function BetGeneratorForm() {
           name="budgetCents"
           value={budgetCents > 0 ? budgetCents : ""}
         />
-        <Card className="mx-auto max-w-4xl">
+        <Card className="mx-auto w-full max-w-6xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalculatorIcon className="h-5 w-5" />
@@ -222,7 +247,7 @@ export function BetGeneratorForm() {
                   value={budget}
                   onChange={(event) => setBudget(event.target.value)}
                   options={budgetOptions}
-                  helperText="Valores em reais (mínimo R$ 6,00)"
+                  helperText="Valores em reais (mínimo R$ 6,00 · máximo R$ 500,00)"
                   error={fieldErrors.budgetCents?.[0]}
                 />
 
@@ -237,7 +262,7 @@ export function BetGeneratorForm() {
                     onChange={(event) => setCustomBudget(event.target.value)}
                     leftIcon={<CurrencyDollarIcon className="h-4 w-4" />}
                     placeholder="0,00"
-                    helperText="Digite o valor em reais"
+                    helperText={`Digite o valor em reais (máx ${formatCurrency(MAX_BUDGET_CENTS)})`}
                     error={fieldErrors.budgetCents?.[0]}
                   />
                 )}
@@ -273,9 +298,32 @@ export function BetGeneratorForm() {
                 step="10"
                 value={windowValue}
                 onChange={(event) => setWindowValue(event.target.value)}
-                helperText="Opcional — restringe frequência/recência aos concursos mais recentes"
+                helperText="Opcional – restringe frequência/recência aos concursos mais recentes"
                 error={fieldErrors.window?.[0]}
               />
+            </div>
+
+            {/* Checkbox permite que o usuário escolha entre concentração (bilhete mais barato) ou distribuição em múltiplos ks. */}
+            <div className="rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-4 shadow-inner dark:border-white/10 dark:bg-slate-900/40">
+              <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  name="spreadBudget"
+                  checked={spreadBudget}
+                  onChange={(event) => setSpreadBudget(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-white/30 dark:bg-slate-900"
+                />
+                <span className="space-y-1">
+                  <span className="block font-semibold tracking-tight">
+                    Distribuir orçamento em múltiplos tipos de aposta
+                  </span>
+                  <span className="block text-xs text-slate-600 dark:text-slate-400">
+                    Quando ativo, o motor reparte o valor entre combinações com
+                    diferentes quantidades de dezenas para ampliar cobertura.
+                    Desative para concentrar no bilhete de menor custo.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div className="flex flex-col gap-4 rounded-2xl bg-brand-50 p-5 dark:bg-brand-900/10 md:flex-row md:items-center md:justify-between">
@@ -288,14 +336,16 @@ export function BetGeneratorForm() {
                 </p>
               </div>
               <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                {state.status === "error" && (
+                {(state.status === "error" || budgetAboveLimit) && (
                   <Badge
                     variant="warning"
                     size="sm"
                     className="flex items-center gap-1"
                   >
                     <ExclamationTriangleIcon className="h-4 w-4" />
-                    {generalError ?? "Revise os campos"}
+                    {budgetAboveLimit
+                      ? `Orçamento máximo permitido: ${formatCurrency(MAX_BUDGET_CENTS)}`
+                      : (generalError ?? "Revise os campos")}
                   </Badge>
                 )}
                 <Button
@@ -313,7 +363,7 @@ export function BetGeneratorForm() {
       </form>
 
       {isPending && (
-        <Card className="mx-auto max-w-4xl">
+        <Card className="mx-auto w-full max-w-6xl">
           <CardContent className="py-12">
             <div className="space-y-4 text-center">
               <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/20">
@@ -335,7 +385,7 @@ export function BetGeneratorForm() {
       )}
 
       {!isPending && state.status === "success" && (
-        <Card className="mx-auto max-w-4xl">
+        <Card className="mx-auto w-full max-w-6xl">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Resultados da geração</span>
@@ -356,7 +406,7 @@ export function BetGeneratorForm() {
               onCopyTicket={handleCopyTicket}
             />
 
-            <div className="grid gap-4 rounded-2xl bg-brand-50 p-5 text-sm text-slate-700 dark:bg-brand-900/10 dark:text-slate-300 md:grid-cols-3">
+            <div className="grid gap-4 rounded-2xl bg-brand-50 p-5 text-sm text-slate-700 dark:bg-brand-900/10 dark:text-slate-300 md:grid-cols-2 xl:grid-cols-4">
               <div>
                 <p className="text-xs uppercase tracking-wide text-brand-700 dark:text-brand-300">
                   Orçamento processado
@@ -375,6 +425,14 @@ export function BetGeneratorForm() {
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                  Custo médio por aposta
+                </p>
+                <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                  {formatCurrency(payload?.averageTicketCostCents ?? 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-brand-700 dark:text-brand-300">
                   Saldo remanescente
                 </p>
                 <p className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -382,6 +440,43 @@ export function BetGeneratorForm() {
                 </p>
               </div>
             </div>
+
+            {ticketCostBreakdown.length > 0 && (
+              <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-5 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-slate-900/40 dark:text-slate-200">
+                <p className="text-xs uppercase tracking-wide text-brand-700 dark:text-brand-300">
+                  Distribuição do orçamento por tipo de aposta
+                </p>
+                <ul className="mt-3 space-y-1">
+                  {ticketCostBreakdown.map(
+                    (
+                      entry: NonNullable<
+                        GenerationPayload["ticketCostBreakdown"]
+                      >[number],
+                    ) => (
+                      <li key={`k-${entry.k}`}>
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          planejadas {entry.planned}
+                        </span>{" "}
+                        ·
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          emitidas {entry.emitted}
+                        </span>{" "}
+                        apostas com
+                        <span className="font-semibold text-slate-900 dark:text-white">
+                          {" "}
+                          {entry.k} dezenas
+                        </span>{" "}
+                        – custo unitário de {formatCurrency(entry.costCents)}
+                      </li>
+                    ),
+                  )}
+                </ul>
+                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                  Modo selecionado:{" "}
+                  {distributionActive ? "distribuído" : "concentrado"}.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -487,13 +582,21 @@ function downloadPayload(
     tickets,
     warnings,
   };
+  const breakdown = payload.ticketCostBreakdown ?? [];
+  const descriptor =
+    breakdown.length > 0
+      ? `mix-${breakdown
+          .map((entry) => `${entry.emitted}x${entry.k}`)
+          .join("_")}`
+      : `${payload.config.k}d`;
+  const mode = payload.config.spreadBudget ? "distributed" : "concentrated";
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `bets-${payload.config.k}d-${payload.ticketsGenerated}-tickets.json`;
+  anchor.download = `bets-${descriptor}-${mode}-${payload.ticketsGenerated}-tickets.json`;
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);

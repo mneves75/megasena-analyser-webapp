@@ -1,4 +1,4 @@
-# Plano de Correção — Sync Mega-Sena
+# Plano de Correção – Sync Mega-Sena
 
 ## Diagnóstico Atual
 
@@ -19,7 +19,9 @@
 4. **Validação preventiva**
    - Adicionar step rápido no CLI (`scripts/sync.ts`) que valida `DATABASE_URL` começa com `file:` antes de instanciar Prisma e lança mensagem clara.
 5. **Teste manual**
-   - Após ajustes, rodar `npm run sync -- --limit=1` e `--full --limit=50` para confirmar ingestão.
+   - Após ajustes, rodar `npm run sync -- --limit=1` (fumaça) e `npm run sync -- --full` (full backfill) – use `--limit=<N>` apenas para recortes deliberados.
+
+> ✅ Desde 24/09/2025, o flag `--full` executa backfill completo (reinicia do concurso 1). Utilize `--limit` somente para cenários controlados.
 
 ## TODO Tracker
 
@@ -27,3 +29,9 @@
 - [x] Ajustar README com exemplo de `.env` formatado.
 - [x] Adicionar validação de `DATABASE_URL` no script `scripts/sync.ts`.
 - [x] Executar `npm run sync -- --limit=1` (fumaça) e `npm run sync -- --full --limit=50` para confirmar.
+
+## Uso atualizado do CLI
+
+- `npm run sync -- --full` reprocessa todos os concursos disponíveis desde o primeiro registro. Combine com `--limit=N` quando quiser limitar a quantidade processada em ambientes de teste.
+- Sem `--full`, o serviço sincroniza apenas o delta após o último concurso armazenado, respeitando `SYNC_BACKFILL_WINDOW` (padrão 50) ou o `--limit` informado.
+- Em ambientes sem TTY (CI ou saída redirecionada) a interface cai para logs simples, evitando caracteres ANSI em artefatos de build.

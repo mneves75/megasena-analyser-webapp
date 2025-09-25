@@ -121,9 +121,7 @@ async function fetchWithRetry(url: string, retries: number, baseDelay: number) {
     try {
       const response = await fetch(url, {
         cache: "no-store",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: buildCaixaHeaders(),
       });
 
       if (!response.ok) {
@@ -195,3 +193,30 @@ function getRetryDelay() {
   const value = Number(process.env.CAIXA_RETRY_DELAY_MS ?? 500);
   return Number.isNaN(value) ? 500 : value;
 }
+
+function buildCaixaHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const userAgent = process.env.CAIXA_USER_AGENT?.trim() || DEFAULT_USER_AGENT;
+  const referer = process.env.CAIXA_REFERER?.trim() || DEFAULT_REFERER;
+  const origin = process.env.CAIXA_ORIGIN?.trim() || DEFAULT_ORIGIN;
+  const acceptLanguage =
+    process.env.CAIXA_ACCEPT_LANGUAGE?.trim() || DEFAULT_ACCEPT_LANGUAGE;
+
+  headers["User-Agent"] = userAgent;
+  headers.Referer = referer;
+  headers.Origin = origin;
+  headers["Accept-Language"] = acceptLanguage;
+
+  return headers;
+}
+
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36";
+const DEFAULT_REFERER =
+  "https://loterias.caixa.gov.br/wps/portal/loterias/landing/megasena/";
+const DEFAULT_ORIGIN = "https://loterias.caixa.gov.br";
+const DEFAULT_ACCEPT_LANGUAGE = "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7";

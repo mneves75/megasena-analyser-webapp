@@ -14,22 +14,14 @@ import {
   StatsDashboardSkeleton,
 } from "@/components/dashboard/stats-dashboard";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
-import {
-  getFrequencies,
-  getPairs,
-  getSums,
-  getQuadrants,
-  getRecency,
-} from "@/services/stats";
-import { prisma } from "@/lib/prisma";
-
-const REPO_BASE =
-  "https://github.com/mneves75/megasena-analyser-webapp/blob/main";
+import { Stack } from "@/components/ui/stack";
+import { loadStatsSummary } from "@/services/dashboard/stats-summary";
+import { REPO_BASE_URL } from "@/config/repo";
 const WINDOW_SIZE = 200;
 
 export default function StatsPage() {
   return (
-    <div className="flex flex-col gap-12">
+    <Stack gap="lg">
       <Breadcrumb items={[{ label: "Estatísticas", current: true }]} />
 
       <header className="space-y-4">
@@ -62,7 +54,7 @@ export default function StatsPage() {
             Consulte o documento completo em
             <Link
               className="ml-1 underline-offset-4 hover:underline"
-              href={`${REPO_BASE}/docs/PHASE5_STAGE6_ROADMAP.md`}
+              href={`${REPO_BASE_URL}/docs/PHASE5_STAGE6_ROADMAP.md`}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -72,78 +64,14 @@ export default function StatsPage() {
           </span>
         </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 }
 
 async function StatsDashboardSection() {
-  const data = await loadStatsData();
+  const data = await loadStatsSummary({
+    windowSize: WINDOW_SIZE,
+    topPairsLimit: 9,
+  });
   return <StatsDashboard {...data} />;
-}
-
-async function loadStatsData() {
-  const [frequencies, pairs, sums, quadrants, recency, lastSyncMeta] =
-    await Promise.all([
-      getFrequencies({ window: WINDOW_SIZE }),
-      getPairs({ window: WINDOW_SIZE, limit: 9 }),
-      getSums({ window: WINDOW_SIZE }),
-      getQuadrants({ window: WINDOW_SIZE }),
-      getRecency({}),
-      prisma.meta.findUnique({ where: { key: "last_sync" } }),
-    ]);
-
-  const totalNumbers = sums.parity.even + sums.parity.odd;
-  const parityEvenPercent =
-    totalNumbers > 0 ? sums.parity.even / totalNumbers : 0;
-  const parityOddPercent =
-    totalNumbers > 0 ? sums.parity.odd / totalNumbers : 0;
-
-  const recencyMap = new Map(
-    recency.map((item) => [item.dezena, item.contestsSinceLast]),
-  );
-
-  const hotNumbers = frequencies.items.slice(0, 5).map((item) => ({
-    dezena: item.dezena,
-    hits: item.hits,
-    percentage: item.frequency,
-    contestsSinceLast: recencyMap.get(item.dezena) ?? null,
-  }));
-
-  const coldNumbersSource =
-    frequencies.items.length > 5
-      ? frequencies.items.slice(-5)
-      : frequencies.items.slice().reverse();
-  const coldNumbers = [...coldNumbersSource]
-    .sort((a, b) => a.hits - b.hits)
-    .map((item) => ({
-      dezena: item.dezena,
-      hits: item.hits,
-      percentage: item.frequency,
-      contestsSinceLast: recencyMap.get(item.dezena) ?? null,
-    }));
-
-  const topPairs = pairs.map((pair) => ({
-    combination: [pair.combination[0], pair.combination[1]] as [number, number],
-    hits: pair.hits,
-  }));
-
-  const lastSyncValue = lastSyncMeta?.value
-    ? new Date(lastSyncMeta.value)
-    : null;
-  const lastSync =
-    lastSyncValue && !Number.isNaN(lastSyncValue.getTime())
-      ? lastSyncValue
-      : null;
-
-  return {
-    totalDraws: frequencies.totalDraws,
-    lastSync,
-    averageSum: Math.round(sums.average ?? 0),
-    parityEvenPercent,
-    parityOddPercent,
-    hotNumbers,
-    coldNumbers,
-    quadrantDistribution: quadrants,
-    topPairs,
-  } as const;
 }

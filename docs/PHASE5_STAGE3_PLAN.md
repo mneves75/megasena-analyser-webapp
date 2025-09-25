@@ -1,4 +1,4 @@
-# Plano de Execução — Stage 3 (Workflow de Geração)
+# Plano de Execução – Stage 3 (Workflow de Geração)
 
 - **Data**: 23/09/2025
 - **Responsável**: Backend (coordenação com Dados/Infra para schema e logging)
@@ -13,9 +13,9 @@
 ## Entregáveis
 
 - Arquivo `src/services/bets.ts` contendo:
-  - `generateTicket(strategyCtx)` — normaliza seed/k, chama estratégia selecionada e retorna payload serializável.
-  - `chooseStrategies(request)` — aplica pesos/padrão quando alguma estratégia falha.
-  - `generateBatch({ budget, strategies, seed, timeoutMs })` — coordena alocação de orçamento (`calculateBudgetAllocation`), elimina duplicatas entre estratégias, acumula métricas e respeita `AbortController` (default 3000 ms).
+  - `generateTicket(strategyCtx)` – normaliza seed/k, chama estratégia selecionada e retorna payload serializável.
+  - `chooseStrategies(request)` – aplica pesos/padrão quando alguma estratégia falha.
+  - `generateBatch({ budget, strategies, seed, timeoutMs })` – coordena alocação de orçamento (`calculateBudgetAllocation`), elimina duplicatas entre estratégias, acumula métricas e respeita `AbortController` (default 3000 ms).
 - Testes Vitest (`src/services/__tests__/bets.test.ts`) cobrindo:
   - Orçamento insuficiente (`BUDGET_BELOW_MIN`).
   - Limite de tickets (`MAX_TICKETS_ENFORCED`).

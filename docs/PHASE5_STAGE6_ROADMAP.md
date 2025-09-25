@@ -1,4 +1,4 @@
-# Roadmap Pós-MVP — Stage 6
+# Roadmap Pós-MVP – Stage 6
 
 > Atualizado em 23/09/2025. Consolidado após entrega das Stages 0-5 do motor de apostas.
 
@@ -45,4 +45,4 @@ Objetivo do Stage 6 é planejar evoluções avançadas do motor de apostas, defi
 
 ## Atualizações Recentes
 
-- **23/09/2025** — Disponibilizado script `npm run limits` para leitura/alteração dos limites operacionais do motor. O comando suporta `--show`, múltiplos `--set=chave=valor`, `--reset` e `--history`, validando `DATABASE_URL`. Cada alteração registra auditoria na nova tabela `BettingLimitAudit` (campos `origin`, `actor`, `note`, `previous`, `next`, `overrides`), atendendo ao requisito de rastreabilidade antes da futura UI administrativa.
+- **23/09/2025** – Disponibilizado script `npm run limits` para leitura/alteração dos limites operacionais do motor. O comando suporta `--show`, múltiplos `--set=chave=valor`, `--reset` e `--history`, validando `DATABASE_URL`. Cada alteração registra auditoria na nova tabela `BettingLimitAudit` (campos `origin`, `actor`, `note`, `previous`, `next`, `overrides`), atendendo ao requisito de rastreabilidade antes da futura UI administrativa.

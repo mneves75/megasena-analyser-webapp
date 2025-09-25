@@ -1,3 +1,6 @@
+// Register server-only stub before importing server-only modules
+import "./dev/register-server-only-stub.js";
+
 import process from "node:process";
 
 import { Prisma } from "@prisma/client";
@@ -171,7 +174,7 @@ async function printAuditHistory(count: number) {
       ? JSON.stringify(entry.overrides, null, 2)
       : "{}";
     const note = entry.note ? `\n  nota: ${entry.note}` : "";
-    console.log(`- ${timestamp} — origin=${origin} actor=${actor}${note}`);
+    console.log(`- ${timestamp} – origin=${origin} actor=${actor}${note}`);
     console.log(`  overrides: ${overrides}`);
   }
 }

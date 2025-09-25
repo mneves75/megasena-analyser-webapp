@@ -1,7 +1,11 @@
+"use client";
+
+import Link from "next/link";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
+import { buttonStyles } from "./button-variants";
 
 export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   icon?: React.ReactNode;
@@ -9,7 +13,8 @@ export interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   description?: string;
   action?: {
     label: string;
-    onClick: () => void;
+    onClick?: () => void;
+    href?: string;
   };
   variant?: "default" | "error" | "success" | "warning";
 }
@@ -117,7 +122,12 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             {description}
           </p>
         )}
-        {action && (
+        {action && action.href && (
+          <Link href={action.href} className={buttonStyles("primary", "md")}>
+            {action.label}
+          </Link>
+        )}
+        {action && action.onClick && !action.href && (
           <Button onClick={action.onClick} variant="primary">
             {action.label}
           </Button>

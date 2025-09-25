@@ -3,10 +3,7 @@ import "server-only";
 import type { PrismaClient } from "@prisma/client";
 
 import { mulberry32, weightedPick } from "@/lib/random";
-import {
-  DEFAULT_BETTING_LIMITS,
-  type BettingLimits,
-} from "@/services/strategy-limits";
+import { DEFAULT_BETTING_LIMITS } from "@/services/strategy-limits";
 import {
   buildMetadata,
   getNumbersInQuadrant,
@@ -51,7 +48,7 @@ export async function balancedStrategy(
   const quadrantsStats = await getQuadrants({ window, client });
 
   const targets = computeQuadrantTargets(quadrantsStats, k);
-  const state = createSelectionState(prng, frequencies, targets, limits);
+  const state = createSelectionState(prng, frequencies, targets);
 
   fillQuadrants(state, targets);
 
@@ -169,7 +166,6 @@ function createSelectionState(
   prng: ReturnType<typeof mulberry32>,
   frequencies: FrequencyMap,
   targets: Record<string, number>,
-  limits: BettingLimits,
 ): SelectionState {
   const remainingByQuadrant = new Map<number, Set<number>>();
   const selectedByQuadrant = new Map<number, number[]>();
@@ -178,8 +174,9 @@ function createSelectionState(
     remainingByQuadrant.set(index, new Set(getNumbersInQuadrant(index)));
     selectedByQuadrant.set(index, []);
     const target = targets[range.name] ?? 0;
-    if (target > limits.maxTicketsPerBatch) {
-      throw new Error("Alvo de quadrante inválido");
+    const capacity = getNumbersInQuadrant(index).length;
+    if (target > capacity) {
+      throw new Error("Alvo de quadrante excede capacidade do quadrante");
     }
   });
 

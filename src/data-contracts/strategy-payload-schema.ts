@@ -8,6 +8,7 @@ export const strategyPayloadSchema = {
     "seed",
     "requestedBudgetCents",
     "ticketCostCents",
+    "averageTicketCostCents",
     "totalCostCents",
     "leftoverCents",
     "ticketsGenerated",
@@ -31,6 +32,34 @@ export const strategyPayloadSchema = {
     ticketCostCents: {
       type: "integer",
       minimum: 0,
+    },
+    averageTicketCostCents: {
+      type: "integer",
+      minimum: 0,
+    },
+    ticketCostBreakdown: {
+      type: "array",
+      items: {
+        type: "object",
+        required: ["k", "costCents", "planned"],
+        properties: {
+          k: { type: "integer", minimum: 6, maximum: 15 },
+          costCents: { type: "integer", minimum: 0 },
+          planned: {
+            type: "integer",
+            minimum: 0,
+            description:
+              "Quantidade planejada de bilhetes para este valor de k.",
+          },
+          emitted: {
+            type: "integer",
+            minimum: 0,
+            description:
+              "Quantidade efetivamente gerada com o valor de k informado.",
+          },
+        },
+        additionalProperties: false,
+      },
     },
     totalCostCents: {
       type: "integer",
@@ -86,7 +115,7 @@ export const strategyPayloadSchema = {
     },
     config: {
       type: "object",
-      required: ["strategies", "k", "timeoutMs"],
+      required: ["strategies", "k", "timeoutMs", "spreadBudget"],
       properties: {
         strategies: {
           type: "array",
@@ -97,6 +126,7 @@ export const strategyPayloadSchema = {
               name: { type: "string" },
               weight: { type: "number" },
               window: { type: "integer" },
+              kOverride: { type: "integer", minimum: 6, maximum: 15 },
             },
             additionalProperties: false,
           },
@@ -104,6 +134,7 @@ export const strategyPayloadSchema = {
         k: { type: "integer", minimum: 6, maximum: 15 },
         window: { type: "integer", minimum: 1 },
         timeoutMs: { type: "integer", minimum: 1 },
+        spreadBudget: { type: "boolean" },
       },
       additionalProperties: false,
     },

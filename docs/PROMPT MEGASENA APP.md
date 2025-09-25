@@ -187,7 +187,7 @@ e) Citações/links oficiais usados.
 # Rules:
 
 - Mobile-first layout, but responsive for desktop
-  Keep everything cohesive — no stock AI gradients or emojis
+  Keep everything cohesive – no stock AI gradients or emojis
   Design should feel like it came out of a top-tier UX studio
 
 Use o português brasileiro em toda a UI, README e comentários de código.

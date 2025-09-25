@@ -8,9 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { buttonStyles } from "@/components/ui/button-variants";
-
-const REPO_BASE =
-  "https://github.com/seu-usuario/megasena-analyser-nextjs/blob/main";
+import { REPO_BASE_URL } from "@/config/repo";
 
 export default function DocsPage() {
   return (
@@ -37,13 +35,13 @@ export default function DocsPage() {
           <CardContent className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
             <Link
               className="underline-offset-4 hover:underline"
-              href={`${REPO_BASE}/docs/IMPLEMENTATION_PLAN.md`}
+              href={`${REPO_BASE_URL}/docs/IMPLEMENTATION_PLAN.md`}
               target="_blank"
               rel="noopener noreferrer"
             >
               Abrir no GitHub
             </Link>
-            <Link href="/" className={buttonStyles("secondary")}>
+            <Link href="/" className={buttonStyles("secondary", "md")}>
               Voltar ao início
             </Link>
           </CardContent>
@@ -59,13 +57,13 @@ export default function DocsPage() {
           <CardContent className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
             <Link
               className="underline-offset-4 hover:underline"
-              href={`${REPO_BASE}/docs/PROMPT%20MEGASENA%20APP.md`}
+              href={`${REPO_BASE_URL}/docs/PROMPT%20MEGASENA%20APP.md`}
               target="_blank"
               rel="noopener noreferrer"
             >
               Abrir no GitHub
             </Link>
-            <Link href="/generate" className={buttonStyles("ghost")}>
+            <Link href="/generate" className={buttonStyles("ghost", "md")}>
               Próximas tarefas
             </Link>
           </CardContent>

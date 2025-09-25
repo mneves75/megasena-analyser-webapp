@@ -128,12 +128,12 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     };
 
     const arrowClasses = {
-      top: "top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-slate-900 dark:border-t-slate-100",
+      top: "top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-slate-900 dark:border-t-slate-700",
       bottom:
-        "bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-slate-900 dark:border-b-slate-100",
-      left: "left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-slate-900 dark:border-l-slate-100",
+        "bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-slate-900 dark:border-b-slate-700",
+      left: "left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-slate-900 dark:border-l-slate-700",
       right:
-        "right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-slate-900 dark:border-r-slate-100",
+        "right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-slate-900 dark:border-r-slate-700",
     };
 
     return (
@@ -150,7 +150,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
           <div
             ref={tooltipRef}
             className={cn(
-              "absolute z-50 px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg shadow-lg dark:bg-slate-100 dark:text-slate-900",
+              "absolute z-50 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white shadow-lg transition-colors dark:bg-slate-700 dark:text-slate-100",
               placementClasses[placement],
               className,
             )}
@@ -163,7 +163,7 @@ const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
             {content}
             <div
               className={cn(
-                "absolute w-0 h-0 border-4",
+                "absolute h-0 w-0 border-4",
                 arrowClasses[placement],
               )}
             />

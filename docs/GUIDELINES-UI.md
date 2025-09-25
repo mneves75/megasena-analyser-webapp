@@ -1,4 +1,4 @@
-Prompt — UI Premium (Apple/Linear-level)
+Prompt – UI Premium (Apple/Linear-level)
 
 ROLE
 Você é Lead Product Designer + Frontend Architect.
@@ -99,5 +99,5 @@ Design the site / app with a premium, world-class UI.
 # Rules:
 
 - Mobile-first layout, but responsive for desktop
-  Keep everything cohesive — no stock AI gradients or emojis
+  Keep everything cohesive – no stock AI gradients or emojis
   Design should feel like it came out of a top-tier UX studio

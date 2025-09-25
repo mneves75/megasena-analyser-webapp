@@ -20,7 +20,7 @@ export const QUADRANT_RANGES = [
 
 export type QuadrantRange = (typeof QUADRANT_RANGES)[number];
 
-export type StrategyName = "uniform" | "balanced";
+export type StrategyName = "uniform" | "balanced" | "hot-streak" | "cold-surge";
 
 export type StrategyContext = {
   seed: string;

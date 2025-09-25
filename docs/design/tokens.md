@@ -1,11 +1,11 @@
-# Tokens de Design — Mega-Sena Analyzer
+# Tokens de Design – Mega-Sena Analyzer
 
 Documente estes tokens em cada nova tela. Eles servem como referência para manter a identidade premium definida no prompt.
 
 ## Cores Base
 
-- **Fundo Neutro Claro (`surface.DEFAULT`)**: `#f5f6f8` — preenchimento padrão de páginas e cartões claros.
-- **Fundo Neutro Escuro (`surface.dark`)**: `#0f1014` — base do modo escuro.
+- **Fundo Neutro Claro (`surface.DEFAULT`)**: `#f5f6f8` – preenchimento padrão de páginas e cartões claros.
+- **Fundo Neutro Escuro (`surface.dark`)**: `#0f1014` – base do modo escuro.
 - **Texto Primário (`--foreground`)**: `#111827` (claro) / `#e5e7eb` (escuro).
 - **Brand Azul (`brand.500`)**: `#2f7bff`; utilizar para CTAs e estados ativos.
 - **Brand Azul Profundo (`brand.600`)**: `#1f5fe6`; utilizar em hover/foco.
@@ -26,8 +26,8 @@ Documente estes tokens em cada nova tela. Eles servem como referência para mant
 
 ## Sombras e Vidro
 
-- **`shadow-soft`**: `0 10px 30px rgba(15, 23, 42, 0.08)` — botões principais.
-- **`shadow-card`**: `0 18px 40px rgba(15, 23, 42, 0.06)` — cartões e modais.
+- **`shadow-soft`**: `0 10px 30px rgba(15, 23, 42, 0.08)` – botões principais.
+- **`shadow-card`**: `0 18px 40px rgba(15, 23, 42, 0.06)` – cartões e modais.
 - Use `backdrop-blur-md` + `bg-white/60` para efeito vidro em layouts claros.
 
 ## Botões

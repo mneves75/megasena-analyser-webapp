@@ -22,6 +22,8 @@ const STRATEGY_OPTIONS = [
   { value: "", label: "Todas as estratégias" },
   { value: "balanced", label: "Balanceada" },
   { value: "uniform", label: "Distribuição uniforme" },
+  { value: "hot-streak", label: "Hot Streak" },
+  { value: "cold-surge", label: "Cold Surge" },
 ] as const;
 
 const STRATEGY_LABEL = STRATEGY_OPTIONS.reduce<Record<string, string>>(
@@ -56,6 +58,7 @@ export default async function BetsPage({ searchParams }: BetsPageProps) {
       strategy: bet.strategyName,
       budgetCents: bet.budgetCents,
       totalCostCents: bet.totalCostCents,
+      ticketCostCents: bet.ticketCostCents,
       createdAtIso: bet.createdAt.toISOString(),
       ticketsGenerated: bet.payload.ticketsGenerated,
       batchSeed: bet.payload.seed,

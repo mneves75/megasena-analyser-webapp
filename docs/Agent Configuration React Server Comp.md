@@ -31,7 +31,7 @@ Você atua como engenheiro(a) especialista em React Server Components (RSC) com 
 ### Exemplo
 
 ```tsx
-// app/post/page.tsx — Server Component
+// app/post/page.tsx – Server Component
 import { LikeButton } from "./like-button";
 import { getPost } from "@/data/posts";
 
@@ -52,7 +52,7 @@ export default async function PostPage({ params }: { params: { id: string } }) {
 ```
 
 ```tsx
-// app/post/like-button.tsx — Client Component
+// app/post/like-button.tsx – Client Component
 "use client";
 
 import { useState } from "react";
@@ -120,7 +120,7 @@ export async function registrarAposta(formData: FormData) {
 ```
 
 ```tsx
-// app/generate/form.tsx — Client Component
+// app/generate/form.tsx – Client Component
 "use client";
 
 import { useTransition } from "react";
@@ -199,6 +199,6 @@ Use `useEffect` somente para:
 
 ## Recursos adicionais
 
-- [Documentação oficial — React Server Components](https://nextjs.org/docs/app/building-your-application/rendering/server-components)
+- [Documentação oficial – React Server Components](https://nextjs.org/docs/app/building-your-application/rendering/server-components)
 - [Server Actions e caching no Next.js](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions)
-- [React docs — comparação Client vs Server Components](https://react.dev/reference/rsc)
+- [React docs – comparação Client vs Server Components](https://react.dev/reference/rsc)

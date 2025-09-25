@@ -12,7 +12,7 @@ export interface ChartData {
 
 export interface ChartProps extends React.HTMLAttributes<HTMLDivElement> {
   data: ChartData[];
-  type?: "bar" | "line" | "pie" | "donut";
+  type?: "bar" | "pie" | "donut";
   showLabels?: boolean;
   showValues?: boolean;
   maxValue?: number;
@@ -33,8 +33,28 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
     },
     ref,
   ) => {
-    const max = maxValue || Math.max(...data.map((d) => d.value));
-    const total = data.reduce((sum, d) => sum + d.value, 0);
+    if (data.length === 0) {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            "flex h-full min-h-[160px] items-center justify-center rounded-2xl border border-dashed border-slate-200/70 bg-white/60 text-sm text-slate-500 dark:border-slate-700/60 dark:bg-slate-900/30 dark:text-slate-400",
+            className,
+          )}
+          {...props}
+        >
+          Nenhum dado disponível
+        </div>
+      );
+    }
+
+    const values = data.map((d) => d.value);
+    const computedMax = values.length > 0 ? Math.max(...values) : 0;
+    const rawMax = maxValue ?? computedMax;
+    const safeMax = rawMax > 0 ? rawMax : 1;
+    const rawTotal = values.reduce((sum, value) => sum + value, 0);
+    const safeTotal = rawTotal > 0 ? rawTotal : 1;
+    const totalDisplay = rawTotal > 0 ? rawTotal : 0;
 
     const defaultColors = [
       "#2F7BFF", // brand-500
@@ -52,7 +72,7 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
     const renderBarChart = () => (
       <div className="flex items-end justify-between gap-2 h-full">
         {data.map((item, index) => {
-          const percentage = (item.value / max) * 100;
+          const percentage = safeMax > 0 ? (item.value / safeMax) * 100 : 0;
           return (
             <div key={item.label} className="flex flex-col items-center flex-1">
               <div className="relative w-full bg-slate-200 dark:bg-slate-700 rounded-t-lg overflow-hidden">
@@ -90,7 +110,8 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
         <div className="relative">
           <svg width="200" height="200" className="mx-auto">
             {data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
+              const percentage =
+                safeTotal > 0 ? (item.value / safeTotal) * 100 : 0;
               const angle = (percentage / 100) * 360;
               const startAngle = currentAngle;
               const endAngle = currentAngle + angle;
@@ -128,7 +149,7 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {total}
+                  {totalDisplay}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-400">
                   Total
@@ -160,7 +181,8 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
               className="text-slate-200 dark:text-slate-700"
             />
             {data.map((item, index) => {
-              const percentage = (item.value / total) * 100;
+              const percentage =
+                safeTotal > 0 ? (item.value / safeTotal) * 100 : 0;
               const angle = (percentage / 100) * 360;
               const startAngle = currentAngle;
               const endAngle = currentAngle + angle;
@@ -199,7 +221,7 @@ const Chart = React.forwardRef<HTMLDivElement, ChartProps>(
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {total}
+                  {totalDisplay}
                 </div>
                 <div className="text-sm text-slate-600 dark:text-slate-400">
                   Total

@@ -1,19 +1,19 @@
-# Plano de Revisão — Stage 5 (Atualização 23/09/2025)
+# Plano de Revisão – Stage 5 (Atualização 23/09/2025)
 
 ## Contexto
 
 - Data da revisão: 23/09/2025.
-- Persona ativa: **React Server Components Expert** — diretrizes confirmadas como aplicáveis ao projeto (Next.js App Router com RSC por padrão).
+- Persona ativa: **React Server Components Expert** – diretrizes confirmadas como aplicáveis ao projeto (Next.js App Router com RSC por padrão).
 - Objetivo: mapear riscos imediatos para o motor de apostas e alinhar backlog com o plano da Fase 5.
 
 ## Achados Principais (revisão pós-Stage 2)
 
-1. **Estratégias MVP entregues** — `uniformStrategy` e `balancedStrategy` implementadas com PRNG determinístico e metadados completos (`src/services/strategies/**`).
-2. **Infra Stage 0-1 concluída** — `.env.sample` versionado, seeds com fonte/consulta atualizadas, módulos server-only protegidos com `import "server-only";`.
-3. **Validações pendentes** — falta camada `generateBatch` com deduplicação global, métricas agregadas e timeouts (Stage 3).
-4. **Schema `strategy_payload` ainda indefinido** — precisamos formalizar contratos (JSON Schema + migration) antes de persistir apostas.
-5. **Observabilidade** — ainda não há logger específico para o motor (precisamos definir estrutura Pino + `strategy_payload` para Stage 4).
-6. **Fixtures e docs** — `docs/fixtures/sample-bets.json` continua como placeholder; README não expõe fluxo do motor nem endpoints /api/bets.
+1. **Estratégias MVP entregues** – `uniformStrategy` e `balancedStrategy` implementadas com PRNG determinístico e metadados completos (`src/services/strategies/**`).
+2. **Infra Stage 0-1 concluída** – `.env.sample` versionado, seeds com fonte/consulta atualizadas, módulos server-only protegidos com `import "server-only";`.
+3. (Resolvido) `generateBatch` implementado com deduplicação, métricas e timeout.
+4. (Resolvido) `strategy_payload` definido em `src/data-contracts/strategy-payload-schema.ts` e validado via AJV.
+5. (Resolvido) Observabilidade com Pino; logs estruturados em serviços e rotas críticas.
+6. **Fixtures e docs** – `docs/fixtures/sample-bets.json` continua como placeholder; README não expõe fluxo do motor nem endpoints /api/bets.
 
 ## Tarefas Prioritárias
 
@@ -27,8 +27,8 @@
 ### Stage 3
 
 - [x] Implementar `services/bets.ts` com `generateTicket`, `generateBatch`, `chooseStrategies` e validações globais (orçamento, duplicidade cross-strategy).
-- [x] Incluir timeout configurável (`AbortController`) e métricas agregadas (diversidade de quadrantes, média de frequência, soma).
-- [x] Definir schema `strategy_payload` em `docs/data-contracts/strategy_payload.schema.json` e criar validação AJV; avaliar se migration adicional é necessária (coluna existente no schema atual).
+- [x] Incluir timeout configurável e métricas agregadas (diversidade de quadrantes, média de frequência, soma).
+- [x] Definir schema `strategy_payload` em `src/data-contracts/strategy-payload-schema.ts` e validar via AJV; sem necessidade de migration adicional.
 - [x] Cobrir com testes Vitest (incluindo cenário de dupla estratégia e erros `BUDGET_BELOW_MIN`, `MAX_TICKETS_ENFORCED`).
 - [x] Garantir que targets de quadrante nunca excedam 10 dezenas; adicionar guardas e testes de regressão.
 
@@ -41,16 +41,34 @@
 - [x] Adicionar testes de integração (Vitest) usando banco efêmero cobrindo persistência e filtros básicos em `/api/bets`.
 - [x] Publicar guia detalhado da API em `docs/API_BET_ENGINE.md` com exemplos de request/response.
 
+### Correções rápidas aplicadas nesta revisão (23/09/2025)
+
+- [x] `/api/sync` trata corpo vazio e retorna 400 apenas para JSON malformado (`request.text()` + parse manual).
+- [x] `/api/bets` reforça coerção numérica/data (zod) evitando `NaN` silencioso.
+- [x] `/api/stats/[stat]` documentado quanto ao contrato `params: Promise<{ stat: string }>` exigido pelo Typed Routes.
+- [x] `balancedStrategy` valida alvo por capacidade do quadrante (<=10 dezenas).
+
+### Pendências menores
+
+- [ ] Adicionar exemplos práticos de chamadas `GET /api/bets` com filtros no README.
+- [ ] Expandir testes de integração para `/api/bets` cobrindo `from/to` e limites extremos.
+
+## Checklist RSC/Server-only
+
+- [x] Serviços com `import "server-only"` onde aplicável.
+- [x] Acesso a Prisma encapsulado em módulos server-only.
+- [x] Server Actions usadas para geração (`app/generate/actions.ts`).
+
 ### Stage 6 (Roadmap pós-MVP)
 
-- [x] Planejar suporte para `k > 6`, estratégias avançadas, backtesting e observabilidade em `docs/PHASE5_STAGE6_ROADMAP.md`.
-- [ ] Avaliar limites configuráveis (`maxBudgetCents`, `maxTicketsPerBatch`) via meta/config persistida.
+- [x] Roadmap documentado em `docs/PHASE5_STAGE6_ROADMAP.md`.
+- [x] Limites configuráveis implementados (`src/services/strategy-limits.ts`, CLI `npm run limits`, auditoria `BettingLimitAudit`).
 
 ## Riscos e Mitigações
 
-- **Carga de combinatória para k>6** — MVP limita em 6 dezenas, mas precisamos planejar caching e heurísticas para expansão (Stage 6).
-- **Backtesting** — sem dados de resultados antigos (hits) vinculados aos tickets; incluir no roadmap pós-MVP.
-- **Orçamento alto** — `maxBudgetCents` atual (R$ 500) pode ser insuficiente para usuários avançados; planejar flag de configuração administrável.
+- **Carga de combinatória para k>6** – MVP limita em 6 dezenas, mas precisamos planejar caching e heurísticas para expansão (Stage 6).
+- **Backtesting** – sem dados de resultados antigos (hits) vinculados aos tickets; incluir no roadmap pós-MVP.
+- **Orçamento alto** – `maxBudgetCents` atual (R$ 500) pode ser insuficiente para usuários avançados; planejar flag de configuração administrável.
 
 ## Próximos Passos Imediatos (23/09/2025)
 

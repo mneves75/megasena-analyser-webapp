@@ -1,6 +1,6 @@
-# Plano Detalhado — Fase 5 (Motor de Apostas)
+# Plano Detalhado – Fase 5 (Motor de Apostas)
 
-John Carmack review mode engaged — plano precisa ser coerente, incremental e sustentado por métricas.
+John Carmack review mode engaged – plano precisa ser coerente, incremental e sustentado por métricas.
 
 ## 1. Contexto & Escopo
 
@@ -12,22 +12,22 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 
 ## 2. Princípios de Projeto
 
-1. **Determinismo por Seed** — mesma entrada gera mesmo conjunto; facilita auditoria e backtesting.
-2. **Segurança de Domínio** — validar orçamento, limites k (6..15), proibir duplicatas.
-3. **Camada de Estratégia Pluggable** — interface comum para uniform, balanceada, futuras heurísticas (pares/trincas, recência, soma alvo).
-4. **Otimização Incremental** — primeiro resolver apostas simples (C(6,6)=1) e orçamentos pequenos; documentar limites e caminhos para múltiplas dezenas.
-5. **Traços de Auditoria** — logs estruturados (tempo, métricas), registro completo em `bets.strategy_payload`.
-6. **Agente Único** — manter motor no servidor (Server Action) para preservar segredos (preço em `.env`, seeds internas) e garantir ponte RSC.
+1. **Determinismo por Seed** – mesma entrada gera mesmo conjunto; facilita auditoria e backtesting.
+2. **Segurança de Domínio** – validar orçamento, limites k (6..15), proibir duplicatas.
+3. **Camada de Estratégia Pluggable** – interface comum para uniform, balanceada, futuras heurísticas (pares/trincas, recência, soma alvo).
+4. **Otimização Incremental** – primeiro resolver apostas simples (C(6,6)=1) e orçamentos pequenos; documentar limites e caminhos para múltiplas dezenas.
+5. **Traços de Auditoria** – logs estruturados (tempo, métricas), registro completo em `bets.strategy_payload`.
+6. **Agente Único** – manter motor no servidor (Server Action) para preservar segredos (preço em `.env`, seeds internas) e garantir ponte RSC.
 
 ## 3. Fases Internas
 
-### Stage 0 — Pré-requisitos
+### Stage 0 – Pré-requisitos
 
 - [ ] Garantir `Price` seed com custos atualizados (tabela oficial + data de consulta).
 - [ ] Definir limites operacionais iniciais (ex.: máximo 100 bilhetes por geração, orçamento máximo aceitável).
 - [ ] Elaborar cenários de teste em `docs/testing/strategies.md` (baseline, extremos, entradas inválidas).
 
-### Stage 1 — Infra & Pricing
+### Stage 1 – Infra & Pricing
 
 - [ ] Criar `src/services/pricing.ts`:
   - Funções `getPriceForK(k)` (carrega Prisma/seed) e `calculateTicketCost(k)`.
@@ -36,7 +36,7 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 - [ ] Atualizar seeds/fixtures (`docs/fixtures/sample-bets.json`) para refletir custo real.
 - [ ] Registrar data de atualização do preço na seed (`Meta` ou `Price.fonte`) e expor via API para UI exibir aviso.
 
-### Stage 2 — Estratégias MVP
+### Stage 2 – Estratégias MVP
 
 - [ ] Implementar PRNG determinístico (ex.: mulberry32) em `src/lib/random.ts`.
 - [ ] `uniformStrategy`: gera apostas de 6 dezenas sem repetição, garantindo ordering e sem colisões.
@@ -44,7 +44,7 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 - [ ] Cada estratégia retorna metadados (score, distribuição, quadrantes).
 - [ ] Tests unitários (seed fixo, resultados conhecidos, sem duplicatas).
 
-### Stage 3 — Workflow de Geração
+### Stage 3 – Workflow de Geração
 
 - [ ] Funções core:
   - `generateTicket(strategyCtx)` -> { dezenas, metadata }.
@@ -54,7 +54,7 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 - [ ] Adicionar abort controller com timeout (ex.: 3s) para evitar loops.
 - [ ] Expor métricas: diversidade quadrantes, hits pares/trincas, soma média.
 
-### Stage 4 — Persistência & APIs
+### Stage 4 – Persistência & APIs
 
 - [ ] Server Action `generateBetsAction` chamada por `POST /api/bets/generate` (com token opcional, similar a sync).
 - [ ] Persistir em `bets`/`bet_dezenas` com payload JSON (custo, heurísticas, seed, estratégias).
@@ -62,14 +62,14 @@ John Carmack review mode engaged — plano precisa ser coerente, incremental e s
 - [ ] Atualizar logs (Pino) com tempo total e contagem de bilhetes e integrar com `clearStatsCache` **somente se** estatísticas dependentes forem recalculadas (provavelmente não; documentar justificativa).
 - [ ] Documentar contratos HTTP/JSON (ver seção "5. Contratos de API").
 
-### Stage 5 — Testes, Fixtures & Docs
+### Stage 5 – Testes, Fixtures & Docs
 
 - [ ] Vitest integração: rodar CLI/Server Action com DB SQLite novo (similar aos testes de stats) e validar persistência.
 - [ ] Atualizar fixtures (`docs/fixtures/sample-bets.json`) com apostas geradas via script.
 - [ ] README: documentar endpoints `/api/bets`, parâmetros, exemplos de resposta, instruções CLI.
-- [ ] Plano principal (`docs/IMPLEMENTATION_PLAN.md`) — atualizar backlog, critérios e riscos.
+- [ ] Plano principal (`docs/IMPLEMENTATION_PLAN.md`) – atualizar backlog, critérios e riscos.
 
-### Stage 6 — Roadmap Pós-MVP (documentar, não implementar agora)
+### Stage 6 – Roadmap Pós-MVP (documentar, não implementar agora)
 
 - [ ] Estratégias avançadas: cobertura de pares/trincas, recência, diversificação por soma/recência.
 - [ ] Apostas múltiplas (k>6) com custo combinatório: requer heurística de cobertura e limite de orçamento.
@@ -208,7 +208,7 @@ Buffer para Stage 6 (roadmap) caso o sprint permita.
 - Definir heurística exata da estratégia balanceada (ex.: distribuir 2 dezenas por quadrante? usar percentil?). Documentar antes de codar.
 - Determinar formato final de `strategy_payload` (JSON schema?). Sugestão: `{ version, seed, metrics, config }`.
 - Decidir se UI permitirá escolher estratégias/pesos no MVP ou se o motor terá defaults (provavelmente defaults com enum).
-- Backtesting (parte da Fase 4/Fase 5 Stage 6) — precisar alinhar se será iniciado neste sprint ou adiado.
+- Backtesting (parte da Fase 4/Fase 5 Stage 6) – precisar alinhar se será iniciado neste sprint ou adiado.
 
 ## 7. Saídas Obrigatórias
 
@@ -226,36 +226,36 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 | Stage | Issue (STG-#) | Data limite | Estimativa | Owner | Dependências |
 | Stage | Issue (STG-#) | Data limite | Estimativa | Owner | Dependências | Status |
 | ----- | --------------------------------------------- | ----------- | ---------- | ---------------- | ------------------- | ------ |
-| 0 | STG-0 — Preparar pricing seed e limites MVP | 23/09/2025 | 4h | Estratégia/Dados | - | ✅ Concluído |
-| 1 | STG-1 — Service de pricing e testes | 23/09/2025 | 6h | Backend | STG-0 | ✅ Concluído |
-| 2 | STG-2 — Estratégias uniform/balanced com PRNG | 24/09/2025 | 8h | Backend + Dados | STG-1, dados Fase 4 | ✅ Concluído |
-| 3 | STG-3 — Workflow generateBatch e validações | 25/09/2025 | 7h | Backend | STG-2 | 🚧 Em planejamento |
-| 4 | STG-4 — APIs e persistência de apostas | 26/09/2025 | 8h | Backend + Infra | STG-3 | ⏳ Pendente |
-| 5 | STG-5 — Testes integração, fixtures e docs | 29/09/2025 | 6h | QA + Docs | STG-4 | ⏳ Pendente |
-| 6 | STG-6 — Roadmap pós-MVP documentado | 30/09/2025 | 4h | Estratégia | STG-5 | ⏳ Pendente |
+| 0 | STG-0 – Preparar pricing seed e limites MVP | 23/09/2025 | 4h | Estratégia/Dados | - | ✅ Concluído |
+| 1 | STG-1 – Service de pricing e testes | 23/09/2025 | 6h | Backend | STG-0 | ✅ Concluído |
+| 2 | STG-2 – Estratégias uniform/balanced com PRNG | 24/09/2025 | 8h | Backend + Dados | STG-1, dados Fase 4 | ✅ Concluído |
+| 3 | STG-3 – Workflow generateBatch e validações | 25/09/2025 | 7h | Backend | STG-2 | 🚧 Em planejamento |
+| 4 | STG-4 – APIs e persistência de apostas | 26/09/2025 | 8h | Backend + Infra | STG-3 | ⏳ Pendente |
+| 5 | STG-5 – Testes integração, fixtures e docs | 29/09/2025 | 6h | QA + Docs | STG-4 | ⏳ Pendente |
+| 6 | STG-6 – Roadmap pós-MVP documentado | 30/09/2025 | 4h | Estratégia | STG-5 | ⏳ Pendente |
 
-### STG-0 — Preparar pricing seed e limites MVP
+### STG-0 – Preparar pricing seed e limites MVP
 
 - Atualizar seed/planilha de preços com tabela oficial da CAIXA, registrando `fonte` e `data_consulta`.
 - Definir e versionar limites (`MAX_TICKETS=100`, `MAX_BUDGET_CENTS=50000`) em `docs/PHASE5_STRATEGY_PLAN.md` + `.env.sample`.
 - Criar `docs/testing/strategies.md` (se inexistente) com cenários mínimos: orçamento errado, budget alto, seed fixo.
 - Critérios de aceite: seed carregada no banco local, documentação de limites publicada, cenários revisados por QA.
 
-### STG-1 — Service de pricing e testes
+### STG-1 – Service de pricing e testes
 
 - Implementar `src/services/pricing.ts` com APIs descritas no Stage 1; expor tipos necessários.
 - Adicionar testes Vitest cobrindo custos oficiais e erros.
 - Atualizar fixture `docs/fixtures/sample-bets.json` com custos apropriados.
 - Critérios de aceite: `npm run test -- pricing` verde, função retornando preço correto para `k = 6`.
 
-### STG-2 — Estratégias uniform/balanced com PRNG
+### STG-2 – Estratégias uniform/balanced com PRNG
 
 - Criar `src/lib/random.ts` com PRNG determinístico (mulberry32 ou equivalente) validado via snapshot.
 - Implementar `uniformStrategy` e `balancedStrategy` conforme Stage 2, retornando metadados.
 - Documentar heurística detalhada em `docs/strategies/balanced.md` (novo) com exemplos e métricas (freq. média, paridade, quadrantes).
 - Critérios de aceite: testes unitários com seed fixa produzindo conjuntos determinísticos, sem bilhetes duplicados.
 
-### STG-3 — Workflow generateBatch e validações
+### STG-3 – Workflow generateBatch e validações
 
 > Detalhamento operativo: `docs/PHASE5_STAGE3_PLAN.md`.
 
@@ -268,7 +268,7 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 - Atualizar logs estruturados com métricas principais.
 - Critérios de aceite: testes unitários cobrindo orçamento insuficiente, colisão de bilhetes e timeout.
 
-### STG-4 — APIs e persistência de apostas
+### STG-4 – APIs e persistência de apostas
 
 - Server Action `generateBetsAction`, rotas `/api/bets/generate` (POST) e `/api/bets` (GET) implementadas com parsing via Zod.
 - Persistência em `bets`/`bet_dezenas` consolidada por `persistBatch`, armazenando payload validado e dezenas ordenadas.
@@ -276,14 +276,14 @@ Todas as datas consideram início do sprint em 23/09/2025 (terça-feira) e mant�
 - Teste de integração (`bet-store.test.ts`) garante que `persistBatch` + `listBets` funcionam em SQLite efêmero.
 - **Próximo**: evoluir filtros avançados (orçamento mínimo/máximo) e documentação de response detalhada para frontend/Product.
 
-### STG-5 — Testes integração, fixtures e docs
+### STG-5 – Testes integração, fixtures e docs
 
 - Teste de integração (`bet-store.test.ts`) valida persistência + consulta em banco efêmero.
 - Fixture `docs/fixtures/sample-bets.json` alinhada ao script CLI (`scripts/dev/generate-batch.ts`).
 - README e `docs/API_BET_ENGINE.md` documentam endpoints e fluxo; checklist manual atualizado em `docs/testing/strategies.md`.
 - **Próximo**: documentar smoke manual no repositório (prints / `curl`), gerar vídeo curto para Product.
 
-### STG-6 — Roadmap pós-MVP documentado
+### STG-6 – Roadmap pós-MVP documentado
 
 - Roadmap consolidado em `docs/PHASE5_STAGE6_ROADMAP.md` com iniciativas (k>6, estratégias avançadas, backtesting, limites dinâmicos, observabilidade).
 - Registrar decisões de adiamento e critérios para retomada no backlog principal.

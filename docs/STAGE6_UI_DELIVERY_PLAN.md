@@ -1,6 +1,6 @@
 # Stage 6 · Plano de Entrega da Interface Web
 
-> Atualizado em 23/09/2025 — elaborado após revisão "fresh eyes" das rotas `app/`.
+> Atualizado em 23/09/2025 – elaborado após revisão "fresh eyes" das rotas `app/`.
 
 ## 1. Achados da Revisão
 
@@ -60,7 +60,7 @@ Entregar uma primeira versão navegável das features core (Stats dashboard, Ger
 - `stats`, `generate`, `bets` carregam dados sem erros em ambiente com banco real.
 - Testes unitários e build continuam verdes; nenhum aviso ESLint.
 - Não há logs de hidratação/diff ao alternar temas ou navegar entre rotas.
-- README/documentação refletem a UI entregue (prints, instruções de uso).
+- README/documentação refletem a UI entregue (prints, instruções de uso). Para diagnósticos do gerador, seguir `docs/GENERATE_PAGE_DIAGNOSIS_PLAN.md` (CLI validado em 24/09/2025; teste visual pendente quando o dev server estiver rodando sem Turbopack).
 
 ## 7. Riscos & Mitigações
 

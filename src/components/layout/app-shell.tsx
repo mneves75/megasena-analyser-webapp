@@ -11,24 +11,29 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="relative min-h-screen bg-[rgb(var(--background))] text-[rgb(var(--foreground))]">
+    <div className="relative min-h-screen overflow-hidden bg-[rgb(var(--background))] text-[rgb(var(--foreground))]">
       <BackgroundAura />
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-14 px-6 pb-16 pt-10 sm:gap-16 sm:px-12 sm:pt-12 lg:px-16">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col gap-16 px-6 pb-20 pt-12 sm:px-12 lg:px-20">
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/20 bg-[rgba(var(--surface-muted),0.9)] px-6 py-4 text-sm shadow-soft backdrop-blur-md sm:px-10 sm:py-5 dark:border-white/10 dark:bg-[rgba(var(--surface-elevated),0.82)]">
           <Link
             href="/"
             className="flex items-center gap-3"
             aria-label="Mega-Sena Analyzer"
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white dark:bg-white dark:text-slate-900">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white shadow-sm dark:bg-white dark:text-slate-900">
               MS
             </span>
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-semibold tracking-tightest text-slate-900 dark:text-white">
-                Mega-Sena Analyzer
+              <span className="flex items-center gap-2 text-xl font-semibold leading-none tracking-tightest text-slate-900 sm:text-2xl lg:text-3xl dark:text-white">
+                <span className="text-orange-500 dark:text-orange-300">
+                  Mega-Sena Analyzer
+                </span>
+                <span className="hidden items-center gap-1 rounded-full border border-slate-200/80 bg-white/40 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.26em] text-slate-600 shadow-sm dark:border-white/20 dark:bg-white/10 dark:text-white/80 sm:inline-flex">
+                  Live
+                </span>
               </span>
-              <span className="text-xs tracking-tight text-slate-500 dark:text-slate-300">
-                Cobertura inteligente para apostas responsáveis
+              <span className="mt-1 text-sm font-medium tracking-tight text-slate-600 sm:text-base dark:text-slate-300">
+                Radar preditivo para apostas conscientes e transparentes
               </span>
             </div>
           </Link>

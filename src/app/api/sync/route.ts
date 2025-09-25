@@ -25,19 +25,17 @@ export async function POST(request: NextRequest) {
 
   let body: Body = {};
   try {
-    body = Object.assign({}, await request.json());
-  } catch (error) {
-    // Corpo vazio é aceitável; outros erros serão logados.
-    if (error instanceof SyntaxError) {
-      logger.warn(
-        { error: error.message },
-        "Payload inválido recebido no sync",
-      );
-      return NextResponse.json(
-        { message: "Payload inválido" },
-        { status: 400 },
-      );
+    const raw = await request.text();
+    if (raw && raw.trim().length > 0) {
+      body = Object.assign({}, JSON.parse(raw));
     }
+  } catch (error) {
+    // Em caso de erro real de parsing (conteúdo malformado), retornamos 400.
+    logger.warn(
+      { error: error instanceof Error ? error.message : String(error) },
+      "Payload inválido recebido no sync",
+    );
+    return NextResponse.json({ message: "Payload inválido" }, { status: 400 });
   }
 
   const { fullBackfill = false, limit } = body;

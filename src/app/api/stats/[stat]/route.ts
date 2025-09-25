@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
@@ -28,13 +28,19 @@ const querySchema = z.object({
     }),
 });
 
-type StatsRouteContext = { params: Promise<{ stat: string }> };
-
-export async function GET(request: NextRequest, context: StatsRouteContext) {
+export async function GET(
+  request: Request,
+  // `params` chega como Promise por conta do Typed Routes de Next 15
+  { params }: { params: Promise<{ stat: string }> },
+) {
   const { searchParams } = new URL(request.url);
+  const getParam = (key: string) => {
+    const value = searchParams.get(key);
+    return value === null ? undefined : value;
+  };
   const parsed = querySchema.safeParse({
-    window: searchParams.get("window"),
-    limit: searchParams.get("limit"),
+    window: getParam("window"),
+    limit: getParam("limit"),
   });
 
   if (!parsed.success) {
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest, context: StatsRouteContext) {
   }
 
   const { window, limit } = parsed.data;
-  const { stat } = await context.params;
+  const { stat } = await params;
   const normalized = stat.toLowerCase();
 
   switch (normalized) {

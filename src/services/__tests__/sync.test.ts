@@ -28,12 +28,44 @@ const normalized: NormalizedConcurso = {
 describe("determineStart", () => {
   it("retorna início baseado em janela quando banco vazio", () => {
     expect(
-      determineStart({ latest: 100, lastStored: null, windowSize: 5 }),
+      determineStart({
+        latest: 100,
+        lastStored: null,
+        windowSize: 5,
+        fullBackfill: false,
+      }),
     ).toBe(96);
   });
 
-  it("retorna último concurso + 1 quando há histórico", () => {
-    expect(determineStart({ latest: 100, lastStored: 90 })).toBe(91);
+  it("retorna último concurso + 1 quando há histórico em modo incremental", () => {
+    expect(
+      determineStart({
+        latest: 100,
+        lastStored: 90,
+        fullBackfill: false,
+      }),
+    ).toBe(91);
+  });
+
+  it("retorna 1 quando fullBackfill está ativo sem limite", () => {
+    expect(
+      determineStart({
+        latest: 100,
+        lastStored: 90,
+        fullBackfill: true,
+      }),
+    ).toBe(1);
+  });
+
+  it("respeita limite informado em fullBackfill", () => {
+    expect(
+      determineStart({
+        latest: 100,
+        lastStored: 90,
+        fullBackfill: true,
+        windowSize: 25,
+      }),
+    ).toBe(76);
   });
 });
 

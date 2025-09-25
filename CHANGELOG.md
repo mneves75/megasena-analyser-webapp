@@ -10,16 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Integração do `react-data-grid` para listar apostas geradas, com seleção de texto preservada e botões de cópia por linha e para o lote inteiro.
+- Subcomandos `megasena bets generate`, `megasena bets list` e `megasena limits`, reutilizando serviços do app e suportando `--json`/`--silent`.
+- Script `npm run cli:smoke` e workflow CI (`.github/workflows/cli-smoke.yml`) validando resumo → stats → bets → sync em headless mode.
+- Documentação de sessões reais do CLI em `docs/CLI_TRANSCRIPTS.md`, facilitando auditoria e onboarding.
 
 ### Changed
 
 - Resultados do gerador exibidos em grade virtualizada com metadados contextuais, mantendo exportação do payload e feedback visual responsivo.
-- Home page ajustada para exibir `—` na highlight de soma média quando não há dados, evitando ruído junto à mensagem "Sem dados suficientes".
+- Home page ajustada para exibir `–` na highlight de soma média quando não há dados, evitando ruído junto à mensagem "Sem dados suficientes".
 - Histórico `/bets` remodelado com DataGrid compartilhado, incluindo cópia rápida das dezenas e metadados auditáveis em cada linha.
+- CLI agora força modo silencioso automaticamente quando `CI=1` ou `--json` é utilizado, reduzindo ruído em pipelines.
+- README, guia operacional e plano de paridade atualizados com exemplos das novas rotas CLI e referências ao smoke test.
+- Padrão tipográfico revisado em todo o repositório (uso consistente de traço médio `–`).
 
 ### Fixed
 
 - Falha de build Turbopack causada por importação padrão inexistente de `react-data-grid` corrigida com uso da exportação nomeada.
+- Erros de `npm run typecheck` devido à ausência de `@testing-library/react` e testes CLI sem mocks hoisted adequados.
+- Navegação CLI `sync` não polui logs headless – `SilentSyncUI` é acionado automaticamente em ambientes sem TTY/CI.
 
 ### Planned
 

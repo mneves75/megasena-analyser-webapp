@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { listBets } from "@/services/bet-store";
@@ -8,37 +8,56 @@ const querySchema = z.object({
   budgetMin: z
     .string()
     .optional()
-    .transform((value) => (value ? Number.parseInt(value, 10) : undefined)),
+    .transform((value) => (value ? Number.parseInt(value, 10) : undefined))
+    .refine((value) => value === undefined || Number.isFinite(value), {
+      message: "budgetMin inválido",
+    }),
   budgetMax: z
     .string()
     .optional()
-    .transform((value) => (value ? Number.parseInt(value, 10) : undefined)),
+    .transform((value) => (value ? Number.parseInt(value, 10) : undefined))
+    .refine((value) => value === undefined || Number.isFinite(value), {
+      message: "budgetMax inválido",
+    }),
   from: z
     .string()
     .optional()
-    .transform((value) => (value ? new Date(value) : undefined)),
+    .transform((value) => (value ? new Date(value) : undefined))
+    .refine((value) => value === undefined || !Number.isNaN(value.getTime()), {
+      message: "from inválido",
+    }),
   to: z
     .string()
     .optional()
-    .transform((value) => (value ? new Date(value) : undefined)),
+    .transform((value) => (value ? new Date(value) : undefined))
+    .refine((value) => value === undefined || !Number.isNaN(value.getTime()), {
+      message: "to inválido",
+    }),
   limit: z
     .string()
     .optional()
     .transform((value) => (value ? Number.parseInt(value, 10) : undefined))
-    .refine((value) => value === undefined || value > 0, {
-      message: "limit deve ser maior que zero",
-    }),
+    .refine(
+      (value) => value === undefined || (Number.isFinite(value) && value > 0),
+      {
+        message: "limit deve ser maior que zero",
+      },
+    ),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const getParam = (key: string) => {
+    const value = searchParams.get(key);
+    return value === null ? undefined : value;
+  };
   const parsed = querySchema.safeParse({
-    strategy: searchParams.get("strategy"),
-    budgetMin: searchParams.get("budgetMin"),
-    budgetMax: searchParams.get("budgetMax"),
-    from: searchParams.get("from"),
-    to: searchParams.get("to"),
-    limit: searchParams.get("limit"),
+    strategy: getParam("strategy"),
+    budgetMin: getParam("budgetMin"),
+    budgetMax: getParam("budgetMax"),
+    from: getParam("from"),
+    to: getParam("to"),
+    limit: getParam("limit"),
   });
 
   if (!parsed.success) {

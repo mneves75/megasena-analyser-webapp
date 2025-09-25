@@ -1,4 +1,4 @@
-# Contrato de Dados — API Mega-Sena (CAIXA)
+# Contrato de Dados – API Mega-Sena (CAIXA)
 
 Fonte oficial: `https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena`.
 

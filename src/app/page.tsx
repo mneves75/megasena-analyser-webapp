@@ -8,167 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatList } from "@/components/dashboard/stat-list";
 import { buttonStyles } from "@/components/ui/button-variants";
 import { Stack } from "@/components/ui/stack";
-import { getFrequencies, getSums, getRecency } from "@/services/stats";
-import { getPriceForK, getPricingMetadata } from "@/services/pricing";
-import { prisma } from "@/lib/prisma";
-
-type Highlight = {
-  label: string;
-  value: string;
-  description: string;
-};
-
-type TrendingNumber = {
-  dezena: number;
-  hits: number;
-  frequency: number;
-  contestsSinceLast: number | null;
-};
-
-const numberFormatter = new Intl.NumberFormat("pt-BR");
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-});
-
-function formatSource(urlOrLabel: string | null | undefined) {
-  if (!urlOrLabel) {
-    return "Fonte oficial";
-  }
-
-  try {
-    const parsed = new URL(urlOrLabel);
-    return parsed.hostname.replace(/^www\./, "");
-  } catch {
-    return urlOrLabel;
-  }
-}
-
-function formatDate(value: Date | null | undefined) {
-  if (!value || Number.isNaN(value.getTime())) {
-    return "ainda não sincronizado";
-  }
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(value);
-}
-
-type HomeData = {
-  highlights: Highlight[];
-  topNumbers: TrendingNumber[];
-  totalDraws: number;
-  averageSum: number;
-  lastSyncDate: Date | null;
-  paritySummary: string;
-  windowSize: number;
-};
-
-async function loadHomeData(): Promise<HomeData> {
-  const frequencyWindow = 200;
-  const [
-    frequencies,
-    sums,
-    pricingMeta,
-    priceK6,
-    recency,
-    lastSyncMeta,
-    latestDraw,
-  ] = await Promise.all([
-    getFrequencies({ window: frequencyWindow }),
-    getSums({ window: frequencyWindow }),
-    getPricingMetadata(),
-    getPriceForK(6),
-    getRecency({}),
-    prisma.meta.findUnique({ where: { key: "last_sync" } }),
-    prisma.draw.findFirst({
-      orderBy: { data: "desc" },
-      select: { data: true, concurso: true },
-    }),
-  ]);
-
-  const parsedLastSync = lastSyncMeta?.value
-    ? new Date(lastSyncMeta.value)
-    : null;
-  const lastSyncDate =
-    parsedLastSync && !Number.isNaN(parsedLastSync.getTime())
-      ? parsedLastSync
-      : null;
-  const recencyMap = new Map(
-    recency.map((item) => [item.dezena, item.contestsSinceLast]),
-  );
-
-  const totalParity = sums.parity.even + sums.parity.odd;
-  const paritySummary = totalParity
-    ? `${Math.round((sums.parity.even / totalParity) * 100)}% pares · ${Math.round(
-        (sums.parity.odd / totalParity) * 100,
-      )}% ímpares`
-    : "Sem dados suficientes";
-  const hasAverageSum =
-    typeof sums.average === "number" && !Number.isNaN(sums.average);
-  const averageSumValue = hasAverageSum ? Math.round(sums.average) : null;
-
-  const highlights: Highlight[] = [
-    {
-      label: "Concursos processados",
-      value: numberFormatter.format(frequencies.totalDraws),
-      description: frequencies.windowStart
-        ? `Cobertura a partir do concurso ${frequencies.windowStart}`
-        : "Sincronize para ampliar a cobertura.",
-    },
-    {
-      label: "Última sincronização",
-      value: formatDate(lastSyncDate),
-      description: latestDraw?.data
-        ? `Concurso ${latestDraw.concurso} em ${formatDate(latestDraw.data)}`
-        : "Nenhum concurso carregado ainda.",
-    },
-    {
-      label: "Preço base oficial",
-      value: currencyFormatter.format(priceK6.costCents / 100),
-      description: pricingMeta.lastOfficialUpdate
-        ? `Atualizado em ${formatDate(pricingMeta.lastOfficialUpdate)}${
-            priceK6.fonte ? ` · Fonte: ${formatSource(priceK6.fonte)}` : ""
-          }`
-        : "Use `npm run db:seed` para registrar os valores.",
-    },
-    {
-      label: `Soma média (janela ${frequencyWindow})`,
-      value:
-        averageSumValue !== null
-          ? numberFormatter.format(averageSumValue)
-          : "—",
-      description: paritySummary,
-    },
-  ];
-
-  const topNumbers: TrendingNumber[] = frequencies.items
-    .slice(0, 6)
-    .map((item) => {
-      return {
-        dezena: item.dezena,
-        hits: item.hits,
-        frequency: item.frequency,
-        contestsSinceLast: recencyMap.get(item.dezena) ?? null,
-      };
-    });
-
-  return {
-    highlights,
-    topNumbers,
-    totalDraws: frequencies.totalDraws,
-    averageSum: averageSumValue ?? 0,
-    lastSyncDate,
-    paritySummary,
-    windowSize: frequencyWindow,
-  };
-}
+import { loadHomeSummary } from "@/services/dashboard/home-summary";
 
 export default async function Home() {
-  const homeData = await loadHomeData();
+  const homeData = await loadHomeSummary();
   const showOnboardingBanner = homeData.totalDraws === 0;
   const workflow = [
     {
@@ -244,11 +90,11 @@ export default async function Home() {
               Ver estatísticas
             </Link>
           </div>
-          <dl className="mt-12 grid gap-7 sm:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(320px,1fr))]">
+          <dl className="mt-12 grid gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {homeData.highlights.map((item) => (
               <div
                 key={item.label}
-                className="rounded-3xl border border-white/20 bg-white/75 p-7 shadow-soft backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/5 dark:bg-white/10"
+                className="min-h-[176px] rounded-3xl border border-white/20 bg-white/80 p-7 shadow-soft backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:border-white/5 dark:bg-white/10"
               >
                 <dt className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   {item.label}
@@ -256,7 +102,7 @@ export default async function Home() {
                 <dd className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tightest text-slate-900 dark:text-white">
                   {item.value}
                 </dd>
-                <p className="mt-2 text-sm leading-relaxed tracking-tight text-slate-600 break-words dark:text-slate-300">
+                <p className="mt-2 text-sm leading-relaxed tracking-tight text-slate-600 break-words text-balance dark:text-slate-300">
                   {item.description}
                 </p>
               </div>
@@ -265,41 +111,19 @@ export default async function Home() {
         </div>
         <aside className="flex flex-col gap-5">
           <Card
-            variant="compact"
-            className="rounded-3xl border border-white/15 bg-white/80 dark:border-white/10 dark:bg-white/10"
+            variant="comfortable"
+            className="rounded-3xl border border-white/15 bg-white/85 dark:border-white/10 dark:bg-white/10"
           >
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-slate-900 dark:text-white">
-                Números em destaque
-              </CardTitle>
-              <CardDescription>
-                Janela analisada: {homeData.windowSize} concursos recentes.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
-              <ul className="space-y-3">
-                {homeData.topNumbers.map((numero) => (
-                  <li
-                    key={numero.dezena}
-                    className="flex items-center gap-3 rounded-2xl border border-white/30 bg-white px-4 py-3 shadow-soft dark:border-white/5 dark:bg-white/5"
-                  >
-                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-500 text-sm font-semibold text-white">
-                      {numero.dezena.toString().padStart(2, "0")}
-                    </span>
-                    <div className="flex flex-1 flex-col gap-1">
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">
-                        {numberFormatter.format(numero.hits)} ocorrências
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {(numero.frequency * 100).toFixed(1)}% dos concursos
-                        {numero.contestsSinceLast !== null
-                          ? ` · há ${numero.contestsSinceLast} concursos sem sair`
-                          : ""}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            <CardContent className="p-0">
+              <div className="space-y-4 p-7">
+                <StatList
+                  title="Números em destaque"
+                  description={`Janela analisada: ${homeData.windowSize} concursos`}
+                  items={homeData.topNumbers}
+                  badge={{ label: "Top 6", variant: "secondary" }}
+                  accent="hot"
+                />
+              </div>
             </CardContent>
           </Card>
           <Card

@@ -8,14 +8,23 @@
 - API vs Server Actions: Internal mutations exist both as Server Action (`generateBetsAction`) and API routes (`/api/bets/generate`, `/api/sync`). This is acceptable for external integrations; app-internal flows should prefer Server Actions.
 - Effects & Browser APIs: No stray `useEffect`, `window`, or `document` in Server Components. Client usage is confined to files with `"use client"`.
 
-### Issues Found (fixed now)
+### Fresh Eyes Findings · 23/09/2025
 
-- CSS typos in `src/app/globals.css`: `:root` and `::selection` had typos; corrected.
-- Next typed route mismatch for `/api/stats/[stat]`: aligned to Next 15 signature using `{ params: Promise<{ stat: string }> }` and preserved strict typing without `any`.
+- **Client / Server boundaries seguem o guia**: apenas `navigation`, `button`, `theme-toggle` estão marcados com `"use client"`; todas usam apenas APIs de navegador. Componentes de página continuam server-first.
+- **Server Actions**: `generateBetsAction` continua serializando adequadamente (`StrategyPayload`). Nenhuma fuga de BigInt ou Map para o cliente.
+- **Typed route handler**: `/api/stats/[stat]` exige `{ params: Promise<{ stat: string }> }` por contrato Next 15. Mantivemos `await params` e documentamos para evitar regressões futuras.
+- **Global Theme**: tokens atualizados em `globals.css` + script `beforeInteractive` eliminam FOUC. `ThemeToggle` se limita ao cabeçalho do `AppShell`, mantendo lógica cliente isolada.
+- **Bet persistence**: `strategy_payload` guarda snapshots completos; recomendo auditar tamanho quando tickets >100 (ver roadmap Stage 6).
+
+### Regression Watch
+
+- `persistBatch` grava `total_cost_cents` por ticket (valor unitário). Confirmar se desejo era custo do lote inteiro; decidir antes de expor na UI `/bets`.
+- `ThemeToggle` usa ícones emoji. Se o design exigir ícones vetoriais, migrar para Lucide e garantir `aria-pressed`.
+- Monitorar crescimento de `statsCache` (in-memory). Hoje o sync limpa via `clearStatsCache`, mas um cron de longa duração deve prever TTL.
 
 ### Current Boundaries Summary
 
-- Client Components: `src/components/ui/button.tsx`, `src/components/layout/navigation.tsx`.
+- Client Components: `src/components/ui/button.tsx`, `src/components/layout/navigation.tsx`, `src/components/layout/theme-toggle.tsx`.
 - Server Components: All pages under `src/app/**` that do not declare `"use client"`.
 - Server Actions: `src/app/generate/actions.ts`.
 - API Routes for external use: `src/app/api/bets/**`, `src/app/api/stats/[stat]`, `src/app/api/sync`.
@@ -27,13 +36,14 @@
 - Document env vars in `README.md` (already present). Keep secrets in `.env.local`.
 - Ensure `src/services/stats.ts` BigInt values are normalized when exposed via API (currently cast to Number where applicable; safe for counts; keep care for monetary fields elsewhere).
 
-### TODO (next increments)
+### TODO (próximos incrementos)
 
-1. Add UI that calls `generateBetsAction` via `<form action={...}>` under `src/app/generate/page.tsx` and stream result with `<Suspense>`.
-2. Build basic stats UI under `src/app/stats/page.tsx` using Server Components fetching directly from `src/services/stats.ts` (no client fetch needed initially).
-3. Add `revalidateTag`/`revalidatePath` strategy for stats when sync runs; consider tagging per stat.
-4. Convert any app-internal consumers now using `/api/*` to Server Actions or direct service imports in Server Components.
-5. Add tests for `services/stats` and `services/bets` JSON serializability if returned via API/Actions.
+1. **Generate UI Server-first** – Montar `<form action={generateBetsAction}>` em `app/generate/page.tsx` com streaming e exibição de `payload`/avisos (evitar `fetch` lado cliente).
+2. **Stats dashboard server-side** – `app/stats/page.tsx` deve consumir `getFrequencies`, `getPairs` etc direto no servidor com seções suspensas.
+3. **Persistência de lotes** – Decidir se `total_cost_cents` deve refletir custo do bilhete ou do lote; alinhar schema/seed e atualizar testes.
+4. **Auditoria CLI** – Adicionar teste de fumaça para `scripts/limits.ts` (via Vitest + `execa`) garantindo `--set`/`--reset`.
+5. **Documentar typed routes** – Registrar em `docs/PHASE5_STAGE6_ROADMAP.md` ou README o motivo do `Promise` em handlers (bloqueio para futuros PRs).
+6. **Iconografia do tema** – Se migrar para ícones, adicionar `aria-pressed` e contraste mínimo AA.
 
 ### Notes on Hono/Drizzle
 
@@ -41,5 +51,5 @@
 
 ### Verification
 
-- `npm run lint`/`typecheck`/`build` pass.
-- App Router structure and RSC boundaries are consistent.
+- `npm run lint`, `npm run build` (23/09/2025) executados após auditoria.
+- Estrutura App Router permanece consistente com RSC; nenhum módulo cliente importa Prisma/env.

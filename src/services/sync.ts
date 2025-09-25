@@ -6,6 +6,7 @@ import { fetchConcurso, type NormalizedConcurso } from "@/data/caixa-client";
 import { childLogger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { clearStatsCache } from "@/services/stats";
+import { type SyncConsoleUI } from "@/lib/console-ui";
 
 const logger = childLogger({ service: "sync-megasena" });
 const DEFAULT_BACKFILL_WINDOW = Number(process.env.SYNC_BACKFILL_WINDOW ?? 50);
@@ -16,6 +17,7 @@ export type SyncOptions = {
   fullBackfill?: boolean;
   limit?: number;
   client?: PrismaClient;
+  ui?: SyncConsoleUI;
 };
 
 export type SyncResult = {
@@ -31,29 +33,98 @@ export async function syncMegaSena({
   fullBackfill = false,
   limit,
   client = prisma,
+  ui,
 }: SyncOptions = {}): Promise<SyncResult> {
   const startedAt = new Date();
   const txClient = client instanceof PrismaClient ? client : prisma;
 
-  const latestApi = await fetchConcurso();
-  const latestConcurso = latestApi.concurso;
-  const lastStored = await txClient.draw.findFirst({
-    orderBy: { concurso: "desc" },
-    select: { concurso: true },
-  });
+  logger.info(
+    { fullBackfill, limit, defaultWindow: DEFAULT_BACKFILL_WINDOW },
+    "Iniciando sincronização Mega-Sena",
+  );
 
-  const windowSize =
-    fullBackfill || !lastStored
-      ? (limit ?? DEFAULT_BACKFILL_WINDOW)
+  // Rich console UI
+  if (ui) {
+    ui.showHeader();
+  }
+
+  // Fetch latest contest from API with spinner
+  const latestApi = ui
+    ? await ui.withSpinner(
+        "Buscando último concurso na API CAIXA",
+        fetchConcurso(),
+      )
+    : await fetchConcurso();
+
+  const latestConcurso = latestApi.concurso;
+  logger.info(
+    { latestConcurso, data: latestApi.data },
+    "Último concurso disponível na API",
+  );
+
+  // Check local database
+  const lastStored = ui
+    ? await ui.withSpinner(
+        "Verificando banco local",
+        txClient.draw.findFirst({
+          orderBy: { concurso: "desc" },
+          select: { concurso: true },
+        }),
+      )
+    : await txClient.draw.findFirst({
+        orderBy: { concurso: "desc" },
+        select: { concurso: true },
+      });
+
+  logger.info(
+    { lastStoredConcurso: lastStored?.concurso ?? null },
+    "Último concurso armazenado localmente",
+  );
+
+  const normalizedLimit =
+    typeof limit === "number" && Number.isFinite(limit) && limit > 0
+      ? Math.trunc(limit)
+      : undefined;
+
+  const windowSize = fullBackfill
+    ? normalizedLimit
+    : !lastStored
+      ? (normalizedLimit ?? DEFAULT_BACKFILL_WINDOW)
       : undefined;
   const startConcurso = determineStart({
     latest: latestConcurso,
     lastStored: lastStored?.concurso ?? null,
     windowSize,
+    fullBackfill,
   });
 
+  const totalToProcess = latestConcurso - startConcurso + 1;
+  logger.info(
+    { startConcurso, latestConcurso, windowSize, totalToProcess },
+    "Janela de sincronização determinada",
+  );
+
+  // Show sync plan in console
+  if (ui) {
+    ui.showSyncPlan({
+      startConcurso,
+      latestConcurso,
+      totalToProcess,
+      fullBackfill,
+      limit,
+    });
+  }
+
   if (startConcurso > latestConcurso) {
-    logger.info({ latestConcurso }, "Nenhum concurso novo disponível");
+    logger.info(
+      { latestConcurso },
+      "Nenhum concurso novo disponível - banco já está atualizado",
+    );
+
+    if (ui) {
+      ui.showNoNewContests();
+    }
+
     return {
       processed: 0,
       inserted: 0,
@@ -71,28 +142,121 @@ export async function syncMegaSena({
   >();
   cachedLatest.set(latestApi.concurso, latestApi);
 
-  for (
-    let concurso = startConcurso;
-    concurso <= latestConcurso;
-    concurso += 1
-  ) {
-    const normalized =
-      cachedLatest.get(concurso) ?? (await fetchConcurso(concurso));
+  logger.info({ totalToProcess }, "Iniciando processamento dos concursos");
 
-    const result = await persistConcurso(txClient, normalized);
-    summary.processed += 1;
-    summary[result === "inserted" ? "inserted" : "updated"] += 1;
+  // Start progress bar
+  if (ui) {
+    ui.startProgress(totalToProcess);
   }
 
-  await txClient.meta.upsert({
-    where: { key: "last_sync" },
-    update: { value: new Date().toISOString() },
-    create: { key: "last_sync", value: new Date().toISOString() },
-  });
+  try {
+    for (
+      let concurso = startConcurso;
+      concurso <= latestConcurso;
+      concurso += 1
+    ) {
+      const progress = summary.processed + 1;
+      const percentage = Math.round((progress / totalToProcess) * 100);
+
+      logger.debug(
+        { concurso, progress, totalToProcess, percentage: `${percentage}%` },
+        `Processando concurso ${concurso} (${progress}/${totalToProcess})`,
+      );
+
+      const isFromCache = cachedLatest.has(concurso);
+      const normalized =
+        cachedLatest.get(concurso) ?? (await fetchConcurso(concurso));
+
+      if (!isFromCache) {
+        logger.debug(
+          { concurso, dezenas: normalized.dezenas, data: normalized.data },
+          "Dados obtidos da API CAIXA",
+        );
+      } else {
+        logger.debug({ concurso }, "Usando dados do cache");
+      }
+
+      const result = await persistConcurso(txClient, normalized);
+      summary.processed += 1;
+      summary[result === "inserted" ? "inserted" : "updated"] += 1;
+
+      // Update progress bar
+      if (ui) {
+        ui.updateProgress(progress, concurso, result);
+      }
+
+      logger.debug(
+        { concurso, action: result, dezenas: normalized.dezenas },
+        `Concurso ${concurso} ${result === "inserted" ? "inserido" : "atualizado"} com sucesso`,
+      );
+    }
+  } finally {
+    // Always stop progress bar
+    if (ui) {
+      ui.stopProgress();
+    }
+  }
+
+  // Update metadata
+  if (ui) {
+    await ui.withSpinner(
+      "Atualizando metadata",
+      txClient.meta.upsert({
+        where: { key: "last_sync" },
+        update: { value: new Date().toISOString() },
+        create: { key: "last_sync", value: new Date().toISOString() },
+      }),
+    );
+  } else {
+    logger.info("Atualizando timestamp da última sincronização...");
+    await txClient.meta.upsert({
+      where: { key: "last_sync" },
+      update: { value: new Date().toISOString() },
+      create: { key: "last_sync", value: new Date().toISOString() },
+    });
+  }
 
   const finishedAt = new Date();
-  logger.info({ ...summary, latestConcurso }, "Sincronização concluída");
-  clearStatsCache();
+  const durationMs = finishedAt.getTime() - startedAt.getTime();
+  const durationSeconds = Math.round(durationMs / 1000);
+  const avgTimePerConcurso =
+    summary.processed > 0
+      ? Math.round(durationMs / summary.processed) + "ms"
+      : "0ms";
+
+  logger.info(
+    {
+      ...summary,
+      latestConcurso,
+      durationSeconds,
+      avgTimePerConcurso,
+    },
+    `Sincronização concluída em ${durationSeconds}s`,
+  );
+
+  // Clear cache with spinner
+  if (ui) {
+    await ui.withSpinner(
+      "Limpando cache de estatísticas",
+      new Promise<void>((resolve) => {
+        clearStatsCache();
+        resolve();
+      }),
+    );
+
+    // Show results
+    ui.showResults({
+      processed: summary.processed,
+      inserted: summary.inserted,
+      updated: summary.updated,
+      durationSeconds,
+      avgTimePerConcurso,
+    });
+  } else {
+    logger.info("Limpando cache de estatísticas...");
+    clearStatsCache();
+    logger.info("Cache de estatísticas limpo com sucesso");
+  }
 
   return {
     ...summary,
@@ -123,8 +287,23 @@ async function persistConcurso(
 
   const action: PersistResult = existing ? "updated" : "inserted";
 
+  logger.debug(
+    {
+      concurso: concurso.concurso,
+      action,
+      dezenasCount: payload.dezenas.length,
+      premiosCount: payload.premios.length,
+      acumulou: payload.draw.acumulou,
+    },
+    `Preparando para ${action === "inserted" ? "inserir" : "atualizar"} concurso ${concurso.concurso}`,
+  );
+
   await client.$transaction(async (tx) => {
     if (existing) {
+      logger.debug(
+        { concurso: concurso.concurso },
+        "Removendo dados antigos do concurso",
+      );
       await tx.drawDezena.deleteMany({
         where: { concurso: concurso.concurso },
       });
@@ -155,6 +334,11 @@ async function persistConcurso(
       },
     });
   });
+
+  logger.debug(
+    { concurso: concurso.concurso, action },
+    `Concurso ${concurso.concurso} ${action === "inserted" ? "inserido" : "atualizado"} no banco`,
+  );
 
   return action;
 }
@@ -204,14 +388,26 @@ export function determineStart({
   latest,
   lastStored,
   windowSize,
+  fullBackfill,
 }: {
   latest: number;
   lastStored: number | null;
   windowSize?: number;
+  fullBackfill: boolean;
 }) {
-  if (!lastStored) {
-    if (!windowSize) return 1;
-    return Math.max(1, latest - windowSize + 1);
+  if (fullBackfill) {
+    if (windowSize && windowSize > 0) {
+      return Math.max(1, latest - windowSize + 1);
+    }
+    return 1;
   }
+
+  if (!lastStored) {
+    if (windowSize && windowSize > 0) {
+      return Math.max(1, latest - windowSize + 1);
+    }
+    return 1;
+  }
+
   return lastStored + 1;
 }

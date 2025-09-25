@@ -8,6 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { buttonStyles } from "@/components/ui/button-variants";
+import { BetGeneratorForm } from "@/components/forms/bet-generator-form";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { Stack } from "@/components/ui/stack";
 
 const checklist = [
   "Conectar tabela de preços oficiais e validar combinações permitidas",
@@ -18,18 +21,20 @@ const checklist = [
 
 export default function GeneratePage() {
   return (
-    <div className="flex flex-col gap-8">
+    <Stack gap="lg">
+      <Breadcrumb items={[{ label: "Gerar Apostas", current: true }]} />
+
       <header className="space-y-3">
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <h1 className="text-3xl font-semibold tracking-tightest text-slate-900 dark:text-white">
           Gerador de apostas otimizado
         </h1>
         <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-          Em breve você poderá informar um orçamento, escolher a estratégia
-          desejada e receber sugestões que maximizem cobertura sem violar regras
-          da Mega-Sena. Enquanto isso, acompanhe o check-list técnico para guiar
-          o desenvolvimento.
+          Configure sua estratégia, defina o orçamento e gere apostas otimizadas
+          baseadas em análises estatísticas avançadas.
         </p>
       </header>
+
+      <BetGeneratorForm />
       <Card className="bg-white/70 dark:bg-white/5">
         <CardHeader>
           <CardTitle>Checklist técnico</CardTitle>
@@ -59,6 +64,7 @@ export default function GeneratePage() {
             href="/bets"
             className={buttonStyles(
               "secondary",
+              "md",
               "bg-white text-slate-900 hover:bg-white/90",
             )}
           >
@@ -69,6 +75,6 @@ export default function GeneratePage() {
           </span>
         </CardContent>
       </Card>
-    </div>
+    </Stack>
   );
 }
