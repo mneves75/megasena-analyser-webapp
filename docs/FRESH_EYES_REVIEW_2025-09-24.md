@@ -7,16 +7,16 @@
 1. **Typecheck quebrado por dependência ausente** — `npm run typecheck` aborta com `TS2307` apontando para `src/components/ui/__tests__/chart.test.tsx:1`, porque `@testing-library/react` (e types) não constam em `devDependencies`. Sem isso, ninguém consegue cumprir o checklist (`lint` + `typecheck`) antes de abrir PR.
 2. **Surface CLI sem testes nem guia operacional** — A CLI (`scripts/megasena-cli.ts`, `src/cli/**`) está exposta em `package.json` (`npm run cli`), mas não há nenhuma suíte cobrindo parsers, formatação JSON, nem orchestrations básicas (`summary`, `stats`, `sync`). Também faltam instruções no README/`docs/operations.md`, o que inviabiliza adoção por ops e oculta requisitos de ambiente (`DATABASE_URL`, flags padrão).
 3. **Semântica de `ticketCostBreakdown[].planned` ficou ambígua** — Depois do ajuste em `src/services/bets.ts` (`buildTicketCostBreakdown` usa tickets emitidos, não slots planejados), o campo `planned` passou a refletir quantidade real de bilhetes gerados por `k`. O nome/cópia na UI ainda fala "planejados" (`src/components/forms/bet-generator-form.tsx:449`), e consumidores externos podem assumir que o valor representa planejamento. Precisamos renomear o atributo ou expor `planned` + `emitted` para evitar leituras incorretas.
-4. **CLI bets: persistência automática pode surpreender** — O novo comando `megasena bets generate` persiste o lote por padrão e exige `--dry-run` para evitar escrituras. Considerar inverter a lógica (exigir `--persist`) ou solicitar confirmação para evitar gravações acidentais em ambientes de análise (`scripts/megasena-cli.ts`, `src/cli/commands/bets.ts`).
-5. **Cobertura JSON para CLI bets/list pendente** — Ainda não exercitamos `--json` em `bets generate/list`; adicionar asserts garante estabilidade do payload e previne regressões no formato consumido por automações.
+4. **CLI bets: persistência automática pode surpreender** — (Mitigado em 25/09) o comando agora é _dry-run_ por padrão e exige `--persist` para gravar, reduzindo o risco de escrita involuntária (`src/cli/commands/bets.ts`).
+5. **Cobertura JSON para CLI bets/list** — Testes adicionados para garantir shape estável das respostas, protegendo integrações headless (`src/cli/__tests__/commands.test.ts`).
 
 ### Plano & TODO
 
 - [x] Incluir `@testing-library/react` nas dependências para restaurar `npm run typecheck`.
 - [x] Criar suíte Vitest para o CLI (`summary`/`stats`/`sync`) cobrindo modo JSON e documentar o uso no README + `docs/operations.md`.
 - [x] Expor tanto valores planejados quanto emitidos em `ticketCostBreakdown`, atualizar schema/UI/cópia para refletir a distinção.
-- [ ] Reavaliar padrão de persistência do comando `bets generate` (exigir `--persist`?) e, caso mantenha o comportamento atual, adicionar confirmação explícita na saída.
-- [ ] Cobrir `bets generate --json` e `bets list --json` em Vitest para garantir formato estável.
+- [x] Reavaliar padrão de persistência do comando `bets generate` (exigir `--persist`?) e, caso mantenha o comportamento atual, adicionar confirmação explícita na saída.
+- [x] Cobrir `bets generate --json` e `bets list --json` em Vitest para garantir formato estável.
 
 ## Atualização · 24/09/2025 18:05 (UTC-3)
 

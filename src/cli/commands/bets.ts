@@ -54,7 +54,7 @@ type GenerateOptions = {
   spreadBudget?: boolean;
   timeout?: number;
   k?: number;
-  dryRun?: boolean;
+  persist?: boolean;
   json?: boolean;
   prettyJson?: boolean;
 };
@@ -80,7 +80,7 @@ function registerGenerateCommand(parent: Command) {
     )
     .option("--timeout <ms>", "Tempo máximo de geração antes de abortar (ms)")
     .option("--k <dezenas>", "Sobrescreve o número base de dezenas (6-15)")
-    .option("--dry-run", "Executa sem persistir o lote no banco");
+    .option("--persist", "Persiste o lote gerado no banco");
 
   registerJsonFlags(command);
 
@@ -93,7 +93,7 @@ function registerGenerateCommand(parent: Command) {
     const timeoutMs =
       parseOptionalInteger(options.timeout, { min: 1 }) ?? 3_000;
     const spreadBudget = Boolean(options.spreadBudget);
-    const persist = !Boolean(options.dryRun);
+    const persist = Boolean(options.persist);
     const seed = options.seed?.trim() ?? createSeed();
     const strategyName = normalizeStrategy(options.strategy);
     const strategies = buildStrategyRequests(strategyName, windowSize);
@@ -153,6 +153,14 @@ function registerGenerateCommand(parent: Command) {
               ` k=${entry.k}: planejadas ${entry.planned}, emitidas ${entry.emitted}, custo ${formatCurrency(entry.costCents)}`,
             );
           });
+        }
+
+        if (persist) {
+          console.log("\n✅ Lote persistido com sucesso.\n");
+        } else {
+          console.log(
+            "\n⚠️ Dry-run: nada foi salvo. Use --persist para gravar o lote.\n",
+          );
         }
 
         if (result.warnings.length > 0) {
@@ -298,7 +306,7 @@ function printBetLine(bet: StoredBet) {
   );
 }
 
-function summarizeTicketBreakdown(
+export function summarizeTicketBreakdown(
   breakdown: Array<{
     k: number;
     planned?: number;

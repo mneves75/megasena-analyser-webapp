@@ -30,14 +30,14 @@ _Last update: 24 September 2025_
 
 ## Command Surface Specification
 
-| Command                   | Description                                                                                       | Key Flags                                                                                                          | Output Modes                                    | Exit Codes                                                                            |
-| ------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `megasena summary`        | Render the home dashboard summary                                                                 | `--window`, `--json`, `--pretty-json`, `--locale`                                                                  | Table + highlight cards; JSON DTO               | `0` success, `65` validation, `1` unexpected                                          |
-| `megasena stats <metric>` | Inspect stats metric (`frequencies`, `pairs`, `triplets`, `runs`, `sums`, `quadrants`, `recency`) | `--window`, `--limit`, `--json`, `--header`                                                                        | Metric-specific tables/plots; JSON arrays       | same as above                                                                         |
-| `megasena sync`           | Run incremental or full sync                                                                      | `--full`, `--limit`, `--verbose`, `--silent`, `--json`, `--pretty-json`                                            | CLI progress bar (default) or silent summary    | `0` success, `2` auth failure, `1` unexpected                                         |
-| `megasena bets generate`  | Generate (and optionally persist) a bet batch                                                     | `--budget`, `--strategy`, `--seed`, `--window`, `--spread-budget`, `--timeout`, `--dry-run`, `--persist`, `--json` | Summary cards + warnings; optional full payload | `0` success, `65` validation (`PricingError`, `BatchGenerationError`), `1` unexpected |
-| `megasena bets list`      | List stored bets with filters                                                                     | `--strategy`, `--from`, `--to`, `--min-budget`, `--max-budget`, `--limit`, `--json`                                | Table format + pagination note; JSON array      | `0` success, `65` validation, `1` unexpected                                          |
-| `megasena limits`         | Inspect / mutate betting limits                                                                   | `--show`, `--reset`, `--set=key=value`, `--history`, `--actor`, `--note`, `--json`                                 | Delegates to limits service; prints audit trail | `0` success, `65` validation, `1` unexpected                                          |
+| Command                   | Description                                                                                       | Key Flags                                                                                             | Output Modes                                    | Exit Codes                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `megasena summary`        | Render the home dashboard summary                                                                 | `--window`, `--json`, `--pretty-json`, `--locale`                                                     | Table + highlight cards; JSON DTO               | `0` success, `65` validation, `1` unexpected                                          |
+| `megasena stats <metric>` | Inspect stats metric (`frequencies`, `pairs`, `triplets`, `runs`, `sums`, `quadrants`, `recency`) | `--window`, `--limit`, `--json`, `--header`                                                           | Metric-specific tables/plots; JSON arrays       | same as above                                                                         |
+| `megasena sync`           | Run incremental or full sync                                                                      | `--full`, `--limit`, `--verbose`, `--silent`, `--json`, `--pretty-json`                               | CLI progress bar (default) or silent summary    | `0` success, `2` auth failure, `1` unexpected                                         |
+| `megasena bets generate`  | Generate (and optionally persist) a bet batch                                                     | `--budget`, `--strategy`, `--seed`, `--window`, `--spread-budget`, `--timeout`, `--persist`, `--json` | Summary cards + warnings; optional full payload | `0` success, `65` validation (`PricingError`, `BatchGenerationError`), `1` unexpected |
+| `megasena bets list`      | List stored bets with filters                                                                     | `--strategy`, `--from`, `--to`, `--min-budget`, `--max-budget`, `--limit`, `--json`                   | Table format + pagination note; JSON array      | `0` success, `65` validation, `1` unexpected                                          |
+| `megasena limits`         | Inspect / mutate betting limits                                                                   | `--show`, `--reset`, `--set=key=value`, `--history`, `--actor`, `--note`, `--json`                    | Delegates to limits service; prints audit trail | `0` success, `65` validation, `1` unexpected                                          |
 
 ### Shared Behaviours
 
@@ -70,7 +70,7 @@ _Last update: 24 September 2025_
    - Add Vitest coverage for option parsing + summary loader to ensure deterministic DTOs.
 
 3. **Iteration 2 – Bet Engine Operations**
-   - Implement `bets generate` with CLI prompts fallback (if no flags, optionally prompt using `inquirer`–defer unless needed). Default persists to DB; `--dry-run` bypasses persistence but still returns payload.
+   - Implement `bets generate` com fallback opcional de prompts (se necessário). Default deve ser _dry-run_; apenas gravar quando `--persist` for fornecido.
    - Mirror form validations: guard budget min/max, window > 0, seed length, strategy enumeration. Map `PricingError`/`BatchGenerationError` to exit 65, print actionable message + optional warnings.
    - Implement `bets list` with filter flags; paginate results when limit reached; highlight seeds, budgets, createdAt (ISO or localized). `--json` returns array of `StoredBet` DTOs.
    - Add tests covering `buildStrategies` parity and CLI transformation of stored bets.
@@ -126,7 +126,7 @@ _Last update: 24 September 2025_
   - `npm run cli summary --window 50`
   - `npm run cli stats frequencies --window 200 --limit 5`
   - `npm run cli sync --limit 10 --silent --json`
-  - `npm run cli bets generate --budget 10000 --strategy balanced --seed e2e-seed --dry-run`
+  - `npm run cli bets generate --budget 10000 --strategy balanced --seed e2e-seed`
   - `npm run cli bets list --strategy balanced --limit 5`
   - `npm run cli limits --show --history=3`
 - Capture screenshots/log excerpts and add to `docs/CLI_TRANSCRIPTS.md` (new) for reproducibility.
@@ -146,11 +146,11 @@ _Last update: 24 September 2025_
 
 ## Decision Log
 
-| Date       | Decision                                     | Rationale                                             | Status    |
-| ---------- | -------------------------------------------- | ----------------------------------------------------- | --------- |
-| 2025-09-24 | Use `commander` for CLI scaffolding          | Nested subcommands, typed options, minimal deps       | Accepted  |
-| 2025-09-24 | Persist batches by default in CLI            | Aligns com UI; `--dry-run` opt-out validado em testes | Completed |
-| 2025-09-24 | Extract dashboard loaders to shared services | Prevent logic drift between UI & CLI                  | Completed |
+| Date       | Decision                                     | Rationale                                       | Status    |
+| ---------- | -------------------------------------------- | ----------------------------------------------- | --------- |
+| 2025-09-24 | Use `commander` for CLI scaffolding          | Nested subcommands, typed options, minimal deps | Accepted  |
+| 2025-09-25 | CLI bets grava só com `--persist`            | Evita escrita acidental; dry-run vira padrão    | Completed |
+| 2025-09-24 | Extract dashboard loaders to shared services | Prevent logic drift between UI & CLI            | Completed |
 
 ## Open Questions & Follow-Ups
 

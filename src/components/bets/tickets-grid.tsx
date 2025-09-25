@@ -14,6 +14,7 @@ import type {
   StrategyMetadata,
   ParityDistribution,
 } from "@/services/strategies/types";
+import { getStrategyLabel } from "@/services/strategies/labels";
 
 export type GeneratedTicketLike = {
   strategy: string;
@@ -29,6 +30,7 @@ type BaseGeneratedRow = {
   ticketIndex: number;
   dezenasText: string;
   strategy: string;
+  strategyLabel: string;
   seed: string;
   costCents: number;
   metadata: Record<string, unknown> | null | undefined;
@@ -43,6 +45,7 @@ type BaseHistoryRow = {
   originalOrder: number;
   dezenasText: string;
   strategy: string;
+  strategyLabel: string;
   budgetCents: number;
   totalCostCents: number;
   ticketCostCents: number;
@@ -235,12 +238,14 @@ export type GeneratedTicketsGridProps = {
   tickets: GeneratedTicketLike[];
   copiedTicketIndex: number | null;
   onCopyTicket: (ticketIndex: number, dezenasText: string) => void;
+  onViewMetadata?: (ticket: GeneratedTicketLike, index: number) => void;
 };
 
 export function GeneratedTicketsGrid({
   tickets,
   copiedTicketIndex,
   onCopyTicket,
+  onViewMetadata,
 }: GeneratedTicketsGridProps) {
   const [sortColumns, setSortColumns] = React.useState<SortColumn[]>([]);
 
@@ -251,6 +256,7 @@ export function GeneratedTicketsGrid({
       ticketIndex: index,
       dezenasText: formatTicketNumbers(ticket.dezenas),
       strategy: ticket.strategy,
+      strategyLabel: getStrategyLabel(ticket.strategy),
       seed: ticket.seed,
       costCents: ticket.costCents,
       metadata: ticket.metadata,
@@ -260,7 +266,7 @@ export function GeneratedTicketsGrid({
   const comparators = React.useMemo<SortComparators<BaseGeneratedRow>>(
     () => ({
       dezenasText: compareString<BaseGeneratedRow>((row) => row.dezenasText),
-      strategy: compareString<BaseGeneratedRow>((row) => row.strategy),
+      strategy: compareString<BaseGeneratedRow>((row) => row.strategyLabel),
       seed: compareString<BaseGeneratedRow>((row) => row.seed),
       costCents: compareNumber<BaseGeneratedRow>((row) => row.costCents),
     }),
@@ -309,9 +315,6 @@ export function GeneratedTicketsGrid({
         sortable: true,
         renderCell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
-              {row.dezenasText}
-            </span>
             <button
               type="button"
               className={buttonStyles(
@@ -324,6 +327,9 @@ export function GeneratedTicketsGrid({
               <DocumentDuplicateIcon className="h-4 w-4" />
               {copiedTicketIndex === row.ticketIndex ? "Copiado" : "Copiar"}
             </button>
+            <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
+              {row.dezenasText}
+            </span>
           </div>
         ),
       },
@@ -334,7 +340,7 @@ export function GeneratedTicketsGrid({
         sortable: true,
         renderCell: ({ row }) => (
           <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">
-            {row.strategy}
+            {row.strategyLabel}
           </span>
         ),
       },
@@ -364,14 +370,31 @@ export function GeneratedTicketsGrid({
       {
         key: "metadata",
         name: "Metadados",
-        minWidth: 200,
+        minWidth: 280,
         sortable: false,
         renderCell: ({ row }) => (
-          <TicketMetadataDetails seed={row.seed} metadata={row.metadata} />
+          <div className="flex flex-col gap-2">
+            <TicketMetadataDetails seed={row.seed} metadata={row.metadata} />
+            {onViewMetadata ? (
+              <button
+                type="button"
+                className={buttonStyles(
+                  "ghost",
+                  "sm",
+                  "w-fit text-xs text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300",
+                )}
+                onClick={() =>
+                  onViewMetadata(tickets[row.ticketIndex], row.ticketIndex)
+                }
+              >
+                Ver em tela cheia
+              </button>
+            ) : null}
+          </div>
         ),
       },
     ],
-    [copiedTicketIndex, onCopyTicket],
+    [copiedTicketIndex, onCopyTicket, onViewMetadata, tickets],
   );
 
   const gridStyle = React.useMemo(
@@ -387,6 +410,7 @@ export function GeneratedTicketsGrid({
         "--rdg-row-selected-background-color": "rgba(14, 116, 144, 0.14)",
         "--rdg-border-color": "rgba(148, 163, 184, 0.35)",
         "--rdg-font-size": "0.875rem",
+        "--rdg-sticky-top": "3.5rem",
       }) as React.CSSProperties,
     [gridHeight],
   );
@@ -400,7 +424,7 @@ export function GeneratedTicketsGrid({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 text-slate-900 shadow-soft dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-100">
+    <div className="scroll-mt-32 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 text-slate-900 shadow-soft dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-100">
       <DataGrid
         className="rdg-generated-bets [&_.rdg-cell]:whitespace-normal [&_.rdg-cell]:align-top [&_.rdg-cell]:py-3"
         columns={columns}
@@ -459,6 +483,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         originalOrder: index,
         dezenasText: formatTicketNumbers(row.dezenas),
         strategy: row.strategy,
+        strategyLabel: getStrategyLabel(row.strategy),
         budgetCents: row.budgetCents,
         totalCostCents: row.totalCostCents,
         ticketCostCents: row.ticketCostCents,
@@ -478,7 +503,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
     () => ({
       createdAtLabel: compareDate<BaseHistoryRow>((row) => row.createdAt),
       dezenasText: compareString<BaseHistoryRow>((row) => row.dezenasText),
-      strategy: compareString<BaseHistoryRow>((row) => row.strategy),
+      strategy: compareString<BaseHistoryRow>((row) => row.strategyLabel),
       budgetCents: compareNumber<BaseHistoryRow>((row) => row.budgetCents),
       totalCostCents: compareNumber<BaseHistoryRow>(
         (row) => row.totalCostCents,
@@ -596,9 +621,6 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         sortable: true,
         renderCell: ({ row }) => (
           <div className="flex flex-wrap items-center gap-2">
-            <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
-              {row.dezenasText}
-            </span>
             <button
               type="button"
               className={buttonStyles(
@@ -611,6 +633,9 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
               <DocumentDuplicateIcon className="h-4 w-4" />
               {copiedRowId === row.id ? "Copiado" : "Copiar"}
             </button>
+            <span className="select-text font-mono text-sm tracking-tight text-slate-900 dark:text-slate-100">
+              {row.dezenasText}
+            </span>
           </div>
         ),
       },
@@ -621,7 +646,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         sortable: true,
         renderCell: ({ row }) => (
           <span className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">
-            {row.strategy}
+            {row.strategyLabel}
           </span>
         ),
       },
@@ -690,14 +715,16 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
       {
         key: "metadata",
         name: "Metadados",
-        minWidth: 220,
+        minWidth: 260,
         sortable: false,
         renderCell: ({ row }) => (
-          <TicketMetadataDetails
-            seed={row.ticketSeed ?? row.batchSeed}
-            metadata={row.metadata}
-            score={row.score}
-          />
+          <div className="flex flex-col gap-2">
+            <TicketMetadataDetails
+              seed={row.ticketSeed ?? row.batchSeed}
+              metadata={row.metadata}
+              score={row.score}
+            />
+          </div>
         ),
       },
     ],
@@ -717,6 +744,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
         "--rdg-row-selected-background-color": "rgba(14, 116, 144, 0.14)",
         "--rdg-border-color": "rgba(148, 163, 184, 0.35)",
         "--rdg-font-size": "0.875rem",
+        "--rdg-sticky-top": "3.5rem",
       }) as React.CSSProperties,
     [gridHeight],
   );
@@ -750,7 +778,7 @@ export function HistoryTicketsGrid({ rows }: HistoryTicketsGridProps) {
           </span>
         )}
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 text-slate-900 shadow-soft dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-100">
+      <div className="scroll-mt-32 overflow-hidden rounded-2xl border border-slate-200/70 bg-white/90 text-slate-900 shadow-soft dark:border-slate-700/50 dark:bg-slate-800/40 dark:text-slate-100">
         <DataGrid
           className="rdg-generated-bets [&_.rdg-cell]:whitespace-normal [&_.rdg-cell]:align-top [&_.rdg-cell]:py-3"
           rows={enhancedRows}

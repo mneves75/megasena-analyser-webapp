@@ -78,3 +78,42 @@
 
 - Revisão de código garantiu contraste e estados do botão primário atualizados; capturas visuais seguem pendentes na próxima rodada de QA manual.
 - Cabeçalho sticky revisado após ordenação para prevenir sobreposição; validar em Chrome/Firefox durante o ciclo de screenshots.
+
+## Atualização 25/09/2025 — Geração (Feedback Produção)
+
+### Novos apontamentos
+
+1. **Scroll invade título** – na página `/generate`, ao rolar a grade o cabeçalho principal (h1 + descrição) fica parcialmente coberto pelo container do Data Grid.
+2. **Coluna "Estratégia" em inglês** – os valores exibem os ids (`balanced`, `hot-streak`, etc.) em vez de rótulos em pt-BR.
+3. **Botão de cópia desalinhado** – o ícone/label "Copiar" aparece à direita da dezena, quebrando layout; pedido para mover o botão antes do número ou alinhar horizontalmente.
+4. **Metadados comprimidos** – pouco espaço para seed, score e demais metadados; sugerido ampliar largura útil ou abrir painel/linha secundária.
+
+### Plano de ação
+
+- [x] **Scroll + título**
+  - Investigar estrutura do container (`Stack`, `Card`, `ReactDataGrid` wrapper) e aplicar offset consistente (`scroll-margin-top` ou `padding/top` no grid).
+  - Confirmar se o cabeçalho sticky já existente não conflita com o grid; se necessário, encapsular grid em `<section>` com `overflow` isolado.
+- [x] **Estratégia traduzida**
+  - Criar mapper (`strategyLabel` em `@/services/strategies`) reutilizado pelo grid e pela exportação JSON legível.
+  - Ajustar `tickets-grid.tsx` para renderizar rótulos localizados e manter tooltip com identificador original.
+- [x] **Copiar antes da dezena**
+  - Refatorar célula de dezenas para layout flex (`gap-2`) posicionando botão/copiar antes do texto.
+  - Garantir foco/atalhos acessíveis e que o clique não desloca o texto.
+- [x] **Espaço para metadados**
+  - Avaliar aumentar `minWidth` das colunas ou oferecer detalhe expandido (ex.: botão "Ver metadados" que abre drawer/modal).
+  - Validar responsividade ao introduzir espaço extra – se necessário, esconder detalhes sob `Accordion` em breakpoints pequenos.
+- [ ] **QA + docs**
+  - Atualizar screenshots na próxima rodada e registrar testes (scroll, cópia, tradução) antes do PR.
+
+### TODO consolidado
+
+- [x] Localização completa dos grids.
+- [x] Ordenação multicoluna funcional.
+- [ ] Layout ampliado nas páginas principais.
+- [x] Correção de contraste do botão de geração.
+- [x] Header do grid fixo sem sobreposição.
+- [ ] Documentação + QA anotados.
+- [x] Scroll/título ajustado na página de geração.
+- [x] Labels de estratégia localizados.
+- [x] Botão de cópia reposicionado/alinhado.
+- [x] Espaço adicional para metadados ou visualização dedicada.

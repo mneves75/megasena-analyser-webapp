@@ -282,7 +282,7 @@ describe("CLI commands", () => {
     expect(callArgs.ui).toBeInstanceOf(SilentSyncUI);
   });
 
-  it("generates bets and persiste por padrão", async () => {
+  it("não persiste por padrão", async () => {
     const program = createProgram();
     registerBetsCommand(program);
 
@@ -306,12 +306,10 @@ describe("CLI commands", () => {
         timeoutMs: 3_000,
       }),
     );
-    expect(persistBatchMock).toHaveBeenCalledWith(expect.any(Object), {
-      client: prismaStub,
-    });
+    expect(persistBatchMock).not.toHaveBeenCalled();
   });
 
-  it("não persiste quando --dry-run é informado", async () => {
+  it("persiste quando --persist é informado", async () => {
     const program = createProgram();
     registerBetsCommand(program);
 
@@ -324,10 +322,12 @@ describe("CLI commands", () => {
       "100",
       "--seed",
       "cli-seed",
-      "--dry-run",
+      "--persist",
     ]);
 
-    expect(persistBatchMock).not.toHaveBeenCalled();
+    expect(persistBatchMock).toHaveBeenCalledWith(expect.any(Object), {
+      client: prismaStub,
+    });
   });
 
   it("propaga spread-budget when flag is set", async () => {
@@ -389,6 +389,48 @@ describe("CLI commands", () => {
       { client: prismaStub },
     );
     expect(logSpy).toHaveBeenCalled();
+  });
+
+  it("emite JSON estruturado para bets generate", async () => {
+    const program = createProgram();
+    registerBetsCommand(program);
+
+    await program.parseAsync([
+      "node",
+      "megasena",
+      "bets",
+      "generate",
+      "--budget",
+      "100",
+      "--json",
+    ]);
+
+    expect(generateBatchMock).toHaveBeenCalled();
+    const jsonOutput = logSpy.mock.calls.map((args) => args[0]).pop();
+    expect(jsonOutput).toBeTruthy();
+    const parsed = JSON.parse(String(jsonOutput));
+    expect(parsed).toMatchObject({
+      persisted: false,
+      warnings: expect.any(Array),
+    });
+    expect(Array.isArray(parsed.tickets)).toBe(true);
+    expect(parsed.payload?.seed).toBe("cli-seed");
+  });
+
+  it("emite JSON estruturado para bets list", async () => {
+    const program = createProgram();
+    registerBetsCommand(program);
+
+    await program.parseAsync(["node", "megasena", "bets", "list", "--json"]);
+
+    const jsonOutput = logSpy.mock.calls.map((args) => args[0]).pop();
+    expect(jsonOutput).toBeTruthy();
+    const parsed = JSON.parse(String(jsonOutput));
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed[0]).toMatchObject({
+      strategyName: "balanced",
+      payload: expect.objectContaining({ seed: "cli-seed" }),
+    });
   });
 
   it("aplica overrides de limites e imprime histórico", async () => {

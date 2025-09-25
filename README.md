@@ -28,7 +28,7 @@ O utilitário de linha de comando centraliza as principais operações headless:
 - `npm run cli summary -- --window 200 --json` &rarr; imprime os mesmos destaques da Home em JSON.
 - `npm run cli stats frequencies -- --window 100 --limit 5` &rarr; lista combinações mais frequentes.
 - `npm run cli sync -- --limit 20 --verbose` &rarr; executa sincronização incremental; o modo silencioso ativa automaticamente quando `CI` está definido.
-- `npm run cli bets generate -- --budget 150 --strategy hot-streak --seed SEED-DEMO` &rarr; gera lote auditável (use `--dry-run` para não persistir).
+- `npm run cli bets generate -- --budget 150 --strategy hot-streak --seed SEED-DEMO` &rarr; gera lote auditável (persiste somente com `--persist`).
 - `npm run cli bets list -- --strategy balanced --limit 5 --json` &rarr; exporta histórico recente para integrações.
 - `npm run cli limits -- --set maxTicketsPerBatch=150 --json` &rarr; aplica override documentado nos registros de auditoria.
 
@@ -69,7 +69,7 @@ Todos os comandos aceitam `--json`/`--pretty-json` para automação. Consulte `d
   - `megasena summary [--window N] [--json|--pretty-json]` – espelha os cards da home.
   - `megasena stats <frequencies|pairs|triplets|runs|sums|quadrants|recency>` com flags `--window`, `--limit`, `--json`.
   - `megasena sync [--full] [--limit N] [--silent] [--json]` – sincroniza concursos; `--json` ou `--silent` forçam modo headless.
-  - `megasena bets generate --budget 120.50 [--strategy balanced] [--k 7] [--spread-budget] [--dry-run] [--json]` – gera lotes idênticos à UI; sem `--dry-run` o lote é persistido automaticamente.
+  - `megasena bets generate --budget 120.50 [--strategy balanced] [--k 7] [--spread-budget] [--persist] [--json]` – gera lotes idênticos à UI; só grava quando `--persist` for usado.
   - `megasena bets list [--strategy uniform] [--from 2025-09-01] [--limit 10] [--json]` – consulta apostas armazenadas com filtros opcionais.
 - Em CI defina `--silent` (ou use `--json`) para evitar barras de progresso; logs seguem `LOG_LEVEL`.
 - Saídas JSON são determinísticas e pensadas para piping (`jq`, `xargs`); consulte `docs/operations.md` para exemplos completos.

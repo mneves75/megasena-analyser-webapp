@@ -21,7 +21,7 @@ const checklist = [
 
 export default function GeneratePage() {
   return (
-    <Stack gap="lg">
+    <Stack gap="lg" className="mx-auto w-full max-w-7xl px-4 lg:px-6">
       <Breadcrumb items={[{ label: "Gerar Apostas", current: true }]} />
 
       <header className="space-y-3">

@@ -67,7 +67,7 @@ Registrar incidentes em `docs/operations/runbook-logs.md` (criar se não existir
   - `npm run cli -- summary --json` – snapshot para monitoração rápida (ingestível via `jq`).
   - `npm run cli -- stats frequencies --window 200 --limit 20` – equivalente ao painel de estatísticas.
   - `npm run cli -- sync --full --limit 100 --silent` – recomendado em cron jobs/backfills; produz output enxuto.
-  - `npm run cli -- bets generate --budget 150 --strategy balanced --dry-run` – valida heurísticas do motor sem persistir (remova `--dry-run` para gravar).
+  - `npm run cli -- bets generate --budget 150 --strategy balanced` – dry-run por padrão; adicione `--persist` para gravar o lote.
   - `npm run cli -- bets list --strategy hot-streak --json` – exporta histórico em JSON para auditoria.
 - **Log level**: herda `LOG_LEVEL`; para diagnósticos amplos use `--log-level=debug` via variável de ambiente antes do comando.
 - **Falhas comuns**:
@@ -88,7 +88,7 @@ Registrar incidentes em `docs/operations/runbook-logs.md` (criar se não existir
   - `npm run cli summary -- --window 200 --json` &rarr; gera snapshot consumível por scripts externos.
   - `npm run cli stats frequencies -- --window 50 --limit 10` &rarr; monitora tendências recorrentes.
   - `npm run cli sync -- --limit 30 --silent` &rarr; sincronização headless (o modo silencioso é ativado automaticamente quando `CI` está definido).
-  - `npm run cli bets generate -- --budget 120 --seed auditoria --dry-run` &rarr; pré-visualiza lotes sem persistência.
+  - `npm run cli bets generate -- --budget 120 --seed auditoria` &rarr; pré-visualiza lotes sem persistir (adicione `--persist` para gravar).
   - `npm run cli bets list -- --limit 5 --json` &rarr; exporta histórico para pipelines de auditoria.
   - `npm run cli limits -- --set maxTicketsPerBatch=140 --json` &rarr; aplica override documentado e recupera histórico recente.
 - Scripts úteis: `npm run sync -- --log-level=debug`, `npm run dev -- --turbo-log`, `npm run db:fix-bet-totals`, `npm run cli:smoke` (executa fluxo end-to-end do CLI). Atualizar este guia se scripts mudarem.

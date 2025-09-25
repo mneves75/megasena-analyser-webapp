@@ -25,6 +25,7 @@ import {
   formatCurrency,
   formatTicketNumbers,
 } from "@/components/bets/tickets-grid";
+import { TicketMetadataDialog } from "@/components/bets/ticket-metadata-dialog";
 
 type GeneratedTicket = {
   strategy: string;
@@ -124,6 +125,9 @@ export function BetGeneratorForm() {
   >(null);
   const [copiedAll, setCopiedAll] = React.useState(false);
   const [copyError, setCopyError] = React.useState<string | null>(null);
+  const [focusedTicketIndex, setFocusedTicketIndex] = React.useState<
+    number | null
+  >(null);
   const selectedStrategy = React.useMemo(
     () => strategies.find((item) => item.value === strategy),
     [strategy],
@@ -142,6 +146,10 @@ export function BetGeneratorForm() {
   const tickets = state.status === "success" ? state.tickets : EMPTY_TICKETS;
   const payload = state.status === "success" ? state.payload : null;
   const warnings = state.status === "success" ? state.warnings : [];
+  const selectedTicket =
+    state.status === "success" && focusedTicketIndex !== null
+      ? (tickets[focusedTicketIndex] ?? null)
+      : null;
   const ticketsAsText =
     tickets.length > 0
       ? tickets.map((ticket) => formatTicketNumbers(ticket.dezenas)).join("\n")
@@ -189,6 +197,12 @@ export function BetGeneratorForm() {
     });
   }, [copyToClipboard, tickets.length, ticketsAsText]);
 
+  React.useEffect(() => {
+    if (state.status !== "success") {
+      setFocusedTicketIndex(null);
+    }
+  }, [state.status]);
+
   const budgetAboveLimit = budgetCents > MAX_BUDGET_CENTS;
   const disableSubmit = isPending || budgetCents < 600 || budgetAboveLimit;
   const totalCost = payload?.totalCostCents ?? 0;
@@ -209,7 +223,7 @@ export function BetGeneratorForm() {
           name="budgetCents"
           value={budgetCents > 0 ? budgetCents : ""}
         />
-        <Card className="mx-auto w-full max-w-6xl">
+        <Card className="mx-auto w-full max-w-7xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalculatorIcon className="h-5 w-5" />
@@ -385,7 +399,7 @@ export function BetGeneratorForm() {
       )}
 
       {!isPending && state.status === "success" && (
-        <Card className="mx-auto w-full max-w-6xl">
+        <Card className="mx-auto w-full max-w-7xl">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Resultados da geração</span>
@@ -404,6 +418,7 @@ export function BetGeneratorForm() {
               tickets={tickets}
               copiedTicketIndex={copiedTicketIndex}
               onCopyTicket={handleCopyTicket}
+              onViewMetadata={(ticket, index) => setFocusedTicketIndex(index)}
             />
 
             <div className="grid gap-4 rounded-2xl bg-brand-50 p-5 text-sm text-slate-700 dark:bg-brand-900/10 dark:text-slate-300 md:grid-cols-2 xl:grid-cols-4">
@@ -531,6 +546,12 @@ export function BetGeneratorForm() {
                 </ul>
               </div>
             )}
+
+            <TicketMetadataDialog
+              open={Boolean(selectedTicket)}
+              ticket={selectedTicket}
+              onClose={() => setFocusedTicketIndex(null)}
+            />
           </CardContent>
         </Card>
       )}

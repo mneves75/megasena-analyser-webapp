@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI agora força modo silencioso automaticamente quando `CI=1` ou `--json` é utilizado, reduzindo ruído em pipelines.
 - README, guia operacional e plano de paridade atualizados com exemplos das novas rotas CLI e referências ao smoke test.
 - Padrão tipográfico revisado em todo o repositório (uso consistente de traço médio `–`).
+- Página `/generate` refinada: grid não sobrepõe títulos, coluna de estratégia traduzida, botão de copiar reposicionado e diálogo detalhado para metadados.
+- CLI `bets generate` passou a ser _dry-run_ por padrão; somente grava lotes quando `--persist` é informado, com mensagens claras no console.
+- Adicionadas validações de contrato para `megasena bets generate/list --json`, mantendo estável a integração com automações.
 
 ### Fixed
 

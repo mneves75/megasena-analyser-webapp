@@ -16,24 +16,24 @@
 
 ### 1. Persistência opt-in
 
-- [ ] Alterar `src/cli/commands/bets.ts` para: _dry-run_ por padrão e somente persistir quando `--persist` estiver presente.
-- [ ] Ao persistir, registrar mensagem “✅ lote persistido” e, no modo dry-run, deixar claro que nada foi salvo.
-- [ ] Atualizar documentação (`README.md`, `docs/operations.md`) destacando a mudança e exemplos de uso.
+- [x] Alterar `src/cli/commands/bets.ts` para: _dry-run_ por padrão e somente persistir quando `--persist` estiver presente.
+- [x] Ao persistir, registrar mensagem “✅ lote persistido” e, no modo dry-run, deixar claro que nada foi salvo.
+- [x] Atualizar documentação (`README.md`, `docs/operations.md`) destacando a mudança e exemplos de uso.
 - [ ] Adicionar entrada no changelog / seção de notas do time.
 
 ### 2. Testes de contrato JSON
 
-- [ ] Estender `src/cli/__tests__/commands.test.ts` com cenários:
-  - `bets generate --json --dry-run` → validar shape `{ persisted, tickets, payload, warnings }` e conteúdo crítico.
+- [x] Estender `src/cli/__tests__/commands.test.ts` com cenários:
+  - `bets generate --json` → validar shape `{ persisted, tickets, payload, warnings }` e conteúdo crítico.
   - `bets list --json` → garantir que campos `seed`, `payload.ticketCostBreakdown`, `leftoverCents` apareçam.
-- [ ] Considerar snapshot minimalista (via `expect(object).toMatchObject`) para facilitar manutenção.
-- [ ] Integrar os testes ao target existente (`npm run test -- cli`) para rodarem no CI.
+- [x] Considerar snapshot minimalista (via `expect(object).toMatchObject`) para facilitar manutenção.
+- [x] Integrar os testes ao target existente (`npm run test -- cli`) para rodarem no CI.
 
 ### 3. Compatibilidade legado
 
-- [ ] Criar teste unitário dedicado (ex.: `summarizeTicketBreakdown.legacy.test.ts`) cobrindo payloads sem `emitted`.
-- [ ] Ajustar `docs/data-contracts/strategy_payload.schema.json` para marcar `emitted` como opcional e registrar exemplo sem o campo.
-- [ ] Rodar `npm run typecheck` + suites relevantes após mudanças.
+- [x] Criar teste unitário dedicado (ex.: `summarizeTicketBreakdown.legacy.test.ts`) cobrindo payloads sem `emitted`.
+- [x] Ajustar `docs/data-contracts/strategy_payload.schema.json` para marcar `emitted` como opcional e registrar exemplo sem o campo.
+- [x] Rodar `npm run typecheck` + suites relevantes após mudanças.
 
 ### 4. Comunicação & rollout
 
