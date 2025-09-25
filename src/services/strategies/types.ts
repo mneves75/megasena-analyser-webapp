@@ -6,10 +6,17 @@ import {
   DEFAULT_BETTING_LIMITS,
   type BettingLimits,
 } from "@/services/strategy-limits";
+import type {
+  ParityDistribution,
+  QuadrantDistribution,
+  QuadrantRange,
+  StrategyMetadata,
+  StrategyName,
+} from "@/types/strategy";
 
 export const MEGASENA_MIN_DEZENA = 1;
 export const MEGASENA_MAX_DEZENA = 60;
-export const QUADRANT_RANGES = [
+export const QUADRANT_RANGES: readonly QuadrantRange[] = [
   { name: "01-10", start: 1, end: 10 },
   { name: "11-20", start: 11, end: 20 },
   { name: "21-30", start: 21, end: 30 },
@@ -18,37 +25,12 @@ export const QUADRANT_RANGES = [
   { name: "51-60", start: 51, end: 60 },
 ] as const;
 
-export type QuadrantRange = (typeof QUADRANT_RANGES)[number];
-
-export type StrategyName = "uniform" | "balanced" | "hot-streak" | "cold-surge";
-
 export type StrategyContext = {
   seed: string;
   k?: number;
   window?: number;
   client?: PrismaClient;
   limits?: BettingLimits;
-};
-
-export type QuadrantDistribution = {
-  range: QuadrantRange["name"];
-  count: number;
-};
-
-export type ParityDistribution = {
-  even: number;
-  odd: number;
-};
-
-export type StrategyMetadata = {
-  strategy: StrategyName;
-  seed: string;
-  k: number;
-  sum: number;
-  parity: ParityDistribution;
-  quadrants: QuadrantDistribution[];
-  score?: number;
-  details?: Record<string, unknown>;
 };
 
 export type StrategyResult = {
@@ -90,3 +72,11 @@ export function normalizeSeed(seed: string): string {
   }
   return normalized;
 }
+
+export type {
+  StrategyName,
+  StrategyMetadata,
+  ParityDistribution,
+  QuadrantDistribution,
+  QuadrantRange,
+};

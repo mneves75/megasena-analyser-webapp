@@ -14,6 +14,16 @@ export interface SelectProps
   options: Array<{ value: string; label: string; disabled?: boolean }>;
 }
 
+function toOptionValue(input: SelectProps["value"]): string {
+  if (input === undefined || input === null) {
+    return "";
+  }
+  if (Array.isArray(input)) {
+    return input[0] ?? "";
+  }
+  return String(input);
+}
+
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   (
     {
@@ -24,38 +34,44 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
       placeholder = "Selecione uma opção",
       options,
       id,
-      ...props
+      value,
+      defaultValue,
+      onChange,
+      onBlur,
+      onFocus,
+      ...rest
     },
     ref,
   ) => {
-    const [, setIsFocused] = React.useState(false);
-    const [hasValue, setHasValue] = React.useState(false);
+    const isControlled = value !== undefined;
+    const [internalValue, setInternalValue] = React.useState(() =>
+      toOptionValue(defaultValue),
+    );
+
+    const normalizedValue = isControlled ? toOptionValue(value) : internalValue;
+    const hasValue = normalizedValue.length > 0;
 
     const generatedId = React.useId();
     const selectId = id || generatedId;
     const errorId = `${selectId}-error`;
     const helperId = `${selectId}-helper`;
 
-    React.useEffect(() => {
-      if (props.value !== undefined) {
-        setHasValue(!!props.value);
+    const handleFocus = (event: React.FocusEvent<HTMLSelectElement>) => {
+      onFocus?.(event);
+    };
+
+    const handleBlur = (event: React.FocusEvent<HTMLSelectElement>) => {
+      if (!isControlled) {
+        setInternalValue(event.target.value);
       }
-    }, [props.value]);
-
-    const handleFocus = (e: React.FocusEvent<HTMLSelectElement>) => {
-      setIsFocused(true);
-      props.onFocus?.(e);
+      onBlur?.(event);
     };
 
-    const handleBlur = (e: React.FocusEvent<HTMLSelectElement>) => {
-      setIsFocused(false);
-      setHasValue(!!e.target.value);
-      props.onBlur?.(e);
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setHasValue(!!e.target.value);
-      props.onChange?.(e);
+    const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+      if (!isControlled) {
+        setInternalValue(event.target.value);
+      }
+      onChange?.(event);
     };
 
     return (
@@ -78,6 +94,10 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 "border-red-500 focus:border-red-500 focus:ring-red-500/20",
               className,
             )}
+            value={isControlled ? (value ?? "") : undefined}
+            defaultValue={
+              !isControlled ? toOptionValue(defaultValue) : undefined
+            }
             onFocus={handleFocus}
             onBlur={handleBlur}
             onChange={handleChange}
@@ -85,7 +105,7 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
               error ? errorId : helperText ? helperId : undefined
             }
             aria-invalid={error ? "true" : "false"}
-            {...props}
+            {...rest}
           >
             <option value="" disabled={!hasValue}>
               {placeholder}

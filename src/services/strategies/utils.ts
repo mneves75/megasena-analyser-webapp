@@ -4,11 +4,13 @@ import {
   MEGASENA_MAX_DEZENA,
   MEGASENA_MIN_DEZENA,
   QUADRANT_RANGES,
-  type ParityDistribution,
-  type QuadrantDistribution,
-  type StrategyMetadata,
-  type StrategyName,
 } from "@/services/strategies/types";
+import type {
+  ParityDistribution,
+  QuadrantDistribution,
+  StrategyMetadata,
+  StrategyName,
+} from "@/types/strategy";
 
 export function buildQuadrantDistribution(
   numbers: readonly number[],

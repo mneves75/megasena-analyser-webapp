@@ -2,7 +2,7 @@ import "../../../scripts/dev/register-server-only-stub.js";
 
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import type { StrategyMetadata } from "@/services/strategies/types";
+import type { StrategyMetadata } from "@/types/strategy";
 
 const { balancedStrategyMock, uniformStrategyMock } = vi.hoisted(() => ({
   balancedStrategyMock: vi.fn(),

@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tipos compartilhados das estratégias migrados para `src/types/strategy.ts`, evitando que componentes cliente importem módulos marcados como server-only.
+- Componente `Select` depende apenas de cálculo em tempo de render e remove `useEffect` supérfluo, alinhando com as diretrizes RSC.
+- Comentário no endpoint `/api/bets/generate` documenta o uso exclusivo para integrações externas, reforçando server actions para fluxos internos.
+
 - Resultados do gerador exibidos em grade virtualizada com metadados contextuais, mantendo exportação do payload e feedback visual responsivo.
 - Home page ajustada para exibir `–` na highlight de soma média quando não há dados, evitando ruído junto à mensagem "Sem dados suficientes".
 - Histórico `/bets` remodelado com DataGrid compartilhado, incluindo cópia rápida das dezenas e metadados auditáveis em cada linha.
@@ -24,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Padrão tipográfico revisado em todo o repositório (uso consistente de traço médio `–`).
 - Página `/generate` refinada: grid não sobrepõe títulos, coluna de estratégia traduzida, botão de copiar reposicionado e diálogo detalhado para metadados.
 - CLI `bets generate` passou a ser _dry-run_ por padrão; somente grava lotes quando `--persist` é informado, com mensagens claras no console.
+- Console do `megasena bets generate` sinaliza explicitamente que é uma simulação até que `--persist` seja informado; smoke test do CLI agora falha se a flag legada `--dry-run` reaparecer.
 - Adicionadas validações de contrato para `megasena bets generate/list --json`, mantendo estável a integração com automações.
 
 ### Fixed

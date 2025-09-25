@@ -8,7 +8,7 @@ import type {
   StrategyPayload,
   StrategyTicket,
 } from "@/services/bets";
-import type { StrategyName } from "@/services/strategies/types";
+import type { StrategyName } from "@/types/strategy";
 
 export type PersistBatchOptions = {
   client?: PrismaClient;

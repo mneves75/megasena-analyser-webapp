@@ -23,7 +23,7 @@ import {
 import { persistBatch, listBets } from "@/services/bet-store";
 import type { StoredBet } from "@/services/bet-store";
 import { PricingError } from "@/services/pricing";
-import type { StrategyName } from "@/services/strategies/types";
+import type { StrategyName } from "@/types/strategy";
 import { getStrategyLabel } from "@/services/strategies/labels";
 
 const STRATEGY_NAMES: StrategyName[] = [
@@ -160,7 +160,7 @@ function registerGenerateCommand(parent: Command) {
           console.log("\n✅ Lote persistido com sucesso.\n");
         } else {
           console.log(
-            "\n⚠️ Dry-run: nada foi salvo. Use --persist para gravar o lote.\n",
+            "\n⚠️ Simulação: nada foi salvo. Informe --persist para gravar o lote.\n",
           );
         }
 

@@ -10,7 +10,7 @@ import {
   formatTicketNumbers,
 } from "@/components/bets/tickets-grid";
 import { getStrategyLabel } from "@/services/strategies/labels";
-import type { StrategyMetadata } from "@/services/strategies/types";
+import type { StrategyMetadata } from "@/types/strategy";
 import { stringifyMetadata } from "@/components/bets/metadata-utils";
 
 export type TicketMetadataDialogProps = {

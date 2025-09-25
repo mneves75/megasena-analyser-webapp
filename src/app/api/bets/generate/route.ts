@@ -23,6 +23,9 @@ const bodySchema = z.object({
   timeoutMs: z.number().int().positive().optional(),
 });
 
+// Mantemos este endpoint público para integrações externas e o tooling documentado em docs/API_BET_ENGINE.md.
+// Fluxos internos do App Router devem continuar utilizando a server action `generateBetsAction`.
+
 export async function POST(request: NextRequest) {
   if (token) {
     const authorization = request.headers.get("authorization");

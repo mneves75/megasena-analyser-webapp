@@ -1,4 +1,4 @@
-import type { StrategyName } from "@/services/strategies/types";
+import type { StrategyName } from "@/types/strategy";
 
 const STRATEGY_LABELS: Record<StrategyName, string> = {
   balanced: "Balanceada",

@@ -10,10 +10,7 @@ import "react-data-grid/lib/styles.css";
 
 import { buttonStyles } from "@/components/ui/button-variants";
 import { CopySeedButton } from "@/components/bets/copy-seed-button";
-import type {
-  StrategyMetadata,
-  ParityDistribution,
-} from "@/services/strategies/types";
+import type { StrategyMetadata, ParityDistribution } from "@/types/strategy";
 import { getStrategyLabel } from "@/services/strategies/labels";
 
 export type GeneratedTicketLike = {

@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Stack } from "@/components/ui/stack";
 import { HistoryTicketsGrid } from "@/components/bets/tickets-grid";
 import { listBets } from "@/services/bet-store";
-import type { StrategyMetadata } from "@/services/strategies/types";
+import type { StrategyMetadata } from "@/types/strategy";
 
 type BetsPageProps = {
   searchParams?: Record<string, string | string[]>;
