@@ -40,9 +40,9 @@
 
 ### Iteração E — QA & Docs
 
-- [ ] Rodar suite CLI e smoke da página de geração.
+- [x] Rodar suite CLI e smoke da página de geração.
 - [ ] Capturar screenshots modo claro/escuro (antes/depois) e anexar ao PR.
-- [ ] Atualizar changelog/resumo para refletir melhorias de UI.
+- [x] Atualizar changelog/resumo para refletir melhorias de UI.
 
 ## Riscos & Mitigações
 

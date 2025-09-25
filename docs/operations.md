@@ -91,4 +91,4 @@ Registrar incidentes em `docs/operations/runbook-logs.md` (criar se não existir
   - `npm run cli bets generate -- --budget 120 --seed auditoria` &rarr; pré-visualiza lotes sem persistir (adicione `--persist` para gravar).
   - `npm run cli bets list -- --limit 5 --json` &rarr; exporta histórico para pipelines de auditoria.
   - `npm run cli limits -- --set maxTicketsPerBatch=140 --json` &rarr; aplica override documentado e recupera histórico recente.
-- Scripts úteis: `npm run sync -- --log-level=debug`, `npm run dev -- --turbo-log`, `npm run db:fix-bet-totals`, `npm run cli:smoke` (executa fluxo end-to-end do CLI). Atualizar este guia se scripts mudarem.
+- Scripts úteis: `npm run sync -- --log-level=debug`, `npm run dev -- --turbo-log`, `npm run db:fix-bet-totals`, `npm run cli:smoke [--prepare]` (executa fluxo end-to-end do CLI; `--prepare` aplica migrations/seed automaticamente). Atualizar este guia se scripts mudarem.

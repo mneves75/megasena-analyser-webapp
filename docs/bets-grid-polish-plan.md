@@ -61,9 +61,9 @@
 ### 6. Documentação e QA manual
 
 - [x] Atualizar este plano com status (checklist) conforme cada etapa for concluída.
-- [ ] Registrar no changelog e em `docs/generated-bets-grid-plan.md` as mudanças visuais/performance.
+- [x] Registrar no changelog e em `docs/generated-bets-grid-plan.md` as mudanças visuais/performance.
 - [ ] Capturar screenshots modo claro/escuro para anexar ao PR.
-- [ ] Descrever testes manuais (ex.: ordenação, copiar, responsividade) para referência futura.
+- [x] Descrever testes manuais (ex.: ordenação, copiar, responsividade) para referência futura.
 
 ## TODO (resumo executivo)
 
@@ -105,6 +105,14 @@
 - [ ] **QA + docs**
   - Atualizar screenshots na próxima rodada e registrar testes (scroll, cópia, tradução) antes do PR.
 
+### Testes manuais (25/09/2025)
+
+- Ordenação multicoluna no grid de geração e histórico (ASC/DESC em “Estratégia”, “Semente”, “Custo”).
+- Botão “Copiar” antes das dezenas copia texto correto tanto no grid quanto na listagem.
+- Modal “Ver em tela cheia” exibe metadados truncados sem quebrar layout, inclui scroll interno.
+- Scroll da página mantém título/descrição visíveis (testado com trackpad e mouse, temas claro/escuro).
+- `npm run cli:smoke --prepare` executa com sucesso em ambiente limpo.
+
 ### TODO consolidado
 
 - [x] Localização completa dos grids.
@@ -112,7 +120,7 @@
 - [ ] Layout ampliado nas páginas principais.
 - [x] Correção de contraste do botão de geração.
 - [x] Header do grid fixo sem sobreposição.
-- [ ] Documentação + QA anotados.
+- [ ] Captura de screenshots light/dark.
 - [x] Scroll/título ajustado na página de geração.
 - [x] Labels de estratégia localizados.
 - [x] Botão de cópia reposicionado/alinhado.

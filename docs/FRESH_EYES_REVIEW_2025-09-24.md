@@ -145,3 +145,19 @@ Script utilitário adicionado: `npm run db:fix-bet-totals` normaliza os registro
 - Botão `CopySeedButton` agora usa fallback com textarea oculto, feedback de erro e limpeza de temporizadores (src/components/bets/copy-seed-button.tsx:1-82).
 - Labels das estratégias secundárias foram traduzidas para pt-BR para alinhar UI com schema (`Sequência aquecida`, `Onda fria`) (src/components/forms/bet-generator-form.tsx:79-95).
 - Plano de polimento atualizado com observações e marcação dos testes a serem capturados em QA visual (docs/bets-grid-polish-plan.md:24-66).
+
+## Atualização · 25/09/2025 22:30 (UTC-3)
+
+### Principais apontamentos
+
+1. **Dialog de metadados exibe JSON cru sem sanitização** – o novo `TicketMetadataDialog` (`src/components/bets/ticket-metadata-dialog.tsx`) imprime `JSON.stringify` diretamente dentro de `<pre>`. Estruturas profundas em `metadata` (ex.: arrays grandes, objetos aninhados) podem gerar saída ilegível e estourar o layout do modal. Precisamos limitar profundidade ou aplicar formatação colapsável.
+2. **Mapper de estratégia replicado** – há duas implementações concorrentes (`src/services/strategies/labels.ts` e objetos inline antigos). Garantir que grids, API payloads e documentação usem um único módulo para evitar divergência futura.
+3. **Smoke script assume DB local** – `scripts/cli-smoke.ts` falha silenciosamente se `npm run db:migrate` não foi executado; ideal validar upfront ou oferecer seed automática.
+4. **Planos de QA ainda pendentes** – `docs/bets-grid-polish-plan.md` e `docs/generate-page-polish-plan.md` marcam QA/documentação como pendentes; precisamos fechar antes do PR (capturas, testes manuais, atualização de changelog).
+
+### Plano & TODO
+
+- [x] Atualizar `TicketMetadataDialog` para formatar `metadata` com sanitização (por exemplo, truncar chaves profundas ou usar viewer colapsável) e limitar altura do `<pre>` com scroll.
+- [x] Consolidar mapeamento de estratégias expondo helper único (`getStrategyLabel`) e remover qualquer resquício duplicado; acrescentar teste cobrindo importadores.
+- [x] Melhorar `cli-smoke`: abortar com mensagem clara quando o banco estiver vazio ou oferecer opção de rodar `db:migrate`/`db:seed` automaticamente.
+- [ ] Finalizar QA/documentação pendentes (screenshots light/dark, lista de testes manuais) e atualizar o changelog conforme entregas visuais.

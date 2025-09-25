@@ -48,10 +48,10 @@ Janela inicial   : 2679
 05. 32 – 044 hits (22.0%)
 ```
 
-## 3. Geração de apostas (dry-run)
+## 3. Geração de apostas (persist)
 
 ```bash
-$ npm run cli -- bets generate --budget 150 --strategy hot-streak --seed CLI-DEMO --spread-budget --dry-run --json
+$ npm run cli -- bets generate --budget 150 --strategy hot-streak --seed CLI-DEMO --spread-budget --persist --json
 {
   "tickets": [
     {

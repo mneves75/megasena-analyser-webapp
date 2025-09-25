@@ -24,6 +24,7 @@ import { persistBatch, listBets } from "@/services/bet-store";
 import type { StoredBet } from "@/services/bet-store";
 import { PricingError } from "@/services/pricing";
 import type { StrategyName } from "@/services/strategies/types";
+import { getStrategyLabel } from "@/services/strategies/labels";
 
 const STRATEGY_NAMES: StrategyName[] = [
   "balanced",
@@ -135,15 +136,15 @@ function registerGenerateCommand(parent: Command) {
         printHeading("Resumo do lote gerado");
         printKeyValueTable([
           ["Seed", seed],
-          ["Estratégias", strategies.map((item) => item.name).join(", ")],
+          [
+            "Estratégias",
+            strategies.map((item) => getStrategyLabel(item.name)).join(", "),
+          ],
           ["Orçamento", formatCurrency(budgetCents)],
           ["Custo total", formatCurrency(result.totalCostCents)],
           ["Leftover", formatCurrency(result.leftoverCents)],
           ["Tickets", result.tickets.length],
-          [
-            "Persistido",
-            persist ? "sim" : "não (use --dry-run para apenas inspecionar)",
-          ],
+          ["Persistido", persist ? "sim" : "não (use --persist para salvar)"],
         ]);
 
         if (result.payload.ticketCostBreakdown?.length) {

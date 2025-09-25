@@ -307,6 +307,9 @@ describe("CLI commands", () => {
       }),
     );
     expect(persistBatchMock).not.toHaveBeenCalled();
+
+    const printedLines = logSpy.mock.calls.flat().map((line) => String(line));
+    expect(printedLines.some((line) => line.includes("Balanceada"))).toBe(true);
   });
 
   it("persiste quando --persist é informado", async () => {

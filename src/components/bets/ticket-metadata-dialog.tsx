@@ -11,6 +11,7 @@ import {
 } from "@/components/bets/tickets-grid";
 import { getStrategyLabel } from "@/services/strategies/labels";
 import type { StrategyMetadata } from "@/services/strategies/types";
+import { stringifyMetadata } from "@/components/bets/metadata-utils";
 
 export type TicketMetadataDialogProps = {
   open: boolean;
@@ -70,6 +71,7 @@ export function TicketMetadataDialog({
       ? resolvedMetadata.score
       : undefined;
   const strategyLabel = getStrategyLabel(ticket.strategy);
+  const prettyMetadata = stringifyMetadata(resolvedMetadata ?? {});
 
   return createPortal(
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/70 px-4 py-8">
@@ -180,8 +182,8 @@ export function TicketMetadataDialog({
                 <span className="font-medium text-slate-600 dark:text-slate-100">
                   Metadados brutos:
                 </span>
-                <pre className="mt-1 select-text overflow-x-auto rounded bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
-                  {JSON.stringify(resolvedMetadata ?? {}, null, 2)}
+                <pre className="mt-1 max-h-64 select-text overflow-auto rounded bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900/60 dark:text-slate-200">
+                  {prettyMetadata}
                 </pre>
               </li>
             </ul>

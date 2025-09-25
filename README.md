@@ -71,6 +71,7 @@ Todos os comandos aceitam `--json`/`--pretty-json` para automação. Consulte `d
   - `megasena sync [--full] [--limit N] [--silent] [--json]` – sincroniza concursos; `--json` ou `--silent` forçam modo headless.
   - `megasena bets generate --budget 120.50 [--strategy balanced] [--k 7] [--spread-budget] [--persist] [--json]` – gera lotes idênticos à UI; só grava quando `--persist` for usado.
   - `megasena bets list [--strategy uniform] [--from 2025-09-01] [--limit 10] [--json]` – consulta apostas armazenadas com filtros opcionais.
+  - `npm run cli:smoke [--prepare]` – executa fluxo end-to-end (summary → stats → bets → sync); use `--prepare` para aplicar migrations/seed antes de rodar.
 - Em CI defina `--silent` (ou use `--json`) para evitar barras de progresso; logs seguem `LOG_LEVEL`.
 - Saídas JSON são determinísticas e pensadas para piping (`jq`, `xargs`); consulte `docs/operations.md` para exemplos completos.
 
