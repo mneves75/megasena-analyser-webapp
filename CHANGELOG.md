@@ -8,9 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Comprehensive Deployment Audit** (`DEPLOYMENT_AUDIT.md`) documenting all server environment findings and deployment bugs
-- Fixed deployment script (`scripts/deploy-fixed.sh`) with all critical bugs corrected
-- Dynamic rendering for dashboard pages to prevent build-time database access
+- **Path-based routing support** - Application now accessible via `/megasena-analyzer` path
+- `basePath` and `assetPrefix` configuration in Next.js for subpath deployment
+- Path access setup script (`scripts/setup-path-access.sh`)
+- Manual setup guide (`MANUAL_PATH_SETUP.md`)
+- Public access configuration guide (`ACCESS_GUIDE.md`)
+- Updated remote update script with sshpass support
+
+### Changed
+- Application URL structure changed to support path-based routing
+- All routes now prefixed with `/megasena-analyzer`
+- Homepage: `/megasena-analyzer`
+- Dashboard: `/megasena-analyzer/dashboard`
+- Statistics: `/megasena-analyzer/dashboard/statistics`
+- Generator: `/megasena-analyzer/dashboard/generator`
 
 ### Fixed
 - **CRITICAL:** Port conflict - changed from 3001 to 3002 (free port)

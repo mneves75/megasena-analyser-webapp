@@ -14,7 +14,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-SSH_CONNECTION="claude@212.85.2.24"
+SSH_USER="claude"
+SSH_HOST="212.85.2.24"
+SSH_CONNECTION="${SSH_USER}@${SSH_HOST}"
+SSH_PASSWORD="***REMOVED***"
 REMOTE_PATH="/home/claude/apps/megasena-analyser"
 APP_NAME="megasena-analyser"
 
@@ -28,7 +31,8 @@ echo -e "${GREEN}✅ Build concluído${NC}\n"
 
 # Transferir arquivos
 echo -e "${YELLOW}2. Transferindo arquivos...${NC}"
-rsync -avz --progress \
+sshpass -p "${SSH_PASSWORD}" rsync -avz --progress \
+    -e "ssh -o StrictHostKeyChecking=no" \
     --exclude 'node_modules' \
     --exclude '.git' \
     --exclude '.next' \
@@ -44,8 +48,9 @@ echo -e "${GREEN}✅ Arquivos transferidos${NC}\n"
 
 # Atualizar no servidor
 echo -e "${YELLOW}3. Atualizando no servidor...${NC}"
-ssh ${SSH_CONNECTION} << ENDSSH
-cd ${REMOTE_PATH}
+sshpass -p "${SSH_PASSWORD}" ssh -o StrictHostKeyChecking=no ${SSH_CONNECTION} << 'ENDSSH'
+source ~/.nvm/nvm.sh
+cd /home/claude/apps/megasena-analyser
 
 # Instalar dependências
 if command -v bun &> /dev/null; then
@@ -62,14 +67,14 @@ else
 fi
 
 # Reiniciar PM2
-pm2 reload ${APP_NAME} --update-env
+pm2 reload megasena-analyser --update-env
 
 # Aguardar estabilização
 sleep 2
 
 # Verificar status
-pm2 status ${APP_NAME}
+pm2 status megasena-analyser
 ENDSSH
 
 echo -e "\n${GREEN}✅ Atualização concluída!${NC}\n"
-echo "Ver logs: ssh ${SSH_CONNECTION} 'pm2 logs ${APP_NAME}'"
+echo "Ver logs: sshpass -p '${SSH_PASSWORD}' ssh ${SSH_CONNECTION} 'pm2 logs megasena-analyser'"
