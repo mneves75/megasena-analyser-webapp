@@ -31,7 +31,26 @@ export default function GeneratorPage() {
         }),
       });
 
-      const data = await response.json();
+      // Check if response has content before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Resposta inválida do servidor. Por favor, tente novamente.');
+      }
+
+      // Get response text first to handle empty responses
+      const responseText = await response.text();
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Servidor retornou resposta vazia. Por favor, tente novamente.');
+      }
+
+      // Parse JSON with error handling
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError);
+        throw new Error('Erro ao processar resposta do servidor. Por favor, tente novamente.');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao gerar apostas');
