@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { StatsCard } from '@/components/stats-card';
-import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { formatCurrency, formatNumber, formatPercentage } from '@/lib/utils';
+import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics';
 import {
   BarChart3,
   TrendingUp,
@@ -16,18 +16,33 @@ import {
 import { LotteryBall } from '@/components/lottery-ball';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Force dynamic rendering since we need database at runtime
+// Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
 
-async function getDashboardData() {
-  const stats = new StatisticsEngine();
-  const statistics = stats.getDrawStatistics();
-  const recentDraws = stats.getDrawHistory(5);
+interface RecentDraw {
+  contestNumber: number;
+  drawDate: string;
+  numbers: number[];
+  prizeSena: number;
+  accumulated: boolean;
+}
 
-  return {
-    statistics,
-    recentDraws,
-  };
+interface DashboardApiResponse {
+  statistics: DrawStatistics;
+  recentDraws: RecentDraw[];
+}
+
+async function getDashboardData(): Promise<DashboardApiResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const response = await fetch(`${baseUrl}/api/dashboard`, {
+    cache: 'no-store',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch dashboard data');
+  }
+  
+  return (await response.json()) as DashboardApiResponse;
 }
 
 export default async function DashboardPage() {
@@ -105,7 +120,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {statistics.mostFrequentNumbers.slice(0, 10).map((num) => (
+                {statistics.mostFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
                     <LotteryBall number={num.number} size="md" />
                     <span className="text-xs text-muted-foreground">{num.frequency}x</span>
@@ -125,7 +140,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-3">
-                {statistics.leastFrequentNumbers.slice(0, 10).map((num) => (
+                {statistics.leastFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
                     <LotteryBall number={num.number} size="md" />
                     <span className="text-xs text-muted-foreground">{num.frequency}x</span>
@@ -143,7 +158,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentDraws.map((draw) => (
+              {recentDraws.map((draw: RecentDraw) => (
                 <div
                   key={draw.contestNumber}
                   className="flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-card transition-smooth"
@@ -159,7 +174,7 @@ export default async function DashboardPage() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      {draw.numbers.map((num) => (
+                      {draw.numbers.map((num: number) => (
                         <LotteryBall key={num} number={num} size="sm" />
                       ))}
                     </div>
@@ -207,4 +222,3 @@ export default async function DashboardPage() {
     </div>
   );
 }
-

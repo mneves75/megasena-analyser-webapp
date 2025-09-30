@@ -1,30 +1,38 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { LotteryBall } from '@/components/lottery-ball';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
+import { STATISTICS_DISPLAY } from '@/lib/constants';
+import type { NumberFrequency, Pattern } from '@/lib/analytics/statistics';
 
-// Force dynamic rendering since we need database at runtime
+// Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
 
-async function getStatisticsData() {
-  const stats = new StatisticsEngine();
-  const frequencies = stats.getNumberFrequencies();
-  const patterns = stats.detectPatterns();
+interface StatisticsApiResponse {
+  frequencies: NumberFrequency[];
+  patterns: Pattern[];
+}
 
-  return {
-    frequencies,
-    patterns,
-  };
+async function getStatisticsData(): Promise<StatisticsApiResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const response = await fetch(`${baseUrl}/api/statistics`, {
+    cache: 'no-store',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch statistics data');
+  }
+  
+  return (await response.json()) as StatisticsApiResponse;
 }
 
 export default async function StatisticsPage() {
   const { frequencies, patterns } = await getStatisticsData();
 
-  const topHot = frequencies.slice(0, 20);
-  const topCold = [...frequencies].reverse().slice(0, 20);
+  const topHot = frequencies.slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
+  const topCold = [...frequencies].reverse().slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -63,7 +71,7 @@ export default async function StatisticsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-5 gap-4">
-                {topHot.map((num, index) => (
+                {topHot.map((num: NumberFrequency, index: number) => (
                   <div key={num.number} className="flex flex-col items-center gap-2">
                     <div className="text-xs font-semibold text-primary">#{index + 1}</div>
                     <LotteryBall number={num.number} size="md" />
@@ -91,7 +99,7 @@ export default async function StatisticsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-5 gap-4">
-                {topCold.map((num, index) => (
+                {topCold.map((num: NumberFrequency, index: number) => (
                   <div key={num.number} className="flex flex-col items-center gap-2">
                     <div className="text-xs font-semibold text-muted-foreground">
                       #{index + 1}
@@ -119,7 +127,7 @@ export default async function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {patterns.map((pattern, index) => (
+              {patterns.map((pattern: Pattern, index: number) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-4 rounded-lg border bg-card/50"
@@ -148,7 +156,7 @@ export default async function StatisticsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-6 md:grid-cols-10 gap-3">
-              {frequencies.map((num) => (
+              {frequencies.map((num: NumberFrequency) => (
                 <div key={num.number} className="flex flex-col items-center gap-1">
                   <LotteryBall number={num.number} size="sm" />
                   <div className="text-xs text-center">
@@ -163,4 +171,3 @@ export default async function StatisticsPage() {
     </div>
   );
 }
-
