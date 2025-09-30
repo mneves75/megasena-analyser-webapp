@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Path access setup script (`scripts/setup-path-access.sh`)
 - Manual setup guide (`MANUAL_PATH_SETUP.md`)
 - Public access configuration guide (`ACCESS_GUIDE.md`)
+- Comprehensive production deployment documentation (`docs/DEPLOYMENT.md`)
 - Updated remote update script with sshpass support
 
 ### Changed
