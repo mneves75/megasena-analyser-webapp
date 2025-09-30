@@ -23,8 +23,48 @@ Construir, ponta-a-ponta, um aplicativo que:
 3) Se um endpoint público falhar, registre o erro, não “complete” com dados sintéticos.
 
 
-- **Tech Stack:** Next.js frontend with Bun runtime, Tailwind CSS for styling, SQLite (via Drizzle/Prisma) for persistence.
+- **Tech Stack:** Next.js 15 with App Router, React Server Components (RSC), Bun runtime, Tailwind CSS for styling, SQLite (bun:sqlite native) for persistence.
 - **Core Features:** derivar do texto acima
+
+## React Server Components Architecture
+
+**MANDATORY:** This project uses React Server Components (RSC). Follow these principles:
+
+### Core Concepts
+
+1. **`'use client'` = Typed `<script>` tag**
+   - Opens door FROM server TO client
+   - Use ONLY for: state, effects, event handlers, browser APIs
+   - Props must be serializable
+
+2. **`'use server'` = Typed `fetch()` call**
+   - Opens door FROM client TO server
+   - Creates Server Actions for data mutations
+   - Direct import from client (no manual fetch)
+
+### Architecture Rules
+
+1. **Default to Server** - All components are Server Components unless marked `'use client'`
+2. **Minimize Client JS** - Only add `'use client'` at leaves of component tree
+3. **Avoid API Routes** - Use Server Actions instead of creating `/api` routes
+4. **Serializable Props** - Only pass JSON-serializable data between boundaries
+
+### File Structure Pattern
+
+```
+app/
+  dashboard/
+    page.tsx           ← Server Component (data fetching, layout)
+    form.tsx           ← 'use client' (interactive form)
+    actions.ts         ← 'use server' (database mutations)
+```
+
+### useEffect Guidelines
+
+**Read first:** [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+
+❌ Don't use for: data transformation, user events, resetting state
+✅ Use for: external system sync (WebSocket, third-party libs, browser APIs)
 
 Start by building the **main dashboard page** and menu with all features containing:
 - A header with navigation,
