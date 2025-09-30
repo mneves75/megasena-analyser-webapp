@@ -1,5 +1,23 @@
 # Setup Guide
 
+## Prerequisites
+
+**⚠️ IMPORTANT:** This application **requires Bun runtime** (≥1.1.0). It will not work with Node.js due to native SQLite integration.
+
+**Install Bun:**
+```bash
+# macOS/Linux
+curl -fsSL https://bun.sh/install | bash
+
+# Windows (WSL required)
+# Follow: https://bun.sh/docs/installation
+```
+
+**Verify Installation:**
+```bash
+bun --version  # Should show 1.1.0 or higher
+```
+
 ## Quick Start
 
 Follow these steps to get the Mega-Sena Analyser running locally:
@@ -42,12 +60,28 @@ Visit `http://localhost:3000` to see the application.
 
 ## Troubleshooting
 
-### Issue: "Module not found: better-sqlite3"
+### Issue: "Cannot find module 'bun:sqlite'"
 
-Make sure you've run `bun install`. If using Node.js instead of Bun, you may need to rebuild native modules:
+**Cause:** You're trying to run the app with Node.js instead of Bun.
 
+**Solution:** This application requires Bun. Install it and use `bun` commands:
 ```bash
-npm rebuild better-sqlite3
+# Install Bun
+curl -fsSL https://bun.sh/install | bash
+
+# Use Bun (NOT npm/node)
+bun run dev
+```
+
+### Issue: "Database requires Bun runtime"
+
+**Cause:** Attempting to run with Node.js.
+
+**Solution:** Use Bun for all commands:
+```bash
+bun run dev        # NOT: npm run dev
+bun run build      # NOT: npm run build
+bun scripts/migrate.ts  # NOT: node scripts/migrate.ts
 ```
 
 ### Issue: "Database file not found"
@@ -88,8 +122,7 @@ megasena-analyser-20250930/
 2. Run linter: `bun run lint`
 3. Run tests: `bun run test`
 4. Format code: `bun run format`
-5. **Update CHANGELOG.md** with your changes following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
-6. Commit changes using Conventional Commits format
+5. Commit changes
 
 ## Production Build
 
@@ -128,10 +161,30 @@ bun run db:migrate
 bun run db:pull -- --limit 50
 ```
 
+## Important Notes
+
+### Runtime Requirements
+
+- ✅ **Bun ≥1.1.0** - Required
+- ❌ **Node.js** - Not supported
+- ❌ **npm** - Use `bun` instead
+- ❌ **yarn/pnpm** - Use `bun` instead
+
+### Database Technology
+
+This project uses **Bun's native SQLite** (`bun:sqlite`):
+- ✅ Zero compilation required
+- ✅ Native performance
+- ✅ No ABI compatibility issues
+- ✅ Works out of the box with Bun
+
+**Note:** The project was migrated from `better-sqlite3` to `bun:sqlite` in v1.0.1. See `MIGRATION_TO_BUN_SQLITE.md` for details.
+
 ## Next Steps
 
 - Explore the dashboard at `/dashboard`
 - View detailed statistics at `/dashboard/statistics`
 - Generate bets at `/dashboard/generator`
 - Check the API documentation in `README.md`
+- Read migration guide: `MIGRATION_TO_BUN_SQLITE.md`
 

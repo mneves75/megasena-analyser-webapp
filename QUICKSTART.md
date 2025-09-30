@@ -27,7 +27,7 @@ O script irá:
 - ✅ Instalar dependências no servidor
 - ✅ Configurar banco de dados SQLite
 - ✅ Carregar dados iniciais da CAIXA
-- ✅ Iniciar aplicação com PM2 na porta 3001
+- ✅ Iniciar aplicação com PM2 na porta 3002 (Next.js) + 3201 (Bun API)
 
 **Tempo estimado:** 5-10 minutos (dependendo da velocidade de transferência)
 
@@ -106,7 +106,7 @@ ssh claude@212.85.2.24
 pm2 logs megasena-analyser --lines 50
 ```
 
-### Porta 3001 em uso?
+### Porta 3002 ou 3201 em uso?
 Altere a porta no `ecosystem.config.js` e no Nginx.
 
 ### Nginx retorna 502?
@@ -148,7 +148,7 @@ bun run db:pull -- --limit 100
        │
        ▼
 ┌─────────────┐
-│   Next.js   │ (Porta 3001)
+│   Next.js   │ (Porta 3002)
 │  (via PM2)  │
 └──────┬──────┘
        │

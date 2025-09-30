@@ -56,7 +56,7 @@ export function BetCard({ bet, index, className }: BetCardProps) {
               <h3 className="font-semibold text-foreground">
                 Aposta #{index + 1}
               </h3>
-              <Badge variant={getBetTypeColor() as "default" | "secondary" | "destructive" | "outline"}>
+              <Badge variant={getBetTypeColor() as 'default' | 'secondary' | 'destructive' | 'outline'}>
                 {getBetTypeLabel()}
               </Badge>
             </div>

@@ -98,7 +98,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
   },
 };
 
-const PORT = Number(process.env.API_PORT) || 3001;
+const PORT = Number(process.env.API_PORT) || 3201;
 
 serve({
   port: PORT,

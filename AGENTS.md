@@ -10,13 +10,17 @@
 - `docs/` carries prompts and decision logs; update alongside feature shifts.
 
 ## Build, Test, and Development Commands
-- `bun install` installs dependencies; run with Bun ≥1.1 to retain Node.js 20 API coverage.
-- `bun run db:migrate` applies SQLite migrations against `db/mega-sena.db`.
-- `bun run dev` serves `http://localhost:3000` with hot reload.
-- `bun run lint` (or `bun run lint --fix`) enforces ESLint; `bun run format` runs Prettier.
-- `bun run test` executes Vitest suites; append `-- --run` in CI to disable watch mode.
-- `bunx vitest --coverage` must report ≥80% line coverage.
-- `bun run build` bundles for production and type-checks.
+
+**⚠️ CRITICAL:** All commands require **Bun runtime ≥1.1**. This project uses `bun:sqlite` (native) and **will not work with Node.js, npm, yarn, or pnpm**.
+
+- `bun install` installs dependencies (Bun ≥1.1 required)
+- `bun scripts/migrate.ts` applies SQLite migrations (uses bun:sqlite native)
+- `bun run db:migrate` same as above (via package.json script)
+- `bun run dev` serves `http://localhost:3000` with hot reload
+- `bun run lint` (or `bun run lint --fix`) enforces ESLint; `bun run format` runs Prettier
+- `bun run test` executes Vitest suites; append `-- --run` in CI to disable watch mode
+- `bunx vitest --coverage` must report ≥80% line coverage
+- `bun run build` bundles for production and type-checks
 
 ## Coding Style & Naming Conventions
 - Use strict TypeScript with explicit returns on exported APIs.
@@ -25,14 +29,14 @@
 - Run `bun run lint --fix` then `bun run format` before pushing.
 
 ## Testing Guidelines
-- Unit specs live in `tests/lib/**/{file}.test.ts`; mock HTTP with MSW handlers.
-- UI flows live in `tests/app/**/{route}.spec.ts` using Playwright.
-- Prime SQLite via `scripts/pull-draws.ts --limit 5`, which seeds the `db/mega-sena.db` test copy.
-- Fail CI if `bunx vitest --coverage` drops below 80%.
+- Unit specs live in `tests/lib/**/{file}.test.ts`; mock HTTP with MSW handlers
+- UI flows live in `tests/app/**/{route}.spec.ts` using Playwright
+- Prime SQLite via `bun scripts/pull-draws.ts --limit 5`, which seeds the `db/mega-sena.db` test copy
+- Database uses `bun:sqlite` (native), not `better-sqlite3`
+- Fail CI if `bunx vitest --coverage` drops below 80%
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commits (`feat: add jackpot probability panel`) with single-focus changes.
-- **Update CHANGELOG.md** after every commit following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 - Call out database or migration impacts in commit bodies.
 - Pull requests describe scope, edge cases, and UI screenshots when visuals shift; reference issues (`Refs #123`).
 - Require green CI (`bun run lint && bun run test`) prior to requesting review.

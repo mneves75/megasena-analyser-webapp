@@ -1,3 +1,13 @@
+// Application Information
+export const APP_INFO = {
+  NAME: 'Mega-Sena Analyser',
+  VERSION: '1.0.0',
+  BUILD_DATE: '2025-09-30',
+  DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
+  REPOSITORY: 'https://github.com/megasena-analyser',
+  AUTHOR: 'Mega-Sena Analyser Team',
+} as const;
+
 // Mega-Sena Game Constants
 export const MEGASENA_CONSTANTS = {
   MIN_NUMBER: 1,
@@ -31,8 +41,12 @@ export const BET_PRICES: Record<number, number> = {
 // API Configuration
 export const API_CONFIG = {
   CAIXA_BASE_URL: 'https://servicebus2.caixa.gov.br/portaldeloterias/api',
-  REQUEST_TIMEOUT: 10000,
-  RATE_LIMIT_DELAY: 1000,
+  REQUEST_TIMEOUT: 30000, // 30 seconds (increased from 10s for slow responses)
+  RATE_LIMIT_DELAY: 1000, // Base delay between requests
+  MAX_RETRIES: 5, // Maximum retry attempts (increased from 3)
+  BACKOFF_MULTIPLIER: 2, // Exponential backoff multiplier
+  PROGRESSIVE_DELAY_THRESHOLD: 50, // Start progressive delays after N requests
+  PROGRESSIVE_DELAY_INCREMENT: 500, // Add 500ms every N requests
 } as const;
 
 // Prize Tiers
@@ -78,5 +92,19 @@ export const BET_COMBINATIONS: Record<number, number> = {
   13: 1716,
   14: 3003,
   15: 5005,
+} as const;
+
+// Bet Generation Algorithm Constants
+export const BET_ALLOCATION = {
+  MIXED_MULTIPLE_PERCENTAGE: 0.6, // 60% for multiple bets in mixed mode
+  BALANCED_HOT_PERCENTAGE: 0.5, // 50% hot numbers in balanced strategy
+} as const;
+
+// Statistics Display Constants
+export const STATISTICS_DISPLAY = {
+  TOP_NUMBERS_COUNT: 20, // Top N hot/cold numbers to display
+  DASHBOARD_TOP_COUNT: 10, // Top N for dashboard overview
+  RECENT_DRAWS_DEFAULT: 50, // Default number of recent draws to fetch
+  PATTERNS_MIN_OCCURRENCES: 1, // Minimum occurrences to show pattern
 } as const;
 

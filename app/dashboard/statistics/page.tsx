@@ -16,7 +16,13 @@ interface StatisticsApiResponse {
 }
 
 async function getStatisticsData(): Promise<StatisticsApiResponse> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // During SSR, fetch directly from the API server; client-side uses rewrites
+  const isServer = typeof window === 'undefined';
+  const apiPort = process.env.API_PORT ?? '3201';
+  const baseUrl = isServer 
+    ? `http://localhost:${apiPort}` 
+    : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
+  
   const response = await fetch(`${baseUrl}/api/statistics`, {
     cache: 'no-store',
   });

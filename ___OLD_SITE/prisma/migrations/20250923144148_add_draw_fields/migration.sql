@@ -1,2 +1,0 @@
--- Migration superseded by updated 20250923142624_init_schema.
--- Intentionally left empty to keep migration history consistent.

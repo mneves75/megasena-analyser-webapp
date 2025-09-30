@@ -6,17 +6,18 @@ Este guia detalha o processo completo de deploy da aplicação Mega-Sena Analyse
 
 - **Host:** 212.85.2.24
 - **Usuário SSH:** claude
-- **Método:** Deploy via SSH com PM2 + Nginx
-- **Porta da Aplicação:** 3001 (ou próxima disponível)
+- **Método:** Deploy via SSH com PM2 + Caddy (reverse proxy existente)
+- **Porta da Aplicação (Next.js):** 3002
+- **Porta da API Bun:** 3201
 
 ## Pré-requisitos no VPS
 
 Antes do deploy, certifique-se de que o servidor possui:
 
-1. **Node.js 20+** instalado
-2. **Bun 1.1+** instalado
+1. **Node.js 20+** instalado (via NVM)
+2. **Bun 1.2+** instalado (`~/.bun/bin/bun`)
 3. **PM2** instalado globalmente
-4. **Nginx** configurado e rodando
+4. **Caddy** (reverse proxy) configurado e rodando
 5. **Git** instalado
 
 ## Estrutura de Diretórios no VPS
@@ -113,33 +114,33 @@ rsync -avz --progress \
 # No servidor VPS
 cd /home/claude/apps/megasena-analyser
 
-# Criar arquivo .env.production
+# Criar arquivo .env.production (ajuste valores conforme necessário)
 cat > .env.production << 'EOF'
 NODE_ENV=production
-PORT=3001
+PORT=3002
+API_PORT=3201
 DATABASE_PATH=/home/claude/apps/megasena-analyser/db/mega-sena.db
 CAIXA_API_BASE_URL=https://servicebus2.caixa.gov.br/portaldeloterias/api
+NEXT_PUBLIC_BASE_URL=https://conhecendotudo.online/megasena-analyzer
 EOF
 ```
 
-### 6. Instalar Dependências
+### 6. Instalar Dependências com Bun
 
 ```bash
 # No servidor VPS
 cd /home/claude/apps/megasena-analyser
 
-# Instalar com Bun (mais rápido)
-bun install --production
-
-# OU com npm/yarn se Bun não estiver disponível
-# npm ci --production
+~/.bun/bin/bun install
 ```
 
 ### 7. Build no Servidor
 
 ```bash
 # No servidor VPS
-bun run build
+cd /home/claude/apps/megasena-analyser
+
+~/.bun/bin/bun run build
 ```
 
 ### 8. Preparar Banco de Dados
@@ -152,16 +153,16 @@ cd /home/claude/apps/megasena-analyser
 mkdir -p db
 
 # Executar migrações
-bun run db:migrate
+~/.bun/bin/bun run db:migrate
 
-# Carregar dados iniciais (100 últimos sorteios)
-bun run db:pull -- --limit 100
+# (Opcional) Carregar dados iniciais (100 últimos sorteios)
+~/.bun/bin/bun run db:pull -- --limit 100
 
 # Verificar banco criado
 ls -lh db/mega-sena.db
 ```
 
-### 9. Configurar PM2
+### 9. Configurar PM2 (Next.js + API Bun)
 
 ```bash
 # No servidor VPS
@@ -170,37 +171,61 @@ cd /home/claude/apps/megasena-analyser
 # Criar arquivo de configuração PM2
 cat > ecosystem.config.js << 'EOF'
 module.exports = {
-  apps: [{
-    name: 'megasena-analyser',
-    script: 'node_modules/next/dist/bin/next',
-    args: 'start -p 3001',
-    cwd: '/home/claude/apps/megasena-analyser',
-    instances: 1,
-    exec_mode: 'fork',
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '500M',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3001
+  apps: [
+    {
+      name: 'megasena-analyser',
+      cwd: '/home/claude/apps/megasena-analyser',
+      script: '/home/claude/.bun/bin/bun',
+      args: 'run start -- --port 3002',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+        DATABASE_PATH: '/home/claude/apps/megasena-analyser/db/mega-sena.db',
+        NEXT_PUBLIC_BASE_URL: 'https://conhecendotudo.online/megasena-analyzer'
+      },
+      error_file: '/home/claude/apps/megasena-analyser/logs/error.log',
+      out_file: '/home/claude/apps/megasena-analyser/logs/out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
     },
-    error_file: '/home/claude/apps/megasena-analyser/logs/error.log',
-    out_file: '/home/claude/apps/megasena-analyser/logs/out.log',
-    log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
-  }]
+    {
+      name: 'megasena-api',
+      cwd: '/home/claude/apps/megasena-analyser',
+      script: '/home/claude/.bun/bin/bun',
+      args: 'run server.ts',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '250M',
+      env: {
+        NODE_ENV: 'production',
+        API_PORT: 3201,
+        DATABASE_PATH: '/home/claude/apps/megasena-analyser/db/mega-sena.db'
+      },
+      error_file: '/home/claude/apps/megasena-analyser/logs/api-error.log',
+      out_file: '/home/claude/apps/megasena-analyser/logs/api-out.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z'
+    }
+  ]
 };
 EOF
 
-# Criar diretório de logs
-mkdir -p logs
+# Garantir diretório de logs
+mkdir -p /home/claude/apps/megasena-analyser/logs
 
-# Iniciar aplicação com PM2
+# Iniciar processos com PM2 (carregando NVM para ter node/pm2 no PATH)
+source ~/.nvm/nvm.sh
 pm2 start ecosystem.config.js
 
-# Salvar configuração PM2
+# Persistir lista de processos
 pm2 save
 
-# Configurar PM2 para iniciar no boot (se tiver permissão)
+# (Opcional) Configurar PM2 para iniciar no boot
 pm2 startup
 ```
 
@@ -210,101 +235,57 @@ pm2 startup
 # No servidor VPS
 pm2 status
 pm2 logs megasena-analyser --lines 50
+pm2 logs megasena-api --lines 50
 
 # Testar localmente no servidor
-curl http://localhost:3001
+curl http://localhost:3002
+curl http://localhost:3201/api/dashboard
 
 # Deve retornar HTML da aplicação
 ```
 
-### 11. Configurar Nginx
+### 11. Atualizar Caddy (reverse proxy já em produção)
 
 ```bash
 # No servidor VPS
-sudo nano /etc/nginx/sites-available/megasena-analyser.conf
+echo 'semsenha2025##' | sudo -S nano /etc/caddy/Caddyfile
 ```
 
-Cole a configuração:
+Verifique se o bloco do domínio inclui o proxy abaixo (ajuste apenas se necessário):
 
-```nginx
-# /etc/nginx/sites-available/megasena-analyser.conf
-
-upstream megasena_backend {
-    server 127.0.0.1:3001;
-    keepalive 64;
-}
-
-server {
-    listen 80;
-    server_name megasena.seudominio.com.br;  # Altere para seu domínio
-
-    # Logs isolados
-    access_log /var/log/nginx/megasena-access.log;
-    error_log /var/log/nginx/megasena-error.log;
-
-    # Limite de tamanho de request
-    client_max_body_size 10M;
-
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
-
-    location / {
-        proxy_pass http://megasena_backend;
-        proxy_http_version 1.1;
-
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        proxy_cache_bypass $http_upgrade;
-        proxy_read_timeout 90;
+```caddyfile
+conhecendotudo.online, www.conhecendotudo.online {
+    handle /megasena-analyzer* {
+        reverse_proxy localhost:3002 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
     }
 
-    # Cache para assets estáticos
-    location /_next/static {
-        proxy_pass http://megasena_backend;
-        proxy_cache_valid 60m;
-        add_header Cache-Control "public, immutable";
+    handle /_next/* {
+        reverse_proxy localhost:3002 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
     }
 
-    # Cache para imagens
-    location ~* \.(jpg|jpeg|png|gif|ico|svg|webp)$ {
-        proxy_pass http://megasena_backend;
-        expires 7d;
-        add_header Cache-Control "public, immutable";
-    }
+    import security_headers
+    import rate_limiting
+    # ...demais diretivas já existentes...
 }
 ```
 
-Ativar o site:
+Após salvar o arquivo, recarregue o Caddy:
 
 ```bash
-# No servidor VPS
-sudo ln -s /etc/nginx/sites-available/megasena-analyser.conf /etc/nginx/sites-enabled/
-
-# Testar configuração
-sudo nginx -t
-
-# Recarregar Nginx
-sudo systemctl reload nginx
+echo 'semsenha2025##' | sudo -S systemctl reload caddy
 ```
 
-### 12. Configurar SSL (Opcional mas Recomendado)
+### 12. Certificados TLS
 
-```bash
-# No servidor VPS
-sudo apt install certbot python3-certbot-nginx
-
-# Obter certificado SSL
-sudo certbot --nginx -d megasena.seudominio.com.br
-
-# Certbot irá modificar automaticamente a configuração do Nginx
-```
+O Caddy gerencia automaticamente certificados Let's Encrypt para `conhecendotudo.online`. Basta garantir que o DNS aponte para `212.85.2.24` e o serviço esteja rodando. Use `sudo systemctl reload caddy` após qualquer alteração.
 
 ## Comandos Úteis
 
@@ -316,18 +297,23 @@ pm2 status
 
 # Ver logs em tempo real
 pm2 logs megasena-analyser
+pm2 logs megasena-api
 
 # Reiniciar aplicação
 pm2 restart megasena-analyser
+pm2 restart megasena-api
 
 # Parar aplicação
 pm2 stop megasena-analyser
+pm2 stop megasena-api
 
 # Remover do PM2
 pm2 delete megasena-analyser
+pm2 delete megasena-api
 
 # Ver informações detalhadas
 pm2 info megasena-analyser
+pm2 info megasena-api
 ```
 
 ### Atualizar Aplicação
@@ -339,9 +325,10 @@ bash scripts/deploy.sh
 # OU manualmente no servidor:
 cd /home/claude/apps/megasena-analyser
 git pull origin main  # Se usar git
-bun install --production
-bun run build
+~/.bun/bin/bun install
+~/.bun/bin/bun run build
 pm2 restart megasena-analyser
+pm2 restart megasena-api
 ```
 
 ### Backup do Banco de Dados
@@ -364,10 +351,10 @@ echo "0 3 * * * cd /home/claude/apps/megasena-analyser && cp db/mega-sena.db db/
 cd /home/claude/apps/megasena-analyser
 
 # Atualizar com últimos sorteios
-bun run db:pull -- --limit 50
+~/.bun/bin/bun run db:pull -- --limit 50
 
-# Ver logs durante atualização
-tail -f logs/out.log
+# Ver logs durante atualização (API Bun)
+tail -f logs/api-out.log
 ```
 
 ## Troubleshooting
@@ -377,13 +364,14 @@ tail -f logs/out.log
 ```bash
 # Verificar logs
 pm2 logs megasena-analyser --lines 100
+pm2 logs megasena-api --lines 100
 
 # Verificar se a porta está em uso
-netstat -tulpn | grep 3001
+ss -tulpn | grep -E '3002|3201'
 
 # Testar build localmente
-bun run build
-bun run start
+~/.bun/bin/bun run build
+~/.bun/bin/bun run start -- --port 3002
 ```
 
 ### Erro de permissão no banco de dados
@@ -394,17 +382,18 @@ chmod 644 db/mega-sena.db
 chmod 755 db/
 ```
 
-### Nginx retorna 502 Bad Gateway
+### Caddy retorna erro 502/500
 
 ```bash
 # Verificar se aplicação está rodando
 pm2 status
 
-# Verificar logs do Nginx
-sudo tail -f /var/log/nginx/megasena-error.log
+# Verificar logs do Caddy
+echo 'semsenha2025##' | sudo -S tail -f /var/log/caddy/conhecendotudo.log
 
 # Reiniciar aplicação
 pm2 restart megasena-analyser
+pm2 restart megasena-api
 ```
 
 ### Out of Memory
@@ -434,10 +423,13 @@ pm2 web
 # Script de health check
 cat > /home/claude/apps/megasena-analyser/healthcheck.sh << 'EOF'
 #!/bin/bash
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001)
-if [ $RESPONSE -ne 200 ]; then
+NEXT=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3002)
+API=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3201/api/dashboard)
+
+if [ "$NEXT" -ne 200 ] || [ "$API" -ne 200 ]; then
     echo "App down, restarting..."
     pm2 restart megasena-analyser
+    pm2 restart megasena-api
 fi
 EOF
 
@@ -464,9 +456,10 @@ sudo ufw enable
 ```bash
 # Regularmente, verificar atualizações de segurança
 cd /home/claude/apps/megasena-analyser
-bun update
-bun run build
+~/.bun/bin/bun update
+~/.bun/bin/bun run build
 pm2 restart megasena-analyser
+pm2 restart megasena-api
 ```
 
 ## Rollback
@@ -482,9 +475,10 @@ cp db/mega-sena.db.backup-YYYYMMDD db/mega-sena.db
 
 # Reverter para versão anterior (se usar git)
 git checkout <commit-anterior>
-bun install --production
-bun run build
+~/.bun/bin/bun install
+~/.bun/bin/bun run build
 pm2 restart megasena-analyser
+pm2 restart megasena-api
 ```
 
 ## Checklist de Deploy

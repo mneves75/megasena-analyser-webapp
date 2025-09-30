@@ -87,9 +87,21 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   .transition-smooth {
     transition: var(--transition-smooth);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
+  .hover\:shadow-glow:hover {
+    box-shadow: var(--shadow-glow);
   }
 }
 

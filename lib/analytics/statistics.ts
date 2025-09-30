@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/db';
-import { MEGASENA_CONSTANTS } from '@/lib/constants';
+import { MEGASENA_CONSTANTS, STATISTICS_DISPLAY } from '@/lib/constants';
 
 export interface NumberFrequency {
   number: number;
@@ -49,46 +49,61 @@ export class StatisticsEngine {
   }
 
   updateNumberFrequencies(): void {
-    // Reset frequencies
-    this.db.prepare('UPDATE number_frequency SET frequency = 0').run();
+    try {
+      // Reset frequencies
+      this.db.prepare('UPDATE number_frequency SET frequency = 0').run();
 
-    // Count occurrences for each number
-    for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
-      let frequency = 0;
-      let lastContest: number | null = null;
-      let lastDate: string | null = null;
+      // Count occurrences for each number
+      for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
+        let frequency = 0;
+        let lastContest: number | null = null;
+        let lastDate: string | null = null;
 
-      // Count occurrences across all number columns
-      for (let col = 1; col <= 6; col++) {
-        const results = this.db
-          .prepare(
-            `SELECT contest_number, draw_date 
-             FROM draws 
-             WHERE number_${col} = ? 
-             ORDER BY contest_number DESC 
-             LIMIT 1`
-          )
-          .all(num) as Array<{ contest_number: number; draw_date: string }>;
+        // Count occurrences across all number columns
+        for (let col = 1; col <= 6; col++) {
+          // Count ALL occurrences in this column
+          const countResult = this.db
+            .prepare(
+              `SELECT COUNT(*) as count
+               FROM draws
+               WHERE number_${col} = ?`
+            )
+            .get(num) as { count: number };
 
-        frequency += results.length;
+          frequency += countResult.count;
 
-        if (results.length > 0 && (!lastContest || results[0].contest_number > lastContest)) {
-          lastContest = results[0].contest_number;
-          lastDate = results[0].draw_date;
+          // Separately get the last drawn info
+          const lastDrawn = this.db
+            .prepare(
+              `SELECT contest_number, draw_date
+               FROM draws
+               WHERE number_${col} = ?
+               ORDER BY contest_number DESC
+               LIMIT 1`
+            )
+            .get(num) as { contest_number: number; draw_date: string } | undefined;
+
+          if (lastDrawn && (!lastContest || lastDrawn.contest_number > lastContest)) {
+            lastContest = lastDrawn.contest_number;
+            lastDate = lastDrawn.draw_date;
+          }
         }
-      }
 
-      // Update frequency table
-      this.db
-        .prepare(
-          `UPDATE number_frequency 
-           SET frequency = ?, 
-               last_drawn_contest = ?, 
-               last_drawn_date = ?,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE number = ?`
-        )
-        .run(frequency, lastContest, lastDate, num);
+        // Update frequency table
+        this.db
+          .prepare(
+            `UPDATE number_frequency
+             SET frequency = ?,
+                 last_drawn_contest = ?,
+                 last_drawn_date = ?,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE number = ?`
+          )
+          .run(frequency, lastContest, lastDate, num);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to update number frequencies: ${errorMessage}`);
     }
   }
 
@@ -102,8 +117,8 @@ export class StatisticsEngine {
       .get() as { contest_number: number; draw_date: string } | undefined;
 
     const frequencies = this.getNumberFrequencies();
-    const mostFrequent = frequencies.slice(0, 10);
-    const leastFrequent = [...frequencies].reverse().slice(0, 10);
+    const mostFrequent = frequencies.slice(0, STATISTICS_DISPLAY.DASHBOARD_TOP_COUNT);
+    const leastFrequent = [...frequencies].reverse().slice(0, STATISTICS_DISPLAY.DASHBOARD_TOP_COUNT);
 
     const avgSena = (
       this.db
@@ -191,7 +206,7 @@ export class StatisticsEngine {
     return patterns;
   }
 
-  getDrawHistory(limit: number = 50): Array<{
+  getDrawHistory(limit: number = STATISTICS_DISPLAY.RECENT_DRAWS_DEFAULT): Array<{
     contestNumber: number;
     drawDate: string;
     numbers: number[];
