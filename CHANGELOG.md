@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Robust error handling for API responses in bet generation
+- Response validation for Content-Type and empty response bodies
+- Detailed error messages for JSON parsing failures
+
+### Fixed
+- **CRITICAL:** "Unexpected end of JSON input" error when generating bets
+- JSON parsing errors now caught with descriptive user-facing messages
+- Empty response detection before attempting JSON parsing
+- Content-Type validation to ensure valid JSON responses
+
+## [1.0.2] - 2025-09-30
+
+### Added
 - **Path-based routing support** - Application now accessible via `/megasena-analyzer` path
 - `basePath` and `assetPrefix` configuration in Next.js for subpath deployment
 - Path access setup script (`scripts/setup-path-access.sh`)
