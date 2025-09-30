@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Comprehensive Deployment Audit** (`DEPLOYMENT_AUDIT.md`) documenting all server environment findings and deployment bugs
+- Fixed deployment script (`scripts/deploy-fixed.sh`) with all critical bugs corrected
+- Dynamic rendering for dashboard pages to prevent build-time database access
+
+### Fixed
+- **CRITICAL:** Port conflict - changed from 3001 to 3002 (free port)
+- **CRITICAL:** NVM sourcing in all SSH sessions for Node.js/npm availability
+- **CRITICAL:** Heredoc variable substitution in .env.production and ecosystem.config.js
+- **CRITICAL:** TypeScript build errors - excluded test and old directories from compilation
+- npm install strategy - using full install instead of ci for bun.lock compatibility
+- Port availability validation before deployment
+- ESLint errors: unescaped entities, unused imports, type safety issues
+- Dashboard and statistics pages now use dynamic rendering instead of static generation
+
+### Changed
+- Deployment port from 3001 to 3002 to avoid conflicts with existing applications
+- npm install strategy to include devDependencies for successful build
+- TypeScript configuration to exclude `___OLD_SITE` and `tests` directories
+
+## [1.0.1] - 2025-09-30
+
+### Added
 - Complete production deployment infrastructure for VPS Hostinger
 - Automated deploy script (`scripts/deploy.sh`) with SSH support
 - Quick update script (`scripts/update-remote.sh`) for fast deployments
@@ -16,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Nginx configuration example (`nginx.conf.example`)
 - PM2 ecosystem configuration for process management
 - Production deploy section in README.md
+
+### Successfully Deployed
+- ✅ Application running on VPS at port 3002
+- ✅ PM2 managing process with auto-restart
+- ✅ Database migrated and functional
+- ✅ All endpoints responding (HTTP 200)
+- ✅ Memory usage: 101MB (well within 700MB limit)
 
 ## [1.0.0] - 2025-09-30
 

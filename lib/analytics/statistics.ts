@@ -53,8 +53,6 @@ export class StatisticsEngine {
     this.db.prepare('UPDATE number_frequency SET frequency = 0').run();
 
     // Count occurrences for each number
-    const numbers = [1, 2, 3, 4, 5, 6];
-    
     for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
       let frequency = 0;
       let lastContest: number | null = null;
