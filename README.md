@@ -191,6 +191,7 @@ Generate bets based on budget and strategy.
 2. Run `bun run lint:fix` and `bun run format` before committing
 3. Ensure all tests pass with `bun run test`
 4. Update documentation for new features
+5. **Update CHANGELOG.md** following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 
 ## License
 

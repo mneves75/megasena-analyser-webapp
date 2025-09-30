@@ -147,6 +147,7 @@ bun run build                   # Create production bundle + type check
 - Single concern per commit
 - Include affected file paths in commit body when migrations run
 - Reference issue IDs: `Refs #123`
+- **CRITICAL: Update CHANGELOG.md** after EVERY commit following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 - CI must pass (`bun run lint && bun run test`) before merging
 
 ## Pull Requests
@@ -212,5 +213,6 @@ Example: "The API integration is implemented in `lib/api/caixa-client.ts:42`"
 - `docs/PROMPT-MAIN.md` - Core domain logic and betting strategies
 - `docs/SYSTEM_PROMPT.md` - System architecture and technical context
 - `AGENTS.md` - Repository structure and coding guidelines
+- **`CHANGELOG.md`** - Complete project history following Keep a Changelog format
 
-Update documentation when product scope changes.
+Update documentation when product scope changes. **Always update CHANGELOG.md after every commit.**

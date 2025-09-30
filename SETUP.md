@@ -88,7 +88,8 @@ megasena-analyser-20250930/
 2. Run linter: `bun run lint`
 3. Run tests: `bun run test`
 4. Format code: `bun run format`
-5. Commit changes
+5. **Update CHANGELOG.md** with your changes following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+6. Commit changes using Conventional Commits format
 
 ## Production Build
 

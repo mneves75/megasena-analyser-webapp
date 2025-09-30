@@ -32,6 +32,7 @@
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commits (`feat: add jackpot probability panel`) with single-focus changes.
+- **Update CHANGELOG.md** after every commit following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 - Call out database or migration impacts in commit bodies.
 - Pull requests describe scope, edge cases, and UI screenshots when visuals shift; reference issues (`Refs #123`).
 - Require green CI (`bun run lint && bun run test`) prior to requesting review.
