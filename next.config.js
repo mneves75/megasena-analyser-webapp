@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  basePath: '/megasena-analyzer',
+  assetPrefix: '/megasena-analyzer',
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
