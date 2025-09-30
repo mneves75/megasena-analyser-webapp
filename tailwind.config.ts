@@ -1,98 +1,79 @@
-import type { Config } from "tailwindcss";
-import defaultTheme from "tailwindcss/defaultTheme";
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: ["./src/**/*.{ts,tsx}", "./docs/**/*.{md,mdx}"],
-  darkMode: "class",
+  darkMode: ['class'],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './lib/**/*.{ts,tsx}',
+  ],
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: "#eef5ff",
-          100: "#d9e9ff",
-          200: "#b6d3ff",
-          300: "#90bcff",
-          400: "#6aa5ff",
-          500: "#2f7bff",
-          600: "#1f5fe6",
-          700: "#184ab8",
-          800: "#123789",
-          900: "#0c255b",
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+          glow: 'hsl(var(--primary-glow))',
         },
-        surface: {
-          DEFAULT: "#fafafc",
-          dark: "#0f1014",
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
-        border: "rgba(17, 25, 40, 0.12)",
-      },
-      fontFamily: {
-        sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        'chart-1': 'hsl(var(--chart-1))',
+        'chart-2': 'hsl(var(--chart-2))',
+        'chart-3': 'hsl(var(--chart-3))',
+        'chart-4': 'hsl(var(--chart-4))',
+        'chart-5': 'hsl(var(--chart-5))',
       },
       borderRadius: {
-        lg: "1rem",
-        xl: "1.5rem",
-        "2xl": "2rem",
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
-      boxShadow: {
-        soft: "0 10px 30px rgba(15, 23, 42, 0.08)",
-        card: "0 18px 40px rgba(15, 23, 42, 0.06)",
-        hover: "0 20px 50px rgba(15, 23, 42, 0.12)",
-        "card-dark": "0 24px 44px rgba(3, 7, 18, 0.25)",
-        "hover-dark": "0 32px 60px rgba(3, 7, 18, 0.35)",
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       letterSpacing: {
-        tightest: "-0.05em",
-        tight: "-0.02em",
+        tighter: '-0.05em',
+        tight: '-0.02em',
       },
-      keyframes: {
-        ripple: {
-          "0%": {
-            transform: "scale(0)",
-            opacity: "0.4",
-          },
-          "100%": {
-            transform: "scale(3)",
-            opacity: "0",
-          },
-        },
-        fadeIn: {
-          "0%": {
-            opacity: "0",
-          },
-          "100%": {
-            opacity: "1",
-          },
-        },
-        slideUp: {
-          "0%": {
-            transform: "translateY(20px)",
-            opacity: "0",
-          },
-          "100%": {
-            transform: "translateY(0)",
-            opacity: "1",
-          },
-        },
-        scaleIn: {
-          "0%": {
-            transform: "scale(0.95)",
-            opacity: "0",
-          },
-          "100%": {
-            transform: "scale(1)",
-            opacity: "1",
-          },
-        },
+      boxShadow: {
+        elegant: 'var(--shadow-elegant)',
+        glow: 'var(--shadow-glow)',
       },
-      animation: {
-        ripple: "ripple 650ms ease-out",
-        "fade-in": "fadeIn 200ms ease-out",
-        "slide-up": "slideUp 300ms ease-out",
-        "scale-in": "scaleIn 200ms cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+      transitionTimingFunction: {
+        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;
+

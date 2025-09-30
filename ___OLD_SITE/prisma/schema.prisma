@@ -1,0 +1,127 @@
+// Prisma schema for Mega-Sena Analyzer domain
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Draw {
+  concurso          Int           @id
+  data              DateTime
+  cidade            String?       // cidade do sorteio
+  uf                String?       // UF do sorteio
+  arrecadacao_total BigInt?       // em centavos
+  acumulou          Boolean       @default(false)
+  proximo_concurso  Int?
+  valor_acumulado   BigInt?       // em centavos
+  valor_estimado    BigInt?
+  valor_concurso_especial BigInt?
+  data_proximo_concurso DateTime?
+  localSorteio      String?
+  observacao        String?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+
+  dezenas   DrawDezena[]
+  premios   PrizeFaixa[]
+  apostas   Bet[]        @relation("DrawReference")
+
+  @@index([data])
+  @@index([acumulou])
+}
+
+model DrawDezena {
+  id        Int   @id @default(autoincrement())
+  concurso  Int
+  dezena    Int
+  ordem     Int
+
+  draw Draw @relation(fields: [concurso], references: [concurso], onDelete: Cascade)
+
+  @@unique([concurso, ordem])
+  @@index([dezena])
+}
+
+model PrizeFaixa {
+  id         Int    @id @default(autoincrement())
+  concurso   Int
+  faixa      String
+  ganhadores Int
+  premio     BigInt    // em centavos
+
+  draw Draw @relation(fields: [concurso], references: [concurso], onDelete: Cascade)
+
+  @@unique([concurso, faixa])
+}
+
+model Meta {
+  key        String @id
+  value      String
+  updated_at DateTime @default(now()) @updatedAt
+}
+
+model BettingLimitAudit {
+  id         Int      @id @default(autoincrement())
+  created_at DateTime @default(now())
+  origin     String
+  actor      String?
+  note       String?
+  previous   Json
+  next       Json
+  overrides  Json?
+
+  @@index([created_at])
+}
+
+model Price {
+  k              Int    @id
+  valor_cents    Int
+  fonte          String
+  atualizado_em  DateTime
+}
+
+model Bet {
+  id                 String      @id @default(cuid())
+  created_at         DateTime    @default(now())
+  ticket_cost_cents  Int
+  strategy_name      String
+  ticket_metadata    Json
+  ticket_seed        String
+  concurso_referencia Int?
+  batch_id           String
+
+  draw       Draw?        @relation("DrawReference", fields: [concurso_referencia], references: [concurso], onDelete: SetNull)
+  batch      BetBatch     @relation(fields: [batch_id], references: [id], onDelete: Cascade)
+  numeros    BetDezena[]
+}
+
+model BetDezena {
+  id      Int    @id @default(autoincrement())
+  bet_id  String
+  dezena  Int
+  ordem   Int
+
+  bet Bet @relation(fields: [bet_id], references: [id], onDelete: Cascade)
+
+  @@unique([bet_id, ordem])
+}
+
+model BetBatch {
+  id                       String   @id @default(cuid())
+  created_at               DateTime @default(now())
+  budget_cents             Int
+  total_cost_cents         Int
+  leftover_cents           Int
+  tickets_generated        Int
+  average_ticket_cost_cents Int
+  seed                     String
+  payload                  Json
+
+  bets Bet[]
+
+  @@index([created_at])
+}

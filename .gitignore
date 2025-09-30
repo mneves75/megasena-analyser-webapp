@@ -1,62 +1,40 @@
-# Git Ignore – Mega-Sena Analyzer (Next.js / Node.js)
-# Reference: https://github.com/github/gitignore/blob/main/Node.gitignore
-
-### Package managers & dependencies
+# Dependencies
 node_modules/
 .pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-.turbo/
+.pnp.js
 
-### Build output
+# Testing
+coverage/
+
+# Next.js
 .next/
 out/
 build/
 dist/
 
-### Logs & debug artifacts
+# Database
+db/*.db
+db/*.db-shm
+db/*.db-wal
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-lerna-debug.log*
-*.log
-
-### Testing
-coverage/
-
-### Environment variables (samples remain versionados)
-.env
-.env.local
-.env.development
-.env.production
-.env.test
-!.env.sample
-
-### TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-### Databases & generated data
-prisma/*.db
-*.sqlite
-*.sqlite-journal
-src/generated/prisma/
-
-### Editors & OS files
-.DS_Store
-Thumbs.db
-.idea/
-.cursor/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-*.pem
-
-### Framework specifics
-.vercel/
 

@@ -4,181 +4,213 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js 15 application for analyzing Mega Sena lottery data, built with React 19, TypeScript, and TailwindCSS. The project uses the App Router architecture with Turbopack for improved performance. It includes Prisma for SQLite database operations, sync services for official CAIXA data, statistical analysis APIs, and a betting engine with pricing calculations.
+**Mega-Sena Analyser** is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
-## Development Commands
+### Core Requirements
 
-- `npm run dev` - Start development server with Turbopack hot reload
-- `npm run build` - Build production bundle with Turbopack (run before every push/PR)
-- `npm run start` - Serve production build for testing
-- `npm run lint` - Run ESLint with Next.js config (treat warnings as blockers)
-- `npm run typecheck` - Run TypeScript compiler without emitting files
-- `npm run format` - Format code with Prettier
-- `npm run prepare` - Set up Git hooks with Husky
-- `npm test` - Run unit tests with Vitest
-- `npm run test:watch` - Run tests in watch mode
+- Expert-level data analysis and statistics capabilities
+- No speculation or "hallucination" - all claims must be verifiable
+- Explicit acknowledgment that lottery prediction is statistically impossible
+- Focus on historical analysis, pattern detection, and budget-constrained betting strategies
+- Clean, minimal, Apple/Linear-level UI polish
 
-## Database Commands
+## Tech Stack
 
-- `npm run db:migrate` - Apply Prisma migrations locally
-- `npm run db:deploy` - Apply migrations in production
-- `npm run db:generate` - Generate Prisma client
-- `npm run db:seed` - Populate metadata and pricing tables
-- `npm run db:reset` - Reset SQLite database (destroys local data)
-- `npm run sync` - Sync Mega-Sena data via CLI (supports `--full` and `--limit=N`)
-- `npm run limits` - Inspect/modify betting engine limits (`--show`, `--set=key=value`, `--reset`, `--history`)
+- **Framework:** Next.js 15 with App Router
+- **Language:** TypeScript (strict mode)
+- **Runtime:** Bun (≥1.1)
+- **Database:** SQLite (file-based)
+- **Styling:** TailwindCSS v4 with semantic design tokens
+- **UI Components:** shadcn/ui (heavily customized)
+- **Animations:** Framer Motion for micro-interactions
+- **Node Compatibility Target:** Node.js 20 LTS APIs
+- **Package Manager:** Bun
+- **Testing:** Vitest (unit) + Playwright (E2E)
 
-## Project Architecture
+## Essential Commands
+
+```bash
+# Environment setup
+bun install                     # Install dependencies with Bun
+bun --version                   # Verify Bun runtime (>=1.1)
+
+# Database
+bun run db:migrate              # Apply SQLite migrations (drizzle/prisma as configured)
+
+# Development
+bun run dev                     # Start Next.js dev server (localhost:3000)
+bun run lint                    # Run ESLint with --max-warnings=0
+bun run lint --fix              # Auto-fix linting issues
+bun run format                  # Run Prettier
+
+# Testing
+bun run test                    # Run Vitest in watch mode
+bun run test -- --run           # Run tests once (CI mode)
+bunx vitest --coverage          # Generate coverage report (≥80% required)
+
+# Production
+bun run build                   # Create production bundle + type check
+```
+
+## Architecture
 
 ### Directory Structure
 
-- `src/app/` - Next.js App Router pages and layouts
-  - `api/stats/` - Statistics API endpoints with windowing support
-  - `api/sync/` - Protected sync endpoint for CAIXA data
-- `src/components/` - Reusable UI components (layout, ui)
-- `src/data/` - Database access layer (marked `server-only`)
-  - `caixa-client.ts` - Official CAIXA API integration
-  - `draws.ts` - Database queries for draw data
-- `src/services/` - Business logic layer
-  - `sync.ts` - Mega-Sena synchronization service
-  - `stats.ts` - Statistical analysis with caching
-  - `pricing.ts` - Official betting price calculations
-- `src/lib/` - Shared utilities (logger, Prisma client, utils)
-- `prisma/` - Database schema and migrations
-- `public/` - Static assets and mock data files
-- `docs/` - Documentation and planning updates
+- **`app/`** - Next.js App Router routes
+  - Start with `app/dashboard/page.tsx` for main analytics dashboard
+- **`components/`** - Reusable UI components
+  - Use TailwindCSS semantic tokens exclusively
+  - Heavily customize shadcn/ui components with variants
+- **`lib/`** - Business logic and utilities
+  - `lib/analytics/` - Mega-Sena statistical analysis
+  - `lib/api/` - CAIXA API integration and data fetching
+  - `lib/constants.ts` - Centralized configuration (no magic numbers)
+- **`db/`** - Database layer
+  - `db/migrations/` - SQL migrations (versioned)
+  - `db/mega-sena.db` - SQLite database file
+- **`scripts/`** - Bun CLI utilities
+  - `scripts/pull-draws.ts` - Ingest historical draw data from CAIXA API
+- **`tests/`** - Test suites mirroring source structure
+  - `tests/lib/**/*.test.ts` - Vitest unit tests
+  - `tests/app/**/*.spec.ts` - Playwright E2E tests
+  - `tests/mocks/` - MSW handlers for HTTP mocking
+- **`docs/`** - Product specifications and prompts
+  - Update when scope changes
 
-### Key Configuration
+### Data Source
 
-- Uses TypeScript with strict mode enabled
-- Path alias `@/*` maps to `./src/*`
-- ESLint extends Next.js core-web-vitals and TypeScript configs
-- Husky + lint-staged for pre-commit hooks
-- TailwindCSS v4 for styling
-- Vitest for unit testing with path aliases
-- SQLite database via Prisma ORM
+**Official API:** `https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena`
 
-## Coding Standards
+- Implement exponential backoff and ETag/If-Modified-Since caching
+- Never fabricate data if API fails - log errors explicitly
+- Parametrize all pricing/rules (do not hardcode values)
 
-### React Server Components Guidelines
+## Code Style & Standards
 
-- Default to React Server Components for all components
-- Only add `"use client"` when using browser APIs, state, events, or effects
-- Use `"use server"` for Server Actions in dedicated files
-- Keep props serializable between server and client boundaries
-- Place database access and heavy computations in server-only modules
-- Avoid `useEffect` unless integrating with external systems
+### TypeScript
 
-### TypeScript & File Organization
+- Strict mode enabled
+- Explicit return types on all exported functions
+- Two-space indentation
+- `PascalCase` for React components
+- `camelCase` for utilities and variables
+- `kebab-case` for file names (e.g., `budget-panel.tsx`)
 
-- Use TypeScript strict mode throughout
-- Mark database modules with `"server-only"` import
-- Use `kebab-case` for files and directories (e.g., `draw-frequency-table.tsx`)
-- Place tests as `*.test.ts(x)` beside code or under `src/__tests__/`
-- 2-space indentation consistently
+### Styling Philosophy
 
-### Styling
+**CRITICAL:** Never use ad-hoc inline styles or explicit color classes (`text-white`, `bg-black`). All styles must be defined via semantic design tokens in `index.css` and `tailwind.config.ts`.
 
-- Global styles in `src/app/globals.css`
-- Favor Tailwind utilities over custom CSS
-- Extend Tailwind config instead of adding global CSS
-- Use format-on-save and let ESLint handle spacing/imports
+#### Design System Rules
 
-## Testing
+1. **Semantic Tokens Only**
+   - Define colors, gradients, shadows, animations in design system
+   - Use HSL colors exclusively in `index.css`
+   - Create component variants for all states (hover/press/focus/disabled/loading)
 
-Project uses Vitest for unit testing:
+2. **Component Variants**
+   - Extend shadcn/ui components with custom variants
+   - Example: `<Button variant="hero">` instead of `<Button className="bg-white/10">`
 
-- Run `npm test` for single test run or `npm run test:watch` for watch mode
-- Tests are in `src/**/*.test.ts` (e.g., `src/services/__tests__/`)
-- Test configuration includes path aliases and server-only stubs
-- Focus on testing deterministic logic (pricing calculations, stats aggregations)
-- Use `npm run test -- pricing` to run specific test suites
-- Database layer and sync services have comprehensive test coverage
+3. **Premium Polish**
+   - Clean, minimal aesthetic (Apple/Linear/Mercury level)
+   - Typography: Inter font, regular/medium weight, tracking ~-0.02 to -0.04em
+   - Neutral base palette + 1 accent color for priority states
+   - Rounded-2xl cards, soft shadows, subtle depth
+   - No stock AI gradients or emojis
 
-## Git & Commit Guidelines
+4. **Micro-interactions**
+   - Smooth transitions (120-220ms, cubic-bezier easing)
+   - Drag-and-drop for task ordering
+   - Ripple effects on buttons (discrete, non-intrusive)
+   - Loading skeletons for data fetching
+   - Toast notifications for user feedback
 
-- Use concise, imperative commit subjects (e.g., "Add draw frequency table")
-- Reference issue IDs when applicable
-- PRs must include: lint/build status, change summary, UI screenshots for visual updates
+### Accessibility
 
-## Database & Environment Setup
+- Complete keyboard navigation with visible focus rings
+- ARIA labels/roles on interactive elements
+- Focus trapping in modals/sheets
+- WCAG 2.2 AA compliance (≥4.5:1 contrast ratios)
+- Mobile-first responsive layout
 
-### Database (SQLite + Prisma)
+## Testing Requirements
 
-- Uses SQLite via Prisma ORM (default file: `./dev.db`)
-- After cloning: run `npm run db:migrate` then `npm run db:seed`
-- Seeds populate metadata and official pricing table
-- Database access layer in `src/data/**` marked `server-only`
+- ≥80% line coverage via Vitest
+- Co-locate unit tests with source files in `tests/` mirror structure
+- Mock HTTP via MSW handlers
+- Seed test database with `scripts/pull-draws.ts --limit 5` before integration tests
+- E2E specs in Playwright for critical user flows
 
-### Key Environment Variables
+## Commit Standards
 
-- `DATABASE_URL="file:./dev.db"` - SQLite database path
-- `SYNC_TOKEN` - Bearer token for protected `/api/sync` endpoint
-- `CAIXA_API_URL` - Override official Mega-Sena API endpoint
-- `CAIXA_MAX_RETRIES` and `CAIXA_RETRY_DELAY_MS` - Retry policy configuration
-- `LOG_LEVEL` - Pino logging level (`info`, `debug`, etc.)
-- `LOG_PRETTY=1` - Enable formatted logs for CLI scripts (not during `next dev`)
-- `SYNC_BACKFILL_WINDOW` - Default contest limit when DB is empty (default 50)
-- `MEGASENA_BASE_PRICE_CENTS` - Fallback pricing when DB unavailable (default 600)
-- `MEGASENA_PRICE_FALLBACK_UPDATED_AT` - ISO date for fallback pricing info
-- Store secrets in `.env.local` (never commit)
-- **Important**: Each variable must be on separate line to avoid Prisma issues
+- **Conventional Commits:** `feat: add jackpot probability panel`
+- Single concern per commit
+- Include affected file paths in commit body when migrations run
+- Reference issue IDs: `Refs #123`
+- CI must pass (`bun run lint && bun run test`) before merging
 
-## API Endpoints
+## Pull Requests
 
-### Statistics API
+Must include:
+- Clear scope description
+- Edge cases tested
+- UI screenshots (if applicable)
+- Issue/Jira reference
+- Passing CI checks (`bun run lint && bun run test`)
 
-- `GET /api/stats/frequencies?window=50` - Number frequency analysis
-- `GET /api/stats/pairs?window=100&limit=20` - Pair combinations
-- `GET /api/stats/triplets?limit=10` - Triplet analysis
-- `GET /api/stats/runs` - Consecutive number patterns
-- `GET /api/stats/sums?window=200` - Sum distribution
-- `GET /api/stats/quadrants?window=30` - Quadrant analysis
-- `GET /api/stats/recency` - Recent draw patterns
-- All endpoints support optional `window` and `limit` parameters
-- Cache automatically cleared after sync operations
+## Security & Configuration
 
-### Sync API
+- Secrets in `.env.local` (copy from `.env.example`)
+- Never commit credentials or SQLite database files
+- Cache CAIXA API responses in Redis or local cache files
+- Document security changes in `docs/SYSTEM_PROMPT.md`
+- Add `db/*.db` and `db/*.sqlite*` to `.gitignore`
 
-- `POST /api/sync` - Protected endpoint requiring `SYNC_TOKEN`
-- Also available via CLI: `npm run sync`
-- Supports `--full` for backfill and `--limit=N` for window control
+## Development Workflow from Cursor Rules
 
-## Betting Engine & Pricing System
+### Task Execution Procedure
 
-### Official Pricing
+1. **Clarify scope** - Confirm objective and plan approach before coding
+2. **Locate insertion points** - Identify precise files/lines for changes
+3. **Minimal edits** - Avoid unrelated refactors or scope creep
+4. **Verify correctness** - Check for security issues and side effects
+5. **Clear delivery** - Summarize changes, files touched, risks/assumptions
 
-- Base price: R$ 6.00 (6 numbers, updated July 12, 2025)
-- Combinatorial pricing: `C(k, 6) * base_price` for k > 6
-- Price helpers in `src/services/pricing.ts`
-- Run `npm run test -- pricing` to validate calculations
+### Constraints
 
-### Betting Engine (Stage 3)
+- Do not introduce new abstractions unless explicitly requested
+- Keep logic isolated to prevent regressions
+- Use absolute paths when invoking tools
+- Align with existing project patterns
+- Preserve indentation style (tabs vs spaces)
 
-- Strategies in `src/services/strategies/` (`uniform`, `balanced`) with deterministic PRNG
-- Core workflow: `generateBatch` in `src/services/bets.ts` handles budget allocation
-- Payloads follow `docs/data-contracts/strategy_payload.schema.json` (v1.0)
-- Run `npm run test -- bets` for betting engine tests
-- API endpoints: `POST /api/bets/generate` (protected), `GET /api/bets` (public listing)
-- Reference fixture: `docs/fixtures/sample-bets.json` with seed `FIXTURE-SEED`
+## Important Notes
 
-## Pre-commit Hooks
+### Statistical Integrity
 
-Lint-staged runs on commit:
+- **Lottery prediction is impossible** - explicitly acknowledge this
+- Focus on historical pattern analysis and frequency statistics
+- All betting strategies are heuristic-based with no guaranteed outcomes
+- Provide clear disclaimers about randomness and independent trials
 
-- TypeScript/JavaScript files: ESLint + Prettier
-- Other files (JSON, MD, CSS): Prettier formatting
+### Design System Priority
 
-## Troubleshooting
+- Always edit design system (`index.css`, `tailwind.config.ts`) before components
+- Create variants for all component states
+- Never use explicit color classes in JSX
+- Use semantic tokens: `bg-background`, `text-foreground`, `border-accent`
 
-### Common Issues
+### Code References
 
-- **Dev server error (`_buildManifest.js.tmp`)**: Kill processes on port 3000, delete `.next`, restart server
-- **Betting generator unresponsive**: Ensure dev server runs without Turbopack, verify DB seeded and synced
-- **Prisma deprecation warning**: Migration to `prisma.config.ts` planned (see `docs/DEV_SERVER_RECOVERY_PLAN.md`)
+When referencing code in discussions, use the format `file_path:line_number` for easy navigation.
 
-### Language & Documentation
+Example: "The API integration is implemented in `lib/api/caixa-client.ts:42`"
 
-- All UI, documentation, and user experience in Brazilian Portuguese
-- This is a Mega-Sena lottery analysis application with statistical focus
-- No lottery predictions - focus on statistical analysis and responsible budgeting
+### Documentation
+
+- `docs/PROMPT_UI.md` - UI/UX requirements and design specifications
+- `docs/PROMPT-MAIN.md` - Core domain logic and betting strategies
+- `docs/SYSTEM_PROMPT.md` - System architecture and technical context
+- `AGENTS.md` - Repository structure and coding guidelines
+
+Update documentation when product scope changes.

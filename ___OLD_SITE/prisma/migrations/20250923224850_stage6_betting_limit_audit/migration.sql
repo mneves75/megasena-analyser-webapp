@@ -1,0 +1,2 @@
+-- Migration superseded by updated base schema.
+-- Intentionally left empty to preserve history.
