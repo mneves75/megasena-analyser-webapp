@@ -14,8 +14,8 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 ## Tech Stack
 
 - **Frontend**: Next.js 15 + React 19
-- **Runtime**: Bun ≥1.1
-- **Database**: SQLite (better-sqlite3)
+- **Runtime**: Bun ≥1.1 (required)
+- **Database**: SQLite (bun:sqlite - native)
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **TypeScript**: Full type safety
 - **Analytics**: Custom statistical engine
@@ -24,7 +24,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ### Prerequisites
 
-- Bun ≥1.1.0 or Node.js ≥20.0.0
+- **Bun ≥1.1.0** (required - uses native SQLite)
 
 ### Installation
 
@@ -57,23 +57,15 @@ Visit `http://localhost:3000` to see the application.
 
 ## Available Commands
 
-### Development
-- `bun run dev` - Start development server
+- `bun run dev` - Start development server (Bun API + Next.js proxy)
 - `bun run build` - Build for production
 - `bun run start` - Start production server
 - `bun run lint` - Run ESLint (fails on warnings)
 - `bun run lint:fix` - Auto-fix lint issues
 - `bun run format` - Format code with Prettier
-- `bun run test` - Run tests with Vitest
-
-### Database
+- `bun run test` - Run tests with Vitest (usa fallback de banco em memória)
 - `bun run db:migrate` - Run database migrations
 - `bun run db:pull` - Pull draw data from CAIXA API
-
-### Deploy
-- `bash scripts/deploy.sh` - Deploy to production (VPS)
-- `bash scripts/update-remote.sh` - Quick update (already deployed)
-- `bash scripts/check-deployment.sh` - Verify deployment health
 
 ## Database Scripts
 
@@ -147,31 +139,17 @@ Optional tracking of generated bets for future analysis.
 Copy `.env.example` to `.env.local` and customize:
 
 ```bash
-DATABASE_PATH=./db/mega-sena.db
-CAIXA_API_BASE_URL=https://servicebus2.caixa.gov.br/portaldeloterias/api
+# Base URL usada pelas páginas do App Router para fetches server-side
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+
+# Porta exposta pelo servidor Bun (`server.ts`)
+API_PORT=3001
+
+# (Opcional) Origem permitida para CORS quando habilitado no Bun
+# ALLOWED_ORIGIN=http://localhost:3000
 ```
 
-## Production Deploy
-
-Deploy completo para VPS Hostinger com isolamento de aplicação:
-
-```bash
-# Deploy inicial completo
-bash scripts/deploy.sh
-
-# Atualização rápida (após primeiro deploy)
-bash scripts/update-remote.sh
-
-# Verificar saúde da aplicação
-bash scripts/check-deployment.sh
-```
-
-Consulte **[DEPLOY.md](./DEPLOY.md)** para guia completo incluindo:
-- Configuração do servidor
-- Setup de PM2 e Nginx
-- SSL com Let's Encrypt
-- Troubleshooting
-- Monitoramento
+> Os testes executados via `bun run test` simulam o banco de dados usando um driver em memória quando a variável `VITEST` está definida, permitindo rodar a suíte sem o `bun:sqlite` real.
 
 ## Design System
 
@@ -188,30 +166,44 @@ All design tokens are defined in `app/globals.css` and `tailwind.config.ts`.
 ## API Endpoints
 
 ### `/api/generate-bets` (POST)
-Generate bets based on budget and strategy.
+Generate bets based on budget, strategy, and mode.
 
 **Request Body:**
 ```json
 {
-  "budget": 50,
+  "budget": 100,
   "strategy": "balanced",
-  "betType": "simple"
+  "mode": "optimized"
 }
 ```
 
 **Response:**
 ```json
 {
-  "bets": [
-    {
-      "numbers": [5, 12, 23, 34, 45, 56],
-      "cost": 5.00,
-      "strategy": "balanced"
+  "success": true,
+  "data": {
+    "bets": [
+      {
+        "id": "bet_1727711234567_n1m2o3p4q",
+        "numbers": [5, 12, 23, 34, 45, 56],
+        "cost": 6,
+        "type": "simple",
+        "numberCount": 6,
+        "strategy": "balanced"
+      }
+    ],
+    "totalCost": 6,
+    "remainingBudget": 94,
+    "budgetUtilization": 6,
+    "totalNumbers": 6,
+    "strategy": "balanced",
+    "mode": "optimized",
+    "summary": {
+      "simpleBets": 1,
+      "multipleBets": 0,
+      "averageCost": 6
     }
-  ],
-  "totalCost": 5.00,
-  "remainingBudget": 45.00,
-  "strategy": "balanced"
+  }
 }
 ```
 
@@ -221,7 +213,6 @@ Generate bets based on budget and strategy.
 2. Run `bun run lint:fix` and `bun run format` before committing
 3. Ensure all tests pass with `bun run test`
 4. Update documentation for new features
-5. **Update CHANGELOG.md** following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 
 ## License
 
@@ -230,4 +221,3 @@ MIT
 ## Disclaimer
 
 This application is for educational and statistical analysis purposes only. It does not guarantee winning results. Lottery games are games of chance. Play responsibly.
-

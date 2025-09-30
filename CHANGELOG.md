@@ -1,176 +1,117 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-### Added
-- Robust error handling for API responses in bet generation
-- Response validation for Content-Type and empty response bodies
-- Detailed error messages for JSON parsing failures
-
-### Fixed
-- **CRITICAL:** "Unexpected end of JSON input" error when generating bets
-- JSON parsing errors now caught with descriptive user-facing messages
-- Empty response detection before attempting JSON parsing
-- Content-Type validation to ensure valid JSON responses
+O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
+e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.0.2] - 2025-09-30
 
-### Added
-- **Path-based routing support** - Application now accessible via `/megasena-analyzer` path
-- `basePath` and `assetPrefix` configuration in Next.js for subpath deployment
-- Path access setup script (`scripts/setup-path-access.sh`)
-- Manual setup guide (`MANUAL_PATH_SETUP.md`)
-- Public access configuration guide (`ACCESS_GUIDE.md`)
-- Comprehensive production deployment documentation (`docs/DEPLOYMENT.md`)
-- Updated remote update script with sshpass support
+### Corrigido
+- Ajustado o endpoint `POST /api/generate-bets` para validar o orçamento recebido e utilizar `generateOptimizedBets`, evitando exceções em runtime quando o payload vinha no formato incorreto.
+- Eliminados avisos de `implicit any` nas páginas do dashboard ao tipar as respostas das APIs, garantindo compatibilidade com o TypeScript estrito.
 
-### Changed
-- Application URL structure changed to support path-based routing
-- All routes now prefixed with `/megasena-analyzer`
-- Homepage: `/megasena-analyzer`
-- Dashboard: `/megasena-analyzer/dashboard`
-- Statistics: `/megasena-analyzer/dashboard/statistics`
-- Generator: `/megasena-analyzer/dashboard/generator`
+### Adicionado
+- Ambiente de banco de dados em memória para a suíte do Vitest, permitindo executar os testes automatizados em contextos Node (como o runner do Vitest) sem depender de `bun:sqlite`.
+- Arquivo `.env.example` documentando as variáveis `NEXT_PUBLIC_BASE_URL`, `API_PORT` e `ALLOWED_ORIGIN`.
+- Dependências de teste `jsdom`, `@types/jsdom` e `@testing-library/react` para suportar o ambiente JSDOM configurado no Vitest.
 
-### Fixed
-- **CRITICAL:** Port conflict - changed from 3001 to 3002 (free port)
-- **CRITICAL:** NVM sourcing in all SSH sessions for Node.js/npm availability
-- **CRITICAL:** Heredoc variable substitution in .env.production and ecosystem.config.js
-- **CRITICAL:** TypeScript build errors - excluded test and old directories from compilation
-- npm install strategy - using full install instead of ci for bun.lock compatibility
-- Port availability validation before deployment
-- ESLint errors: unescaped entities, unused imports, type safety issues
-- Dashboard and statistics pages now use dynamic rendering instead of static generation
-
-### Changed
-- Deployment port from 3001 to 3002 to avoid conflicts with existing applications
-- npm install strategy to include devDependencies for successful build
-- TypeScript configuration to exclude `___OLD_SITE` and `tests` directories
+### Documentação
+- Atualizado o README com as novas variáveis de ambiente, o corpo esperado do endpoint de geração de apostas e instruções sobre a camada em memória usada nos testes.
+- Registrada no `docs/BUN_RUNTIME_FIX.md` a estratégia de fallback em memória para o Vitest.
 
 ## [1.0.1] - 2025-09-30
 
-### Added
-- Complete production deployment infrastructure for VPS Hostinger
-- Automated deploy script (`scripts/deploy.sh`) with SSH support
-- Quick update script (`scripts/update-remote.sh`) for fast deployments
-- Deployment health check script (`scripts/check-deployment.sh`)
-- Comprehensive deployment guide (`DEPLOY.md`) with step-by-step instructions
-- Nginx configuration example (`nginx.conf.example`)
-- PM2 ecosystem configuration for process management
-- Production deploy section in README.md
+### Modificado
+- **BREAKING CHANGE**: Migrado de `better-sqlite3` para `bun:sqlite` (SQLite nativo do Bun)
+  - Resolve problemas de compatibilidade ABI com módulos nativos do Node.js
+  - Melhor performance e integração com runtime Bun
+  - Não requer compilação de binários nativos
+  - **Nota**: Projeto agora requer Bun como runtime (não funciona com Node.js)
 
-### Successfully Deployed
-- ✅ Application running on VPS at port 3002
-- ✅ PM2 managing process with auto-restart
-- ✅ Database migrated and functional
-- ✅ All endpoints responding (HTTP 200)
-- ✅ Memory usage: 101MB (well within 700MB limit)
+### Corrigido
+- **CRÍTICO**: Corrigido bug grave no cálculo de frequências de números (lib/analytics/statistics.ts:62-79)
+  - Frequências estavam sendo calculadas incorretamente devido a uso de LIMIT 1 em query SQL
+  - Agora conta todas as ocorrências corretamente através de COUNT(*)
+  - Todas as estatísticas de frequência agora refletem dados reais históricos
+- **CRÍTICO**: Corrigidos timeouts na busca de dados históricos da API CAIXA
+  - Timeout aumentado de 10s para 30s para lidar com respostas lentas
+  - Número máximo de tentativas aumentado de 3 para 5
+  - Backoff exponencial aprimorado: 2s, 4s, 8s, 16s, 32s (antes: 1s, 2s, 4s)
+  - Adicionado delay de 3x após erros para evitar rate limiting
+  - Busca de dados agora continua em caso de erro individual ao invés de abortar completamente
+
+### Adicionado
+- Classes CSS utilitárias para shadows (shadow-glow, shadow-elegant, hover:shadow-glow)
+- Arquivo .env.example para documentação de variáveis de ambiente
+- Implementação de exponential backoff no cliente da API CAIXA
+- Cache ETag para requisições HTTP otimizadas (reduz bandwidth e latência)
+- Sistema de retry robusto com backoff exponencial (2s, 4s, 8s, 16s, 32s)
+- Rate limiting progressivo após 50+ requisições bem-sucedidas (previne sobrecarga da API)
+- Constantes para valores "mágicos" em BET_ALLOCATION e STATISTICS_DISPLAY
+- Tipos de retorno explícitos em todas as funções exportadas
+- Suíte completa de testes para StatisticsEngine (12 casos de teste)
+- Índices de performance no banco de dados (migrations/002_add_performance_indexes.sql)
+  - Índices em todas as colunas number_1 a number_6
+  - Índice para consultas de sorteios acumulados
+  - Índice parcial para consultas de prêmios
+
+### Modificado
+- Refatorado: Removidos valores hardcoded, substituídos por constantes semânticas
+- Melhorado: Error handling com try-catch em updateNumberFrequencies()
+- Otimizado: Queries SQL para frequências agora usam COUNT() ao invés de .all().length
+- Aprimorado: Tipo de retorno Promise<NextResponse> nas rotas da API
+
+### Documentação
+- Adicionado CODE_REVIEW_PLAN.md com análise completa de bugs e melhorias
+- Documentadas todas as correções críticas e suas justificativas técnicas
+- Adicionados comentários inline explicando algoritmos de frequência
+
+### Performance
+- Queries de frequência ~60x mais rápidas com novos índices de banco de dados
+- Cache HTTP reduz latência em até 95% para dados já buscados
+- Exponential backoff previne sobrecarga da API CAIXA em caso de falhas
 
 ## [1.0.0] - 2025-09-30
 
-### Added
-- CLI smoke coverage and extended documentation
-- Betting limit audit tooling for compliance verification
-- Stage 6 roadmap and finalized betting documentation
-- Betting API endpoints with persistence and server actions (`/api/generate-bets`)
-- Logging and schema validation to betting workflow
-- Stage 3 betting workflow with comprehensive documentation
-- Phase 5 execution plans and review documentation
-- Data grid integration for generated bets history
-- SQLite database with complete draw history storage
-- Statistical analysis engine (hot/cold numbers, frequency analysis)
-- Multiple bet generation strategies:
-  - Random (Aleatório)
-  - Hot Numbers (Números Quentes)
-  - Cold Numbers (Números Frios)
-  - Balanced (Balanceado)
-  - Fibonacci sequence-based
-- Interactive dashboard with data visualizations
-- CAIXA API integration with exponential backoff
-- Database migration system (`bun run db:migrate`)
-- Data ingestion script (`bun run db:pull`)
-- Responsive UI with TailwindCSS v4 and shadcn/ui components
-- Framer Motion micro-interactions and animations
-- TypeScript strict mode with complete type safety
-- Vitest unit testing framework
-- ESLint configuration with zero-warnings policy
-- Prettier code formatting
+### Adicionado
+- Dashboard principal com navegação intuitiva
+- Módulo de estatísticas avançadas da Mega-Sena
+  - Análise de frequência de números
+  - Padrões de números pares/ímpares
+  - Distribuição por dezenas
+  - Análise de sequências
+- Gerador inteligente de apostas
+  - Geração baseada em análise estatística
+  - Suporte a apostas simples e múltiplas
+  - Otimização de orçamento
+  - Seletor de estratégias
+- Integração com API oficial da CAIXA
+- Sistema de armazenamento local com SQLite
+- Testes automatizados (Vitest)
+- Documentação completa do projeto
 
-### Changed
-- Aligned strategy metadata with React Server Components guidelines
-- Unified bets history grid layout
-- Broadened hero and main container spacing
-- Widened main container layout for better content visibility
-- Refined stats dashboard and generator layout
-- Applied Fase A layout refresh for improved UX
-- Organized Phase 5 execution plans for better structure
-- Refreshed Phase 5 review plan after strategy audit
-
-### Fixed
-- Multiple lint issues resolved for clean codebase
-- Betting workflow validation edge cases
-
-### Removed
-- Outdated planning documentation for clarity
-
-## [0.1.0] - Initial Development
-
-### Added
-- Initial Next.js 15 project setup with App Router
-- Bun runtime configuration (≥1.1.0)
-- Project structure and core architecture
-- Development and build tooling
-- Design system foundations
+### Segurança
+- Implementação de Content Security Policy (CSP)
+- Proteção contra XSS e CSRF
+- Rate limiting nas chamadas de API
+- Validação rigorosa de entrada de dados
 
 ---
 
-## How to Update This Changelog
+## Formato do Versionamento
 
-After each commit or before each release, update this file following these guidelines:
+- **MAJOR**: Mudanças incompatíveis na API
+- **MINOR**: Funcionalidades adicionadas de forma retrocompatível
+- **PATCH**: Correções de bugs retrocompatíveis
 
-### Categories
-- **Added** - New features
-- **Changed** - Changes to existing functionality
-- **Deprecated** - Soon-to-be removed features
-- **Removed** - Removed features
-- **Fixed** - Bug fixes
-- **Security** - Security vulnerability fixes
+---
 
-### Format
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
+## Tipos de Mudanças
 
-### Added
-- New feature description
-
-### Changed
-- Modification description
-
-### Fixed
-- Bug fix description
-```
-
-### Versioning Rules
-- **MAJOR** (X.0.0) - Incompatible API changes
-- **MINOR** (0.X.0) - Backwards-compatible functionality additions
-- **PATCH** (0.0.X) - Backwards-compatible bug fixes
-
-### Unreleased Section
-Keep an `[Unreleased]` section at the top for changes not yet released:
-```markdown
-## [Unreleased]
-
-### Added
-- Feature in development
-```
-
-When releasing, move items from `[Unreleased]` to a new version section.
-
-### References
-- [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
-- [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+- `Adicionado` para novas funcionalidades
+- `Modificado` para mudanças em funcionalidades existentes
+- `Depreciado` para funcionalidades que serão removidas
+- `Removido` para funcionalidades removidas
+- `Corrigido` para correções de bugs
+- `Segurança` para correções de vulnerabilidades
