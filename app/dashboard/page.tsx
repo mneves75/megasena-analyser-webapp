@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { StatsCard } from '@/components/stats-card';
-import { getDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { formatCurrency, formatNumber, formatPercentage } from '@/lib/utils';
 import {
@@ -16,6 +15,9 @@ import {
 } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Force dynamic rendering since we need database at runtime
+export const dynamic = 'force-dynamic';
 
 async function getDashboardData() {
   const stats = new StatisticsEngine();

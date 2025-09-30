@@ -160,7 +160,6 @@ export class BetGenerator {
 
     // Allocate 60% to multiple bets, 40% to simple bets
     const multipleAllocation = budget * 0.6;
-    const simpleAllocation = budget * 0.4;
 
     // Generate one multiple bet
     if (multipleAllocation >= BET_PRICES[7]) {

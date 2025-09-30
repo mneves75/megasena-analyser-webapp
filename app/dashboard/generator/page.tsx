@@ -143,7 +143,7 @@ export default function GeneratorPage() {
                   </h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
                     Configure seu orçamento, escolha uma estratégia e um modo de geração,
-                    depois clique em <strong className="text-foreground">"Gerar Apostas"</strong> para começar.
+                    depois clique em <strong className="text-foreground">&quot;Gerar Apostas&quot;</strong> para começar.
                   </p>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

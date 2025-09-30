@@ -6,6 +6,9 @@ import { LotteryBall } from '@/components/lottery-ball';
 import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 
+// Force dynamic rendering since we need database at runtime
+export const dynamic = 'force-dynamic';
+
 async function getStatisticsData() {
   const stats = new StatisticsEngine();
   const frequencies = stats.getNumberFrequencies();
