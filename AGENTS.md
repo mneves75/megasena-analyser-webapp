@@ -28,6 +28,89 @@
 - Reference design tokens; centralize shared values in `lib/constants.ts`.
 - Run `bun run lint --fix` then `bun run format` before pushing.
 
+## React Server Components (RSC) Guidelines
+
+### Core Philosophy: "Two Worlds, Two Doors"
+
+Treat the frontend and backend as **a single program** split across two machines. The `'use client'` and `'use server'` directives are **doors** that open a bridge across the network within the module system.
+
+#### Key Concepts
+
+1. **`'use client'` is a typed `<script>` tag**
+   - Opens a door FROM server TO client
+   - Allows server to reference components that execute on the client
+   - Props passed must be serializable (no functions except Server Actions)
+
+2. **`'use server'` is a typed `fetch()` call**
+   - Opens a door FROM client TO server
+   - Creates Server Actions—RPC functions callable from client
+   - Arguments and return values must be serializable
+
+### When to Use Each Directive
+
+#### Use `'use client'` ONLY when components require:
+- **Interactivity:** `onClick`, `onChange`, event handlers
+- **State/Lifecycle:** `useState`, `useEffect`, `useReducer`
+- **Browser APIs:** `window`, `document`, `localStorage`
+- **Class Components:** All class components are client-side
+
+#### Use `'use server'` for:
+- **Data mutations:** Database create/update/delete operations
+- **Form submissions:** Server-side form processing
+- **Secure operations:** Accessing environment variables, sensitive APIs
+
+### Implementation Rules
+
+1. **Default to Server**
+   - All components are Server Components by default
+   - Only add `'use client'` when absolutely necessary
+   - Keep client-side JavaScript minimal
+
+2. **Directive Placement**
+   - `'use client'` or `'use server'` MUST be the first line before imports
+   - Cannot be mixed in the same file
+
+3. **Avoid Manual `fetch`**
+   - Use Server Actions instead of creating API routes
+   - Direct function imports provide type safety and reduce boilerplate
+   - Example: `import { createBet } from './actions'` instead of `fetch('/api/bets')`
+
+4. **Props Must Be Serializable**
+   - Only pass JSON-serializable data between client and server
+   - No functions, Date objects, Maps, Sets, or class instances
+   - Exception: Server Actions can be passed as props
+
+### React useEffect Guidelines
+
+**Before using useEffect, read:** [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+
+#### Common cases where useEffect is NOT needed:
+- Transforming data for rendering (use variables or `useMemo`)
+- Handling user events (use event handlers)
+- Resetting state when props change (use `key` prop)
+- Updating state based on props/state (calculate during render)
+
+#### Only use useEffect for:
+- Synchronizing with external systems (APIs, DOM, third-party libraries)
+- Cleanup that must happen when component unmounts
+
+### Architecture Pattern
+
+```
+app/
+  dashboard/
+    generator/
+      page.tsx           ← Server Component (layout, static content)
+      actions.ts         ← 'use server' (data mutations)
+      generator-form.tsx ← 'use client' (interactivity)
+```
+
+**Benefits:**
+- Improved type safety with direct function imports
+- Reduced client bundle size
+- Better performance with server-side rendering
+- Cleaner separation of concerns
+
 ## Testing Guidelines
 - Unit specs live in `tests/lib/**/{file}.test.ts`; mock HTTP with MSW handlers
 - UI flows live in `tests/app/**/{route}.spec.ts` using Playwright

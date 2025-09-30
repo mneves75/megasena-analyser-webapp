@@ -100,6 +100,372 @@ bun run build                   # Create production bundle + type check
 - `camelCase` for utilities and variables
 - `kebab-case` for file names (e.g., `budget-panel.tsx`)
 
+## React Server Components (RSC) Architecture
+
+### Core Philosophy: "Two Worlds, Two Doors"
+
+**CRITICAL:** This project uses React Server Components (RSC). Understanding the client/server boundary is essential.
+
+The application is a **single program** that spans two environments (server and client). The `'use client'` and `'use server'` directives are not just labels—they open **doors** that create typed bridges across the network.
+
+### The Two Directives
+
+#### 1. `'use client'` — Typed `<script>` Tag
+
+Opens a door **FROM server TO client**. When the server renders a page, it creates a "client reference" that tells the browser:
+- Which script to load
+- Which component to render
+- What props to pass (must be serializable)
+
+**Use ONLY when you need:**
+- Event handlers: `onClick`, `onChange`, `onSubmit`
+- React hooks: `useState`, `useEffect`, `useReducer`, `useContext`
+- Browser APIs: `window`, `document`, `localStorage`, `navigator`
+- Class components (all are client-side)
+
+**Placement:** Must be the **first line** of the file, before all imports.
+
+**Example:**
+```tsx
+'use client';
+
+import { useState } from 'react';
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+#### 2. `'use server'` — Typed `fetch()` Call
+
+Opens a door **FROM client TO server**. Creates Server Actions—functions that:
+- Execute on the server with full access to databases, secrets, filesystem
+- Can be imported and called from client components like local functions
+- Automatically handle serialization, HTTP transport, and error boundaries
+
+**Use for:**
+- Database mutations (create, update, delete)
+- Form submissions and validation
+- Accessing environment variables or secure APIs
+- Any operation requiring server-side execution
+
+**Placement:** Must be the **first line** of the file, before all imports.
+
+**Example:**
+```tsx
+'use server';
+
+import { db } from '@/lib/db';
+
+export async function createBet(budget: number, strategy: string) {
+  const result = await db.insert({ budget, strategy });
+  return result;
+}
+```
+
+**Client usage:**
+```tsx
+'use client';
+
+import { createBet } from './actions'; // Direct import, fully typed
+
+export function BetForm() {
+  async function handleSubmit() {
+    const result = await createBet(100, 'balanced'); // Looks local, runs on server
+    console.log(result);
+  }
+  
+  return <button onClick={handleSubmit}>Create Bet</button>;
+}
+```
+
+### Architecture Guidelines
+
+#### 1. Default to Server Components
+
+**RULE:** Every component is a Server Component unless explicitly marked with `'use client'`.
+
+**Benefits:**
+- Smaller client bundle (less JavaScript shipped to browser)
+- Direct database access without API routes
+- Better SEO and initial page load
+- Automatic code splitting
+
+#### 2. Minimize Client Components
+
+Only add `'use client'` at the **leaves** of your component tree—the lowest level where interactivity is needed.
+
+**❌ Bad (entire page is client-side):**
+```tsx
+'use client'; // DON'T DO THIS
+
+export default function Page() {
+  const [data, setData] = useState(null);
+  
+  return (
+    <div>
+      <Nav />
+      <InteractiveForm onSubmit={() => setData(...)} />
+      <Footer />
+    </div>
+  );
+}
+```
+
+**✅ Good (only interactive part is client):**
+```tsx
+// page.tsx - Server Component (no directive)
+export default function Page() {
+  return (
+    <div>
+      <Nav /> {/* Server Component */}
+      <InteractiveForm /> {/* Client Component */}
+      <Footer /> {/* Server Component */}
+    </div>
+  );
+}
+
+// interactive-form.tsx
+'use client';
+
+export function InteractiveForm() {
+  const [data, setData] = useState(null);
+  return <form onSubmit={() => setData(...)} />;
+}
+```
+
+#### 3. Avoid Manual API Routes
+
+**❌ Old Pattern (don't use):**
+```tsx
+// app/api/bets/route.ts
+export async function POST(request: Request) {
+  const body = await request.json();
+  // ... database logic
+}
+
+// component
+const response = await fetch('/api/bets', {
+  method: 'POST',
+  body: JSON.stringify(data)
+});
+```
+
+**✅ New Pattern (use Server Actions):**
+```tsx
+// actions.ts
+'use server';
+
+export async function createBet(data: BetData) {
+  // ... database logic
+}
+
+// component
+'use client';
+import { createBet } from './actions';
+
+await createBet(data); // Fully typed, no manual fetch
+```
+
+#### 4. Serialization Rules
+
+**Data crossing the client/server boundary must be serializable:**
+
+✅ **Allowed:**
+- Plain objects and arrays
+- Strings, numbers, booleans, null
+- Server Actions (special case)
+
+❌ **Not allowed:**
+- Functions (except Server Actions)
+- Date objects (convert to ISO strings)
+- Maps, Sets, WeakMaps
+- Class instances
+- Symbols, undefined
+
+### React useEffect Guidelines
+
+**Before using `useEffect`, read:** [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+
+Most `useEffect` usages can be eliminated by restructuring your code.
+
+#### ❌ Don't use useEffect for:
+
+1. **Transforming data for rendering:**
+```tsx
+// ❌ Bad
+const [fullName, setFullName] = useState('');
+useEffect(() => {
+  setFullName(firstName + ' ' + lastName);
+}, [firstName, lastName]);
+
+// ✅ Good - calculate during render
+const fullName = firstName + ' ' + lastName;
+```
+
+2. **Handling user events:**
+```tsx
+// ❌ Bad
+useEffect(() => {
+  if (buttonClicked) {
+    submitForm();
+  }
+}, [buttonClicked]);
+
+// ✅ Good - use event handler
+<button onClick={() => submitForm()}>Submit</button>
+```
+
+3. **Resetting state when props change:**
+```tsx
+// ❌ Bad
+useEffect(() => {
+  setItems([]);
+}, [category]);
+
+// ✅ Good - use key prop
+<List key={category} />
+```
+
+#### ✅ DO use useEffect for:
+
+1. **Synchronizing with external systems:**
+```tsx
+useEffect(() => {
+  const socket = connectToWebSocket();
+  return () => socket.disconnect();
+}, []);
+```
+
+2. **Browser APIs and third-party libraries:**
+```tsx
+useEffect(() => {
+  const chart = new Chart(canvasRef.current);
+  return () => chart.destroy();
+}, [data]);
+```
+
+### File Structure Example
+
+```
+app/
+  dashboard/
+    generator/
+      page.tsx              ← Server Component (default, no directive)
+      actions.ts            ← 'use server' (Server Actions)
+      generator-form.tsx    ← 'use client' (interactive UI)
+      
+components/
+  lottery-ball.tsx          ← Can be Server Component if no interactivity
+  budget-selector.tsx       ← 'use client' if uses useState/onChange
+  
+lib/
+  analytics/
+    bet-generator.ts        ← Pure TypeScript (no React, runs on server)
+```
+
+### Migration Checklist
+
+When converting existing components to RSC:
+
+1. ✅ **Identify interactivity needs** - Does it use state/effects/events?
+2. ✅ **Create Server Action file** - Move API calls to `actions.ts` with `'use server'`
+3. ✅ **Extract client logic** - Create separate file with `'use client'` for interactive parts
+4. ✅ **Update imports** - Import Server Actions directly, not via `fetch`
+5. ✅ **Verify props** - Ensure all props are serializable
+6. ✅ **Test** - Confirm functionality and check bundle size reduction
+
+### Common Patterns
+
+#### Pattern 1: Form with Server Action
+```tsx
+// actions.ts
+'use server';
+export async function submitForm(data: FormData) {
+  const budget = Number(data.get('budget'));
+  // ... save to database
+  return { success: true };
+}
+
+// form.tsx
+'use client';
+import { submitForm } from './actions';
+
+export function Form() {
+  return (
+    <form action={submitForm}>
+      <input name="budget" type="number" />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+#### Pattern 2: Data Fetching on Server
+```tsx
+// page.tsx (Server Component)
+async function getData() {
+  const db = getDatabase();
+  return db.query.draws.findMany();
+}
+
+export default async function Page() {
+  const draws = await getData(); // Runs on server
+  return <DrawList draws={draws} />;
+}
+```
+
+#### Pattern 3: Client State + Server Mutations
+```tsx
+// page.tsx (Server)
+import { InteractiveWidget } from './widget';
+
+export default function Page() {
+  return <InteractiveWidget />;
+}
+
+// widget.tsx
+'use client';
+import { useState } from 'react';
+import { updateData } from './actions';
+
+export function InteractiveWidget() {
+  const [count, setCount] = useState(0);
+  
+  async function handleClick() {
+    setCount(count + 1);
+    await updateData(count + 1); // Server Action
+  }
+  
+  return <button onClick={handleClick}>{count}</button>;
+}
+
+// actions.ts
+'use server';
+export async function updateData(value: number) {
+  // ... database update
+}
+```
+
+### Debugging Tips
+
+1. **"use client" not working?**
+   - Ensure it's the FIRST line (before imports)
+   - Check for mixing `'use client'` and `'use server'` in same file
+
+2. **Serialization errors?**
+   - Remove functions, Date objects, class instances from props
+   - Convert dates to ISO strings: `date.toISOString()`
+
+3. **Bundle too large?**
+   - Check if you're marking parent components as `'use client'` unnecessarily
+   - Move `'use client'` deeper in the tree
+
+4. **Type errors with Server Actions?**
+   - Ensure proper imports (not dynamic imports)
+   - Check that all parameters and returns are serializable types
+
 ### Styling Philosophy
 
 **CRITICAL:** Never use ad-hoc inline styles or explicit color classes (`text-white`, `bg-black`). All styles must be defined via semantic design tokens in `index.css` and `tailwind.config.ts`.
