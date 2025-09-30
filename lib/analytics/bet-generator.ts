@@ -1,5 +1,5 @@
 import { getDatabase } from '@/lib/db';
-import { MEGASENA_CONSTANTS, BET_PRICES, BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
+import { MEGASENA_CONSTANTS, BET_PRICES, BET_GENERATION_MODE, BET_ALLOCATION, type BetGenerationMode } from '@/lib/constants';
 
 export interface Bet {
   id: string;
@@ -13,8 +13,8 @@ export interface Bet {
 export interface BetGenerationResult {
   bets: Bet[];
   totalCost: number;
-  remainingBudget: number;
-  budgetUtilization: number; // percentage
+  remainingBudget: number | null;
+  budgetUtilization: number | null; // percentage
   totalNumbers: number; // unique numbers covered
   strategy: string;
   mode: BetGenerationMode;
@@ -158,8 +158,8 @@ export class BetGenerator {
     let remainingBudget = budget;
     const simpleBetCost = BET_PRICES[6];
 
-    // Allocate 60% to multiple bets, 40% to simple bets
-    const multipleAllocation = budget * 0.6;
+    // Allocate percentage to multiple bets
+    const multipleAllocation = budget * BET_ALLOCATION.MIXED_MULTIPLE_PERCENTAGE;
 
     // Generate one multiple bet
     if (multipleAllocation >= BET_PRICES[7]) {
@@ -333,7 +333,7 @@ export class BetGenerator {
 
   private generateBalancedNumbers(count: number): number[] {
     // Mix of hot and cold numbers
-    const hotCount = Math.ceil(count / 2);
+    const hotCount = Math.ceil(count * BET_ALLOCATION.BALANCED_HOT_PERCENTAGE);
     const coldCount = count - hotCount;
 
     const hot = this.db

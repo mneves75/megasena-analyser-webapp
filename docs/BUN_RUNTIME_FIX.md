@@ -17,7 +17,7 @@ This occurred because:
 Implemented a **dual-server architecture**:
 
 ### 1. Bun API Server (`server.ts`)
-- Runs on port **3001**
+- Runs on port **3201**
 - Handles all API routes that need database access
 - Has direct access to `bun:sqlite`
 - Endpoints:
@@ -32,7 +32,7 @@ Implemented a **dual-server architecture**:
 
 ### 3. Development Script (`scripts/dev.ts`)
 - Orchestrates both servers
-- Starts Bun API server first (port 3001)
+- Starts Bun API server first (port 3201)
 - Then starts Next.js dev server (port 3000)
 - Handles graceful shutdown of both processes
 
@@ -68,7 +68,7 @@ This starts both servers automatically.
 
 ### Direct Access
 - **Next.js pages:** http://localhost:3000
-- **Bun API (direct):** http://localhost:3001/api/*
+- **Bun API (direct):** http://localhost:3201/api/*
 - **API via Next.js proxy:** http://localhost:3000/api/*
 
 ### Production Considerations

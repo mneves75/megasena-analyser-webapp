@@ -1,0 +1,43 @@
+module.exports = {
+  apps: [
+    {
+      name: 'megasena-analyser',
+      cwd: '/home/claude/apps/megasena-analyser',
+      script: '/home/claude/.bun/bin/bun',
+      args: 'run start -- --port 3002',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3002,
+        DATABASE_PATH: '/home/claude/apps/megasena-analyser/db/mega-sena.db',
+        NEXT_PUBLIC_BASE_URL: 'https://conhecendotudo.online/megasena-analyzer',
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      out_file: '/home/claude/apps/megasena-analyser/logs/out.log',
+      error_file: '/home/claude/apps/megasena-analyser/logs/error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    },
+    {
+      name: 'megasena-api',
+      cwd: '/home/claude/apps/megasena-analyser',
+      script: '/home/claude/.bun/bin/bun',
+      args: 'run server.ts',
+      env: {
+        NODE_ENV: 'production',
+        API_PORT: 3201,
+        DATABASE_PATH: '/home/claude/apps/megasena-analyser/db/mega-sena.db',
+      },
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '250M',
+      out_file: '/home/claude/apps/megasena-analyser/logs/api-out.log',
+      error_file: '/home/claude/apps/megasena-analyser/logs/api-error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    },
+  ],
+};

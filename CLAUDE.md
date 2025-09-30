@@ -18,24 +18,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Framework:** Next.js 15 with App Router
 - **Language:** TypeScript (strict mode)
-- **Runtime:** Bun (≥1.1)
-- **Database:** SQLite (file-based)
+- **Runtime:** Bun (≥1.1) **[REQUIRED - Not compatible with Node.js]**
+- **Database:** SQLite (bun:sqlite - native, zero compilation)
 - **Styling:** TailwindCSS v4 with semantic design tokens
 - **UI Components:** shadcn/ui (heavily customized)
 - **Animations:** Framer Motion for micro-interactions
-- **Node Compatibility Target:** Node.js 20 LTS APIs
-- **Package Manager:** Bun
+- **Package Manager:** Bun (npm/yarn/pnpm not supported)
 - **Testing:** Vitest (unit) + Playwright (E2E)
 
+**⚠️ CRITICAL:** This project uses Bun's native SQLite (`bun:sqlite`) and **will not work with Node.js**. All commands must use `bun`, not `node` or `npm`.
+
 ## Essential Commands
+
+**⚠️ All commands MUST use `bun` (not `node`, `npm`, `yarn`, or `pnpm`)**
 
 ```bash
 # Environment setup
 bun install                     # Install dependencies with Bun
 bun --version                   # Verify Bun runtime (>=1.1)
 
-# Database
-bun run db:migrate              # Apply SQLite migrations (drizzle/prisma as configured)
+# Database (uses bun:sqlite - native)
+bun scripts/migrate.ts          # Apply SQLite migrations
+bun run db:migrate              # Same as above (via package.json script)
 
 # Development
 bun run dev                     # Start Next.js dev server (localhost:3000)
@@ -147,7 +151,6 @@ bun run build                   # Create production bundle + type check
 - Single concern per commit
 - Include affected file paths in commit body when migrations run
 - Reference issue IDs: `Refs #123`
-- **CRITICAL: Update CHANGELOG.md** after EVERY commit following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
 - CI must pass (`bun run lint && bun run test`) before merging
 
 ## Pull Requests
@@ -213,6 +216,5 @@ Example: "The API integration is implemented in `lib/api/caixa-client.ts:42`"
 - `docs/PROMPT-MAIN.md` - Core domain logic and betting strategies
 - `docs/SYSTEM_PROMPT.md` - System architecture and technical context
 - `AGENTS.md` - Repository structure and coding guidelines
-- **`CHANGELOG.md`** - Complete project history following Keep a Changelog format
 
-Update documentation when product scope changes. **Always update CHANGELOG.md after every commit.**
+Update documentation when product scope changes.

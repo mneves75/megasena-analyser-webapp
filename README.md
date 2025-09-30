@@ -143,7 +143,7 @@ Copy `.env.example` to `.env.local` and customize:
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 # Porta exposta pelo servidor Bun (`server.ts`)
-API_PORT=3001
+API_PORT=3201
 
 # (Opcional) Origem permitida para CORS quando habilitado no Bun
 # ALLOWED_ORIGIN=http://localhost:3000
