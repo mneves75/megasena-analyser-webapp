@@ -57,6 +57,7 @@ Visit `http://localhost:3000` to see the application.
 
 ## Available Commands
 
+### Development
 - `bun run dev` - Start development server
 - `bun run build` - Build for production
 - `bun run start` - Start production server
@@ -64,8 +65,15 @@ Visit `http://localhost:3000` to see the application.
 - `bun run lint:fix` - Auto-fix lint issues
 - `bun run format` - Format code with Prettier
 - `bun run test` - Run tests with Vitest
+
+### Database
 - `bun run db:migrate` - Run database migrations
 - `bun run db:pull` - Pull draw data from CAIXA API
+
+### Deploy
+- `bash scripts/deploy.sh` - Deploy to production (VPS)
+- `bash scripts/update-remote.sh` - Quick update (already deployed)
+- `bash scripts/check-deployment.sh` - Verify deployment health
 
 ## Database Scripts
 
@@ -142,6 +150,28 @@ Copy `.env.example` to `.env.local` and customize:
 DATABASE_PATH=./db/mega-sena.db
 CAIXA_API_BASE_URL=https://servicebus2.caixa.gov.br/portaldeloterias/api
 ```
+
+## Production Deploy
+
+Deploy completo para VPS Hostinger com isolamento de aplicação:
+
+```bash
+# Deploy inicial completo
+bash scripts/deploy.sh
+
+# Atualização rápida (após primeiro deploy)
+bash scripts/update-remote.sh
+
+# Verificar saúde da aplicação
+bash scripts/check-deployment.sh
+```
+
+Consulte **[DEPLOY.md](./DEPLOY.md)** para guia completo incluindo:
+- Configuração do servidor
+- Setup de PM2 e Nginx
+- SSL com Let's Encrypt
+- Troubleshooting
+- Monitoramento
 
 ## Design System
 

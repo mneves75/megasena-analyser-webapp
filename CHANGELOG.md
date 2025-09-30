@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- CHANGELOG.md to track project changes
+- Complete production deployment infrastructure for VPS Hostinger
+- Automated deploy script (`scripts/deploy.sh`) with SSH support
+- Quick update script (`scripts/update-remote.sh`) for fast deployments
+- Deployment health check script (`scripts/check-deployment.sh`)
+- Comprehensive deployment guide (`DEPLOY.md`) with step-by-step instructions
+- Nginx configuration example (`nginx.conf.example`)
+- PM2 ecosystem configuration for process management
+- Production deploy section in README.md
 
 ## [1.0.0] - 2025-09-30
 
