@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { roundTo } from '@/lib/utils';
 
 export interface ParityStats {
   evenCount: number;
@@ -61,7 +62,7 @@ export class ParityAnalysisEngine {
         evenCount,
         oddCount,
         occurrences,
-        percentage: Math.round(percentage * 100) / 100,
+        percentage: roundTo(percentage),
         isBalanced,
       });
     }
@@ -89,7 +90,7 @@ export class ParityAnalysisEngine {
     return {
       mostCommon,
       leastCommon,
-      balancedPercentage: Math.round(balancedPercentage * 100) / 100,
+      balancedPercentage: roundTo(balancedPercentage),
     };
   }
 }

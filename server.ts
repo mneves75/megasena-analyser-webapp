@@ -19,14 +19,104 @@ import { SumAnalysisEngine } from './lib/analytics/sum-analysis';
 import { StreakAnalysisEngine } from './lib/analytics/streak-analysis';
 import { PrizeCorrelationEngine } from './lib/analytics/prize-correlation';
 import { ComplexityScoreEngine } from './lib/analytics/complexity-score';
+import { logger } from './lib/logger';
+
+// Rate limiter configuration
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
+
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+const rateLimiterMap = new Map<string, RateLimitEntry>();
+
+function getRateLimitKey(req: Request): string {
+  // Try to get real IP from various headers
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  
+  return forwardedFor?.split(',')[0] || realIp || cfConnectingIp || 'unknown';
+}
+
+function checkRateLimit(req: Request): { allowed: boolean; remaining: number; resetAt: number } {
+  const key = getRateLimitKey(req);
+  const now = Date.now();
+  
+  let entry = rateLimiterMap.get(key);
+  
+  // Clean up expired entry or create new one
+  if (!entry || entry.resetAt < now) {
+    entry = {
+      count: 0,
+      resetAt: now + RATE_LIMIT_WINDOW,
+    };
+    rateLimiterMap.set(key, entry);
+  }
+  
+  entry.count++;
+  
+  const allowed = entry.count <= RATE_LIMIT_MAX_REQUESTS;
+  const remaining = Math.max(0, RATE_LIMIT_MAX_REQUESTS - entry.count);
+  
+  return { allowed, remaining, resetAt: entry.resetAt };
+}
+
+// Cleanup old rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimiterMap.entries()) {
+    if (entry.resetAt < now) {
+      rateLimiterMap.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
 
 // Run migrations on startup
-console.log('Initializing database...');
+logger.info('Initializing database...');
 runMigrations();
-console.log('✓ Database ready\n');
+logger.info('✓ Database ready');
 
 // Define API route handlers
 const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response> = {
+  '/api/health': async () => {
+    try {
+      // Check database connectivity
+      const stats = new StatisticsEngine();
+      const drawCount = stats.getDrawStatistics().totalDraws;
+      
+      const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: {
+          connected: true,
+          totalDraws: drawCount,
+        },
+        version: '1.0.0',
+      };
+      
+      return new Response(JSON.stringify(health), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      logger.error('Health check failed', error);
+      return new Response(
+        JSON.stringify({
+          status: 'unhealthy',
+          timestamp: new Date().toISOString(),
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+  },
+
   '/api/dashboard': async () => {
     try {
       const stats = new StatisticsEngine();
@@ -41,7 +131,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Dashboard API error:', error);
+      logger.apiError('GET', '/api/dashboard', error);
       return new Response(JSON.stringify({ error: 'Failed to fetch dashboard data' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +205,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Statistics API error:', error);
+      logger.apiError('GET', '/api/statistics', error);
       return new Response(JSON.stringify({ error: 'Failed to fetch statistics data' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -152,7 +242,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Trends API error:', error);
+      logger.apiError('GET', '/api/trends', error);
       return new Response(JSON.stringify({ error: 'Failed to fetch trends data' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +285,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      console.error('Generate bets API error:', error);
+      logger.apiError('POST', '/api/generate-bets', error);
       const message = error instanceof Error ? error.message : 'Failed to generate bets';
       return new Response(JSON.stringify({ success: false, error: message }), {
         status: 500,
@@ -212,15 +302,67 @@ serve({
   async fetch(req) {
     const url = new URL(req.url);
     
-    // Handle API routes
+    // Apply rate limiting to API routes (except health check)
+    if (url.pathname.startsWith('/api/') && url.pathname !== '/api/health') {
+      const rateLimit = checkRateLimit(req);
+      
+      if (!rateLimit.allowed) {
+        logger.warn('Rate limit exceeded', {
+          ip: getRateLimitKey(req),
+          path: url.pathname,
+        });
+        
+        return new Response(
+          JSON.stringify({
+            error: 'Too Many Requests',
+            message: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.resetAt - Date.now()) / 1000)} seconds.`,
+          }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+              'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+              'X-RateLimit-Reset': rateLimit.resetAt.toString(),
+              'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+            },
+          }
+        );
+      }
+      
+      // Add rate limit headers to successful responses
+      const response = await (async () => {
+        const handler = apiHandlers[url.pathname];
+        if (handler) {
+          return handler(req);
+        }
+        
+        return new Response(JSON.stringify({ error: 'Not Found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      })();
+      
+      // Clone response to add headers
+      const headers = new Headers(response.headers);
+      headers.set('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS.toString());
+      headers.set('X-RateLimit-Remaining', rateLimit.remaining.toString());
+      headers.set('X-RateLimit-Reset', rateLimit.resetAt.toString());
+      
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    }
+    
+    // Handle API routes without rate limiting (health check)
     const handler = apiHandlers[url.pathname];
     if (handler) {
       return handler(req);
     }
 
-    // For all other routes, proxy to Next.js dev server (if running separately)
-    // Or serve static files / SSR pages
-    // For now, return 404 for non-API routes
+    // For all other routes, return 404
     return new Response(JSON.stringify({ error: 'Not Found' }), {
       status: 404,
       headers: { 'Content-Type': 'application/json' },
@@ -228,9 +370,10 @@ serve({
   },
 });
 
-console.log(`🚀 Bun server running on http://localhost:${PORT}`);
-console.log('API routes available:');
-console.log('  - GET  /api/dashboard');
-console.log('  - GET  /api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true');
-console.log('  - GET  /api/trends?numbers=1,5,10&period=yearly');
-console.log('  - POST /api/generate-bets\n');
+logger.info(`🚀 Bun server running on http://localhost:${PORT}`);
+logger.info('API routes available:');
+logger.info('  - GET  /api/health');
+logger.info('  - GET  /api/dashboard');
+logger.info('  - GET  /api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true');
+logger.info('  - GET  /api/trends?numbers=1,5,10&period=yearly');
+logger.info('  - POST /api/generate-bets');

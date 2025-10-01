@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { roundTo } from '@/lib/utils';
 
 export interface PairStats {
   pair: [number, number];
@@ -81,16 +82,28 @@ export class PairAnalysisEngine {
         }
       }
 
-      // Insert into database
+      // Calculate total draws for correlation
+      const totalDraws = draws.length;
+
+      // Insert into database with correlation
       const insertStmt = this.db.prepare(
         `INSERT INTO number_pair_frequency 
-         (number_1, number_2, frequency, last_occurred_contest, last_occurred_date)
-         VALUES (?, ?, ?, ?, ?)`
+         (number_1, number_2, frequency, correlation, last_occurred_contest, last_occurred_date)
+         VALUES (?, ?, ?, ?, ?, ?)`
       );
 
       for (const [key, data] of pairMap.entries()) {
         const [num1, num2] = key.split('-').map(Number);
-        insertStmt.run(num1, num2, data.frequency, data.lastContest, data.lastDate);
+        
+        // Calculate correlation: actual frequency vs expected frequency
+        const freq1 = this.getNumberFrequency(num1);
+        const freq2 = this.getNumberFrequency(num2);
+        const prob1 = freq1 / (totalDraws * 6);
+        const prob2 = freq2 / (totalDraws * 6);
+        const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw
+        const correlation = expectedFrequency > 0 ? data.frequency / expectedFrequency : 0;
+        
+        insertStmt.run(num1, num2, data.frequency, correlation, data.lastContest, data.lastDate);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -99,16 +112,25 @@ export class PairAnalysisEngine {
   }
 
   getNumberPairs(minOccurrences: number = 1): PairStats[] {
-    // Check if cache is populated
-    const cacheCount = (
-      this.db.prepare('SELECT COUNT(*) as count FROM number_pair_frequency').get() as {
-        count: number;
-      }
-    ).count;
+    // Check if cache is populated with transaction to prevent race conditions
+    try {
+      this.db.exec('BEGIN IMMEDIATE TRANSACTION');
+      
+      const cacheCount = (
+        this.db.prepare('SELECT COUNT(*) as count FROM number_pair_frequency').get() as {
+          count: number;
+        }
+      ).count;
 
-    if (cacheCount === 0) {
-      // Cache is empty, populate it
-      this.updatePairFrequencies();
+      if (cacheCount === 0) {
+        // Cache is empty, populate it
+        this.updatePairFrequencies();
+      }
+      
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
     }
 
     // Get individual number frequencies for expected calculation
@@ -119,7 +141,7 @@ export class PairAnalysisEngine {
     const pairs = this.db
       .prepare(
         `SELECT 
-          number_1, number_2, frequency,
+          number_1, number_2, frequency, correlation,
           last_occurred_contest, last_occurred_date
          FROM number_pair_frequency
          WHERE frequency >= ?
@@ -130,26 +152,24 @@ export class PairAnalysisEngine {
       number_1: number;
       number_2: number;
       frequency: number;
+      correlation: number;
       last_occurred_contest: number | null;
       last_occurred_date: string | null;
     }>;
 
     return pairs.map((pair) => {
-      // Calculate expected frequency based on independent probabilities
-      // P(A and B) = P(A) * P(B) * total_draws
+      // Calculate expected frequency for display (correlation is already cached)
       const freq1 = this.getNumberFrequency(pair.number_1);
       const freq2 = this.getNumberFrequency(pair.number_2);
       const prob1 = freq1 / (totalDraws * 6);
       const prob2 = freq2 / (totalDraws * 6);
       const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw (6 choose 2)
 
-      const correlation = expectedFrequency > 0 ? pair.frequency / expectedFrequency : 0;
-
       return {
         pair: [pair.number_1, pair.number_2],
         frequency: pair.frequency,
-        expectedFrequency: Math.round(expectedFrequency * 100) / 100,
-        correlation: Math.round(correlation * 100) / 100,
+        expectedFrequency: roundTo(expectedFrequency),
+        correlation: roundTo(pair.correlation),
         lastSeenContest: pair.last_occurred_contest,
         lastSeenDate: pair.last_occurred_date,
       };

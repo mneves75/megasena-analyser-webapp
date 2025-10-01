@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { roundTo } from '@/lib/utils';
 
 export interface SumStats {
   distribution: Array<{ sum: number; count: number }>;
@@ -41,6 +42,21 @@ export class SumAnalysisEngine {
       number_6: number;
     }>;
 
+    // Handle empty database case
+    if (draws.length === 0) {
+      return {
+        distribution: [],
+        mean: 0,
+        median: 0,
+        mode: 0,
+        stdDev: 0,
+        percentiles: { p5: 0, p25: 0, p50: 0, p75: 0, p95: 0 },
+        minSum: 0,
+        maxSum: 0,
+        totalDraws: 0,
+      };
+    }
+
     const totalDraws = draws.length;
     const sums: number[] = [];
     const sumCounts = new Map<number, number>();
@@ -80,10 +96,10 @@ export class SumAnalysisEngine {
 
     return {
       distribution,
-      mean: Math.round(mean * 100) / 100,
+      mean: roundTo(mean),
       median,
       mode,
-      stdDev: Math.round(stdDev * 100) / 100,
+      stdDev: roundTo(stdDev),
       percentiles,
       minSum: sums[0],
       maxSum: sums[sums.length - 1],

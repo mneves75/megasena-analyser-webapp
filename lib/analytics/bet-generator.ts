@@ -367,19 +367,17 @@ export class BetGenerator {
 
     // Randomly select from Fibonacci numbers
     const selected = new Set<number>();
+    const maxAttempts = count * 10; // Prevent infinite loops
+    let attempts = 0;
     
-    while (selected.size < count && fibonacci.length > 0) {
+    // Fill with Fibonacci numbers first (up to available count)
+    while (selected.size < Math.min(count, fibonacci.length) && attempts < maxAttempts) {
       const idx = Math.floor(Math.random() * fibonacci.length);
       selected.add(fibonacci[idx]);
-      
-      // If we run out of Fibonacci numbers, add random numbers
-      if (selected.size < count && fibonacci.length === selected.size) {
-        const num = Math.floor(Math.random() * MEGASENA_CONSTANTS.MAX_NUMBER) + 1;
-        selected.add(num);
-      }
+      attempts++;
     }
 
-    // Fill remaining with random if needed
+    // Fill remaining with random numbers if needed
     while (selected.size < count) {
       const num = Math.floor(Math.random() * MEGASENA_CONSTANTS.MAX_NUMBER) + 1;
       selected.add(num);

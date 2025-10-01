@@ -24,39 +24,61 @@ export class DelayAnalysisEngine {
         .get() as { max: number }
     ).max;
 
+    // Single optimized query using UNION ALL to get all number occurrences
+    const query = `
+      WITH all_occurrences AS (
+        SELECT number_1 as num, contest_number, draw_date FROM draws
+        UNION ALL
+        SELECT number_2, contest_number, draw_date FROM draws
+        UNION ALL
+        SELECT number_3, contest_number, draw_date FROM draws
+        UNION ALL
+        SELECT number_4, contest_number, draw_date FROM draws
+        UNION ALL
+        SELECT number_5, contest_number, draw_date FROM draws
+        UNION ALL
+        SELECT number_6, contest_number, draw_date FROM draws
+      ),
+      number_stats AS (
+        SELECT 
+          num,
+          COUNT(*) as total_occurrences,
+          MAX(contest_number) as last_contest,
+          MAX(draw_date) as last_date
+        FROM all_occurrences
+        GROUP BY num
+      )
+      SELECT * FROM number_stats ORDER BY num
+    `;
+
+    const numberStats = this.db.prepare(query).all() as Array<{
+      num: number;
+      total_occurrences: number;
+      last_contest: number;
+      last_date: string;
+    }>;
+
+    // Create a map for quick lookup
+    const statsMap = new Map<number, typeof numberStats[0]>();
+    numberStats.forEach((stat) => statsMap.set(stat.num, stat));
+
     const results: DelayStats[] = [];
 
+    // Process all numbers 1-60
     for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
-      // Get last occurrence
-      let lastDrawn: { contest_number: number; draw_date: string } | null = null;
-      let totalOccurrences = 0;
+      const stat = statsMap.get(num);
+      const totalOccurrences = stat?.total_occurrences || 0;
+      const lastDrawnContest = stat?.last_contest || null;
+      const lastDrawnDate = stat?.last_date || null;
 
-      for (let col = 1; col <= 6; col++) {
-        const lastOccurrence = this.db
-          .prepare(
-            `SELECT contest_number, draw_date
-             FROM draws
-             WHERE number_${col} = ?
-             ORDER BY contest_number DESC
-             LIMIT 1`
-          )
-          .get(num) as { contest_number: number; draw_date: string } | undefined;
-
-        if (lastOccurrence && (!lastDrawn || lastOccurrence.contest_number > lastDrawn.contest_number)) {
-          lastDrawn = lastOccurrence;
-        }
-
-        // Count total occurrences
-        const count = (
-          this.db
-            .prepare(`SELECT COUNT(*) as count FROM draws WHERE number_${col} = ?`)
-            .get(num) as { count: number }
-        ).count;
-        totalOccurrences += count;
-      }
-
-      const delayDraws = lastDrawn ? latestContest - lastDrawn.contest_number : latestContest;
-      const averageDelay = totalOccurrences > 0 ? latestContest / totalOccurrences : latestContest;
+      const delayDraws = lastDrawnContest ? latestContest - lastDrawnContest : latestContest;
+      
+      // Calculate average spacing between occurrences
+      const averageDelay = totalOccurrences > 1 
+        ? (latestContest - 1) / totalOccurrences
+        : totalOccurrences === 1 
+          ? latestContest
+          : latestContest;
 
       // Categorize delay
       let delayCategory: DelayStats['delayCategory'];
@@ -73,8 +95,8 @@ export class DelayAnalysisEngine {
       results.push({
         number: num,
         delayDraws,
-        lastDrawnContest: lastDrawn?.contest_number || null,
-        lastDrawnDate: lastDrawn?.draw_date || null,
+        lastDrawnContest,
+        lastDrawnDate,
         averageDelay: Math.round(averageDelay),
         delayCategory,
       });

@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { roundTo } from '@/lib/utils';
 
 export interface PrizeCorrelation {
   number: number;
@@ -18,8 +19,6 @@ export class PrizeCorrelationEngine {
   }
 
   getPrizeCorrelation(): PrizeCorrelation[] {
-    const results: PrizeCorrelation[] = [];
-
     // Get overall average prizes for comparison
     const overallAvgSena = (
       this.db
@@ -27,59 +26,76 @@ export class PrizeCorrelationEngine {
         .get() as { avg: number }
     ).avg || 0;
 
-    for (let num = 1; num <= 60; num++) {
-      let frequency = 0;
-      let totalPrizeSena = 0;
-      let totalPrizeQuina = 0;
-      let totalWinsSena = 0;
-      let totalWinsQuina = 0;
-      let drawsWithNumber = 0;
+    // Single optimized query using UNION ALL
+    const query = `
+      WITH number_prizes AS (
+        SELECT 
+          number_1 as num, 
+          prize_sena, 
+          prize_quina, 
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END as has_winner_sena,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END as has_winner_quina
+        FROM draws
+        UNION ALL
+        SELECT number_2, prize_sena, prize_quina, 
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
+        FROM draws
+        UNION ALL
+        SELECT number_3, prize_sena, prize_quina,
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
+        FROM draws
+        UNION ALL
+        SELECT number_4, prize_sena, prize_quina,
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
+        FROM draws
+        UNION ALL
+        SELECT number_5, prize_sena, prize_quina,
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
+        FROM draws
+        UNION ALL
+        SELECT number_6, prize_sena, prize_quina,
+          CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
+          CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
+        FROM draws
+      )
+      SELECT 
+        num as number,
+        COUNT(*) as frequency,
+        AVG(prize_sena) as avg_sena,
+        AVG(prize_quina) as avg_quina,
+        SUM(has_winner_sena) as total_wins_sena,
+        SUM(has_winner_quina) as total_wins_quina
+      FROM number_prizes
+      GROUP BY num
+      ORDER BY num
+    `;
 
-      // Check each column
-      for (let col = 1; col <= 6; col++) {
-        const results = this.db
-          .prepare(
-            `SELECT 
-              COUNT(*) as count,
-              SUM(prize_sena) as sum_sena,
-              SUM(prize_quina) as sum_quina,
-              SUM(CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END) as wins_sena,
-              SUM(CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END) as wins_quina
-             FROM draws
-             WHERE number_${col} = ?`
-          )
-          .get(num) as {
-          count: number;
-          sum_sena: number;
-          sum_quina: number;
-          wins_sena: number;
-          wins_quina: number;
-        };
+    const queryResults = this.db.prepare(query).all() as Array<{
+      number: number;
+      frequency: number;
+      avg_sena: number;
+      avg_quina: number;
+      total_wins_sena: number;
+      total_wins_quina: number;
+    }>;
 
-        frequency += results.count;
-        totalPrizeSena += results.sum_sena || 0;
-        totalPrizeQuina += results.sum_quina || 0;
-        totalWinsSena += results.wins_sena || 0;
-        totalWinsQuina += results.wins_quina || 0;
-        drawsWithNumber += results.count;
-      }
+    const results: PrizeCorrelation[] = queryResults.map((row) => {
+      const correlationScore = overallAvgSena > 0 ? row.avg_sena / overallAvgSena : 1;
 
-      const averagePrizeSena = drawsWithNumber > 0 ? totalPrizeSena / drawsWithNumber : 0;
-      const averagePrizeQuina = drawsWithNumber > 0 ? totalPrizeQuina / drawsWithNumber : 0;
-
-      // Correlation score: ratio of this number's avg prize to overall avg
-      const correlationScore = overallAvgSena > 0 ? averagePrizeSena / overallAvgSena : 1;
-
-      results.push({
-        number: num,
-        frequency,
-        averagePrizeSena: Math.round(averagePrizeSena * 100) / 100,
-        averagePrizeQuina: Math.round(averagePrizeQuina * 100) / 100,
-        totalWinsSena,
-        totalWinsQuina,
-        correlationScore: Math.round(correlationScore * 100) / 100,
-      });
-    }
+      return {
+        number: row.number,
+        frequency: row.frequency,
+        averagePrizeSena: roundTo(row.avg_sena || 0),
+        averagePrizeQuina: roundTo(row.avg_quina || 0),
+        totalWinsSena: row.total_wins_sena,
+        totalWinsQuina: row.total_wins_quina,
+        correlationScore: roundTo(correlationScore),
+      };
+    });
 
     // Sort by correlation score (highest first)
     return results.sort((a, b) => b.correlationScore - a.correlationScore);
