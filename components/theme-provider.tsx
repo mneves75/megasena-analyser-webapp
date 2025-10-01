@@ -22,7 +22,7 @@ export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'megasena-theme',
-}: ThemeProviderProps): JSX.Element {
+}: ThemeProviderProps): React.ReactElement {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [mounted, setMounted] = useState(false);
 

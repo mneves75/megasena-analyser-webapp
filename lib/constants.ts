@@ -108,3 +108,25 @@ export const STATISTICS_DISPLAY = {
   PATTERNS_MIN_OCCURRENCES: 1, // Minimum occurrences to show pattern
 } as const;
 
+// Chart Configuration
+export const CHART_CONFIG = {
+  HEATMAP_COLORS: ['#dbeafe', '#93c5fd', '#60a5fa', '#fb923c', '#ef4444'],
+  MAX_TIME_SERIES_NUMBERS: 6,
+  DEFAULT_STREAK_WINDOW: 10,
+} as const;
+
+// Prime Numbers (1-60)
+export const PRIME_NUMBERS = [
+  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+] as const;
+
+// Decade Ranges
+export const DECADES = [
+  { label: '01-10', range: [1, 10] as const },
+  { label: '11-20', range: [11, 20] as const },
+  { label: '21-30', range: [21, 30] as const },
+  { label: '31-40', range: [31, 40] as const },
+  { label: '41-50', range: [41, 50] as const },
+  { label: '51-60', range: [51, 60] as const },
+] as const;
+
