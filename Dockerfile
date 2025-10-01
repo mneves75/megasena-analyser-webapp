@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.4
 
 # ============================================================================
-# Stage 1: Dependencies
-# Install only production dependencies for smaller final image
+# Stage 1: Production Dependencies
+# Install only production dependencies for final runtime image
 # ============================================================================
 FROM oven/bun:1.2-alpine AS deps
 WORKDIR /app
@@ -16,13 +16,17 @@ RUN bun install --frozen-lockfile --production
 
 # ============================================================================
 # Stage 2: Builder
-# Build the Next.js application
+# Build the Next.js application with ALL dependencies
 # ============================================================================
 FROM oven/bun:1.2-alpine AS builder
 WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy dependency files
+COPY package.json bun.lock ./
+
+# Install ALL dependencies (including devDependencies) for build
+# Build tools like autoprefixer, tailwindcss, typescript are needed here
+RUN bun install --frozen-lockfile
 
 # Copy application source
 COPY . .

@@ -248,7 +248,7 @@ log_message "Deployment: Docker containers started"
 # Verify Docker is running
 print_step "Verifying Docker containers..."
 sleep 5
-DOCKER_STATUS=$(ssh_command "cd $REMOTE_DIR && docker compose ps --format '{{.Status}}' | grep -c 'Up' || echo '0'")
+DOCKER_STATUS=$(ssh_command "cd $REMOTE_DIR && docker compose ps --format '{{.Status}}' | grep -c 'Up' 2>/dev/null || echo '0'" | tr -d '\n\r ')
 if [ "$DOCKER_STATUS" -eq "0" ]; then
     print_error "Docker containers not running"
     rollback
@@ -257,16 +257,23 @@ print_success "Docker containers healthy"
 log_message "Verification: Docker OK"
 
 # Test Docker endpoints
-print_step "Testing Docker API (port 3201)..."
-API_TEST=$(ssh_command "curl -s -o /dev/null -w '%{http_code}' http://localhost:3201/api/health")
+# Note: During migration, Docker API uses port 3301 to avoid conflict with PM2 (port 3201)
+# Wait longer for services to fully initialize (Bun server + Next.js startup)
+print_step "Waiting for services to initialize (20 seconds)..."
+sleep 20
+
+print_step "Testing Docker API (port 3301)..."
+API_TEST=$(ssh_command "curl -s -o /dev/null -w '%{http_code}' http://localhost:3301/api/health" | tr -d '\n\r ')
 if [ "$API_TEST" != "200" ]; then
     print_error "Docker API health check failed (HTTP $API_TEST)"
+    print_step "Fetching container logs..."
+    ssh_command "cd $REMOTE_DIR && docker compose logs --tail=50"
     rollback
 fi
-print_success "Docker API responding (HTTP 200)"
+print_success "Docker API responding on port 3301 (HTTP 200)"
 
 print_step "Testing Docker Next.js (port 3000)..."
-NEXT_TEST=$(ssh_command "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/megasena-analyzer")
+NEXT_TEST=$(ssh_command "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/megasena-analyzer" | tr -d '\n\r ')
 if [ "$NEXT_TEST" != "200" ]; then
     print_warning "Docker Next.js returned HTTP $NEXT_TEST (may need Caddy update)"
 else

@@ -1,5 +1,3 @@
-version: '3.9'
-
 # ============================================================================
 # Production Docker Compose Override
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
@@ -7,9 +5,18 @@ version: '3.9'
 
 services:
   app:
-    # Use pre-built image from registry instead of building locally
-    # This is faster and ensures consistent deployments
-    image: ghcr.io/${GITHUB_REPOSITORY:-megasena-analyser}:${IMAGE_TAG:-latest}
+    # Build locally for initial migration (no CI/CD image yet)
+    # image: ghcr.io/${GITHUB_REPOSITORY:-megasena-analyser}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Temporary ports during migration to avoid PM2 conflict
+    # PM2 uses: 3002 (Next.js), 3201 (API)
+    # Docker uses: 3000 (Next.js), 3301 (API) during migration
+    ports:
+      - "3000:3000"
+      - "3301:3201"
 
     # Override environment for production
     environment:
