@@ -3,10 +3,10 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'nonce-{NONCE}'",
-      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data:",
-      "font-src 'self'",
+      "font-src 'self' https://fonts.gstatic.com data:",
       "connect-src 'self' https://servicebus2.caixa.gov.br",
       "frame-ancestors 'none'",
       "base-uri 'self'",
