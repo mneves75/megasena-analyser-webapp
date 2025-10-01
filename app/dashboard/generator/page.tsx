@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function GeneratorPage() {
   return (
@@ -12,12 +13,15 @@ export default function GeneratorPage() {
             <Link href="/dashboard" className="text-2xl font-bold hover:text-primary transition-smooth">
               Mega-Sena Analyser
             </Link>
-            <Link href="/dashboard">
-              <Button variant="ghost" className="transition-smooth hover:scale-105">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard">
+                <Button variant="ghost" className="transition-smooth hover:scale-105">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </nav>

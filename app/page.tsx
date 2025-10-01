@@ -1,11 +1,15 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-end mb-8">
+          <ThemeToggle />
+        </div>
         <header className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
             Mega-Sena Analyser
