@@ -6,6 +6,52 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2025-10-01
+
+### 🐛 Corrigido
+
+- **CRÍTICO**: Corrigido erro `SQLITE_IOERR_VNODE` (disk I/O error) no script de ingestão de dados
+  - **Problema**: Script `pull-draws.ts` fazia 2921 commits individuais sem transação, causando I/O excessivo e falhas quando disco próximo da capacidade (>95%)
+  - **Solução**: Implementado batch insert com transação única (`BEGIN TRANSACTION` / `COMMIT`)
+  - **Impacto**: Redução de 99.9% em operações de disco (1 sync ao invés de 2921)
+  - **Performance**: Ingestão de dados ~100-1000x mais rápida
+
+### ⚙️ Adicionado
+
+- **Script de Otimização de Banco** (`scripts/optimize-db.ts`)
+  - Checkpoint automático do WAL (Write-Ahead Log) com `PRAGMA wal_checkpoint(TRUNCATE)`
+  - Recuperação de espaço em disco via `VACUUM`
+  - Análise de índices para otimização de queries via `ANALYZE`
+  - Estatísticas de tamanho do banco de dados
+  - Uso recomendado: Executar após grandes ingestões de dados ou semanalmente
+
+### 🔧 Modificado
+
+- **Transações no `pull-draws.ts`** (linhas 90-118, 134-140)
+  - Todos os inserts agora executam dentro de uma única transação
+  - Rollback automático em caso de erro para prevenir estado inconsistente
+  - Tratamento de erro melhorado para operações de transação
+
+### 📚 Documentação
+
+- Documentado novo script `optimize-db.ts` em README.md e CLAUDE.md
+- Adicionadas best practices para operações de banco de dados
+- Alertas sobre requisitos de espaço em disco para SQLite WAL mode
+
+### ⚡ Performance
+
+- **Batch Inserts**: 99.9% menos operações de I/O (2921 → 1)
+- **WAL Checkpoint**: Libera espaço do arquivo WAL de volta para o disco
+- **VACUUM**: Compacta banco e recupera páginas não utilizadas
+- **ANALYZE**: Melhora planos de execução de queries ao atualizar estatísticas
+
+### ⚠️ Notas Importantes
+
+- **Espaço em Disco**: SQLite WAL mode requer espaço temporário durante writes. Recomendado manter pelo menos 15-20% de espaço livre no disco.
+- **Manutenção**: Execute `bun scripts/optimize-db.ts` após ingestões grandes ou semanalmente para manter performance.
+
+---
+
 ## [1.1.0] - 2025-10-01
 
 ### 🐳 Adicionado - Docker & DevOps

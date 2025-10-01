@@ -96,6 +96,12 @@ bash scripts/check-deployment.sh
 ssh claude@212.85.2.24 'cd /home/claude/apps/megasena-analyser && bun run db:pull -- --limit 50'
 ```
 
+### Otimizar Banco de Dados
+```bash
+# Recomendado após grandes atualizações de dados ou semanalmente
+ssh claude@212.85.2.24 'cd /home/claude/apps/megasena-analyser && bun scripts/optimize-db.ts'
+```
+
 ---
 
 ## 🐛 Troubleshooting Rápido
@@ -120,6 +126,16 @@ ssh claude@212.85.2.24
 cd /home/claude/apps/megasena-analyser
 bun run db:migrate
 bun run db:pull -- --limit 100
+```
+
+### Erro "disk I/O error" ou "SQLITE_IOERR_VNODE"?
+Disco cheio (>95%). Verifique espaço e libere pelo menos 15-20%:
+```bash
+ssh claude@212.85.2.24
+df -h  # Verificar espaço
+du -sh /home/claude/apps/* | sort -h  # Ver uso por app
+# Liberar espaço em disco (logs antigos, temp files, etc)
+bun scripts/optimize-db.ts  # Otimizar banco após liberar espaço
 ```
 
 ---

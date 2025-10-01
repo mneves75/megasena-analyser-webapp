@@ -66,6 +66,7 @@ Visit `http://localhost:3000` to see the application.
 - `bun run test` - Run tests with Vitest (usa fallback de banco em memória)
 - `bun run db:migrate` - Run database migrations
 - `bun run db:pull` - Pull draw data from CAIXA API
+- `bun scripts/optimize-db.ts` - Optimize database (checkpoint WAL + VACUUM + ANALYZE)
 
 ## Database Scripts
 
@@ -81,6 +82,26 @@ bun run db:pull -- --start 1 --end 500
 # Pull all draws (no flags)
 bun run db:pull
 ```
+
+### Database Optimization
+
+After pulling large amounts of data, optimize the database to reclaim space and improve performance:
+
+```bash
+# Optimize database (recommended after large ingestions)
+bun scripts/optimize-db.ts
+```
+
+This script performs:
+- **WAL Checkpoint**: Merges Write-Ahead Log back to main database file
+- **VACUUM**: Reclaims unused space and compacts the database
+- **ANALYZE**: Updates query optimizer statistics for better performance
+
+**When to run:**
+- After initial data pull (`bun run db:pull`)
+- After pulling 100+ new draws
+- Weekly in production environments (via cron)
+- When experiencing performance issues
 
 ## Project Structure
 

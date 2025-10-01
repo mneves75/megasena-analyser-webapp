@@ -87,14 +87,17 @@ async function main() {
   const db = getDatabase();
 
   try {
+    // Begin transaction for batch inserts
+    db.run('BEGIN TRANSACTION');
+
     if (limit) {
       // Fetch only the latest draws
       console.log(`Fetching latest draw...`);
       const latestDraw = await caixaClient.fetchDraw();
       const startContest = Math.max(1, latestDraw.numero - limit + 1);
-      
+
       console.log(`Fetching draws from ${startContest} to ${latestDraw.numero}...`);
-      
+
       for (let contest = startContest; contest <= latestDraw.numero; contest++) {
         const draw = await caixaClient.fetchDraw(contest);
         saveDraw({ draw, db });
@@ -103,13 +106,16 @@ async function main() {
     } else {
       // Fetch range of draws
       const draws = await caixaClient.fetchAllDraws(start, end);
-      
+
       console.log(`\nSaving ${draws.length} draws to database...`);
-      
+
       for (const draw of draws) {
         saveDraw({ draw, db });
       }
     }
+
+    // Commit transaction
+    db.run('COMMIT');
 
     console.log('\n✓ Data ingestion completed');
     console.log('Updating statistics...');
@@ -118,14 +124,20 @@ async function main() {
     stats.updateNumberFrequencies();
 
     console.log('✓ Statistics updated');
-    
+
     const summary = stats.getDrawStatistics();
     console.log(`\nDatabase Summary:`);
     console.log(`  Total draws: ${summary.totalDraws}`);
     console.log(`  Last draw: #${summary.lastContestNumber} (${summary.lastDrawDate})`);
     console.log(`  Accumulated draws: ${summary.accumulatedCount} (${summary.accumulationRate.toFixed(1)}%)`);
-    
+
   } catch (error) {
+    // Rollback transaction on error
+    try {
+      db.run('ROLLBACK');
+    } catch (rollbackError) {
+      // Ignore rollback errors if transaction wasn't started
+    }
     console.error('\n✗ Error during ingestion:', error);
     process.exit(1);
   } finally {

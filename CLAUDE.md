@@ -40,6 +40,7 @@ bun --version                   # Verify Bun runtime (>=1.1)
 # Database (uses bun:sqlite - native)
 bun scripts/migrate.ts          # Apply SQLite migrations
 bun run db:migrate              # Same as above (via package.json script)
+bun scripts/optimize-db.ts      # Optimize database (WAL checkpoint + VACUUM + ANALYZE)
 
 # Development
 bun run dev                     # Start Next.js dev server (localhost:3000)
@@ -88,6 +89,56 @@ bun run build                   # Create production bundle + type check
 - Implement exponential backoff and ETag/If-Modified-Since caching
 - Never fabricate data if API fails - log errors explicitly
 - Parametrize all pricing/rules (do not hardcode values)
+
+### Database Best Practices
+
+**SQLite WAL Mode Considerations:**
+
+1. **Transaction Batching** (CRITICAL)
+   - ALWAYS use transactions for batch inserts/updates
+   - Pattern: `db.run('BEGIN TRANSACTION')` → operations → `db.run('COMMIT')`
+   - Rollback on error: `db.run('ROLLBACK')` in catch block
+   - Performance: 100-1000x faster than individual commits
+
+2. **Disk Space Requirements**
+   - SQLite WAL mode requires temporary space during writes
+   - **Minimum**: Keep 15-20% disk space free
+   - Symptoms of low space: `SQLITE_IOERR_VNODE` errors
+   - Monitor disk usage before large ingestions
+
+3. **Database Maintenance**
+   - Run `bun scripts/optimize-db.ts` after large data ingestions
+   - Schedule weekly optimization via cron for production
+   - Operations performed:
+     - `PRAGMA wal_checkpoint(TRUNCATE)` - Merges WAL to main DB
+     - `VACUUM` - Reclaims unused space
+     - `ANALYZE` - Updates query optimizer statistics
+
+4. **Error Handling**
+   - Always wrap database operations in try-catch
+   - Implement automatic rollback on transaction failures
+   - Log full error details for debugging I/O issues
+   - Check disk space before attempting large writes
+
+**Example Transaction Pattern:**
+```typescript
+try {
+  db.run('BEGIN TRANSACTION');
+
+  for (const item of largeDataset) {
+    // ... insert operations
+  }
+
+  db.run('COMMIT');
+} catch (error) {
+  try {
+    db.run('ROLLBACK');
+  } catch (rollbackError) {
+    // Ignore - transaction may not have started
+  }
+  throw error;
+}
+```
 
 ## Code Style & Standards
 
