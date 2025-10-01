@@ -73,15 +73,30 @@ Visit `http://localhost:3000` to see the application.
 ### Pull Data Options
 
 ```bash
-# Pull latest N draws
+# Pull latest N draws (replaces existing)
 bun run db:pull -- --limit 100
+
+# Pull latest N draws (incremental - only new draws)
+bun run db:pull -- --limit 100 --incremental
 
 # Pull specific range
 bun run db:pull -- --start 1 --end 500
 
 # Pull all draws (no flags)
 bun run db:pull
+
+# Pull all draws incrementally (skip existing)
+bun run db:pull -- --incremental
 ```
+
+**Modes:**
+- **Default (Full)**: Uses `INSERT OR REPLACE` - overwrites existing draws with fresh data
+- **Incremental** (`--incremental`): Uses `INSERT OR IGNORE` - only adds new draws, skips existing ones
+
+**When to use incremental mode:**
+- Daily/weekly updates to add only new draws
+- When you want to preserve manual modifications to existing draws
+- To reduce API calls and processing time
 
 ### Database Optimization
 

@@ -7,22 +7,26 @@ import { StatisticsEngine } from '@/lib/analytics/statistics';
 interface SaveDrawOptions {
   draw: MegaSenaDrawData;
   db: ReturnType<typeof getDatabase>;
+  incremental?: boolean;
 }
 
-function saveDraw({ draw, db }: SaveDrawOptions): void {
+function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
   const numbers = draw.listaDezenas.map(Number).sort((a, b) => a - b);
-  
+
   if (numbers.length !== 6) {
     console.error(`Invalid draw ${draw.numero}: expected 6 numbers, got ${numbers.length}`);
-    return;
+    return false;
   }
 
   const senaInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Sena');
   const quinaInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Quina');
   const quadraInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Quadra');
 
+  // Use INSERT OR IGNORE in incremental mode, INSERT OR REPLACE otherwise
+  const insertMode = incremental ? 'INSERT OR IGNORE' : 'INSERT OR REPLACE';
+
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO draws (
+    ${insertMode} INTO draws (
       contest_number, draw_date,
       number_1, number_2, number_3, number_4, number_5, number_6,
       prize_sena, winners_sena,
@@ -34,7 +38,7 @@ function saveDraw({ draw, db }: SaveDrawOptions): void {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   `);
 
-  stmt.run(
+  const result = stmt.run(
     draw.numero,
     draw.dataApuracao,
     numbers[0],
@@ -55,6 +59,9 @@ function saveDraw({ draw, db }: SaveDrawOptions): void {
     draw.valorEstimadoProximoConcurso || 0,
     draw.tipoJogo === 'MEGA_SENA' ? 0 : 1
   );
+
+  // Return true if a new row was inserted (changes > 0)
+  return result.changes > 0;
 }
 
 async function main() {
@@ -62,10 +69,12 @@ async function main() {
   const limitFlag = args.indexOf('--limit');
   const startFlag = args.indexOf('--start');
   const endFlag = args.indexOf('--end');
+  const incrementalFlag = args.indexOf('--incremental');
 
   let limit: number | undefined;
   let start = 1;
   let end: number | undefined;
+  const incremental = incrementalFlag !== -1;
 
   if (limitFlag !== -1 && args[limitFlag + 1]) {
     limit = parseInt(args[limitFlag + 1], 10);
@@ -80,11 +89,16 @@ async function main() {
   }
 
   console.log('Starting Mega-Sena data ingestion...');
+  console.log(`Mode: ${incremental ? 'Incremental (only new draws)' : 'Full (replace existing)'}`);
   console.log(`Start contest: ${start}`);
   if (end) console.log(`End contest: ${end}`);
   if (limit) console.log(`Limit: ${limit} draws`);
 
   const db = getDatabase();
+
+  // Counters for statistics
+  let newDraws = 0;
+  let skippedDraws = 0;
 
   try {
     // Begin transaction for batch inserts
@@ -100,17 +114,32 @@ async function main() {
 
       for (let contest = startContest; contest <= latestDraw.numero; contest++) {
         const draw = await caixaClient.fetchDraw(contest);
-        saveDraw({ draw, db });
-        console.log(`✓ Saved draw #${contest}`);
+        const wasInserted = saveDraw({ draw, db, incremental });
+
+        if (wasInserted) {
+          newDraws++;
+          console.log(`✓ Added draw #${contest}`);
+        } else {
+          skippedDraws++;
+          if (incremental) {
+            console.log(`⊘ Skipped draw #${contest} (already exists)`);
+          }
+        }
       }
     } else {
       // Fetch range of draws
       const draws = await caixaClient.fetchAllDraws(start, end);
 
-      console.log(`\nSaving ${draws.length} draws to database...`);
+      console.log(`\nProcessing ${draws.length} draws...`);
 
       for (const draw of draws) {
-        saveDraw({ draw, db });
+        const wasInserted = saveDraw({ draw, db, incremental });
+
+        if (wasInserted) {
+          newDraws++;
+        } else {
+          skippedDraws++;
+        }
       }
     }
 
@@ -118,7 +147,18 @@ async function main() {
     db.run('COMMIT');
 
     console.log('\n✓ Data ingestion completed');
-    console.log('Updating statistics...');
+
+    // Show ingestion statistics
+    console.log(`\nIngestion Statistics:`);
+    console.log(`  New draws added: ${newDraws}`);
+    if (incremental && skippedDraws > 0) {
+      console.log(`  Skipped (already exist): ${skippedDraws}`);
+    } else if (!incremental && skippedDraws > 0) {
+      console.log(`  Updated draws: ${skippedDraws}`);
+    }
+    console.log(`  Total processed: ${newDraws + skippedDraws}`);
+
+    console.log('\nUpdating statistics...');
 
     const stats = new StatisticsEngine();
     stats.updateNumberFrequencies();

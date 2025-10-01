@@ -18,6 +18,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### ⚙️ Adicionado
 
+- **Modo Incremental no `pull-draws.ts`** (`--incremental` flag)
+  - Permite adicionar apenas sorteios novos sem sobrescrever dados existentes
+  - Usa `INSERT OR IGNORE` ao invés de `INSERT OR REPLACE`
+  - Estatísticas detalhadas: mostra quantos sorteios foram adicionados vs ignorados
+  - Casos de uso:
+    - Atualizações diárias/semanais para adicionar apenas novos sorteios
+    - Preservar modificações manuais em sorteios existentes
+    - Reduzir tempo de processamento em atualizações frequentes
+  - Exemplo: `bun scripts/pull-draws.ts --limit 50 --incremental`
+
 - **Script de Otimização de Banco** (`scripts/optimize-db.ts`)
   - Checkpoint automático do WAL (Write-Ahead Log) com `PRAGMA wal_checkpoint(TRUNCATE)`
   - Recuperação de espaço em disco via `VACUUM`
@@ -27,10 +37,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### 🔧 Modificado
 
-- **Transações no `pull-draws.ts`** (linhas 90-118, 134-140)
+- **Transações no `pull-draws.ts`** (linhas 104-147, 174-180)
   - Todos os inserts agora executam dentro de uma única transação
   - Rollback automático em caso de erro para prevenir estado inconsistente
   - Tratamento de erro melhorado para operações de transação
+  - Contadores de estatísticas para novos vs existentes
+  - Função `saveDraw` agora retorna boolean indicando se foi inserido
 
 ### 📚 Documentação
 

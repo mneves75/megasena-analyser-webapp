@@ -93,6 +93,10 @@ bash scripts/check-deployment.sh
 
 ### Atualizar Dados do Banco
 ```bash
+# Atualização incremental (apenas novos sorteios - recomendado)
+ssh claude@212.85.2.24 'cd /home/claude/apps/megasena-analyser && bun run db:pull -- --limit 50 --incremental'
+
+# Atualização completa (sobrescreve dados existentes)
 ssh claude@212.85.2.24 'cd /home/claude/apps/megasena-analyser && bun run db:pull -- --limit 50'
 ```
 

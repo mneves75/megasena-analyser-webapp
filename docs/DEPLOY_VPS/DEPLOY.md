@@ -158,6 +158,9 @@ mkdir -p db
 # (Opcional) Carregar dados iniciais (100 últimos sorteios)
 ~/.bun/bin/bun run db:pull -- --limit 100
 
+# Otimizar banco após ingestão inicial
+~/.bun/bin/bun scripts/optimize-db.ts
+
 # Verificar banco criado
 ls -lh db/mega-sena.db
 ```
@@ -350,8 +353,14 @@ echo "0 3 * * * cd /home/claude/apps/megasena-analyser && cp db/mega-sena.db db/
 # No servidor VPS
 cd /home/claude/apps/megasena-analyser
 
-# Atualizar com últimos sorteios
+# Atualizar com últimos sorteios (incremental - recomendado)
+~/.bun/bin/bun run db:pull -- --limit 50 --incremental
+
+# Ou atualização completa (sobrescreve dados existentes)
 ~/.bun/bin/bun run db:pull -- --limit 50
+
+# Otimizar banco após grandes atualizações
+~/.bun/bin/bun scripts/optimize-db.ts
 
 # Ver logs durante atualização (API Bun)
 tail -f logs/api-out.log

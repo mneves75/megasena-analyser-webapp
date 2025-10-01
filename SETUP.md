@@ -50,6 +50,14 @@ For a full historical dataset (this will take several minutes):
 bun run db:pull
 ```
 
+**Incremental Updates (recommended for daily/weekly updates):**
+
+After initial setup, use `--incremental` to add only new draws without overwriting existing data:
+
+```bash
+bun run db:pull -- --limit 20 --incremental
+```
+
 ### 4. Start Development Server
 
 ```bash
@@ -98,6 +106,12 @@ Pull data from the CAIXA API:
 
 ```bash
 bun run db:pull -- --limit 10
+```
+
+Or use incremental mode to add new draws:
+
+```bash
+bun run db:pull -- --limit 10 --incremental
 ```
 
 ### Issue: API Request Timeout
@@ -160,6 +174,16 @@ rm db/mega-sena.db
 bun run db:migrate
 bun run db:pull -- --limit 50
 ```
+
+### Optimize Database
+
+After large data ingestions or weekly in production, optimize the database:
+
+```bash
+bun scripts/optimize-db.ts
+```
+
+This performs WAL checkpoint, VACUUM, and ANALYZE operations to maintain performance.
 
 ## Important Notes
 

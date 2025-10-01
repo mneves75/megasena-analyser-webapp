@@ -40,6 +40,8 @@ bun --version                   # Verify Bun runtime (>=1.1)
 # Database (uses bun:sqlite - native)
 bun scripts/migrate.ts          # Apply SQLite migrations
 bun run db:migrate              # Same as above (via package.json script)
+bun scripts/pull-draws.ts       # Pull all historical draws (INSERT OR REPLACE)
+bun scripts/pull-draws.ts --incremental  # Pull only new draws (INSERT OR IGNORE)
 bun scripts/optimize-db.ts      # Optimize database (WAL checkpoint + VACUUM + ANALYZE)
 
 # Development
