@@ -1,18 +1,25 @@
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 const securityHeaders = [
   {
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      // In development, allow unsafe-eval for React Refresh/HMR
+      isDevelopment
+        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+        : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data:",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "connect-src 'self' https://servicebus2.caixa.gov.br",
+      isDevelopment
+        ? "connect-src 'self' https://servicebus2.caixa.gov.br ws://localhost:* http://localhost:*"
+        : "connect-src 'self' https://servicebus2.caixa.gov.br",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      'upgrade-insecure-requests',
-    ].join('; '),
+      isDevelopment ? '' : 'upgrade-insecure-requests',
+    ].filter(Boolean).join('; '),
   },
   {
     key: 'Permissions-Policy',

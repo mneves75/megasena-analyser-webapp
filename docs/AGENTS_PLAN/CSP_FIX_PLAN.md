@@ -18,9 +18,11 @@ Proposed Changes
 ----------------
 1. **Update `next.config.js` CSP header**
    - Remove the placeholder nonce and allow Next.js hydration scripts via `'unsafe-inline'` (documented trade-off until dynamic nonces are implemented).
+   - Add environment-aware CSP: in development, allow `'unsafe-eval'` for React Refresh/HMR and websocket connections.
+   - In production, use strict CSP without `unsafe-eval`.
    - Allow Google Fonts stylesheet (`https://fonts.googleapis.com`) under `style-src`.
    - Allow font files from `https://fonts.gstatic.com` and data URIs under `font-src`.
-   - Preserve existing hardening (`default-src`, `connect-src`, `frame-ancestors`, etc.).
+   - Preserve existing hardening (`default-src`, `frame-ancestors`, etc.).
 2. **Provide application icon**
    - Add `app/icon.tsx` (server-generated favicon) to eliminate 404 and align with Next.js App Router conventions.
 3. **Regression pass**

@@ -49,15 +49,26 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
     ? `http://localhost:${apiPort}` 
     : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
   
-  const response = await fetch(`${baseUrl}/api/dashboard`, {
-    cache: 'no-store',
-  });
+  const url = `${baseUrl}/api/dashboard`;
   
-  if (!response.ok) {
-    throw new Error('Failed to fetch dashboard data');
+  try {
+    const response = await fetch(url, {
+      cache: 'no-store',
+      next: { revalidate: 0 },
+    });
+    
+    if (!response.ok) {
+      const text = await response.text();
+      console.error(`Dashboard API error: ${response.status} ${response.statusText}`, text);
+      throw new Error(`Failed to fetch dashboard data: ${response.status} ${response.statusText}`);
+    }
+    
+    return (await response.json()) as DashboardApiResponse;
+  } catch (error) {
+    console.error('Dashboard fetch error:', error);
+    console.error('Attempted URL:', url);
+    throw error;
   }
-  
-  return (await response.json()) as DashboardApiResponse;
 }
 
 export default async function DashboardPage() {
