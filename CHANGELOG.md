@@ -1,6 +1,7 @@
 # Changelog
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
+Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
@@ -220,6 +221,47 @@ Nenhuma breaking change nesta versão. Totalmente retrocompatível com v1.0.x.
 
 ## [1.0.0] - 2025-09-30
 
+### Adicionado
+- Dashboard principal com navegação intuitiva
+- Módulo de estatísticas avançadas da Mega-Sena
+  - Análise de frequência de números
+  - Padrões de números pares/ímpares
+  - Distribuição por dezenas
+  - Análise de sequências
+- Gerador inteligente de apostas
+  - Geração baseada em análise estatística
+  - Suporte a apostas simples e múltiplas
+  - Otimização de orçamento
+  - Seletor de estratégias
+- Integração com API oficial da CAIXA
+- Sistema de armazenamento local com SQLite
+- Testes automatizados (Vitest)
+- Documentação completa do projeto
+
+### Segurança
+- Implementação de Content Security Policy (CSP)
+- Proteção contra XSS e CSRF
+- Rate limiting nas chamadas de API
+- Validação rigorosa de entrada de dados
+
+---
+
+## Formato do Versionamento
+
+- **MAJOR**: Mudanças incompatíveis na API
+- **MINOR**: Funcionalidades adicionadas de forma retrocompatível
+- **PATCH**: Correções de bugs retrocompatíveis
+
+---
+
+## Tipos de Mudanças
+
+- `Adicionado` para novas funcionalidades
+- `Modificado` para mudanças em funcionalidades existentes
+- `Depreciado` para funcionalidades que serão removidas
+- `Removido` para funcionalidades removidas
+- `Corrigido` para correções de bugs
+- `Segurança` para correções de vulnerabilidades
 ### Adicionado
 - Dashboard principal com navegação intuitiva
 - Módulo de estatísticas avançadas da Mega-Sena
