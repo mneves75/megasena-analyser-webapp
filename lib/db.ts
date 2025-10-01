@@ -357,23 +357,56 @@ export function getDatabase(): BunDatabase {
     return db;
   }
 
-  if (typeof Bun === 'undefined') {
-    throw new Error(
-      'Database requires Bun runtime. This application must be run with Bun, not Node.js.\n' +
-      'Install Bun: https://bun.sh\n' +
-      'Run with: bun run dev'
-    );
-  }
+  // Note: This application is designed to run with Bun runtime only
+  // The bun:sqlite module is only available in Bun runtime
 
   if (!db) {
-    // Dynamic import of bun:sqlite (only works in Bun runtime)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Database } = require('bun:sqlite');
-    db = new Database(DB_PATH) as BunDatabase;
-    db.exec('PRAGMA journal_mode = WAL');
-    db.exec('PRAGMA foreign_keys = ON');
+    // Initialize database lazily to avoid Next.js static analysis issues
+    db = initializeDatabase();
   }
   return db;
+}
+
+// Helper function to safely import bun:sqlite
+async function importBunSqlite() {
+  // Use dynamic import to avoid static analysis issues
+  try {
+    const module = await import('bun:sqlite');
+    return module.Database;
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('bun:sqlite') || error.message.includes('Cannot resolve module'))) {
+      throw new Error(
+        'Database requires Bun runtime. This application must be run with Bun, not Node.js.\n' +
+        'Install Bun: https://bun.sh\n' +
+        'Run with: bun run dev\n' +
+        'Original error: ' + error.message
+      );
+    }
+    throw error;
+  }
+}
+
+function initializeDatabase(): BunDatabase {
+  // This application is designed to run with Bun runtime only
+  // If not running with Bun, the bun:sqlite import will fail appropriately
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Database } = require('bun:sqlite');
+    const database = new Database(DB_PATH) as BunDatabase;
+    database.exec('PRAGMA journal_mode = WAL');
+    database.exec('PRAGMA foreign_keys = ON');
+    return database;
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('bun:sqlite') || error.message.includes('Cannot find module'))) {
+      throw new Error(
+        'Database requires Bun runtime. This application must be run with Bun, not Node.js.\n' +
+        'Install Bun: https://bun.sh\n' +
+        'Run with: bun run dev\n' +
+        'Original error: ' + error.message
+      );
+    }
+    throw error;
+  }
 }
 
 export function runMigrations(): void {
