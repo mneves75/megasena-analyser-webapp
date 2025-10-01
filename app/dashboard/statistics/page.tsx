@@ -16,6 +16,15 @@ import type { StreakStats } from '@/lib/analytics/streak-analysis';
 import type { PrizeCorrelation } from '@/lib/analytics/prize-correlation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BarChart, DonutChart } from '@/components/charts';
+import { StatisticsEngine } from '@/lib/analytics/statistics';
+import { DelayAnalysisEngine } from '@/lib/analytics/delay-analysis';
+import { DecadeAnalysisEngine } from '@/lib/analytics/decade-analysis';
+import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
+import { ParityAnalysisEngine } from '@/lib/analytics/parity-analysis';
+import { PrimeAnalysisEngine } from '@/lib/analytics/prime-analysis';
+import { SumAnalysisEngine } from '@/lib/analytics/sum-analysis';
+import { StreakAnalysisEngine } from '@/lib/analytics/streak-analysis';
+import { PrizeCorrelationEngine } from '@/lib/analytics/prize-correlation';
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -42,22 +51,62 @@ interface StatisticsApiResponse {
 }
 
 async function getStatisticsData(): Promise<StatisticsApiResponse> {
-  // During SSR, fetch directly from the API server; client-side uses rewrites
-  const isServer = typeof window === 'undefined';
-  const apiPort = process.env.API_PORT ?? '3201';
-  const baseUrl = isServer 
-    ? `http://localhost:${apiPort}` 
-    : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
-  
-  const response = await fetch(`${baseUrl}/api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true`, {
-    cache: 'no-store',
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch statistics data');
+  // Compute statistics directly on the server using SQLite-backed engines
+  const statsEngine = new StatisticsEngine();
+  try {
+    // Ensure frequency cache is up-to-date
+    statsEngine.updateNumberFrequencies();
+  } catch {
+    // Non-fatal: proceed with existing data
   }
-  
-  return (await response.json()) as StatisticsApiResponse;
+
+  const frequencies = statsEngine.getNumberFrequencies();
+  const patterns = statsEngine.detectPatterns();
+
+  const delayEngine = new DelayAnalysisEngine();
+  const delays = delayEngine.getNumberDelays();
+  const delayDistribution = delayEngine.getDelayDistribution();
+
+  const decadeEngine = new DecadeAnalysisEngine();
+  const decades = decadeEngine.getDecadeDistribution();
+
+  const pairEngine = new PairAnalysisEngine();
+  const pairs = pairEngine.getNumberPairs(1);
+
+  const parityEngine = new ParityAnalysisEngine();
+  const parity = parityEngine.getParityDistribution();
+  const parityStats = parityEngine.getParityStats();
+
+  const primeEngine = new PrimeAnalysisEngine();
+  const primes = primeEngine.getPrimeDistribution();
+
+  const sumEngine = new SumAnalysisEngine();
+  const sumStats = sumEngine.getSumDistribution();
+
+  const streakEngine = new StreakAnalysisEngine();
+  const hotNumbers = streakEngine.getHotNumbers(10);
+  const coldNumbers = streakEngine.getColdNumbers(10);
+
+  const prizeEngine = new PrizeCorrelationEngine();
+  const luckyNumbers = prizeEngine.getLuckyNumbers(10);
+  const unluckyNumbers = prizeEngine.getUnluckyNumbers(10);
+
+  return {
+    frequencies,
+    patterns,
+    delays,
+    delayDistribution,
+    decades,
+    pairs,
+    parity,
+    parityStats,
+    primes,
+    sumStats,
+    hotNumbers,
+    coldNumbers,
+    luckyNumbers,
+    unluckyNumbers,
+  };
 }
 
 export default async function StatisticsPage() {
