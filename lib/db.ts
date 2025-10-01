@@ -452,11 +452,30 @@ export function runMigrations(): void {
     CREATE TABLE IF NOT EXISTS migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
-      applied_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      status TEXT DEFAULT 'success',
-      error_message TEXT
+      applied_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Check if the status column exists and add it if not (for legacy database upgrade)
+  try {
+    const tableInfo = database
+      .prepare("PRAGMA table_info(migrations)")
+      .all() as Array<{ name: string }>;
+    const hasStatusColumn = tableInfo.some((col) => col.name === 'status');
+
+    if (!hasStatusColumn) {
+      logger.info('Upgrading migrations table schema (adding status and error_message columns)');
+      database.exec(`
+        ALTER TABLE migrations ADD COLUMN status TEXT DEFAULT 'success';
+      `);
+      database.exec(`
+        ALTER TABLE migrations ADD COLUMN error_message TEXT;
+      `);
+    }
+  } catch (error) {
+    logger.error('Error checking migrations table schema', error);
+    throw error;
+  }
 
   // Get list of applied successful migrations
   const appliedRows = database
