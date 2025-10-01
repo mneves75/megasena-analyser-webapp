@@ -1,5 +1,6 @@
 import { getDatabase } from '@/lib/db';
 import { CHART_CONFIG } from '@/lib/constants';
+import { roundTo } from '@/lib/utils';
 
 export interface StreakStats {
   number: number;
@@ -44,42 +45,71 @@ export class StreakAnalysisEngine {
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
 
-    const results: StreakStats[] = [];
+    // Build frequency map in single pass through recent draws (optimized)
+    const recentFrequency = new Map<
+      number,
+      { count: number; lastContest: number | null }
+    >();
 
-    // Analyze each number
-    for (let num = 1; num <= 60; num++) {
-      // Count recent occurrences
-      let recentOccurrences = 0;
-      let lastDrawnContest: number | null = null;
+    for (const draw of recentDraws) {
+      const numbers = [
+        draw.number_1,
+        draw.number_2,
+        draw.number_3,
+        draw.number_4,
+        draw.number_5,
+        draw.number_6,
+      ];
 
-      for (const draw of recentDraws) {
-        const numbers = [
-          draw.number_1,
-          draw.number_2,
-          draw.number_3,
-          draw.number_4,
-          draw.number_5,
-          draw.number_6,
-        ];
-
-        if (numbers.includes(num)) {
-          recentOccurrences++;
-          if (!lastDrawnContest || draw.contest_number > lastDrawnContest) {
-            lastDrawnContest = draw.contest_number;
+      for (const num of numbers) {
+        const existing = recentFrequency.get(num);
+        if (existing) {
+          existing.count++;
+          if (!existing.lastContest || draw.contest_number > existing.lastContest) {
+            existing.lastContest = draw.contest_number;
           }
+        } else {
+          recentFrequency.set(num, { count: 1, lastContest: draw.contest_number });
         }
       }
+    }
 
-      // Get overall frequency
-      let overallFrequency = 0;
-      for (let col = 1; col <= 6; col++) {
-        const count = (
-          this.db
-            .prepare(`SELECT COUNT(*) as count FROM draws WHERE number_${col} = ?`)
-            .get(num) as { count: number }
-        ).count;
-        overallFrequency += count;
-      }
+    // Get overall frequencies in single optimized query
+    const overallQuery = `
+      WITH all_occurrences AS (
+        SELECT number_1 as num FROM draws
+        UNION ALL
+        SELECT number_2 FROM draws
+        UNION ALL
+        SELECT number_3 FROM draws
+        UNION ALL
+        SELECT number_4 FROM draws
+        UNION ALL
+        SELECT number_5 FROM draws
+        UNION ALL
+        SELECT number_6 FROM draws
+      )
+      SELECT num, COUNT(*) as frequency
+      FROM all_occurrences
+      GROUP BY num
+    `;
+
+    const overallFrequencies = this.db.prepare(overallQuery).all() as Array<{
+      num: number;
+      frequency: number;
+    }>;
+
+    const overallMap = new Map<number, number>();
+    overallFrequencies.forEach((row) => overallMap.set(row.num, row.frequency));
+
+    const results: StreakStats[] = [];
+
+    // Now process all 60 numbers (single iteration)
+    for (let num = 1; num <= 60; num++) {
+      const recent = recentFrequency.get(num);
+      const recentOccurrences = recent?.count || 0;
+      const lastDrawnContest = recent?.lastContest || null;
+      const overallFrequency = overallMap.get(num) || 0;
 
       // Calculate expected occurrences in recent window
       const overallRate = overallFrequency / totalDraws;
@@ -103,7 +133,7 @@ export class StreakAnalysisEngine {
         recentOccurrences,
         overallFrequency,
         trend,
-        streakIntensity: Math.round(streakIntensity * 100) / 100,
+        streakIntensity: roundTo(streakIntensity),
         lastDrawnContest,
       });
     }

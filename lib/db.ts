@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { logger } from './logger';
 
 const DB_DIR = path.join(process.cwd(), 'db');
 const DB_PATH = path.join(DB_DIR, 'mega-sena.db');
@@ -411,7 +412,7 @@ export function runMigrations(): void {
 
   // Get list of migration files
   if (!fs.existsSync(MIGRATIONS_DIR)) {
-    console.log('No migrations directory found');
+    logger.warn('No migrations directory found');
     return;
   }
 
@@ -423,14 +424,18 @@ export function runMigrations(): void {
   // Apply pending migrations
   for (const file of migrationFiles) {
     if (!appliedMigrations.includes(file)) {
-      console.log(`Applying migration: ${file}`);
+      logger.migration(file, 'start');
       const migrationPath = path.join(MIGRATIONS_DIR, file);
       const migration = fs.readFileSync(migrationPath, 'utf-8');
 
-      database.exec(migration);
-      database.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
-
-      console.log(`✓ Migration ${file} applied successfully`);
+      try {
+        database.exec(migration);
+        database.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
+        logger.migration(file, 'success');
+      } catch (error) {
+        logger.migration(file, 'error');
+        throw error;
+      }
     }
   }
 }

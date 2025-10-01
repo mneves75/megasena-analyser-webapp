@@ -30,6 +30,20 @@ export class CaixaAPIClient {
   }
 
   async fetchDraw(contestNumber?: number): Promise<MegaSenaDrawData> {
+    // Validate contest number if provided
+    if (contestNumber !== undefined) {
+      if (!Number.isInteger(contestNumber) || contestNumber < 1) {
+        throw new Error(
+          `Invalid contest number: ${contestNumber}. Must be a positive integer.`
+        );
+      }
+      if (contestNumber > 10000) {
+        throw new Error(
+          `Invalid contest number: ${contestNumber}. Contest number too high (max 10000).`
+        );
+      }
+    }
+
     const url = contestNumber
       ? `${this.baseURL}/megasena/${contestNumber}`
       : `${this.baseURL}/megasena`;
