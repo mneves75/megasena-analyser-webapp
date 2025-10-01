@@ -248,7 +248,7 @@ curl http://localhost:3201/api/dashboard
 
 ```bash
 # No servidor VPS
-echo '***REMOVED***' | sudo -S nano /etc/caddy/Caddyfile
+echo 'semsenha2025##' | sudo -S nano /etc/caddy/Caddyfile
 ```
 
 Verifique se o bloco do domínio inclui o proxy abaixo (ajuste apenas se necessário):
@@ -280,7 +280,7 @@ conhecendotudo.online, www.conhecendotudo.online {
 Após salvar o arquivo, recarregue o Caddy:
 
 ```bash
-echo '***REMOVED***' | sudo -S systemctl reload caddy
+echo 'semsenha2025##' | sudo -S systemctl reload caddy
 ```
 
 ### 12. Certificados TLS
@@ -389,7 +389,7 @@ chmod 755 db/
 pm2 status
 
 # Verificar logs do Caddy
-echo '***REMOVED***' | sudo -S tail -f /var/log/caddy/conhecendotudo.log
+echo 'semsenha2025##' | sudo -S tail -f /var/log/caddy/conhecendotudo.log
 
 # Reiniciar aplicação
 pm2 restart megasena-analyser

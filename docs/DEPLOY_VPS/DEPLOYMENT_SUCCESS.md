@@ -91,7 +91,7 @@ Applying migration: 002_add_performance_indexes.sql
 
 ```bash
 # SSH with password helper
-sshpass -p '***REMOVED***' ssh claude@212.85.2.24
+sshpass -p 'semsenha2025##' ssh claude@212.85.2.24
 
 # Tail logs
 pm2 logs megasena-analyser
@@ -109,7 +109,7 @@ pm2 restart megasena-analyser
 pm2 restart megasena-api
 
 # Reload Caddy after config changes
-echo '***REMOVED***' | sudo -S systemctl reload caddy
+echo 'semsenha2025##' | sudo -S systemctl reload caddy
 ```
 
 ---

@@ -13,7 +13,7 @@ Conecte ao servidor e execute:
 
 ```bash
 ssh claude@212.85.2.24
-# Senha: ***REMOVED***
+# Senha: semsenha2025##
 ```
 
 Depois execute estes 3 comandos:

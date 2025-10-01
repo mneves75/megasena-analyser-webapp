@@ -35,7 +35,7 @@ O Caddy já está rodando no servidor. Você precisa adicionar uma configuraçã
 
 ```bash
 ssh claude@212.85.2.24
-# Senha: ***REMOVED***
+# Senha: semsenha2025##
 ```
 
 #### Passo 2: Editar Caddyfile
