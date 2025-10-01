@@ -21,6 +21,16 @@ import { PrizeCorrelationEngine } from './lib/analytics/prize-correlation';
 import { ComplexityScoreEngine } from './lib/analytics/complexity-score';
 import { logger } from './lib/logger';
 
+// CORS configuration
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || '')
+  .split(',')
+  .filter(Boolean)
+  .concat([
+    'http://localhost:3000',
+    'http://localhost:3002',
+    'https://conhecendotudo.online',
+  ]);
+
 // Rate limiter configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
@@ -73,6 +83,32 @@ setInterval(() => {
     }
   }
 }, 5 * 60 * 1000);
+
+/**
+ * Get CORS headers for response
+ * Validates origin against allowed list and returns appropriate headers
+ */
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  // If no origin header (same-origin request), don't add CORS headers
+  if (!origin) {
+    return {};
+  }
+
+  // Check if origin is allowed
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*');
+
+  if (!isAllowed) {
+    logger.warn('CORS request from unauthorized origin', { origin });
+    return {};
+  }
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400', // 24 hours
+  };
+}
 
 // Run migrations on startup
 logger.info('Initializing database...');
@@ -301,7 +337,17 @@ serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
-    
+    const origin = req.headers.get('origin');
+    const corsHeaders = getCorsHeaders(origin);
+
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      });
+    }
+
     // Apply rate limiting to API routes (except health check)
     if (url.pathname.startsWith('/api/') && url.pathname !== '/api/health') {
       const rateLimit = checkRateLimit(req);
@@ -343,29 +389,49 @@ serve({
         });
       })();
       
-      // Clone response to add headers
+      // Clone response to add headers (rate limit + CORS)
       const headers = new Headers(response.headers);
       headers.set('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS.toString());
       headers.set('X-RateLimit-Remaining', rateLimit.remaining.toString());
       headers.set('X-RateLimit-Reset', rateLimit.resetAt.toString());
-      
+
+      // Add CORS headers
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        headers.set(key, value);
+      });
+
       return new Response(response.body, {
         status: response.status,
         statusText: response.statusText,
         headers,
       });
     }
-    
+
     // Handle API routes without rate limiting (health check)
     const handler = apiHandlers[url.pathname];
     if (handler) {
-      return handler(req);
+      const response = await handler(req);
+
+      // Add CORS headers
+      const headers = new Headers(response.headers);
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        headers.set(key, value);
+      });
+
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
     }
 
-    // For all other routes, return 404
+    // For all other routes, return 404 with CORS headers
     return new Response(JSON.stringify({ error: 'Not Found' }), {
       status: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...corsHeaders,
+      },
     });
   },
 });

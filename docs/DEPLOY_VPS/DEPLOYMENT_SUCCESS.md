@@ -90,8 +90,10 @@ Applying migration: 002_add_performance_indexes.sql
 ## 📝 Useful Commands
 
 ```bash
-# SSH with password helper
-sshpass -p 'semsenha2025##' ssh claude@212.85.2.24
+# SSH using key (recommended)
+ssh -i ~/.ssh/id_megasena_vps claude@212.85.2.24
+# OR using config alias
+ssh megasena-vps
 
 # Tail logs
 pm2 logs megasena-analyser
@@ -109,7 +111,7 @@ pm2 restart megasena-analyser
 pm2 restart megasena-api
 
 # Reload Caddy after config changes
-echo 'semsenha2025##' | sudo -S systemctl reload caddy
+sudo systemctl reload caddy
 ```
 
 ---

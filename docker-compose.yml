@@ -1,0 +1,85 @@
+version: '3.9'
+
+# ============================================================================
+# Development Docker Compose Configuration
+# Usage: docker compose up
+# ============================================================================
+
+services:
+  # Main application - runs both Next.js and Bun API server
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Enable BuildKit for better caching and performance
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+    container_name: megasena-analyser
+    ports:
+      # Expose Next.js on localhost:3000
+      - "3000:3000"
+      # Expose Bun API on localhost:3201
+      - "3201:3201"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_PORT=3201
+      # Within container, both servers run on localhost
+      - API_HOST=localhost
+      - DATABASE_PATH=/app/db/mega-sena.db
+      - NEXT_PUBLIC_BASE_URL=http://localhost:3000
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # Persist SQLite database across container restarts
+      - ./db:/app/db
+      # Persist logs for debugging
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+    # Health check using the API health endpoint
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits to prevent runaway processes
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Optional: Caddy reverse proxy for local testing
+  # Start with: docker compose --profile with-proxy up
+  caddy:
+    image: caddy:2-alpine
+    container_name: megasena-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - with-proxy  # Only start when explicitly requested
+
+volumes:
+  caddy_data:
+    name: megasena_caddy_data
+  caddy_config:
+    name: megasena_caddy_config
+
+# Network configuration (using default bridge network)
+networks:
+  default:
+    name: megasena_network

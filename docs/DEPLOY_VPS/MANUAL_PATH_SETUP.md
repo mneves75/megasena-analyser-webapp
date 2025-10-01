@@ -12,8 +12,11 @@
 Conecte ao servidor e execute:
 
 ```bash
-ssh claude@212.85.2.24
-# Senha: semsenha2025##
+# Using SSH key (recommended)
+ssh -i ~/.ssh/id_megasena_vps claude@212.85.2.24
+
+# OR using config alias
+ssh megasena-vps
 ```
 
 Depois execute estes 3 comandos:

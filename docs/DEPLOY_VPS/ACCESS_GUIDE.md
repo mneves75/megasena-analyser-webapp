@@ -34,8 +34,11 @@ O Caddy já está rodando no servidor. Você precisa adicionar uma configuraçã
 #### Passo 1: Conectar ao Servidor
 
 ```bash
-ssh claude@212.85.2.24
-# Senha: semsenha2025##
+# Using SSH key (recommended)
+ssh -i ~/.ssh/id_megasena_vps claude@212.85.2.24
+
+# OR using config alias
+ssh megasena-vps
 ```
 
 #### Passo 2: Editar Caddyfile

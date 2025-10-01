@@ -1,0 +1,53 @@
+version: '3.9'
+
+# ============================================================================
+# Production Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================================================
+
+services:
+  app:
+    # Use pre-built image from registry instead of building locally
+    # This is faster and ensures consistent deployments
+    image: ghcr.io/${GITHUB_REPOSITORY:-megasena-analyser}:${IMAGE_TAG:-latest}
+
+    # Override environment for production
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - API_PORT=3201
+      - API_HOST=localhost
+      - DATABASE_PATH=/app/db/mega-sena.db
+      - NEXT_PUBLIC_BASE_URL=https://conhecendotudo.online/megasena-analyzer
+      - NEXT_TELEMETRY_DISABLED=1
+
+    # Production resource limits (tighter than development)
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+    # Production logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+# Production-specific volumes (same as dev but with explicit naming)
+volumes:
+  caddy_data:
+    name: megasena_caddy_data_prod
+  caddy_config:
+    name: megasena_caddy_config_prod

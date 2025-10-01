@@ -367,25 +367,6 @@ export function getDatabase(): BunDatabase {
   return db;
 }
 
-// Helper function to safely import bun:sqlite
-async function importBunSqlite() {
-  // Use dynamic import to avoid static analysis issues
-  try {
-    const module = await import('bun:sqlite');
-    return module.Database;
-  } catch (error) {
-    if (error instanceof Error && (error.message.includes('bun:sqlite') || error.message.includes('Cannot resolve module'))) {
-      throw new Error(
-        'Database requires Bun runtime. This application must be run with Bun, not Node.js.\n' +
-        'Install Bun: https://bun.sh\n' +
-        'Run with: bun run dev\n' +
-        'Original error: ' + error.message
-      );
-    }
-    throw error;
-  }
-}
-
 function initializeDatabase(): BunDatabase {
   // This application is designed to run with Bun runtime only
   // If not running with Bun, the bun:sqlite import will fail appropriately
