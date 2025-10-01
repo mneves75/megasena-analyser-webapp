@@ -40,7 +40,9 @@ async function startServers() {
   try {
     // Step 1: Start Bun API server
     logger.info('📡 Starting Bun API server...');
-    apiServer = spawn(['bun', 'server.ts'], {
+    // Use pre-bundled server binary (resolves path aliases at build time)
+    apiServer = spawn(['/app/server-bundle'], {
+      cwd: '/app', // Ensure running from project root
       stdout: 'inherit',
       stderr: 'inherit',
       env: {

@@ -36,6 +36,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
+# Bundle the API server into a standalone file with all dependencies resolved
+# This eliminates path alias resolution issues at runtime
+RUN bun build server.ts --compile --outfile server-bundle --target bun
+
 # ============================================================================
 # Stage 3: Runner
 # Minimal production runtime image
@@ -60,7 +64,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./next.config.js
 
-# Copy server and library files
+# Copy TypeScript config for Bun path alias resolution
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+
+# Copy bundled API server (standalone executable with all dependencies)
+COPY --from=builder --chown=nextjs:nodejs /app/server-bundle ./server-bundle
+
+# Copy server and library files (needed for Next.js)
 COPY --from=builder --chown=nextjs:nodejs /app/server.ts ./server.ts
 COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
 COPY --from=builder --chown=nextjs:nodejs /app/components ./components
