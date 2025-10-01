@@ -6,6 +6,7 @@ import { ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
 import type { NumberFrequency, Pattern } from '@/lib/analytics/statistics';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -48,12 +49,15 @@ export default async function StatisticsPage() {
             <Link href="/dashboard" className="text-2xl font-bold">
               Mega-Sena Analyser
             </Link>
-            <Link href="/dashboard">
-              <Button variant="ghost">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard">
+                <Button variant="ghost">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </nav>

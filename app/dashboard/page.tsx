@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,7 @@ export default async function DashboardPage() {
             <Link href="/" className="text-2xl font-bold">
               Mega-Sena Analyser
             </Link>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <Link href="/dashboard/statistics">
                 <Button variant="ghost">
                   <BarChart3 className="mr-2 h-4 w-4" />
@@ -75,6 +76,7 @@ export default async function DashboardPage() {
                   Gerar Apostas
                 </Button>
               </Link>
+              <ThemeToggle />
             </div>
           </div>
         </div>
