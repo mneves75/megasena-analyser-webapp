@@ -5,7 +5,8 @@
  */
 
 import { serve } from 'bun';
-import { runMigrations } from './lib/db';
+import { z } from 'zod';
+import { runMigrations, closeDatabase } from './lib/db';
 import { StatisticsEngine } from './lib/analytics/statistics';
 import { BetGenerator, type BetStrategy } from './lib/analytics/bet-generator';
 import { BET_GENERATION_MODE, type BetGenerationMode } from './lib/constants';
@@ -20,6 +21,18 @@ import { StreakAnalysisEngine } from './lib/analytics/streak-analysis';
 import { PrizeCorrelationEngine } from './lib/analytics/prize-correlation';
 import { ComplexityScoreEngine } from './lib/analytics/complexity-score';
 import { logger } from './lib/logger';
+
+// Input validation schemas
+const generateBetsSchema = z.object({
+  budget: z.number().min(6).max(1000000),
+  strategy: z.enum(['random', 'hot_numbers', 'cold_numbers', 'balanced', 'fibonacci', 'custom']).optional(),
+  mode: z.enum(['simple_only', 'multiple_only', 'mixed', 'optimized']).optional(),
+});
+
+const trendsQuerySchema = z.object({
+  numbers: z.string().regex(/^(\d+,)*\d+$/, 'Invalid numbers format'),
+  period: z.enum(['yearly', 'quarterly', 'monthly']).optional(),
+});
 
 // CORS configuration
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -45,13 +58,88 @@ const ALLOWED_ORIGINS = isDevelopment
 // Rate limiter configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
+const MAX_REQUEST_BODY_SIZE = 1024 * 10; // 10KB
+const RATE_LIMIT_CACHE_MAX_SIZE = 10000; // Maximum entries in rate limit cache
 
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
 
-const rateLimiterMap = new Map<string, RateLimitEntry>();
+/**
+ * Simple LRU Cache for rate limiting
+ * Prevents memory leak by limiting maximum entries
+ */
+class LRUCache<K, V> {
+  private cache: Map<K, V>;
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+  }
+
+  get(key: K): V | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      // Move to end (most recently used)
+      this.cache.delete(key);
+      this.cache.set(key, value);
+    }
+    return value;
+  }
+
+  set(key: K, value: V): void {
+    // Delete if exists (to reinsert at end)
+    this.cache.delete(key);
+
+    // Remove oldest if at capacity
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+
+    this.cache.set(key, value);
+  }
+
+  delete(key: K): boolean {
+    return this.cache.delete(key);
+  }
+
+  get size(): number {
+    return this.cache.size;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  entries(): IterableIterator<[K, V]> {
+    return this.cache.entries();
+  }
+}
+
+const rateLimiterCache = new LRUCache<string, RateLimitEntry>(RATE_LIMIT_CACHE_MAX_SIZE);
+
+/**
+ * Create a standardized error response
+ */
+function createErrorResponse(error: string, details?: unknown, status: number = 400): Response {
+  return new Response(
+    JSON.stringify({
+      success: false,
+      error,
+      details,
+      timestamp: new Date().toISOString(),
+    }),
+    {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+}
 
 function getRateLimitKey(req: Request): string {
   // Try to get real IP from various headers
@@ -66,18 +154,25 @@ function checkRateLimit(req: Request): { allowed: boolean; remaining: number; re
   const key = getRateLimitKey(req);
   const now = Date.now();
   
-  let entry = rateLimiterMap.get(key);
+  let entry = rateLimiterCache.get(key);
   
   // Clean up expired entry or create new one
   if (!entry || entry.resetAt < now) {
     entry = {
-      count: 0,
+      count: 1,
       resetAt: now + RATE_LIMIT_WINDOW,
     };
-    rateLimiterMap.set(key, entry);
+    rateLimiterCache.set(key, entry);
+    
+    return { 
+      allowed: true, 
+      remaining: RATE_LIMIT_MAX_REQUESTS - 1, 
+      resetAt: entry.resetAt 
+    };
   }
   
   entry.count++;
+  rateLimiterCache.set(key, entry); // Update cache
   
   const allowed = entry.count <= RATE_LIMIT_MAX_REQUESTS;
   const remaining = Math.max(0, RATE_LIMIT_MAX_REQUESTS - entry.count);
@@ -86,12 +181,23 @@ function checkRateLimit(req: Request): { allowed: boolean; remaining: number; re
 }
 
 // Cleanup old rate limit entries every 5 minutes
+// LRU cache already limits size, but we still clean up expired entries to free memory
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of rateLimiterMap.entries()) {
+  const keysToDelete: string[] = [];
+  
+  for (const [key, entry] of rateLimiterCache.entries()) {
     if (entry.resetAt < now) {
-      rateLimiterMap.delete(key);
+      keysToDelete.push(key);
     }
+  }
+  
+  for (const key of keysToDelete) {
+    rateLimiterCache.delete(key);
+  }
+  
+  if (keysToDelete.length > 0) {
+    logger.info(`Cleaned up ${keysToDelete.length} expired rate limit entries`);
   }
 }, 5 * 60 * 1000);
 
@@ -265,22 +371,27 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
     try {
       const url = new URL(req.url);
       const numbersParam = url.searchParams.get('numbers');
-      const period = (url.searchParams.get('period') || 'yearly') as 'yearly' | 'quarterly' | 'monthly';
+      const periodParam = url.searchParams.get('period');
 
       if (!numbersParam) {
-        return new Response(JSON.stringify({ error: 'Numbers parameter required' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return createErrorResponse('Numbers parameter required');
       }
 
-      const numbers = numbersParam.split(',').map(Number).filter(n => n >= 1 && n <= 60);
+      // Validate query parameters
+      const parseResult = trendsQuerySchema.safeParse({
+        numbers: numbersParam,
+        period: periodParam,
+      });
+
+      if (!parseResult.success) {
+        return createErrorResponse('Invalid query parameters', parseResult.error.format());
+      }
+
+      const { numbers: numbersStr, period = 'yearly' } = parseResult.data;
+      const numbers = numbersStr.split(',').map(Number).filter(n => n >= 1 && n <= 60);
 
       if (numbers.length === 0) {
-        return new Response(JSON.stringify({ error: 'Invalid numbers' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return createErrorResponse('No valid numbers provided (must be between 1 and 60)');
       }
 
       const timeSeriesEngine = new TimeSeriesEngine();
@@ -291,43 +402,44 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
       });
     } catch (error) {
       logger.apiError('GET', '/api/trends', error);
-      return new Response(JSON.stringify({ error: 'Failed to fetch trends data' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const message = error instanceof Error ? error.message : 'Failed to fetch trends data';
+      return createErrorResponse(message, null, 500);
     }
   },
 
   '/api/generate-bets': async (req) => {
     try {
       if (req.method !== 'POST') {
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-          status: 405,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return createErrorResponse('Method not allowed', null, 405);
       }
 
-      const body = (await req.json()) as {
-        budget: number;
-        strategy?: BetStrategy;
-        mode?: BetGenerationMode;
-      };
+      // Check content length
+      const contentLength = req.headers.get('content-length');
+      if (contentLength && parseInt(contentLength) > MAX_REQUEST_BODY_SIZE) {
+        return createErrorResponse('Request body too large', { maxSize: MAX_REQUEST_BODY_SIZE }, 413);
+      }
+
+      // Parse and validate request body
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return createErrorResponse('Invalid JSON in request body');
+      }
+
+      const parseResult = generateBetsSchema.safeParse(body);
+      if (!parseResult.success) {
+        return createErrorResponse('Invalid input', parseResult.error.format());
+      }
+
       const {
         budget,
         strategy = 'balanced',
         mode = BET_GENERATION_MODE.OPTIMIZED,
-      } = body;
-
-      const parsedBudget = Number(budget);
-      if (!Number.isFinite(parsedBudget) || parsedBudget <= 0) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid budget value' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
+      } = parseResult.data;
 
       const generator = new BetGenerator();
-      const result = generator.generateOptimizedBets(parsedBudget, mode, strategy);
+      const result = generator.generateOptimizedBets(budget, mode, strategy);
 
       return new Response(JSON.stringify({ success: true, data: result }), {
         headers: { 'Content-Type': 'application/json' },
@@ -335,10 +447,7 @@ const apiHandlers: Record<string, (req: Request) => Promise<Response> | Response
     } catch (error) {
       logger.apiError('POST', '/api/generate-bets', error);
       const message = error instanceof Error ? error.message : 'Failed to generate bets';
-      return new Response(JSON.stringify({ success: false, error: message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return createErrorResponse(message, null, 500);
     }
   },
 };

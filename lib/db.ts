@@ -343,11 +343,17 @@ function ensureDirectory(directory: string): void {
 }
 
 let db: BunDatabase | null = null;
+let initPromise: Promise<BunDatabase> | null = null;
 const inMemoryDb = isVitest && typeof Bun === 'undefined' ? new InMemoryDatabase() : null;
 
 // Ensure db directory exists
 ensureDirectory(DB_DIR);
 
+/**
+ * Get database instance (synchronous)
+ * For use in synchronous contexts where database is already initialized
+ * @throws Error if database is not yet initialized
+ */
 export function getDatabase(): BunDatabase {
   if (inMemoryDb) {
     if (db === null || (db === inMemoryDb && inMemoryDb.closed)) {
@@ -365,6 +371,38 @@ export function getDatabase(): BunDatabase {
     db = initializeDatabase();
   }
   return db;
+}
+
+/**
+ * Get database instance (asynchronous with race condition protection)
+ * Use this in async contexts to ensure safe concurrent initialization
+ * @returns Promise resolving to database instance
+ */
+export async function getDatabaseAsync(): Promise<BunDatabase> {
+  if (db) {
+    return db;
+  }
+
+  // If initialization is in progress, wait for it
+  if (initPromise) {
+    return initPromise;
+  }
+
+  // Start initialization
+  initPromise = (async () => {
+    if (inMemoryDb) {
+      inMemoryDb.initialize();
+      db = inMemoryDb as unknown as BunDatabase;
+      initPromise = null;
+      return db;
+    }
+
+    db = initializeDatabase();
+    initPromise = null;
+    return db;
+  })();
+
+  return initPromise;
 }
 
 function initializeDatabase(): BunDatabase {
@@ -414,13 +452,15 @@ export function runMigrations(): void {
     CREATE TABLE IF NOT EXISTS migrations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
-      applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+      applied_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'success',
+      error_message TEXT
     );
   `);
 
-  // Get list of applied migrations
+  // Get list of applied successful migrations
   const appliedRows = database
-    .prepare('SELECT name FROM migrations')
+    .prepare("SELECT name FROM migrations WHERE status = 'success'")
     .all() as Array<{ name: string }>;
   const appliedMigrations = appliedRows.map((row) => row.name);
 
@@ -435,7 +475,7 @@ export function runMigrations(): void {
     .filter((file) => file.endsWith('.sql'))
     .sort();
 
-  // Apply pending migrations
+  // Apply pending migrations with transaction support
   for (const file of migrationFiles) {
     if (!appliedMigrations.includes(file)) {
       logger.migration(file, 'start');
@@ -443,12 +483,37 @@ export function runMigrations(): void {
       const migration = fs.readFileSync(migrationPath, 'utf-8');
 
       try {
-        database.exec(migration);
-        database.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
-        logger.migration(file, 'success');
+        // Begin transaction for atomic migration
+        database.exec('BEGIN IMMEDIATE TRANSACTION');
+        
+        try {
+          // Execute migration
+          database.exec(migration);
+          
+          // Record successful migration
+          database
+            .prepare("INSERT INTO migrations (name, status) VALUES (?, 'success')")
+            .run(file);
+          
+          // Commit transaction
+          database.exec('COMMIT');
+          logger.migration(file, 'success');
+        } catch (innerError) {
+          // Rollback transaction on error
+          database.exec('ROLLBACK');
+          
+          // Record failed migration
+          const errorMessage = innerError instanceof Error ? innerError.message : 'Unknown error';
+          database
+            .prepare("INSERT INTO migrations (name, status, error_message) VALUES (?, 'failed', ?)")
+            .run(file, errorMessage);
+          
+          throw innerError;
+        }
       } catch (error) {
         logger.migration(file, 'error');
-        throw error;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Migration ${file} failed: ${errorMessage}`);
       }
     }
   }

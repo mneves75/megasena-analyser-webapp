@@ -79,7 +79,8 @@ export class CaixaAPIClient {
   }
 
   /**
-   * Fetch with exponential backoff retry logic and ETag caching
+   * Fetch with exponential backoff retry logic, ETag caching, and enforced timeout
+   * Uses Promise.race to ensure timeout fires even if response stalls
    */
   private async fetchWithRetry(url: string, maxRetries: number = API_CONFIG.MAX_RETRIES): Promise<Response> {
     let lastError: Error | null = null;
@@ -87,7 +88,6 @@ export class CaixaAPIClient {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         const headers: HeadersInit = {
           'Accept': 'application/json, text/plain, */*',
@@ -106,12 +106,22 @@ export class CaixaAPIClient {
           headers['If-None-Match'] = cachedETag;
         }
 
-        const response = await fetch(url, {
+        // Create timeout promise that aborts the request
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => {
+            controller.abort();
+            reject(new Error(`Request timeout after ${this.timeout}ms`));
+          }, this.timeout);
+        });
+
+        // Create fetch promise
+        const fetchPromise = fetch(url, {
           signal: controller.signal,
           headers,
         });
 
-        clearTimeout(timeoutId);
+        // Race between fetch and timeout
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
 
         // Handle 304 Not Modified - return cached data
         if (response.status === 304) {

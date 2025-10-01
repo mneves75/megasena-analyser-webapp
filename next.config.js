@@ -1,7 +1,30 @@
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'nonce-{NONCE}'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "font-src 'self'",
+      "connect-src 'self' https://servicebus2.caixa.gov.br",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      'upgrade-insecure-requests',
+    ].join('; '),
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'geolocation=(), microphone=(), camera=(), payment=()',
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   basePath: '/megasena-analyzer',
+  poweredByHeader: false,
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
@@ -17,6 +40,14 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: `http://${apiHost}:${apiPort}/api/:path*`,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: securityHeaders,
       },
     ];
   },
