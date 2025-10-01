@@ -16,15 +16,6 @@ import type { StreakStats } from '@/lib/analytics/streak-analysis';
 import type { PrizeCorrelation } from '@/lib/analytics/prize-correlation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BarChart, DonutChart } from '@/components/charts';
-import { StatisticsEngine } from '@/lib/analytics/statistics';
-import { DelayAnalysisEngine } from '@/lib/analytics/delay-analysis';
-import { DecadeAnalysisEngine } from '@/lib/analytics/decade-analysis';
-import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
-import { ParityAnalysisEngine } from '@/lib/analytics/parity-analysis';
-import { PrimeAnalysisEngine } from '@/lib/analytics/prime-analysis';
-import { SumAnalysisEngine } from '@/lib/analytics/sum-analysis';
-import { StreakAnalysisEngine } from '@/lib/analytics/streak-analysis';
-import { PrizeCorrelationEngine } from '@/lib/analytics/prize-correlation';
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -51,62 +42,30 @@ interface StatisticsApiResponse {
 }
 
 async function getStatisticsData(): Promise<StatisticsApiResponse> {
-  // Compute statistics directly on the server using SQLite-backed engines
-  const statsEngine = new StatisticsEngine();
-  try {
-    // Ensure frequency cache is up-to-date
-    statsEngine.updateNumberFrequencies();
-  } catch {
-    // Non-fatal: proceed with existing data
+  // Fetch statistics from Bun API server to avoid Next.js compilation issues with bun:sqlite
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3201';
+  
+  // Build query string with all required parameters
+  const params = new URLSearchParams({
+    delays: 'true',
+    decades: 'true',
+    pairs: 'true',
+    parity: 'true',
+    primes: 'true',
+    sum: 'true',
+    streaks: 'true',
+    prize: 'true',
+  });
+  
+  const response = await fetch(`${baseUrl}/api/statistics?${params}`, {
+    cache: 'no-store', // Force fresh data
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch statistics: ${response.statusText}`);
   }
-
-  const frequencies = statsEngine.getNumberFrequencies();
-  const patterns = statsEngine.detectPatterns();
-
-  const delayEngine = new DelayAnalysisEngine();
-  const delays = delayEngine.getNumberDelays();
-  const delayDistribution = delayEngine.getDelayDistribution();
-
-  const decadeEngine = new DecadeAnalysisEngine();
-  const decades = decadeEngine.getDecadeDistribution();
-
-  const pairEngine = new PairAnalysisEngine();
-  const pairs = pairEngine.getNumberPairs(1);
-
-  const parityEngine = new ParityAnalysisEngine();
-  const parity = parityEngine.getParityDistribution();
-  const parityStats = parityEngine.getParityStats();
-
-  const primeEngine = new PrimeAnalysisEngine();
-  const primes = primeEngine.getPrimeDistribution();
-
-  const sumEngine = new SumAnalysisEngine();
-  const sumStats = sumEngine.getSumDistribution();
-
-  const streakEngine = new StreakAnalysisEngine();
-  const hotNumbers = streakEngine.getHotNumbers(10);
-  const coldNumbers = streakEngine.getColdNumbers(10);
-
-  const prizeEngine = new PrizeCorrelationEngine();
-  const luckyNumbers = prizeEngine.getLuckyNumbers(10);
-  const unluckyNumbers = prizeEngine.getUnluckyNumbers(10);
-
-  return {
-    frequencies,
-    patterns,
-    delays,
-    delayDistribution,
-    decades,
-    pairs,
-    parity,
-    parityStats,
-    primes,
-    sumStats,
-    hotNumbers,
-    coldNumbers,
-    luckyNumbers,
-    unluckyNumbers,
-  };
+  
+  return response.json();
 }
 
 export default async function StatisticsPage() {
