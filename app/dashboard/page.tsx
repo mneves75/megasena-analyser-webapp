@@ -28,9 +28,17 @@ interface RecentDraw {
   accumulated: boolean;
 }
 
+interface HotNumber {
+  number: number;
+  recentOccurrences: number;
+  trend: 'hot' | 'normal' | 'cold';
+  streakIntensity: number;
+}
+
 interface DashboardApiResponse {
   statistics: DrawStatistics;
   recentDraws: RecentDraw[];
+  hotNumbers?: HotNumber[];
 }
 
 async function getDashboardData(): Promise<DashboardApiResponse> {
@@ -53,7 +61,7 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
 }
 
 export default async function DashboardPage() {
-  const { statistics, recentDraws } = await getDashboardData();
+  const { statistics, recentDraws, hotNumbers } = await getDashboardData();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -196,6 +204,40 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {hotNumbers && hotNumbers.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Números em Alta (Últimos 10 Sorteios)
+              </CardTitle>
+              <CardDescription>
+                Números com maior intensidade de aparição recente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+                {hotNumbers.map((hot: HotNumber) => (
+                  <div key={hot.number} className="flex flex-col items-center gap-1">
+                    <div className="relative">
+                      <LotteryBall number={hot.number} size="md" />
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        🔥
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-medium">{hot.recentOccurrences}x</div>
+                      <div className="text-xs text-muted-foreground">
+                        {hot.streakIntensity}×
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <Link href="/dashboard/statistics">
