@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BudgetSelector, GenerationControls, BetList } from '@/components/bet-generator';
 import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator';
 import { BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
@@ -13,20 +13,56 @@ export function GeneratorForm() {
   const [result, setResult] = useState<BetGenerationResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track component mount status to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Cancel any pending requests when component unmounts
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   async function handleGenerate(): Promise<void> {
+    // Cancel any existing pending request
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+    
+    // Check if component is still mounted
+    if (!isMountedRef.current) return;
+    
     setIsGenerating(true);
     setError(null);
 
     try {
       const data = await generateBets(budget, strategy, mode);
-      setResult(data);
+      
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setResult(data);
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao gerar apostas. Tente novamente.';
-      setError(errorMessage);
-      console.error('Error generating bets:', err);
+      // Ignore aborted requests
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        const errorMessage = err instanceof Error ? err.message : 'Erro ao gerar apostas. Tente novamente.';
+        setError(errorMessage);
+        console.error('Error generating bets:', err);
+      }
     } finally {
-      setIsGenerating(false);
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setIsGenerating(false);
+      }
     }
   }
 

@@ -22,14 +22,25 @@ import { ComplexityScoreEngine } from './lib/analytics/complexity-score';
 import { logger } from './lib/logger';
 
 // CORS configuration
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || '')
-  .split(',')
-  .filter(Boolean)
-  .concat([
-    'http://localhost:3000',
-    'http://localhost:3002',
-    'https://conhecendotudo.online',
-  ]);
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+const ALLOWED_ORIGINS = isDevelopment
+  ? [
+      'http://localhost:3000',
+      'http://localhost:3002',
+      'http://localhost:3201',
+    ]
+  : (process.env.ALLOWED_ORIGINS || 'https://conhecendotudo.online')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => {
+        // In production, only allow HTTPS origins
+        const isValid = origin.startsWith('https://');
+        if (!isValid) {
+          logger.warn('Rejected non-HTTPS origin in production', { origin });
+        }
+        return isValid;
+      });
 
 // Rate limiter configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -87,6 +98,7 @@ setInterval(() => {
 /**
  * Get CORS headers for response
  * Validates origin against allowed list and returns appropriate headers
+ * In production, only HTTPS origins are allowed
  */
 function getCorsHeaders(origin: string | null): Record<string, string> {
   // If no origin header (same-origin request), don't add CORS headers
@@ -94,11 +106,11 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     return {};
   }
 
-  // Check if origin is allowed
-  const isAllowed = ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*');
+  // Check if origin is allowed (no wildcard support for security)
+  const isAllowed = ALLOWED_ORIGINS.includes(origin);
 
   if (!isAllowed) {
-    logger.warn('CORS request from unauthorized origin', { origin });
+    logger.warn('CORS request from unauthorized origin', { origin, allowedOrigins: ALLOWED_ORIGINS });
     return {};
   }
 
@@ -443,3 +455,41 @@ logger.info('  - GET  /api/dashboard');
 logger.info('  - GET  /api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true');
 logger.info('  - GET  /api/trends?numbers=1,5,10&period=yearly');
 logger.info('  - POST /api/generate-bets');
+
+// Graceful shutdown handlers
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal: string): Promise<void> {
+  if (isShuttingDown) {
+    logger.warn(`${signal} received again, forcing shutdown...`);
+    process.exit(1);
+  }
+  
+  isShuttingDown = true;
+  logger.info(`${signal} received, starting graceful shutdown...`);
+  
+  // Close database connection
+  try {
+    closeDatabase();
+    logger.info('✓ Database closed successfully');
+  } catch (error) {
+    logger.error('Error closing database', error);
+  }
+  
+  logger.info('Graceful shutdown complete');
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection', reason);
+  gracefulShutdown('UNHANDLED_REJECTION');
+});

@@ -254,7 +254,9 @@ export class BetGenerator {
   }
 
   private generateBetId(): string {
-    return `bet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Use crypto.randomUUID() for guaranteed unique IDs
+    // Available in both Node.js (v14.17.0+) and Bun
+    return `bet_${crypto.randomUUID()}`;
   }
 
   /**

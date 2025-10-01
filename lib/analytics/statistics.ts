@@ -1,6 +1,18 @@
 import { getDatabase } from '@/lib/db';
 import { MEGASENA_CONSTANTS, STATISTICS_DISPLAY } from '@/lib/constants';
 
+// Pre-generated safe SQL queries to avoid string interpolation
+const NUMBER_COLUMN_COUNT_QUERIES = Array.from(
+  { length: 6 },
+  (_, i) => `SELECT COUNT(*) as count FROM draws WHERE number_${i + 1} = ?`
+);
+
+const NUMBER_COLUMN_LAST_DRAWN_QUERIES = Array.from(
+  { length: 6 },
+  (_, i) =>
+    `SELECT contest_number, draw_date FROM draws WHERE number_${i + 1} = ? ORDER BY contest_number DESC LIMIT 1`
+);
+
 export interface NumberFrequency {
   number: number;
   frequency: number;
@@ -50,56 +62,59 @@ export class StatisticsEngine {
 
   updateNumberFrequencies(): void {
     try {
-      // Reset frequencies
-      this.db.prepare('UPDATE number_frequency SET frequency = 0').run();
+      // Begin transaction to ensure atomicity
+      // If any part fails, the entire update is rolled back
+      this.db.exec('BEGIN IMMEDIATE TRANSACTION');
+      
+      try {
+        // Reset frequencies
+        this.db.prepare('UPDATE number_frequency SET frequency = 0').run();
 
-      // Count occurrences for each number
-      for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
-        let frequency = 0;
-        let lastContest: number | null = null;
-        let lastDate: string | null = null;
+        // Count occurrences for each number
+        for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
+          let frequency = 0;
+          let lastContest: number | null = null;
+          let lastDate: string | null = null;
 
-        // Count occurrences across all number columns
-        for (let col = 1; col <= 6; col++) {
-          // Count ALL occurrences in this column
-          const countResult = this.db
-            .prepare(
-              `SELECT COUNT(*) as count
-               FROM draws
-               WHERE number_${col} = ?`
-            )
-            .get(num) as { count: number };
+          // Count occurrences across all number columns using pre-generated safe queries
+          for (let col = 0; col < 6; col++) {
+            // Count ALL occurrences in this column
+            const countResult = this.db
+              .prepare(NUMBER_COLUMN_COUNT_QUERIES[col])
+              .get(num) as { count: number };
 
-          frequency += countResult.count;
+            frequency += countResult.count;
 
-          // Separately get the last drawn info
-          const lastDrawn = this.db
-            .prepare(
-              `SELECT contest_number, draw_date
-               FROM draws
-               WHERE number_${col} = ?
-               ORDER BY contest_number DESC
-               LIMIT 1`
-            )
-            .get(num) as { contest_number: number; draw_date: string } | undefined;
+            // Separately get the last drawn info
+            const lastDrawn = this.db
+              .prepare(NUMBER_COLUMN_LAST_DRAWN_QUERIES[col])
+              .get(num) as { contest_number: number; draw_date: string } | undefined;
 
-          if (lastDrawn && (!lastContest || lastDrawn.contest_number > lastContest)) {
-            lastContest = lastDrawn.contest_number;
-            lastDate = lastDrawn.draw_date;
+            if (lastDrawn && (!lastContest || lastDrawn.contest_number > lastContest)) {
+              lastContest = lastDrawn.contest_number;
+              lastDate = lastDrawn.draw_date;
+            }
           }
-        }
 
-        // Update frequency table
-        this.db
-          .prepare(
-            `UPDATE number_frequency
-             SET frequency = ?,
-                 last_drawn_contest = ?,
-                 last_drawn_date = ?,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE number = ?`
-          )
-          .run(frequency, lastContest, lastDate, num);
+          // Update frequency table
+          this.db
+            .prepare(
+              `UPDATE number_frequency
+               SET frequency = ?,
+                   last_drawn_contest = ?,
+                   last_drawn_date = ?,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE number = ?`
+            )
+            .run(frequency, lastContest, lastDate, num);
+        }
+        
+        // Commit transaction if all updates succeeded
+        this.db.exec('COMMIT');
+      } catch (innerError) {
+        // Rollback transaction on any error
+        this.db.exec('ROLLBACK');
+        throw innerError;
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
