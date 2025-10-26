@@ -30,7 +30,6 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  basePath: '/megasena-analyzer',
   poweredByHeader: false,
   experimental: {
     serverActions: {
