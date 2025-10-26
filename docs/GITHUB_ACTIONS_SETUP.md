@@ -1,7 +1,12 @@
 # GitHub Actions Automated Draw Updates - Setup Guide
 
-**Status:** Ready for deployment
+**Status:** Partially Complete - User action required
 **Last Updated:** October 26, 2025
+
+**IMPORTANT:**
+- ✅ Step 1 COMPLETED: SSH keys generated at `~/.ssh/github-actions-megasena`
+- ⏳ Step 2-6 PENDING: User must complete manual setup (VPS currently unreachable)
+- Workflow files created and validated with 2 critical bugs fixed
 
 ---
 
