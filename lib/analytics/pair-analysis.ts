@@ -129,7 +129,11 @@ export class PairAnalysisEngine {
       
       this.db.exec('COMMIT');
     } catch (error) {
-      this.db.exec('ROLLBACK');
+      try {
+        this.db.exec('ROLLBACK');
+      } catch (rollbackError) {
+        // Transaction was already rolled back by SQLite
+      }
       throw error;
     }
 
