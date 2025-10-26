@@ -91,14 +91,14 @@ RUN mkdir -p /app/db /app/logs && \
 USER nextjs
 
 # Expose ports
-# 3000: Next.js application
+# 80: Next.js application (production uses 80 for Traefik compatibility)
 # 3201: Bun API server
-EXPOSE 3000 3201
+EXPOSE 80 3201
 
 # Environment variables with defaults
 # These can be overridden in docker-compose.yml or at runtime
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=80 \
     API_PORT=3201 \
     API_HOST=localhost \
     DATABASE_PATH=/app/db/mega-sena.db \
