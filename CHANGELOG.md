@@ -1,10 +1,52 @@
 # Changelog
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
-Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
+
+## [1.1.2] - 2025-10-26
+
+### 🐛 Corrigido
+
+- **CRÍTICO**: Eliminado anti-pattern de useEffect em paginação de apostas (`bet-list.tsx`)
+  - **Problema**: Componente usava `useEffect` para resetar paginação quando resultado mudava, causando renderizações duplas
+  - **Solução**: Implementado padrão de `key` prop recomendado pelo React para reset de estado
+  - **Impacto**: Renderização única ao invés de dupla (effect), código mais idiomático
+  - **Referência**: [React: You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes)
+
+### ⚙️ Adicionado
+
+- **Suite de Testes para Componentes React** (34 novos testes)
+  - `tests/components/bet-list.test.tsx` (11 testes): Paginação, key prop pattern, regression
+  - `tests/components/generator-form.test.tsx` (9 testes): Cleanup de AbortController, prevenção de memory leaks
+  - `tests/components/theme-provider.test.tsx` (14 testes): localStorage persistence, media query cleanup, DOM manipulation
+  - **Cobertura**: Todos os padrões críticos de useEffect e cleanup testados
+  - **Resultado**: 52/52 testes passando (18 existentes + 34 novos)
+
+- **Biblioteca @testing-library/jest-dom** para matchers do React Testing Library
+  - Configurado em `tests/setup.ts` para todos os testes de componentes
+  - Adiciona matchers como `toBeInTheDocument`, `toBeDisabled`, etc.
+
+### 🔧 Modificado
+
+- **Otimização de dependency arrays em `theme-provider.tsx`**
+  - Removido `storageKey` dos arrays de dependências (constante nunca muda)
+  - Documentado trade-off com comentários explicativos e `eslint-disable`
+  - **Justificativa**: `storageKey` sempre usa valor default 'megasena-theme', nunca passado como prop
+
+- **Documentação expandida em CLAUDE.md e AGENTS.md**
+  - Adicionadas diretrizes completas de useEffect best practices
+  - Seção sobre ExecPlans e metodologia PLANS.md
+  - Guidelines sobre ast-grep, concisão, e critical thinking
+
+### 📚 Documentação
+
+- **Comentários de código em padrões complexos**
+  - `bet-list.tsx`: Explicação do padrão key prop vs useEffect
+  - `generator-form.tsx`: Documentação do AbortController cleanup pattern
+  - `theme-provider.tsx`: Justificativa para omissão de storageKey em deps
+  - **Objetivo**: Facilitar manutenção futura e code reviews
 
 ## [1.1.1] - 2025-10-01
 
