@@ -15,7 +15,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
 
-    container_name: megasena-analyser
+    container_name: megasena-analyzer
 
     # Expose port 80 for Traefik (matches production pattern)
     # Container will listen on port 80 internally
@@ -31,9 +31,9 @@ services:
       - API_HOST=localhost
       - DATABASE_PATH=/app/db/mega-sena.db
       # Use exact domain from production config
-      - NEXT_PUBLIC_BASE_URL=https://megasena-analyser.conhecendotudo.online
+      - NEXT_PUBLIC_BASE_URL=https://megasena-analyzer.conhecendotudo.online
       - NEXT_TELEMETRY_DISABLED=1
-      - ALLOWED_ORIGIN=https://megasena-analyser.conhecendotudo.online
+      - ALLOWED_ORIGIN=https://megasena-analyzer.conhecendotudo.online
 
     # Persist database across redeployments
     volumes:
@@ -67,14 +67,14 @@ services:
       - "coolify.managed=true"
       - "traefik.enable=true"
       # Entrypoint: use 'https' to match production
-      - "traefik.http.routers.megasena-analyser.entrypoints=https"
+      - "traefik.http.routers.megasena-analyzer.entrypoints=https"
       # TLS configuration
-      - "traefik.http.routers.megasena-analyser.tls=true"
-      - "traefik.http.routers.megasena-analyser.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.megasena-analyzer.tls=true"
+      - "traefik.http.routers.megasena-analyzer.tls.certresolver=letsencrypt"
       # Routing rule - exact domain from production
-      - "traefik.http.routers.megasena-analyser.rule=Host(`megasena-analyser.conhecendotudo.online`)"
+      - "traefik.http.routers.megasena-analyzer.rule=Host(`megasena-analyzer.conhecendotudo.online`)"
       # Service port - MUST be 80 to match production pattern
-      - "traefik.http.services.megasena-analyser.loadbalancer.server.port=80"
+      - "traefik.http.services.megasena-analyzer.loadbalancer.server.port=80"
       # Rate limiting - matches production (100 requests/sec average)
       - "traefik.http.middlewares.ratelimit.rateLimit.average=100"
 

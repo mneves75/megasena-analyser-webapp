@@ -79,8 +79,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/app ./app
 # Copy database migrations (schema setup)
 COPY --from=builder --chown=nextjs:nodejs /app/db/migrations ./db/migrations
 
-# Copy startup script
-COPY --from=builder --chown=nextjs:nodejs /app/scripts/start-docker.ts ./scripts/start-docker.ts
+# Copy all scripts (startup, maintenance, and data ingestion)
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # Create database directory with proper permissions
 # Database file will be created here on first run
