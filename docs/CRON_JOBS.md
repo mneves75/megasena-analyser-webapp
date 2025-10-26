@@ -1,16 +1,34 @@
 # Cron Jobs Configuration
 
+## ⚠️ CRITICAL WARNING: CAIXA API IP BLOCKING
+
+**The VPS IP (212.85.2.24) is BLOCKED by CAIXA API, returning HTTP 403 Forbidden.**
+
+**Impact:**
+- ❌ Daily draw updates cron job WILL FAIL
+- ✅ Weekly database optimization works fine (local only)
+
+**Current Solution:** Manual database updates (see `IMPLEMENTATION_SUCCESS.md` for procedure)
+
+**See Section:** "CAIXA API IP Blocking Issue" at bottom of this document
+
+---
+
 ## Configured Cron Jobs
 
-### 1. Daily Draw Updates (9 PM every day)
+### 1. Daily Draw Updates (9 PM every day) ⚠️ NOT WORKING - API BLOCKED
 
 ```bash
-0 21 * * * docker exec megasena-analyzer bun run scripts/pull-draws.ts --incremental >> /var/log/megasena/daily-update.log 2>&1
+# ⚠️ THIS WILL FAIL WITH HTTP 403 ERRORS
+# DO NOT ENABLE UNTIL PROXY/VPN SOLUTION IMPLEMENTED
+# 0 21 * * * docker exec megasena-analyzer bun run scripts/pull-draws.ts --incremental >> /var/log/megasena/daily-update.log 2>&1
 ```
 
-- **Schedule**: Runs at 21:00 (9 PM) UTC daily
+- **Schedule**: Would run at 21:00 (9 PM) UTC daily
 - **Mode**: Uses `--incremental` flag to only add new draws (INSERT OR IGNORE)
 - **Logs**: `/var/log/megasena/daily-update.log`
+- **Status**: ❌ DISABLED - VPS IP blocked by CAIXA API (HTTP 403)
+- **Alternative**: Manual database update procedure (see below)
 
 ### 2. Weekly Database Optimization (Sunday 2 AM)
 
@@ -65,3 +83,114 @@ The cron jobs use UTC timezone. Brazil (BRT = UTC-3):
 To adjust cron times for Brazil time:
 - For 9 PM BRT: Use `0 0 * * *` (midnight UTC)
 - For 2 AM BRT Sunday: Use `0 5 * * 0` (5 AM UTC Sunday)
+
+---
+
+## 🚨 CAIXA API IP Blocking Issue
+
+### Problem Summary
+The production VPS IP address (212.85.2.24) is permanently blocked by CAIXA's lottery API, returning HTTP 403 Forbidden errors on all draw fetch requests.
+
+### Evidence
+```bash
+# Local machine (works):
+curl https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena
+→ HTTP 200 OK ✅
+
+# VPS (blocked):
+curl https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena
+→ HTTP 403 Forbidden ❌
+```
+
+### Root Cause
+CAIXA implements IP-based anti-scraping protection. VPS/cloud provider IPs are often blocklisted to prevent automated scraping.
+
+### Impact on Automation
+- ❌ **Daily draw updates:** CANNOT run automatically from VPS
+- ✅ **Weekly optimization:** Works fine (local database only)
+
+### Current Workaround: Manual Database Updates
+
+**Frequency:** Perform weekly or when new draws are published
+
+**Procedure:**
+
+1. **Check for new draws:**
+   ```bash
+   # Visit CAIXA website to see latest contest number
+   open https://loterias.caixa.gov.br/
+   ```
+
+2. **Fetch locally (where API works):**
+   ```bash
+   cd /Users/mvneves/dev/PROJETOS/megasena-analyser-webapp
+
+   # Example: Fetch draws 2933-2940 (adjust numbers as needed)
+   bun run scripts/pull-draws.ts --start 2933 --end 2940
+
+   # Or fetch all new draws incrementally:
+   bun run scripts/pull-draws.ts --incremental
+   ```
+
+3. **Upload database to VPS:**
+   ```bash
+   scp db/mega-sena.db megasena-vps:/tmp/mega-sena.db
+   ```
+
+4. **Replace database on VPS:**
+   ```bash
+   ssh megasena-vps
+
+   cd /root/coolify-migration/compose/megasena-analyser/db
+
+   # Backup current database
+   cp mega-sena.db mega-sena.db.backup-$(date +%Y%m%d)
+
+   # Replace with updated database
+   cp /tmp/mega-sena.db mega-sena.db
+
+   # Fix permissions (container user UID 1001)
+   chown 1001:1001 mega-sena.db
+
+   # Remove WAL/SHM files (force clean state)
+   rm -f mega-sena.db-wal mega-sena.db-shm
+
+   # Cleanup
+   rm /tmp/mega-sena.db
+   ```
+
+5. **Verify update:**
+   ```bash
+   # Check database in container
+   sudo docker exec megasena-analyzer bun -e "
+   const db = require('bun:sqlite').default('/app/db/mega-sena.db');
+   const result = db.query('SELECT COUNT(*) as count, MAX(contest_number) as last FROM draws').get();
+   console.log(JSON.stringify(result, null, 2));
+   db.close();
+   "
+
+   # Check public website
+   curl -s https://megasena-analyzer.conhecendotudo.online/api/dashboard | \
+     python3 -c "import sys, json; data = json.load(sys.stdin); \
+     print('Latest:', data['statistics']['lastContestNumber'], \
+     'Date:', data['statistics']['lastDrawDate'])"
+   ```
+
+### Long-Term Solutions (Pending Implementation)
+
+See `IMPLEMENTATION_SUCCESS.md` for detailed long-term solution options:
+
+1. **Proxy Service** (recommended, $30-100/month)
+2. **VPN with IP Rotation** (less reliable)
+3. **Manual Updates** (current approach, zero cost)
+4. **Alternative Data Source** (may require API key)
+
+### Update History
+
+| Date | Contests Added | Latest Contest | Total Draws | Method |
+|------|----------------|----------------|-------------|--------|
+| 2025-10-26 | 2922-2932 (11) | #2932 (25/10/2025) | 2,931 | Manual local fetch + SCP |
+
+---
+
+**For complete documentation, see:** `IMPLEMENTATION_SUCCESS.md` section "CRITICAL: CAIXA API IP BLOCKING ISSUE"
