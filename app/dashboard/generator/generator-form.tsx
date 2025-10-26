@@ -106,7 +106,16 @@ export function GeneratorForm() {
       <div className="mt-8">
         {result ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <BetList result={result} />
+            {/*
+              CRITICAL: key prop resets BetList state when result changes.
+              Creates unique identifier from result properties to force remount on new generation.
+              This automatically resets pagination without useEffect (React best practice).
+              See: https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes
+            */}
+            <BetList
+              key={`${result.bets.length}-${result.totalCost}`}
+              result={result}
+            />
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[400px] p-8 rounded-2xl border-2 border-dashed border-border/50 bg-card/30">

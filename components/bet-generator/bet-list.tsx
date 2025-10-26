@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,20 @@ const BETS_PER_PAGE = 20;
 export function BetList({ result, className }: BetListProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset to page 1 when result changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [result]);
+  /**
+   * CRITICAL: Pagination reset is handled via key prop in parent component.
+   * When result changes, React remounts this component with key={resultId},
+   * automatically resetting all state (including currentPage) to initial values.
+   *
+   * This follows React best practices from:
+   * https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes
+   *
+   * Benefits over useEffect approach:
+   * - Single render (no double render from effect)
+   * - Clear intent (key prop signals "different data")
+   * - No state synchronization bugs
+   * - All component state resets atomically
+   */
 
   const formatCurrency = (val: number | null) => {
     if (val === null) return 'R$ 0,00';
