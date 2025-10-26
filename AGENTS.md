@@ -1,5 +1,16 @@
 # Repository Guidelines
 
+## Core Development Guidelines
+
+**FOLLOW THESE GUIDELINES ALWAYS!**
+
+- **Never create markdown files after you are done. NEVER!** Use `agent_planning/` for planning docs only, archive when done in `agent_planning/archive/`. Do NOT externalize or document your work, usage guidelines, or benchmarks in markdown files after completing the task, unless explicitly instructed to do so.
+- **Never use emojis!** No emojis in code, commit messages, or any output.
+- **Think critically and push reasoning to 100% of capacity.** I'm trying to stay a critical and sharp analytical thinker. Walk me through your thought process step by step. The best people in the domain will verify what you do. Think hard! Be a critical thinker!
+- **Use `ast-grep` for syntax-aware searches.** This environment has `ast-grep` available. Whenever a search requires syntax-aware or structural matching, default to `ast-grep --lang <language> -p '<pattern>'` (set `--lang` appropriately: typescript, javascript, python, etc.) and avoid falling back to text-only tools like `rg` or `grep` unless explicitly requested for plain-text search.
+- **Sacrifice grammar for the sake of concision.** Be brief and direct.
+- **List any unresolved questions at the end of your response, if any exist.**
+
 ## Project Structure & Module Organization
 - `app/` hosts App Router routes; the dashboard entry point is `app/dashboard/page.tsx`.
 - `components/` keeps reusable UI built with Tailwind tokens and shadcn/ui variants.
@@ -84,15 +95,75 @@ Treat the frontend and backend as **a single program** split across two machines
 
 **Before using useEffect, read:** [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
 
-#### Common cases where useEffect is NOT needed:
-- Transforming data for rendering (use variables or `useMemo`)
-- Handling user events (use event handlers)
-- Resetting state when props change (use `key` prop)
-- Updating state based on props/state (calculate during render)
+Most `useEffect` usages can be eliminated by restructuring your code.
 
-#### Only use useEffect for:
-- Synchronizing with external systems (APIs, DOM, third-party libraries)
-- Cleanup that must happen when component unmounts
+#### ❌ DON'T use useEffect for:
+
+1. **Transforming data for rendering** - use variables or `useMemo`
+2. **Handling user events** - use event handlers directly
+3. **Resetting state when props change** - use `key` prop
+4. **Notifying parent components** - call during event or lift state up
+5. **Subscribing to external stores** - use `useSyncExternalStore`
+6. **Fetching data** - use Server Components or React Query/SWR (avoids race conditions)
+
+#### ✅ DO use useEffect for:
+
+1. **Synchronizing with external systems** - WebSocket, analytics, browser APIs
+2. **Operations requiring cleanup** - timers, subscriptions, third-party libraries
+3. **Browser APIs and third-party libraries** - DOM manipulation, chart initialization
+
+#### Effect Cleanup Checklist
+
+**Always return cleanup for:**
+- Event listeners: `removeEventListener`, `unsubscribe`
+- Timers: `clearTimeout`, `clearInterval`
+- Connections: WebSocket disconnect, abort controllers
+- Third-party libraries: chart destroy, player cleanup
+
+**Pattern for async operations:**
+```tsx
+useEffect(() => {
+  let mounted = true;
+
+  async function load() {
+    const data = await fetch('/api/data');
+    if (mounted) setData(data); // Only update if still mounted
+  }
+
+  load();
+  return () => { mounted = false; }; // Cleanup
+}, []);
+```
+
+#### Dependency Array Rules
+
+1. **Never omit dependencies** - always include all values from component scope used inside effect
+2. **Empty array `[]`** - only if effect truly runs once (no dependencies)
+3. **Extract static values** - move functions/objects outside component if they don't use props/state
+4. **Use `useCallback`/`useMemo`** - for functions/objects that must be dependencies
+
+**Example from codebase (correct pattern):**
+```tsx
+// From components/ui/glass-card.tsx
+useEffect(() => {
+  let mounted = true;
+
+  async function checkReduceMotion() {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mounted) setReduceMotion(mediaQuery.matches);
+    }
+  }
+
+  checkReduceMotion();
+  return () => { mounted = false; };
+}, []);
+```
+
+This demonstrates legitimate useEffect usage:
+- Synchronizes with OS accessibility API (external system)
+- Proper cleanup with mounted flag
+- Empty dependency array justified (runs once to check system preference)
 
 ### Architecture Pattern
 

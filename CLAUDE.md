@@ -14,6 +14,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Focus on historical analysis, pattern detection, and budget-constrained betting strategies
 - Clean, minimal, Apple/Linear-level UI polish
 
+## Core Development Guidelines
+
+**FOLLOW THESE GUIDELINES ALWAYS!**
+
+- **Never create markdown files after you are done. NEVER!** Use `agent_planning/` for planning docs only, archive when done in `agent_planning/archive/`. Do NOT externalize or document your work, usage guidelines, or benchmarks in markdown files after completing the task, unless explicitly instructed to do so.
+- **Never use emojis!** No emojis in code, commit messages, or any output.
+- **Think critically and push reasoning to 100% of capacity.** I'm trying to stay a critical and sharp analytical thinker. Walk me through your thought process step by step. The best people in the domain will verify what you do. Think hard! Be a critical thinker!
+- **Use `ast-grep` for syntax-aware searches.** This environment has `ast-grep` available. Whenever a search requires syntax-aware or structural matching, default to `ast-grep --lang <language> -p '<pattern>'` (set `--lang` appropriately: typescript, javascript, python, etc.) and avoid falling back to text-only tools like `rg` or `grep` unless explicitly requested for plain-text search.
+- **Sacrifice grammar for the sake of concision.** Be brief and direct.
+- **List any unresolved questions at the end of your response, if any exist.**
+
 ## Tech Stack
 
 - **Framework:** Next.js 15 with App Router
@@ -343,7 +354,7 @@ await createBet(data); // Fully typed, no manual fetch
 
 Most `useEffect` usages can be eliminated by restructuring your code.
 
-#### ❌ Don't use useEffect for:
+#### ❌ DON'T use useEffect for:
 
 1. **Transforming data for rendering:**
 ```tsx
@@ -381,6 +392,56 @@ useEffect(() => {
 <List key={category} />
 ```
 
+4. **Notifying parent components:**
+```tsx
+// ❌ Bad
+useEffect(() => {
+  if (data) {
+    onDataChange(data);
+  }
+}, [data, onDataChange]);
+
+// ✅ Good - call during event or lift state up
+function handleChange(newData) {
+  setData(newData);
+  onDataChange(newData);
+}
+```
+
+5. **Subscribing to external stores:**
+```tsx
+// ❌ Bad - race conditions and memory leaks
+const [data, setData] = useState(null);
+useEffect(() => {
+  const unsub = store.subscribe(() => setData(store.getData()));
+  return unsub;
+}, []);
+
+// ✅ Good - use useSyncExternalStore
+const data = useSyncExternalStore(
+  store.subscribe,
+  store.getData
+);
+```
+
+6. **Fetching data:**
+```tsx
+// ❌ Bad - race conditions, no caching, no error handling
+useEffect(() => {
+  fetch('/api/data').then(r => r.json()).then(setData);
+}, []);
+
+// ✅ Good - use Server Components or React Query/SWR
+// Server Component (Next.js 15):
+async function Page() {
+  const data = await fetchData(); // Runs on server
+  return <UI data={data} />;
+}
+
+// Or use React Query for client-side:
+const { data } = useQuery(['key'], fetchData);
+```
+
 #### ✅ DO use useEffect for:
 
 1. **Synchronizing with external systems:**
@@ -398,6 +459,73 @@ useEffect(() => {
   return () => chart.destroy();
 }, [data]);
 ```
+
+3. **Operations requiring cleanup:**
+```tsx
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCount(c => c + 1);
+  }, 1000);
+  return () => clearInterval(timer);
+}, []);
+```
+
+#### Effect Cleanup Checklist
+
+**Always return cleanup for:**
+- Event listeners: `removeEventListener`, `unsubscribe`
+- Timers: `clearTimeout`, `clearInterval`
+- Connections: WebSocket disconnect, abort controllers
+- Third-party libraries: chart destroy, player cleanup
+
+**Pattern for async operations:**
+```tsx
+useEffect(() => {
+  let mounted = true;
+
+  async function load() {
+    const data = await fetch('/api/data');
+    if (mounted) {
+      setData(data); // Only update if still mounted
+    }
+  }
+
+  load();
+  return () => { mounted = false; }; // Cleanup
+}, []);
+```
+
+#### Dependency Array Rules
+
+1. **Never omit dependencies** - always include all values from component scope used inside effect
+2. **Empty array `[]`** - only if effect truly runs once (no dependencies)
+3. **Extract static values** - move functions/objects outside component if they don't use props/state
+4. **Use `useCallback`/`useMemo`** - for functions/objects that must be dependencies
+
+**Example from codebase (correct pattern):**
+```tsx
+// From components/ui/glass-card.tsx
+useEffect(() => {
+  let mounted = true;
+
+  async function checkReduceMotion() {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (mounted) {
+        setReduceMotion(mediaQuery.matches);
+      }
+    }
+  }
+
+  checkReduceMotion();
+  return () => { mounted = false; };
+}, []);
+```
+
+This demonstrates legitimate useEffect usage:
+- Synchronizes with OS accessibility API (external system)
+- Proper cleanup with mounted flag
+- Empty dependency array justified (runs once to check system preference)
 
 ### File Structure Example
 
