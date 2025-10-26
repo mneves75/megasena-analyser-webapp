@@ -176,14 +176,30 @@ CAIXA implements IP-based anti-scraping protection. VPS/cloud provider IPs are o
      'Date:', data['statistics']['lastDrawDate'])"
    ```
 
-### Long-Term Solutions (Pending Implementation)
+### Long-Term Solution: GitHub Actions (IMPLEMENTED)
 
-See `IMPLEMENTATION_SUCCESS.md` for detailed long-term solution options:
+**Status:** ✅ **READY FOR DEPLOYMENT**
 
-1. **Proxy Service** (recommended, $30-100/month)
+**Solution:** GitHub Actions workflow automatically fetches draws daily and uploads to VPS.
+
+**Setup Instructions:** See `docs/GITHUB_ACTIONS_SETUP.md`
+
+**Benefits:**
+- ✅ **FREE** - No monthly costs (GitHub Actions free tier)
+- ✅ **Reliable** - GitHub IPs not blocked by CAIXA
+- ✅ **Automated** - Runs daily at 21:00 UTC
+- ✅ **Safe** - Creates backups before each update
+
+**Files:**
+- Workflow: `.github/workflows/update-draws.yml`
+- Setup guide: `docs/GITHUB_ACTIONS_SETUP.md`
+- Solution plan: `agent_planning/CAIXA_API_BLOCKING_SOLUTION_PLAN.md`
+
+**Alternative Solutions (Fallback):**
+1. **Proxy Service** ($49/month, 99.9% reliable)
 2. **VPN with IP Rotation** (less reliable)
-3. **Manual Updates** (current approach, zero cost)
-4. **Alternative Data Source** (may require API key)
+3. **Manual Updates** (current workaround, zero cost)
+4. **Alternative Data Source** (requires research)
 
 ### Update History
 

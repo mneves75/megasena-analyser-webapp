@@ -1,0 +1,188 @@
+name: Update Mega-Sena Draws
+
+on:
+  schedule:
+    # Run at 21:00 UTC daily (9 PM UTC = 6 PM BRT)
+    - cron: '0 21 * * *'
+
+  # Allow manual triggering for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (do not upload to VPS)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  update-draws:
+    name: Fetch and Upload Latest Draws
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Fetch latest draws from CAIXA API
+        id: fetch_draws
+        run: |
+          echo "Fetching latest Mega-Sena draws..."
+          bun run scripts/pull-draws.ts --incremental 2>&1 | tee fetch-output.log
+
+          # Extract results from output
+          if grep -q "Successfully inserted" fetch-output.log; then
+            NEW_DRAWS=$(grep "Successfully inserted" fetch-output.log | grep -oP '\d+' | head -1)
+            echo "new_draws=$NEW_DRAWS" >> $GITHUB_OUTPUT
+            echo "✓ Fetched $NEW_DRAWS new draws"
+          else
+            echo "new_draws=0" >> $GITHUB_OUTPUT
+            echo "✓ No new draws to fetch"
+          fi
+
+      - name: Get latest contest info
+        id: latest_contest
+        if: steps.fetch_draws.outputs.new_draws > 0
+        run: |
+          LATEST_INFO=$(bun -e "
+            const db = require('bun:sqlite').default('db/mega-sena.db');
+            const result = db.query('SELECT MAX(contest_number) as last, COUNT(*) as total FROM draws').get();
+            console.log(\`latest=\${result.last}\`);
+            console.log(\`total=\${result.total}\`);
+            db.close();
+          ")
+          echo "$LATEST_INFO" >> $GITHUB_OUTPUT
+          echo "Database updated: $LATEST_INFO"
+
+      - name: Setup SSH for VPS access
+        if: steps.fetch_draws.outputs.new_draws > 0 && inputs.dry_run != 'true'
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Add VPS to known hosts
+          ssh-keyscan -p ${VPS_PORT:-22} $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Test SSH connection
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST "echo '✓ SSH connection successful'"
+
+      - name: Upload database to VPS
+        if: steps.fetch_draws.outputs.new_draws > 0 && inputs.dry_run != 'true'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          echo "Uploading database to VPS..."
+
+          # Upload database
+          scp -i ~/.ssh/id_ed25519 -P ${VPS_PORT:-22} -o StrictHostKeyChecking=no \
+            db/mega-sena.db root@$VPS_HOST:/tmp/mega-sena-github.db
+
+          echo "✓ Database uploaded to /tmp/mega-sena-github.db"
+
+      - name: Replace database on VPS
+        if: steps.fetch_draws.outputs.new_draws > 0 && inputs.dry_run != 'true'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          echo "Replacing database on VPS..."
+
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+            set -e
+            cd /root/coolify-migration/compose/megasena-analyser/db
+
+            # Backup current database
+            BACKUP_NAME="mega-sena.db.backup-$(date +%Y%m%d-%H%M%S)"
+            echo "Creating backup: $BACKUP_NAME"
+            cp mega-sena.db "$BACKUP_NAME"
+
+            # Replace database
+            echo "Replacing database..."
+            cp /tmp/mega-sena-github.db mega-sena.db
+
+            # Fix permissions (container user UID 1001)
+            chown 1001:1001 mega-sena.db
+
+            # Remove WAL/SHM files to force clean state
+            rm -f mega-sena.db-wal mega-sena.db-shm
+
+            # Cleanup temp file
+            rm /tmp/mega-sena-github.db
+
+            echo "✓ Database replaced successfully"
+            echo "✓ Backup saved: $BACKUP_NAME"
+
+            # Keep only last 7 backups
+            ls -t mega-sena.db.backup-* 2>/dev/null | tail -n +8 | xargs -r rm
+            echo "✓ Cleaned up old backups (keeping last 7)"
+          ENDSSH
+
+      - name: Verify database on VPS
+        if: steps.fetch_draws.outputs.new_draws > 0 && inputs.dry_run != 'true'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          echo "Verifying database update on VPS..."
+
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+            # Check database in container
+            sudo docker exec megasena-analyzer bun -e "
+              const db = require('bun:sqlite').default('/app/db/mega-sena.db');
+              const result = db.query('SELECT COUNT(*) as count, MAX(contest_number) as last FROM draws').get();
+              console.log('VPS Database: ' + result.count + ' total draws, latest contest #' + result.last);
+              db.close();
+            "
+          ENDSSH
+
+      - name: Verify website displaying latest data
+        if: steps.fetch_draws.outputs.new_draws > 0 && inputs.dry_run != 'true'
+        run: |
+          echo "Waiting 10 seconds for cache to clear..."
+          sleep 10
+
+          echo "Verifying website displays latest data..."
+
+          WEBSITE_DATA=$(curl -s https://megasena-analyzer.conhecendotudo.online/api/dashboard | \
+            python3 -c "import sys, json; data = json.load(sys.stdin); print(f'Latest: {data[\"statistics\"][\"lastContestNumber\"]} | Date: {data[\"statistics\"][\"lastDrawDate\"]} | Total: {data[\"statistics\"][\"totalDraws\"]}'")
+
+          echo "✓ Website: $WEBSITE_DATA"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_ed25519
+
+      - name: Report success
+        if: success() && steps.fetch_draws.outputs.new_draws > 0
+        run: |
+          echo "════════════════════════════════════════════════════════════"
+          echo "✅ Mega-Sena Draw Update SUCCESSFUL"
+          echo "════════════════════════════════════════════════════════════"
+          echo "New draws added: ${{ steps.fetch_draws.outputs.new_draws }}"
+          echo "Latest contest: #${{ steps.latest_contest.outputs.latest }}"
+          echo "Total draws: ${{ steps.latest_contest.outputs.total }}"
+          echo "Website: https://megasena-analyzer.conhecendotudo.online"
+          echo "════════════════════════════════════════════════════════════"
+
+      - name: Report no updates
+        if: success() && steps.fetch_draws.outputs.new_draws == 0
+        run: |
+          echo "ℹ️ No new draws to update. Database is already up-to-date."
