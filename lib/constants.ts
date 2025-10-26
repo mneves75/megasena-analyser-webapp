@@ -1,8 +1,8 @@
 // Application Information
 export const APP_INFO = {
   NAME: 'Mega-Sena Analyser',
-  VERSION: '1.0.3',
-  BUILD_DATE: '2025-10-01',
+  VERSION: '1.1.2',
+  BUILD_DATE: '2025-10-26',
   DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
   REPOSITORY: 'https://github.com/megasena-analyser',
   AUTHOR: 'Mega-Sena Analyser Team',
