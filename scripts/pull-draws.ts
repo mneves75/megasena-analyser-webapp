@@ -58,7 +58,7 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
     draw.valorAcumuladoConcurso || 0,
     draw.valorEstimadoProximoConcurso || 0,
     draw.tipoJogo === 'MEGA_SENA' ? 0 : 1
-  );
+  ) as { changes: number; lastInsertRowid: number };
 
   // Return true if a new row was inserted (changes > 0)
   return result.changes > 0;
@@ -102,7 +102,7 @@ async function main() {
 
   try {
     // Begin transaction for batch inserts
-    db.run('BEGIN TRANSACTION');
+    db.exec('BEGIN TRANSACTION');
 
     if (limit) {
       // Fetch only the latest draws
@@ -144,7 +144,7 @@ async function main() {
     }
 
     // Commit transaction
-    db.run('COMMIT');
+    db.exec('COMMIT');
 
     console.log('\n✓ Data ingestion completed');
 
@@ -174,7 +174,7 @@ async function main() {
   } catch (error) {
     // Rollback transaction on error
     try {
-      db.run('ROLLBACK');
+      db.exec('ROLLBACK');
     } catch (rollbackError) {
       // Ignore rollback errors if transaction wasn't started
     }

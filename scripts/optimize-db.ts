@@ -10,17 +10,17 @@ async function main() {
   try {
     // Checkpoint WAL file to merge changes back to main database
     console.log('1. Checkpointing WAL file...');
-    db.run('PRAGMA wal_checkpoint(TRUNCATE)');
+    db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').run();
     console.log('   ✓ WAL checkpoint complete');
 
     // Optimize database by rebuilding to reclaim space
     console.log('\n2. Running VACUUM to reclaim space...');
-    db.run('VACUUM');
+    db.prepare('VACUUM').run();
     console.log('   ✓ VACUUM complete');
 
     // Analyze tables for query optimization
     console.log('\n3. Analyzing tables...');
-    db.run('ANALYZE');
+    db.prepare('ANALYZE').run();
     console.log('   ✓ ANALYZE complete');
 
     // Show database size
