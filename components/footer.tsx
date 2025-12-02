@@ -38,14 +38,6 @@ export function Footer(): React.JSX.Element {
                   Política de Privacidade
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/changelog"
-                  className="text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Changelog
-                </Link>
-              </li>
             </ul>
           </div>
 

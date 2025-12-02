@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LotteryBall } from '@/components/lottery-ball';
-import { ArrowLeft, TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
 import type { NumberFrequency, Pattern } from '@/lib/analytics/statistics';
@@ -529,8 +529,8 @@ export default async function StatisticsPage() {
                       <div key={hot.number} className="flex flex-col items-center gap-1">
                         <div className="relative">
                           <LotteryBall number={hot.number} size="sm" />
-                          <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            🔥
+                          <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                            <Flame className="h-2.5 w-2.5" />
                           </div>
                         </div>
                         <div className="text-center">
@@ -555,8 +555,8 @@ export default async function StatisticsPage() {
                         <div key={cold.number} className="flex flex-col items-center gap-1">
                           <div className="relative">
                             <LotteryBall number={cold.number} size="sm" />
-                            <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                              ❄️
+                            <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                              <Snowflake className="h-2.5 w-2.5" />
                             </div>
                           </div>
                           <div className="text-center">

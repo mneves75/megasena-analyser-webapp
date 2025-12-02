@@ -72,13 +72,14 @@ export class DelayAnalysisEngine {
       const lastDrawnDate = stat?.last_date || null;
 
       const delayDraws = lastDrawnContest ? latestContest - lastDrawnContest : latestContest;
-      
-      // Calculate average spacing between occurrences
-      const averageDelay = totalOccurrences > 1 
-        ? (latestContest - 1) / totalOccurrences
-        : totalOccurrences === 1 
-          ? latestContest
-          : latestContest;
+
+      // Calculate expected average delay between occurrences
+      // Formula: totalDraws / frequency = expected draws per occurrence
+      // This represents how often we statistically expect to see this number
+      // Note: For uniform distribution, expected value is totalDraws / (60/6) = totalDraws / 10
+      const averageDelay = totalOccurrences > 0
+        ? latestContest / totalOccurrences
+        : latestContest;
 
       // Categorize delay
       let delayCategory: DelayStats['delayCategory'];

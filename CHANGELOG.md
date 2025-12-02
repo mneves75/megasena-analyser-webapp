@@ -5,6 +5,30 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.0] - 2025-12-02
+
+### Removido
+
+- **Pagina de Changelog** (`/changelog`): Removida pagina web de changelog em favor do CHANGELOG.md no repositorio
+- **Link de Changelog no Footer**: Removido do menu Legal para simplificar navegacao
+- **Emails de contato nas paginas legais**: Removidos de Terms e Privacy para privacidade
+
+### Modificado
+
+- **Paginas Terms e Privacy**: Layout redesenhado para consistencia com dashboard
+  - Adicionada barra de navegacao superior com links para Estatisticas e Gerador
+  - Aplicado background gradiente consistente (`bg-gradient-to-br from-background via-background to-primary/5`)
+  - Adicionado Footer component para navegacao e disclaimers
+  - Estrutura flexbox para layout responsivo (`min-h-screen flex flex-col`)
+
+### Testes
+
+- **Novos testes para Footer** (`tests/components/footer.test.tsx`, 11 testes)
+  - Validacao de ausencia do link changelog
+  - Validacao de presenca de links Terms/Privacy/Dashboard
+  - Cobertura de secoes principais e links externos
+  - **Total**: 83 testes passando
+
 ## [1.1.2] - 2025-10-26
 
 ## [1.1.3] - 2025-12-02
