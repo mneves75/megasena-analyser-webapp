@@ -1,5 +1,6 @@
 import { getDatabase } from '@/lib/db';
 import { PRIME_NUMBERS } from '@/lib/constants';
+import { roundTo } from '@/lib/utils';
 
 export interface PrimeStats {
   totalPrimes: number;
@@ -74,7 +75,7 @@ export class PrimeAnalysisEngine {
       distribution.push({
         primeCount: i,
         occurrences,
-        percentage: Math.round(percentage * 100) / 100,
+        percentage: roundTo(percentage),
       });
     }
 

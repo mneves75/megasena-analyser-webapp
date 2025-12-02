@@ -18,11 +18,16 @@ export class DelayAnalysisEngine {
   }
 
   getNumberDelays(): DelayStats[] {
-    const latestContest = (
-      this.db
-        .prepare('SELECT MAX(contest_number) as max FROM draws')
-        .get() as { max: number }
-    ).max;
+    const maxResult = this.db
+      .prepare('SELECT MAX(contest_number) as max FROM draws')
+      .get() as { max: number | null } | undefined;
+
+    // Handle empty database case
+    const latestContest = maxResult?.max ?? 0;
+    if (latestContest === 0) {
+      // No draws in database - return empty array or default stats
+      return [];
+    }
 
     // Single optimized query using UNION ALL to get all number occurrences
     const query = `

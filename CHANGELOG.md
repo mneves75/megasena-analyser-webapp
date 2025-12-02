@@ -7,13 +7,46 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.2.0] - 2025-12-02
 
+### Corrigido
+
+- **Formula de Atraso Medio** (`delay-analysis.ts`): Corrigida formula matematica incorreta
+  - **Problema**: `(latestContest - 1) / totalOccurrences` nao representava o espacamento correto
+  - **Solucao**: Formula correta `latestContest / totalOccurrences` para calcular atraso esperado
+  - **Impacto**: Estatisticas de atraso agora refletem valores matematicamente corretos
+
+- **Violacao de Regra no-emoji** (`statistics/page.tsx`): Emojis removidos da pagina de estatisticas
+  - Substituidos emojis de fogo/gelo por icones Lucide (`Flame`, `Snowflake`)
+  - Alinhado com regra CLAUDE.md "Never use emojis!"
+
+- **Edge case banco vazio** (`delay-analysis.ts`): Tratamento para banco de dados vazio
+  - Retorna array vazio ao inves de erro quando nao ha sorteios
+  - Previne crash em inicializacao limpa
+
+### Adicionado
+
+- **Avisos estatisticos** (`statistics/page.tsx`): Disclaimers educativos
+  - Secao Hot/Cold: Alerta sobre Falacia do Jogador e independencia de eventos
+  - Correlacao de Premios: Explicacao que valores dependem de acumulado/ganhadores, nao numeros
+  - Referencia: [Lottery Number Frequency Analysis](https://pickitz.ai/articles/frequency-analysis.html)
+
+- **Testes para DelayAnalysisEngine** (`tests/lib/analytics/delay-analysis.test.ts`, 12 testes)
+  - Cobertura de formula de atraso, categorizacao, edge cases
+  - Skip automatico em ambiente in-memory (Vitest sem Bun)
+
+### Modificado
+
+- **Padronizacao de arredondamento**: Uso consistente de `roundTo()` em analytics
+  - `prime-analysis.ts`: `Math.round(x * 100) / 100` -> `roundTo(x)`
+  - `decade-analysis.ts`: Tres instancias migradas para `roundTo()`
+  - `complexity-score.ts`: Padronizado para usar `roundTo()`
+
 ### Removido
 
 - **Pagina de Changelog** (`/changelog`): Removida pagina web de changelog em favor do CHANGELOG.md no repositorio
 - **Link de Changelog no Footer**: Removido do menu Legal para simplificar navegacao
 - **Emails de contato nas paginas legais**: Removidos de Terms e Privacy para privacidade
 
-### Modificado
+### UI/UX
 
 - **Paginas Terms e Privacy**: Layout redesenhado para consistencia com dashboard
   - Adicionada barra de navegacao superior com links para Estatisticas e Gerador
@@ -27,7 +60,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Validacao de ausencia do link changelog
   - Validacao de presenca de links Terms/Privacy/Dashboard
   - Cobertura de secoes principais e links externos
-  - **Total**: 83 testes passando
+  - **Total**: 95 testes (83 passando + 12 skipped para delay-analysis em ambiente in-memory)
 
 ## [1.1.2] - 2025-10-26
 

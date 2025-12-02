@@ -1,4 +1,5 @@
 import { PRIME_NUMBERS } from '@/lib/constants';
+import { roundTo } from '@/lib/utils';
 
 export interface ComplexityAnalysis {
   totalScore: number;
@@ -109,12 +110,12 @@ export class ComplexityScoreEngine {
         },
         primeCount: {
           count: primeCount,
-          deviation: Math.round(primeDeviation * 100) / 100,
+          deviation: roundTo(primeDeviation),
           score: primeScore,
         },
         sumDeviation: {
           sum,
-          deviation: Math.round(sumDeviation),
+          deviation: roundTo(sumDeviation, 0),
           score: sumScore,
         },
         decadeDiversity: {

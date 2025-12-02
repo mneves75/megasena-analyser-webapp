@@ -1,5 +1,6 @@
 import { getDatabase } from '@/lib/db';
 import { DECADES } from '@/lib/constants';
+import { roundTo } from '@/lib/utils';
 
 export interface DecadeStats {
   decade: string;
@@ -68,9 +69,9 @@ export class DecadeAnalysisEngine {
       results.push({
         decade: decade.label,
         totalOccurrences,
-        percentage: Math.round(percentage * 100) / 100,
-        expectedPercentage: Math.round(expectedPercentage * 100) / 100,
-        deviation: Math.round(deviation * 100) / 100,
+        percentage: roundTo(percentage),
+        expectedPercentage: roundTo(expectedPercentage),
+        deviation: roundTo(deviation),
         topNumbers: topNumbers.slice(0, 3),
       });
     }

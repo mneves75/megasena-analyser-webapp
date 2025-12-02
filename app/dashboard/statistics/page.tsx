@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LotteryBall } from '@/components/lottery-ball';
-import { ArrowLeft, TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake, Info } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
 import type { NumberFrequency, Pattern } from '@/lib/analytics/statistics';
@@ -518,6 +518,15 @@ export default async function StatisticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Statistical disclaimer: Gambler's Fallacy warning */}
+              <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-muted-foreground">
+                <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <p>
+                  <strong className="text-foreground">Nota estatística:</strong> Cada sorteio é um evento independente.
+                  A frequência recente de um número não influencia sua probabilidade em sorteios futuros.
+                  Esta análise é apenas histórica e não possui valor preditivo.
+                </p>
+              </div>
               <div className="space-y-6">
                 <div>
                   <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -587,6 +596,15 @@ export default async function StatisticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Statistical disclaimer: Correlation vs Causation */}
+              <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-muted-foreground">
+                <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <p>
+                  <strong className="text-foreground">Nota estatística:</strong> Os valores dos prêmios dependem do acúmulo do jackpot
+                  e do número de ganhadores, não dos números sorteados. Esta correlação é coincidência estatística,
+                  não indica causalidade.
+                </p>
+              </div>
               <div className="space-y-6">
                 <div>
                   <h4 className="text-sm font-semibold mb-3">Números &quot;Sortudos&quot; (Prêmios Acima da Média)</h4>
