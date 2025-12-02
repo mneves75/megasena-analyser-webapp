@@ -16,9 +16,6 @@ export function Footer(): React.JSX.Element {
               Ferramenta de análise estatística da Mega-Sena para visualização de padrões e geração
               de sugestões de apostas baseadas em dados históricos.
             </p>
-            <p className="text-xs text-muted-foreground">
-              Versão {APP_INFO.VERSION} • Build {APP_INFO.BUILD_DATE}
-            </p>
           </div>
 
           {/* Legal Section */}
@@ -143,4 +140,3 @@ export function Footer(): React.JSX.Element {
     </footer>
   );
 }
-

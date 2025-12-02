@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Footer } from '@/components/footer';
@@ -24,14 +25,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export const dynamic = 'force-dynamic';
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const nonce = headersList.get('x-nonce') ?? undefined;
+
   return (
     <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
-      <body className="antialiased flex min-h-screen flex-col">
+      <head nonce={nonce} />
+      <body className="antialiased flex min-h-screen flex-col" nonce={nonce}>
         <ThemeProvider defaultTheme="system">
           <main className="flex-1">{children}</main>
           <Footer />
@@ -40,4 +47,3 @@ export default function RootLayout({
     </html>
   );
 }
-

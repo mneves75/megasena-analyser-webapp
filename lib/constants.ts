@@ -1,8 +1,8 @@
 // Application Information
 export const APP_INFO = {
   NAME: 'Mega-Sena Analyser',
-  VERSION: '1.1.2',
-  BUILD_DATE: '2025-10-26',
+  VERSION: '1.1.3',
+  BUILD_DATE: '2025-12-02',
   DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
   REPOSITORY: 'https://github.com/megasena-analyser',
   AUTHOR: 'Mega-Sena Analyser Team',
@@ -129,4 +129,3 @@ export const DECADES = [
   { label: '41-50', range: [41, 50] as const },
   { label: '51-60', range: [51, 60] as const },
 ] as const;
-

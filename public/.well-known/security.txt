@@ -1,0 +1,5 @@
+Contact: mailto:security@conhecendotudo.online
+Expires: 2026-12-31T23:59:59Z
+Preferred-Languages: pt-BR, en
+Canonical: https://conhecendotudo.online/.well-known/security.txt
+Policy: https://conhecendotudo.online/security-policy

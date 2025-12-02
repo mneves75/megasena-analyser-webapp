@@ -131,7 +131,7 @@ export class PairAnalysisEngine {
     } catch (error) {
       try {
         this.db.exec('ROLLBACK');
-      } catch (rollbackError) {
+      } catch {
         // Transaction was already rolled back by SQLite
       }
       throw error;
@@ -200,4 +200,3 @@ export class PairAnalysisEngine {
       .slice(0, limit);
   }
 }
-

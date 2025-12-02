@@ -22,6 +22,9 @@ jobs:
     name: Fetch and Upload Latest Draws
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      VPS_DEPLOY_USER: ${{ vars.VPS_DEPLOY_USER || 'deploy' }}
+      VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH || '/home/deploy/coolify-migration/compose/megasena-analyser/db' }}
 
     steps:
       - name: Checkout repository
@@ -80,7 +83,7 @@ jobs:
           ssh-keyscan -p ${VPS_PORT:-22} $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
 
           # Test SSH connection
-          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST "echo '✓ SSH connection successful'"
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no ${VPS_DEPLOY_USER:-deploy}@$VPS_HOST "echo '✓ SSH connection successful'"
 
       - name: Upload database to VPS
         if: steps.fetch_draws.outputs.new_draws != '0' && inputs.dry_run != 'true'
@@ -92,7 +95,7 @@ jobs:
 
           # Upload database
           scp -i ~/.ssh/id_ed25519 -P ${VPS_PORT:-22} -o StrictHostKeyChecking=no \
-            db/mega-sena.db root@$VPS_HOST:/tmp/mega-sena-github.db
+            db/mega-sena.db ${VPS_DEPLOY_USER:-deploy}@$VPS_HOST:/tmp/mega-sena-github.db
 
           echo "✓ Database uploaded to /tmp/mega-sena-github.db"
 
@@ -104,9 +107,9 @@ jobs:
         run: |
           echo "Replacing database on VPS..."
 
-          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no ${VPS_DEPLOY_USER:-deploy}@$VPS_HOST << 'ENDSSH'
             set -e
-            cd /root/coolify-migration/compose/megasena-analyser/db
+            cd ${VPS_DEPLOY_PATH:-/home/deploy/coolify-migration/compose/megasena-analyser/db}
 
             # Backup current database
             BACKUP_NAME="mega-sena.db.backup-$(date +%Y%m%d-%H%M%S)"
@@ -142,7 +145,7 @@ jobs:
         run: |
           echo "Verifying database update on VPS..."
 
-          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+          ssh -i ~/.ssh/id_ed25519 -p ${VPS_PORT:-22} -o StrictHostKeyChecking=no ${VPS_DEPLOY_USER:-deploy}@$VPS_HOST << 'ENDSSH'
             # Check database in container
             sudo docker exec megasena-analyzer bun -e "
               const db = require('bun:sqlite').default('/app/db/mega-sena.db');

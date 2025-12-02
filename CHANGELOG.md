@@ -7,6 +7,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.1.2] - 2025-10-26
 
+## [1.1.3] - 2025-12-02
+
+### 🔐 Segurança
+
+- CSP migrado para nonces via `proxy.ts` com `strict-dynamic`, `object-src 'none'`, COOP/COEP/CORP e HSTS preload em produção.
+- Removido header estático com `'unsafe-inline'` do `next.config.js`; nonces propagados pelo layout.
+- Adicionado `public/.well-known/security.txt` (RFC 9116) para canal de disclosure.
+- Workflow `update-draws.yml` agora usa usuário `deploy` e caminho configurável, evitando acesso root.
+
+### 🧪 Testes
+
+- Novos testes unitários para `buildCsp`/`buildSecurityHeaders` garantindo ausência de `unsafe-inline` em produção e presença de HSTS/COOP/COEP.
+
 ### 🐛 Corrigido
 
 - **CRÍTICO**: Eliminado anti-pattern de useEffect em paginação de apostas (`bet-list.tsx`)
