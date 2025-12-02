@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildCsp, buildSecurityHeaders, generateNonce, isDevelopment } from './lib/security/csp';
 
-export function proxy(request: NextRequest): NextResponse {
+export function middleware(request: NextRequest): NextResponse {
   const nonce = generateNonce();
   const isDev = isDevelopment();
   const csp = buildCsp({ nonce, isDev });
@@ -27,8 +27,10 @@ export function proxy(request: NextRequest): NextResponse {
 export const config = {
   matcher: [
     {
-      // Skip static assets and API routes; ignore prefetch hints to avoid duplicate work
-      source: '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+      // Skip static assets, API routes, and well-known files
+      // Prefetch requests are also excluded to avoid duplicate nonce generation
+      source:
+        '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|\\.well-known).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

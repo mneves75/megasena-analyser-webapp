@@ -27,7 +27,7 @@ export default function ChangelogPage(): React.JSX.Element {
       </div>
 
       <div className="space-y-8">
-        {/* Version 1.0.3 */}
+        {/* Version 1.2.0 */}
         <div className="border-l-2 border-primary pl-6">
           <div className="mb-4 flex items-center gap-3">
             <Badge variant="default" className="text-base">
@@ -38,17 +38,117 @@ export default function ChangelogPage(): React.JSX.Element {
           </div>
 
           <div className="space-y-6">
-            {/* Corrigido */}
+            {/* Segurança */}
             <div>
-              <h3 className="mb-2 text-lg font-semibold text-green-600 dark:text-green-500">
-                🐛 Corrigido
+              <h3 className="mb-2 text-lg font-semibold text-blue-600 dark:text-blue-500">
+                Seguranca
               </h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex gap-2">
                   <span className="text-muted-foreground">•</span>
                   <span>
-                    Corrigido erro React &quot;does not recognize the `asChild` prop on a DOM
-                    element&quot; no componente Button ao remover a propagação não intencional da
+                    <strong>CSP com Nonces:</strong> Implementado Content Security Policy baseado em
+                    nonces criptograficos via Next.js middleware, eliminando uso de unsafe-inline
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    <strong>Cross-Origin Isolation:</strong> Adicionados headers COEP, COOP e CORP
+                    para protecao contra ataques Spectre
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    <strong>CSP Expandido:</strong> Novos diretivas frame-src, worker-src e
+                    manifest-src seguindo melhores praticas 2025
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    <strong>HSTS Preload:</strong> Strict-Transport-Security com includeSubDomains e
+                    preload directive
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Corrigido */}
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-green-600 dark:text-green-500">
+                Corrigido
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Corrigido middleware.ts: arquivo renomeado de proxy.ts e funcao exportada
+                    corretamente para Next.js reconhecer
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Removidos atributos nonce invalidos de tags HTML (head/body) - Next.js aplica
+                    nonces automaticamente
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Corrigido import de process em Edge Runtime usando process.env diretamente
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Testes */}
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-purple-600 dark:text-purple-500">
+                Testes
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Expandida cobertura de testes de seguranca de 4 para 20 testes (72 testes
+                    totais)
+                  </span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Novos testes para generateNonce, CSP directives e security headers
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Version 1.1.3 */}
+        <div className="border-l-2 border-muted pl-6">
+          <div className="mb-4 flex items-center gap-3">
+            <Badge variant="secondary" className="text-base">
+              v1.1.3
+            </Badge>
+            <span className="text-sm text-muted-foreground">2025-10-01</span>
+          </div>
+
+          <div className="space-y-6">
+            {/* Corrigido */}
+            <div>
+              <h3 className="mb-2 text-lg font-semibold text-green-600 dark:text-green-500">
+                Corrigido
+              </h3>
+              <ul className="space-y-2 text-sm">
+                <li className="flex gap-2">
+                  <span className="text-muted-foreground">•</span>
+                  <span>
+                    Corrigido erro React does not recognize the asChild prop on a DOM
+                    element no componente Button ao remover a propagacao nao intencional da
                     prop para o elemento DOM nativo
                   </span>
                 </li>
@@ -58,22 +158,22 @@ export default function ChangelogPage(): React.JSX.Element {
             {/* Refatorado */}
             <div>
               <h3 className="mb-2 text-lg font-semibold text-blue-600 dark:text-blue-500">
-                🔄 Refatorado
+                Refatorado
               </h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex gap-2">
                   <span className="text-muted-foreground">•</span>
                   <span>
-                    Página de estatísticas agora busca dados da API Bun ao invés de computar
-                    diretamente no servidor Next.js, resolvendo problemas de compilação com
+                    Pagina de estatisticas agora busca dados da API Bun ao inves de computar
+                    diretamente no servidor Next.js, resolvendo problemas de compilacao com
                     bun:sqlite no ambiente Next.js
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-muted-foreground">•</span>
                   <span>
-                    Melhorada a lógica de inicialização do banco de dados para lidar com requisitos
-                    de runtime Bun de forma mais eficaz, incluindo verificações de ambiente e
+                    Melhorada a logica de inicializacao do banco de dados para lidar com requisitos
+                    de runtime Bun de forma mais eficaz, incluindo verificacoes de ambiente e
                     tratamento de erros aprimorado
                   </span>
                 </li>
@@ -83,21 +183,21 @@ export default function ChangelogPage(): React.JSX.Element {
             {/* Documentação */}
             <div>
               <h3 className="mb-2 text-lg font-semibold text-purple-600 dark:text-purple-500">
-                📚 Documentação
+                Documentacao
               </h3>
               <ul className="space-y-2 text-sm">
                 <li className="flex gap-2">
                   <span className="text-muted-foreground">•</span>
                   <span>
-                    Reorganizada estrutura de documentação técnica: movidos arquivos de revisão e
-                    planos de agentes para o subdiretório docs/AGENTS_PLAN/ para melhor organização
+                    Reorganizada estrutura de documentacao tecnica: movidos arquivos de revisao e
+                    planos de agentes para o subdiretorio docs/AGENTS_PLAN/ para melhor organizacao
                   </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-muted-foreground">•</span>
                   <span>
-                    Adicionada revisão &quot;Fresh Eyes Review&quot; (2025-10-01) documentando a
-                    análise técnica da arquitetura e melhorias prioritárias
+                    Adicionada revisao Fresh Eyes Review (2025-10-01) documentando a
+                    analise tecnica da arquitetura e melhorias prioritarias
                   </span>
                 </li>
               </ul>

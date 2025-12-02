@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { headers } from 'next/headers';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Footer } from '@/components/footer';
@@ -32,13 +31,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersList = await headers();
-  const nonce = headersList.get('x-nonce') ?? undefined;
+  // Nonce is set by middleware and automatically applied to Next.js scripts
+  // No need to manually pass nonce to HTML elements - only to custom <Script> components
+  // See: https://nextjs.org/docs/app/guides/content-security-policy
 
   return (
     <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
-      <head nonce={nonce} />
-      <body className="antialiased flex min-h-screen flex-col" nonce={nonce}>
+      <body className="antialiased flex min-h-screen flex-col">
         <ThemeProvider defaultTheme="system">
           <main className="flex-1">{children}</main>
           <Footer />
