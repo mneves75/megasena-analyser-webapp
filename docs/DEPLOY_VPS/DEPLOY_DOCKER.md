@@ -685,48 +685,84 @@ gh workflow run ci-cd.yml
 
 ---
 
-## Cloudflare Integration (Recommended)
+## Cloudflare Integration (Active)
 
-For DDoS protection, CDN caching, and WAF, integrate with Cloudflare:
+Cloudflare proxy is configured for DDoS protection, CDN caching, and WAF.
+
+### Current Status
+
+| Domain | Cloudflare | Status |
+|--------|------------|--------|
+| `megasena-analyzer.com.br` | Proxied | Active |
+| `megasena-analyzer.com` | Proxied | Active |
+| `megasena-analyzer.online` | Pending | Configure in Cloudflare |
 
 ### Setup Steps
 
 1. **Add Domains to Cloudflare**
-   - Create free Cloudflare account
-   - Add each domain: `megasena-analyzer.com.br`, `.com`, `.online`
-   - Set A records pointing to VPS IP with orange cloud (proxied)
+   - Create free Cloudflare account at [cloudflare.com](https://cloudflare.com)
+   - Add each domain and follow DNS setup wizard
+   - Set A records: `@` and `www` pointing to VPS IP (`212.85.2.24`)
+   - Enable orange cloud (Proxied) for DDoS protection
 
-2. **Configure SSL**
-   - SSL/TLS > Overview: Set to "Full (strict)"
+2. **Update Nameservers at Hostinger**
+   - Go to Hostinger hPanel > Domains > DNS/Nameservers
+   - Replace with Cloudflare nameservers (provided after adding domain)
+   - Wait 1-48 hours for propagation
+
+3. **Configure SSL**
+   - SSL/TLS > Overview: Set to **Full (strict)**
    - Edge Certificates: Enable "Always Use HTTPS"
+   - Minimum TLS Version: 1.2
 
-3. **Security Features**
+4. **Security Features**
    - Security > WAF: Enable managed rules
    - Security > Bots: Enable Bot Fight Mode
    - Security > Settings: Set Security Level to "Medium"
 
-4. **Restrict VPS Firewall**
+5. **Restrict VPS Firewall**
    ```bash
-   # After DNS propagates, run firewall script
-   chmod +x scripts/setup-cloudflare-firewall.sh
-   sudo ./scripts/setup-cloudflare-firewall.sh
+   # Upload and run firewall script
+   scp scripts/setup-cloudflare-firewall.sh root@VPS_IP:/root/
+   ssh root@VPS_IP "chmod +x /root/setup-cloudflare-firewall.sh && /root/setup-cloudflare-firewall.sh"
    ```
+
+### Verification Commands
+
+```bash
+# Check site via Cloudflare (should show cf-ray header)
+curl -sI https://megasena-analyzer.com.br | grep -i "cf-ray\|server:"
+
+# Check direct IP access (should return 404 from Traefik)
+curl -sI http://212.85.2.24 | head -3
+```
 
 ### Configuration Files
 
 | File | Purpose |
 |------|---------|
 | `traefik-cloudflare.yaml` | Trusted IPs middleware for Traefik |
-| `traefik-cloudflare-tls.yaml` | Origin certificate configuration |
+| `traefik-cloudflare-tls.yaml` | Origin certificate configuration (optional) |
 | `scripts/setup-cloudflare-firewall.sh` | UFW rules for Cloudflare-only access |
+
+### Important Notes
+
+**Docker and UFW:** Docker bypasses UFW by default. The firewall script configures UFW
+for Cloudflare IPs, but Docker-published ports (80/443 via Traefik) may still respond.
+However, Traefik returns 404 for direct IP access since no Host rule matches, effectively
+protecting the application.
+
+**True IP Hiding:** For complete origin IP hiding, configure iptables rules in the
+DOCKER-USER chain. Current setup provides application-level protection.
 
 ### Benefits
 
-- DDoS protection (L3/L4/L7)
-- Hidden origin IP
+- DDoS protection (L3/L4/L7) via Cloudflare
+- Application protected (direct IP returns 404)
 - CDN caching for static assets
-- WAF protection
-- Bot mitigation
+- WAF protection against common attacks
+- Bot mitigation and challenge pages
+- Free SSL certificates at edge
 
 ---
 
