@@ -179,14 +179,14 @@ Optional tracking of generated bets for future analysis.
 Copy `.env.example` to `.env.local` and customize:
 
 ```bash
-# Base URL usada pelas páginas do App Router para fetches server-side
+# Base URL usada pelas paginas do App Router para fetches server-side
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 # Porta exposta pelo servidor Bun (`server.ts`)
 API_PORT=3201
 
-# (Opcional) Origem permitida para CORS quando habilitado no Bun
-# ALLOWED_ORIGIN=http://localhost:3000
+# CORS: lista de origens permitidas (separadas por virgula)
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3002
 ```
 
 > Os testes executados via `bun run test` simulam o banco de dados usando um driver em memória quando a variável `VITEST` está definida, permitindo rodar a suíte sem o `bun:sqlite` real.
@@ -278,6 +278,42 @@ This application implements comprehensive security measures following OWASP and 
 - **Fail2Ban**: 3 attempts/10 min, 1 hour ban
 - **Docker**: Multi-stage build with non-root user (UID 1001)
 - **Secrets**: Pre-commit hooks with detect-secrets
+
+## Production Deployment
+
+### Domains
+
+The application is configured for multi-domain deployment:
+
+| Domain | Purpose |
+|--------|---------|
+| `megasena-analyzer.com.br` | Primary (Brazilian TLD) |
+| `megasena-analyzer.com` | International |
+| `megasena-analyzer.online` | Alternative |
+
+### Deployment Options
+
+**Docker + Coolify (Recommended)**
+```bash
+# Deploy with Coolify's docker-compose
+docker compose -f docker-compose.coolify.yml up -d --build
+```
+
+**Docker Standalone**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### Cloudflare Integration
+
+For DDoS protection and CDN, Cloudflare proxy is recommended:
+
+1. Add domains to Cloudflare
+2. Set SSL mode to "Full (strict)"
+3. Configure A records pointing to VPS IP (proxied)
+4. Run `scripts/setup-cloudflare-firewall.sh` to restrict VPS access to Cloudflare IPs only
+
+See `docs/DEPLOY_VPS/DEPLOY_DOCKER.md` for detailed instructions.
 
 ## Contributing
 

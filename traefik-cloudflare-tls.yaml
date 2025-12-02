@@ -1,0 +1,33 @@
+# Cloudflare Origin Certificate Configuration for Traefik
+# Place this file in /data/coolify/proxy/dynamic/ on your VPS
+#
+# Prerequisites:
+# 1. Download Origin Certificate from Cloudflare SSL/TLS > Origin Server
+# 2. Save certificate as /data/coolify/proxy/certs/cloudflare-origin.pem
+# 3. Save private key as /data/coolify/proxy/certs/cloudflare-origin.key
+
+tls:
+  certificates:
+    # Cloudflare Origin Certificate - covers all domains
+    - certFile: /traefik/certs/cloudflare-origin.pem
+      keyFile: /traefik/certs/cloudflare-origin.key
+      stores:
+        - default
+
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /traefik/certs/cloudflare-origin.pem
+        keyFile: /traefik/certs/cloudflare-origin.key
+
+  options:
+    default:
+      minVersion: VersionTLS12
+      sniStrict: true
+      cipherSuites:
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256

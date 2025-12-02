@@ -5,6 +5,46 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.1] - 2025-12-02
+
+### Infraestrutura
+
+- **Configuracao Multi-Dominio**: Suporte para tres dominios simultaneos
+  - `megasena-analyzer.com.br` (dominio principal, TLD brasileiro)
+  - `megasena-analyzer.com` (TLD generico internacional)
+  - `megasena-analyzer.online` (TLD moderno)
+  - Traefik labels atualizados com regra `Host()` para todos os dominios
+  - CORS configurado para aceitar origens de todos os dominios
+
+- **Preparacao para Cloudflare**: Arquivos de configuracao para proxy reverso Cloudflare
+  - `traefik-cloudflare.yaml`: Middleware para IPs confiaveis do Cloudflare
+  - `traefik-cloudflare-tls.yaml`: Configuracao de certificado de origem
+  - `scripts/setup-cloudflare-firewall.sh`: Script UFW para restringir acesso a IPs Cloudflare
+  - Protecao DDoS, WAF e CDN via Cloudflare (configuracao manual necessaria)
+
+### Modificado
+
+- **docker-compose.coolify.yml**: Atualizado para multi-dominio
+  - Removido atributo `version` obsoleto
+  - Adicionadas labels Traefik para HTTP->HTTPS redirect em todos os dominios
+  - Adicionada configuracao TLS SAN para certificado unico cobrindo todos os dominios
+  - Variavel `ALLOWED_ORIGINS` com lista de origens permitidas
+
+- **app/layout.tsx**: Adicionado `metadataBase` para SEO
+  - URLs canonicas geradas corretamente
+  - OpenGraph e Twitter Cards com URLs absolutas
+  - Suporte a alternates para SEO multi-dominio
+
+- **.env.example**: Atualizado `ALLOWED_ORIGIN` para `ALLOWED_ORIGINS` (plural)
+  - Alinhado com server.ts que ja esperava lista separada por virgulas
+
+### Documentacao
+
+- Atualizado docs de deploy com instrucoes Cloudflare
+- Adicionados scripts de automacao para firewall
+
+---
+
 ## [1.2.0] - 2025-12-02
 
 ### Corrigido

@@ -1,0 +1,34 @@
+# Cloudflare Trusted IPs Configuration for Traefik
+# Place this file in /data/coolify/proxy/dynamic/ on your VPS
+#
+# This configuration:
+# 1. Trusts Cloudflare proxy headers (CF-Connecting-IP)
+# 2. Enables real client IP detection behind Cloudflare
+# 3. Adds Cloudflare-specific middlewares
+#
+# Cloudflare IP Ranges (updated 2025-12):
+# https://www.cloudflare.com/ips/
+
+http:
+  middlewares:
+    # Middleware to add Cloudflare-specific headers handling
+    cloudflare-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        # Ensure real IP is passed through
+        hostsProxyHeaders:
+          - "CF-Connecting-IP"
+          - "X-Forwarded-For"
+
+    # Rate limiting for Cloudflare (in addition to Cloudflare's own)
+    cloudflare-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+
+# Note: Traefik entrypoint configuration for trusted IPs must be done
+# via CLI args or static configuration. Add these to Coolify's Traefik:
+#
+# --entrypoints.https.forwardedHeaders.trustedIPs=173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32

@@ -685,16 +685,79 @@ gh workflow run ci-cd.yml
 
 ---
 
+## Cloudflare Integration (Recommended)
+
+For DDoS protection, CDN caching, and WAF, integrate with Cloudflare:
+
+### Setup Steps
+
+1. **Add Domains to Cloudflare**
+   - Create free Cloudflare account
+   - Add each domain: `megasena-analyzer.com.br`, `.com`, `.online`
+   - Set A records pointing to VPS IP with orange cloud (proxied)
+
+2. **Configure SSL**
+   - SSL/TLS > Overview: Set to "Full (strict)"
+   - Edge Certificates: Enable "Always Use HTTPS"
+
+3. **Security Features**
+   - Security > WAF: Enable managed rules
+   - Security > Bots: Enable Bot Fight Mode
+   - Security > Settings: Set Security Level to "Medium"
+
+4. **Restrict VPS Firewall**
+   ```bash
+   # After DNS propagates, run firewall script
+   chmod +x scripts/setup-cloudflare-firewall.sh
+   sudo ./scripts/setup-cloudflare-firewall.sh
+   ```
+
+### Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `traefik-cloudflare.yaml` | Trusted IPs middleware for Traefik |
+| `traefik-cloudflare-tls.yaml` | Origin certificate configuration |
+| `scripts/setup-cloudflare-firewall.sh` | UFW rules for Cloudflare-only access |
+
+### Benefits
+
+- DDoS protection (L3/L4/L7)
+- Hidden origin IP
+- CDN caching for static assets
+- WAF protection
+- Bot mitigation
+
+---
+
+## Multi-Domain Configuration
+
+The application supports three domains simultaneously:
+
+| Domain | Purpose | CORS |
+|--------|---------|------|
+| `megasena-analyzer.com.br` | Primary (canonical URLs) | Allowed |
+| `megasena-analyzer.com` | International | Allowed |
+| `megasena-analyzer.online` | Alternative | Allowed |
+
+Traefik routing is configured in `docker-compose.coolify.yml` with the label:
+```yaml
+traefik.http.routers.megasena-analyzer.rule=Host(`megasena-analyzer.com.br`) || Host(`megasena-analyzer.com`) || Host(`megasena-analyzer.online`)
+```
+
+---
+
 ## Support & Resources
 
 - **Documentation:** `/docs/`
 - **Issues:** GitHub Issues
 - **Logs:** `docker compose logs -f`
 - **Health Check:** http://localhost:3201/api/health
+- **Domains:** megasena-analyzer.com.br | .com | .online
 
 ---
 
-**Last Updated:** 2025-10-01
-**Deployment Version:** 1.1.0
+**Last Updated:** 2025-12-02
+**Deployment Version:** 1.2.1
 **Docker Version:** 24.0+
 **Docker Compose Version:** 2.0+
