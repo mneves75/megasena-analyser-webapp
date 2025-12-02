@@ -18,12 +18,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **FOLLOW THESE GUIDELINES ALWAYS!**
 
+**Knowledge Base:** Treat `DOCS/GUIDELINES-REF/` as the canonical knowledge base. Consult it first for direction. Key references:
+- **`DOCS/GUIDELINES-REF/CLAUDE.md`** - Universal guide for effective CLAUDE.md files and AI-assisted development
+- **`DOCS/GUIDELINES-REF/SECURITY-GUIDELINES.md`** - Zero Trust, input validation, CSP, CORS, authentication
+- **`DOCS/GUIDELINES-REF/DEV-GUIDELINES.md`** - Core development standards, TypeScript patterns, testing
+- **`DOCS/GUIDELINES-REF/DB-GUIDELINES.md`** - Database best practices, soft deletes, parameterized queries
+- **`DOCS/GUIDELINES-REF/WEB-NEXTJS-GUIDELINES.md`** - Next.js 15, React 19, Server Components, Server Actions
+
+**Project-Specific Rules:**
 - **Never create markdown files after you are done. NEVER!** Use `agent_planning/` for planning docs only, archive when done in `agent_planning/archive/`. Do NOT externalize or document your work, usage guidelines, or benchmarks in markdown files after completing the task, unless explicitly instructed to do so.
 - **Never use emojis!** No emojis in code, commit messages, or any output.
 - **Think critically and push reasoning to 100% of capacity.** I'm trying to stay a critical and sharp analytical thinker. Walk me through your thought process step by step. The best people in the domain will verify what you do. Think hard! Be a critical thinker!
 - **Use `ast-grep` for syntax-aware searches.** This environment has `ast-grep` available. Whenever a search requires syntax-aware or structural matching, default to `ast-grep --lang <language> -p '<pattern>'` (set `--lang` appropriately: typescript, javascript, python, etc.) and avoid falling back to text-only tools like `rg` or `grep` unless explicitly requested for plain-text search.
 - **Sacrifice grammar for the sake of concision.** Be brief and direct.
 - **List any unresolved questions at the end of your response, if any exist.**
+- **ALWAYS work through lists / todo / plans items and not stop until all the work is done and you are 100% certain that it works!**
+- **WE NEVER WANT WORKAROUNDS**: Always full implementations that are long-term sustainable. No half-baked solutions.
 
 ## Tech Stack
 

@@ -10,11 +10,17 @@
 - **Use `ast-grep` for syntax-aware searches.** This environment has `ast-grep` available. Whenever a search requires syntax-aware or structural matching, default to `ast-grep --lang <language> -p '<pattern>'` (set `--lang` appropriately: typescript, javascript, python, etc.) and avoid falling back to text-only tools like `rg` or `grep` unless explicitly requested for plain-text search.
 - **Sacrifice grammar for the sake of concision.** Be brief and direct.
 - **List any unresolved questions at the end of your response, if any exist.**
+- **Work through every listed task/plan item before stopping; do not quit while items remain.**
+- **No workarounds.** Deliver full, durable solutions instead of temporary patches.
+- **Treat `docs/GUIDELINES-REF/` as the canonical knowledge base.** Read relevant files for each task (e.g., `PRAGMATIC-RULES.md`, `WEB-NEXTJS-GUIDELINES.md`, `SECURITY-GUIDELINES.md`) and cite them when explaining decisions.
+- **Security, logging, audit are mandatory.** Apply `SECURITY-GUIDELINES.md`, `LOG-GUIDELINES.md`, and `AUDIT-GUIDELINES.md` on every task; avoid client-side secrets and sanitize inputs/outputs.
+- **Product reality:** Lottery prediction is impossible—limit claims to verifiable historical analysis, pattern detection, and budget-aware strategies; avoid speculation.
 
 ## Project Structure & Module Organization
 - `app/` hosts App Router routes; the dashboard entry point is `app/dashboard/page.tsx`.
 - `components/` keeps reusable UI built with Tailwind tokens and shadcn/ui variants.
-- `lib/` groups analytics (`lib/analytics/`), Caixa clients (`lib/api/`), and shared config (`lib/constants.ts`).
+- `lib/` groups analytics (`lib/analytics/`), Caixa clients (`lib/api/`), security (`lib/security/`), and shared config (`lib/constants.ts`).
+- `middleware.ts` handles CSP nonces and security headers for all page requests.
 - `db/` stores SQLite assets: migrations in `db/migrations/` and the main database file `db/mega-sena.db`.
 - `scripts/` bundles Bun CLIs such as `scripts/pull-draws.ts` for ingesting and seeding draws.
 - `tests/` mirrors source modules for Vitest (`tests/lib`) and Playwright (`tests/app`), with MSW mocks in `tests/mocks`.
@@ -32,6 +38,8 @@
 - `bun run test` executes Vitest suites; append `-- --run` in CI to disable watch mode
 - `bunx vitest --coverage` must report ≥80% line coverage
 - `bun run build` bundles for production and type-checks
+- `bun scripts/pull-draws.ts` ingests all draws; `bun scripts/pull-draws.ts --incremental` pulls only new draws
+- `bun scripts/optimize-db.ts` runs WAL checkpoint, VACUUM, and ANALYZE after large ingests
 
 ## Coding Style & Naming Conventions
 - Use strict TypeScript with explicit returns on exported APIs.
@@ -182,12 +190,23 @@ app/
 - Better performance with server-side rendering
 - Cleaner separation of concerns
 
+## Data Source & API Discipline
+- Official draws come from `https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena`; use backoff and ETag/If-Modified-Since; never fabricate data on failure—log and surface errors.
+
+## Database Operations (SQLite WAL)
+- Batch writes inside explicit transactions (`BEGIN`/`COMMIT`; `ROLLBACK` on error) to avoid slow per-row commits.
+- Ensure disk has ≥15–20% free space; low space triggers `SQLITE_IOERR_VNODE`.
+- Run `bun scripts/optimize-db.ts` after heavy ingest (WAL checkpoint, VACUUM, ANALYZE).
+- Default to soft deletes; ensure queries filter on `deleted_at IS NULL`.
+- Wrap DB calls in try/catch and log full errors; never bypass error handling.
+
 ## Testing Guidelines
 - Unit specs live in `tests/lib/**/{file}.test.ts`; mock HTTP with MSW handlers
 - UI flows live in `tests/app/**/{route}.spec.ts` using Playwright
 - Prime SQLite via `bun scripts/pull-draws.ts --limit 5`, which seeds the `db/mega-sena.db` test copy
 - Database uses `bun:sqlite` (native), not `better-sqlite3`
 - Fail CI if `bunx vitest --coverage` drops below 80%
+- Logging/audit coverage required for user actions per `LOG-GUIDELINES.md` and `AUDIT-GUIDELINES.md`.
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commits (`feat: add jackpot probability panel`) with single-focus changes.

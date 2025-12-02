@@ -10,6 +10,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 - **Dashboard Interativo**: Visualização clara e moderna dos dados
 - **Banco de Dados Local**: SQLite com dados históricos completos da CAIXA
 - **API Integration**: Conexão com a API oficial do Portal de Loterias da CAIXA
+- **Security Hardened**: CSP com nonces, CORS estrito, rate limiting, validação Zod
 
 ## Tech Stack
 
@@ -134,12 +135,15 @@ This script performs:
 ├── lib/                   # Core libraries
 │   ├── analytics/        # Statistics & bet generation
 │   ├── api/              # CAIXA API client
+│   ├── security/         # CSP and security headers
 │   ├── db.ts             # Database utilities
 │   ├── constants.ts      # Shared constants
 │   └── utils.ts          # Helper functions
 ├── db/                    # SQLite database
 │   ├── migrations/       # SQL migrations
 │   └── mega-sena.db      # Database file (generated)
+├── middleware.ts          # Next.js middleware (CSP nonces, security headers)
+├── server.ts              # Bun API server
 └── scripts/               # CLI scripts
     ├── migrate.ts        # Migration runner
     └── pull-draws.ts     # Data ingestion
@@ -242,6 +246,38 @@ Generate bets based on budget, strategy, and mode.
   }
 }
 ```
+
+## Security
+
+This application implements comprehensive security measures following OWASP and 2025 best practices:
+
+### Content Security Policy (CSP)
+- **Nonce-based CSP**: Cryptographic nonces generated per-request via Next.js middleware
+- **strict-dynamic**: Enables trusted script loading without unsafe-inline
+- **Frame protection**: frame-src, frame-ancestors set to 'none'
+
+### Security Headers
+| Header | Value |
+|--------|-------|
+| Content-Security-Policy | Nonce-based with strict-dynamic |
+| Cross-Origin-Embedder-Policy | require-corp |
+| Cross-Origin-Opener-Policy | same-origin |
+| Cross-Origin-Resource-Policy | same-origin |
+| Strict-Transport-Security | max-age=31536000; includeSubDomains; preload |
+| X-Content-Type-Options | nosniff |
+| X-Frame-Options | DENY |
+
+### API Security
+- **Input Validation**: Zod schemas on all endpoints
+- **Rate Limiting**: 100 requests/minute per IP with LRU cache
+- **CORS**: Strict origin validation, no wildcards in production
+- **SQL Injection**: Parameterized queries with bun:sqlite
+
+### Infrastructure
+- **SSH**: Ed25519 key authentication only
+- **Fail2Ban**: 3 attempts/10 min, 1 hour ban
+- **Docker**: Multi-stage build with non-root user (UID 1001)
+- **Secrets**: Pre-commit hooks with detect-secrets
 
 ## Contributing
 
