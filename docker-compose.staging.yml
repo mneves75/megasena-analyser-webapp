@@ -1,0 +1,88 @@
+# ============================================================================
+# Coolify Staging Deployment Configuration
+# Domain: staging.megasena-analyzer.com.br
+# Path: /root/coolify-migration/compose/megasena-analyser-staging/docker-compose.yml
+# ============================================================================
+
+services:
+  app:
+    # Build from repository root
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+
+    container_name: megasena-analyzer-staging
+
+    # Expose port 80 for Traefik
+    expose:
+      - "80"
+
+    # Staging environment variables
+    environment:
+      - NODE_ENV=production
+      - PORT=80
+      - API_PORT=3201
+      - API_HOST=localhost
+      - DATABASE_PATH=/app/db/mega-sena.db
+      - NEXT_PUBLIC_BASE_URL=https://staging.megasena-analyzer.com.br
+      - NEXT_TELEMETRY_DISABLED=1
+      - ALLOWED_ORIGINS=https://staging.megasena-analyzer.com.br
+
+    # Persist database (isolated from production)
+    volumes:
+      - ./db:/app/db
+      - ./logs:/app/logs
+
+    # Auto-restart on failure
+    restart: unless-stopped
+
+    # Health check for Coolify monitoring
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource limits (lower for staging)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 384M
+        reservations:
+          cpus: '0.25'
+          memory: 192M
+
+    # Traefik labels for staging domain
+    labels:
+      - "coolify.managed=true"
+      - "traefik.enable=true"
+
+      # HTTPS Router
+      - "traefik.http.routers.megasena-staging.entrypoints=https"
+      - "traefik.http.routers.megasena-staging.tls=true"
+      - "traefik.http.routers.megasena-staging.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.megasena-staging.rule=Host(`staging.megasena-analyzer.com.br`)"
+
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.megasena-staging-http.entrypoints=http"
+      - "traefik.http.routers.megasena-staging-http.rule=Host(`staging.megasena-analyzer.com.br`)"
+      - "traefik.http.routers.megasena-staging-http.middlewares=redirect-to-https-staging"
+      - "traefik.http.middlewares.redirect-to-https-staging.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https-staging.redirectscheme.permanent=true"
+
+      # Service configuration
+      - "traefik.http.services.megasena-staging.loadbalancer.server.port=80"
+
+      # Rate limiting (more relaxed for testing)
+      - "traefik.http.middlewares.megasena-staging-ratelimit.rateLimit.average=200"
+      - "traefik.http.middlewares.megasena-staging-ratelimit.rateLimit.burst=100"
+
+# Use Coolify's network
+networks:
+  default:
+    name: coolify
+    external: true
