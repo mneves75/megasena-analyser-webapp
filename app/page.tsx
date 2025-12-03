@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Sparkles, TrendingUp, Zap } from 'lucide-react';
+import { BarChart3, Sparkles, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function HomePage() {
@@ -41,6 +41,27 @@ export default function HomePage() {
             title="Análise em Tempo Real"
             description="Dados atualizados da API oficial da CAIXA"
           />
+        </div>
+
+        {/* DISCLAIMER - VISIVEL NA HOME */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="rounded-xl border border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">
+                  Aviso importante
+                </p>
+                <p className="text-amber-700 dark:text-amber-400">
+                  Esta ferramenta NAO aumenta suas chances de ganhar. A Mega-Sena e puramente aleatoria.
+                  Jogue com responsabilidade.{' '}
+                  <Link href="/terms" className="underline hover:no-underline">
+                    Termos de uso
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="text-center">

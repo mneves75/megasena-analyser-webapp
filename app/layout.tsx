@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Script from 'next/script';
 import './globals.css';
 import { Footer } from '@/components/footer';
 import { ThemeProvider } from '@/components/theme-provider';
-
-const GA_MEASUREMENT_ID = 'G-V7N39D5EYL';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -54,20 +51,6 @@ export default async function RootLayout({
 
   return (
     <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
-      <head>
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
-      </head>
       <body className="antialiased flex min-h-screen flex-col">
         <ThemeProvider defaultTheme="system">
           <main className="flex-1">{children}</main>

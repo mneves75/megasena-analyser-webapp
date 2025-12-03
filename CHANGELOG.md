@@ -5,17 +5,26 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [1.2.3] - 2025-12-03
+## [1.2.4] - 2025-12-03
 
-### Adicionado
+### Alterado
 
-- **Google Analytics**: Integracao com Google Analytics 4 (GA4)
-  - Measurement ID: G-V7N39D5EYL
-  - Carregamento via Next.js Script component com `strategy="afterInteractive"`
-  - CSP atualizado para permitir dominios do Google Analytics:
-    - `script-src`: googletagmanager.com
-    - `connect-src`: google-analytics.com, googletagmanager.com, analytics.google.com
-    - `img-src`: google-analytics.com, googletagmanager.com
+- **Privacy e Terms reescritos**: Abordagem minimalista e honesta
+  - Privacy: 6 secoes claras, foco em "nao coletamos dados pessoais"
+  - Terms: 7 secoes com disclaimer agressivo sobre loteria ser aleatoria
+  - Isencao de responsabilidade reforçada
+  - Removida falsa alegacao de "assessoria juridica"
+
+- **Disclaimer na home page**: Aviso visivel antes do botao de acesso
+  - "Esta ferramenta NAO aumenta suas chances de ganhar"
+  - Link para termos de uso
+
+### Removido
+
+- **Google Analytics removido**: Decisao de privacidade
+  - Removido GA4 do layout.tsx
+  - Removidas constantes GA do CSP
+  - Zero cookies de rastreamento = politica de privacidade simples
 
 ---
 

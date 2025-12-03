@@ -1,10 +1,5 @@
 const CAIXA_API_ORIGIN = 'https://servicebus2.caixa.gov.br';
 
-// Google Analytics domains
-const GA_SCRIPT_SRC = 'https://www.googletagmanager.com';
-const GA_CONNECT_SRC = 'https://www.google-analytics.com https://www.googletagmanager.com https://analytics.google.com';
-const GA_IMG_SRC = 'https://www.google-analytics.com https://www.googletagmanager.com';
-
 export interface CspOptions {
   nonce: string;
   isDev: boolean;
@@ -20,11 +15,11 @@ export function buildCsp({ nonce, isDev }: CspOptions): string {
   const directives = [
     // Fetch directives - control where resources can be loaded from
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${GA_SCRIPT_SRC}${isDev ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com${isDev ? " 'unsafe-inline'" : ''}`,
-    `img-src 'self' data: blob: ${GA_IMG_SRC}`,
+    "img-src 'self' data: blob:",
     "font-src 'self' https://fonts.gstatic.com data:",
-    `connect-src 'self' ${CAIXA_API_ORIGIN} ${GA_CONNECT_SRC}${
+    `connect-src 'self' ${CAIXA_API_ORIGIN}${
       isDev ? ' http://localhost:* https://localhost:* ws://localhost:*' : ''
     }`,
     "object-src 'none'", // Block plugins (Flash, Java, etc.)
