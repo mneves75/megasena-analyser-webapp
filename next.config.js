@@ -2,11 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
-  },
   async rewrites() {
     // Use environment variables for API host/port to support Docker and distributed deployments
     // Falls back to localhost:3201 for local development

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildCsp, buildSecurityHeaders, generateNonce, isDevelopment } from './lib/security/csp';
 
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const nonce = generateNonce();
   const isDev = isDevelopment();
   const csp = buildCsp({ nonce, isDev });

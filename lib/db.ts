@@ -409,7 +409,6 @@ function initializeDatabase(): BunDatabase {
   // This application is designed to run with Bun runtime only
   // If not running with Bun, the bun:sqlite import will fail appropriately
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Database } = require('bun:sqlite');
     const database = new Database(DB_PATH) as BunDatabase;
     database.exec('PRAGMA journal_mode = WAL');

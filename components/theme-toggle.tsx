@@ -10,6 +10,8 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // This is a valid hydration pattern to prevent SSR/CSR mismatch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
