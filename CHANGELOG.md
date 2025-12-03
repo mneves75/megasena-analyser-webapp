@@ -5,6 +5,20 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.3] - 2025-12-03
+
+### Adicionado
+
+- **Google Analytics**: Integracao com Google Analytics 4 (GA4)
+  - Measurement ID: G-V7N39D5EYL
+  - Carregamento via Next.js Script component com `strategy="afterInteractive"`
+  - CSP atualizado para permitir dominios do Google Analytics:
+    - `script-src`: googletagmanager.com
+    - `connect-src`: google-analytics.com, googletagmanager.com, analytics.google.com
+    - `img-src`: google-analytics.com, googletagmanager.com
+
+---
+
 ## [1.2.2] - 2025-12-03
 
 ### Alterado
