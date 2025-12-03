@@ -5,6 +5,33 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.0] - 2025-12-03
+
+### Alterado
+
+- **Upgrade para Next.js 16**: Major upgrade do framework
+  - Next.js 15.5.4 -> 16.0.7
+  - React 19.1.1 -> 19.2.1
+  - Turbopack agora padrao para builds
+  - Middleware renomeado para proxy (requisito do Next.js 16)
+  - ESLint migrado para flat config (eslint.config.mjs)
+
+### Adicionado
+
+- **Ambiente de staging**: Infraestrutura para testes pre-producao
+  - docker-compose.staging.yml (portas 3100/3401)
+  - scripts/deploy-staging.sh para deploy automatizado
+  - Staging roda em paralelo com producao no mesmo VPS
+
+### Corrigido
+
+- **CSP para HTTP**: Headers de seguranca agora detectam protocolo
+  - `upgrade-insecure-requests` apenas em HTTPS
+  - HSTS apenas em conexoes seguras
+  - Permite acesso via HTTP direto para testes
+
+---
+
 ## [1.2.6] - 2025-12-03
 
 ### Adicionado

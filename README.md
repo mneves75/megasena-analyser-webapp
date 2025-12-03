@@ -14,7 +14,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15 + React 19
+- **Frontend**: Next.js 16 + React 19
 - **Runtime**: Bun ≥1.1 (required)
 - **Database**: SQLite (bun:sqlite - native)
 - **Styling**: Tailwind CSS + shadcn/ui components
@@ -142,7 +142,7 @@ This script performs:
 ├── db/                    # SQLite database
 │   ├── migrations/       # SQL migrations
 │   └── mega-sena.db      # Database file (generated)
-├── middleware.ts          # Next.js middleware (CSP nonces, security headers)
+├── proxy.ts               # Next.js proxy (CSP nonces, security headers)
 ├── server.ts              # Bun API server
 └── scripts/               # CLI scripts
     ├── migrate.ts        # Migration runner
