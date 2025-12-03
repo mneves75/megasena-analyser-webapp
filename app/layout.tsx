@@ -14,26 +14,26 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.c
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
-  title: 'Mega-Sena Analyser | Análise Estatística e Gerador de Apostas',
+  title: 'Mega-Sena Analyzer | Análise Estatística e Gerador de Apostas',
   description:
     'Análise avançada de dados da Mega-Sena com estatísticas, padrões e gerador inteligente de apostas baseado em ciência de dados.',
   keywords: ['mega-sena', 'loteria', 'estatística', 'análise', 'apostas', 'gerador'],
-  authors: [{ name: 'Mega-Sena Analyser' }],
+  authors: [{ name: 'Mega-Sena Analyzer' }],
   robots: 'index, follow',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Mega-Sena Analyser',
+    title: 'Mega-Sena Analyzer',
     description: 'Análise estatística avançada e gerador inteligente de apostas',
     type: 'website',
     url: baseUrl,
-    siteName: 'Mega-Sena Analyser',
+    siteName: 'Mega-Sena Analyzer',
     locale: 'pt_BR',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Mega-Sena Analyser',
+    title: 'Mega-Sena Analyzer',
     description: 'Análise estatística avançada e gerador inteligente de apostas',
   },
 };

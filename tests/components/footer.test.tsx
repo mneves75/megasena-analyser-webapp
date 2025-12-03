@@ -98,7 +98,7 @@ describe('Footer - Core Sections', () => {
     render(<Footer />);
 
     expect(screen.getByText(/2025/)).toBeInTheDocument();
-    expect(screen.getByText(/mega-sena analyser/i)).toBeInTheDocument();
+    expect(screen.getByText(/mega-sena analyzer/i)).toBeInTheDocument();
   });
 });
 

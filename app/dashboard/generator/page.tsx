@@ -11,7 +11,7 @@ export default function GeneratorPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="text-2xl font-bold hover:text-primary transition-smooth">
-              Mega-Sena Analyser
+              Mega-Sena Analyzer
             </Link>
             <div className="flex items-center gap-2">
               <Link href="/dashboard">

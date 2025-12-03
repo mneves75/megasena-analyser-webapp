@@ -33,7 +33,7 @@ const startTime = Date.now();
  * Start both API server and Next.js server
  */
 async function startServers() {
-  logger.info('🐳 Starting Mega-Sena Analyser in Docker container...');
+  logger.info('🐳 Starting Mega-Sena Analyzer in Docker container...');
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`Ports: Next.js=${process.env.PORT || 3000}, API=${process.env.API_PORT || 3201}`);
 
@@ -227,7 +227,7 @@ process.on('unhandledRejection', (reason) => {
 
 (async () => {
   logger.info('═'.repeat(60));
-  logger.info('🎰 Mega-Sena Analyser - Docker Container');
+  logger.info('🎰 Mega-Sena Analyzer - Docker Container');
   logger.info('═'.repeat(60));
 
   // Start servers

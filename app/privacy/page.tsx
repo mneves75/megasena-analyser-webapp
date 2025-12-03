@@ -11,7 +11,7 @@ export default function PrivacyPage(): React.JSX.Element {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold">
-              Mega-Sena Analyser
+              Mega-Sena Analyzer
             </Link>
             <div className="flex items-center gap-2">
               <Link href="/dashboard/statistics">
@@ -54,7 +54,7 @@ export default function PrivacyPage(): React.JSX.Element {
           <h2>1. Introducao</h2>
           <p>
             A sua privacidade e importante para nos. Esta Politica de Privacidade explica como o
-            Mega-Sena Analyser (&quot;nos&quot;, &quot;nosso&quot;, &quot;Plataforma&quot;) coleta,
+            Mega-Sena Analyzer (&quot;nos&quot;, &quot;nosso&quot;, &quot;Plataforma&quot;) coleta,
             usa, armazena e protege suas informacoes pessoais, em conformidade com a Lei Geral de
             Protecao de Dados Pessoais (Lei n 13.709/2018 - LGPD) e demais legislacoes aplicaveis.
           </p>
@@ -62,14 +62,14 @@ export default function PrivacyPage(): React.JSX.Element {
           <h2>2. Controlador de Dados</h2>
           <ul>
             <li>
-              <strong>Controlador de Dados</strong>: Mega-Sena Analyser
+              <strong>Controlador de Dados</strong>: Mega-Sena Analyzer
             </li>
           </ul>
 
           <h2>3. Dados Coletados</h2>
 
           <h3>3.1 Dados Fornecidos Voluntariamente</h3>
-          <p>Atualmente, o Mega-Sena Analyser opera principalmente no lado do cliente, coletando:</p>
+          <p>Atualmente, o Mega-Sena Analyzer opera principalmente no lado do cliente, coletando:</p>
           <ul>
             <li>
               <strong>Preferencias de Uso</strong>: Configuracoes salvas localmente no navegador

@@ -11,7 +11,7 @@ export default function TermsPage(): React.JSX.Element {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold">
-              Mega-Sena Analyser
+              Mega-Sena Analyzer
             </Link>
             <div className="flex items-center gap-2">
               <Link href="/dashboard/statistics">
@@ -50,7 +50,7 @@ export default function TermsPage(): React.JSX.Element {
 
           <h2>1. Aceitacao dos Termos</h2>
           <p>
-            Ao acessar e utilizar o Mega-Sena Analyser (&quot;Servico&quot;, &quot;Plataforma&quot;,
+            Ao acessar e utilizar o Mega-Sena Analyzer (&quot;Servico&quot;, &quot;Plataforma&quot;,
             &quot;Aplicacao&quot;), voce (&quot;Usuario&quot;, &quot;Voce&quot;) concorda em ficar
             vinculado a estes Termos de Servico (&quot;Termos&quot;). Se voce nao concordar com
             qualquer parte destes termos, nao utilize o Servico.
@@ -58,7 +58,7 @@ export default function TermsPage(): React.JSX.Element {
 
           <h2>2. Descricao do Servico</h2>
           <p>
-            O Mega-Sena Analyser e uma ferramenta de analise estatistica e geracao de sugestoes de
+            O Mega-Sena Analyzer e uma ferramenta de analise estatistica e geracao de sugestoes de
             apostas para a loteria Mega-Sena, operada pela Caixa Economica Federal. O Servico
             oferece:
           </p>
@@ -138,7 +138,7 @@ export default function TermsPage(): React.JSX.Element {
           <h3>5.2 Limitacao de Danos</h3>
           <p>
             EM NENHUMA CIRCUNSTANCIA OS DESENVOLVEDORES, MANTENEDORES OU CONTRIBUIDORES DO MEGA-SENA
-            ANALYSER SERAO RESPONSAVEIS POR:
+            ANALYZER SERAO RESPONSAVEIS POR:
           </p>
           <ul>
             <li>Perdas financeiras decorrentes de apostas</li>
@@ -202,7 +202,7 @@ export default function TermsPage(): React.JSX.Element {
               IMPORTANTE: LEIA COM ATENCAO
             </p>
             <p className="mt-2 text-sm text-yellow-800 dark:text-yellow-400">
-              AO UTILIZAR O MEGA-SENA ANALYSER, VOCE RECONHECE TER LIDO, COMPREENDIDO E CONCORDADO
+              AO UTILIZAR O MEGA-SENA ANALYZER, VOCE RECONHECE TER LIDO, COMPREENDIDO E CONCORDADO
               COM ESTES TERMOS DE SERVICO NA INTEGRA. A loteria e um jogo de sorte. Jogue com
               responsabilidade e apenas com valores que pode perder.
             </p>

@@ -5,6 +5,19 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.2] - 2025-12-03
+
+### Alterado
+
+- **Rebranding**: Alterado nome do projeto de "Analyser" para "Analyzer" (padrao americano)
+  - Atualizado em todas as telas (home, dashboard, generator, statistics, terms, privacy)
+  - Atualizado metadados (title, OG tags, authors)
+  - Atualizado constantes (APP_INFO.NAME, AUTHOR)
+  - Atualizado docker startup logs
+  - Atualizado testes unitarios
+
+---
+
 ## [1.2.1] - 2025-12-02
 
 ### Infraestrutura

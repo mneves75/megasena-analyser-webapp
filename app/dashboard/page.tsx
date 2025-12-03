@@ -80,7 +80,7 @@ export default async function DashboardPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold">
-              Mega-Sena Analyser
+              Mega-Sena Analyzer
             </Link>
             <div className="flex items-center gap-2">
               <Link href="/dashboard/statistics">

@@ -1,4 +1,4 @@
-# Mega-Sena Analyser
+# Mega-Sena Analyzer
 
 Análise estatística avançada da Mega-Sena com gerador inteligente de apostas baseado em ciência de dados.
 

@@ -12,7 +12,7 @@ export default function HomePage() {
         </div>
         <header className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-            Mega-Sena Analyser
+            Mega-Sena Analyzer
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Análise estatística avançada e gerador inteligente de apostas baseado em ciência de
