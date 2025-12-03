@@ -5,6 +5,18 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.6] - 2025-12-03
+
+### Adicionado
+
+- **Novo favicon**: Design de bola de loteria com numero 6
+  - Gradiente cyan (cores primarias do app)
+  - Bola principal branca com numero 6
+  - Bolas decorativas coloridas (amarelo, verde, rosa)
+  - Apple Touch Icon (180x180) para iOS
+
+---
+
 ## [1.2.5] - 2025-12-03
 
 ### Corrigido
