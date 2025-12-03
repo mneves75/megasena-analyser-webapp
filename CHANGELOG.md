@@ -5,6 +5,25 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.2.5] - 2025-12-03
+
+### Corrigido
+
+- **Acentuacao em portugues**: Corrigidos todos os acentos nas paginas legais
+  - Privacy: Todos os acentos adicionados (Politica, voce, informacoes, etc.)
+  - Terms: Todos os acentos adicionados (Ultima, aleatorio, decisoes, etc.)
+  - Home disclaimer: Acentos corrigidos (NÃO, aleatória)
+
+- **Footer duplicado**: Removido Footer das paginas Privacy e Terms
+  - Footer ja renderizado pelo layout.tsx global
+  - Evita duplicacao visual no rodape
+
+### Removido
+
+- **REPOSITORY de APP_INFO**: URL do GitHub removida de constants.ts
+
+---
+
 ## [1.2.4] - 2025-12-03
 
 ### Alterado

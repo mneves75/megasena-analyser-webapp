@@ -53,7 +53,7 @@ export default function HomePage() {
                   Aviso importante
                 </p>
                 <p className="text-amber-700 dark:text-amber-400">
-                  Esta ferramenta NAO aumenta suas chances de ganhar. A Mega-Sena e puramente aleatoria.
+                  Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória.
                   Jogue com responsabilidade.{' '}
                   <Link href="/terms" className="underline hover:no-underline">
                     Termos de uso

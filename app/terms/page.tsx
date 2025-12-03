@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ArrowLeft, BarChart3, Sparkles, FileText, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Footer } from '@/components/footer';
 
 export default function TermsPage(): React.JSX.Element {
   return (
@@ -17,7 +16,7 @@ export default function TermsPage(): React.JSX.Element {
               <Link href="/dashboard/statistics">
                 <Button variant="ghost">
                   <BarChart3 className="mr-2 h-4 w-4" />
-                  Estatisticas
+                  Estatísticas
                 </Button>
               </Link>
               <Link href="/dashboard/generator">
@@ -49,7 +48,7 @@ export default function TermsPage(): React.JSX.Element {
           </div>
 
           <p className="text-muted-foreground text-sm">
-            Ultima atualizacao: 3 de dezembro de 2025
+            Última atualização: 3 de dezembro de 2025
           </p>
 
           {/* AVISO PRINCIPAL - O MAIS IMPORTANTE */}
@@ -61,98 +60,96 @@ export default function TermsPage(): React.JSX.Element {
                   AVISO IMPORTANTE
                 </p>
                 <p className="text-red-700 dark:text-red-500 mb-2">
-                  Esta ferramenta <strong>NAO aumenta suas chances de ganhar na loteria</strong>.
+                  Esta ferramenta <strong>NÃO aumenta suas chances de ganhar na loteria</strong>.
                 </p>
                 <p className="text-red-700 dark:text-red-500 text-sm">
-                  A Mega-Sena e um jogo puramente aleatorio. Cada sorteio e independente.
-                  Padroes historicos nao predizem resultados futuros.
-                  Todas as combinacoes tem exatamente a mesma probabilidade.
+                  A Mega-Sena é um jogo puramente aleatório. Cada sorteio é independente.
+                  Padrões históricos não predizem resultados futuros.
+                  Todas as combinações têm exatamente a mesma probabilidade.
                 </p>
               </div>
             </div>
           </div>
 
-          <h2>1. O que e esta ferramenta</h2>
+          <h2>1. O que é esta ferramenta</h2>
           <p>
-            O Mega-Sena Analyzer e uma ferramenta de <strong>visualizacao de dados historicos</strong> da
+            O Mega-Sena Analyzer é uma ferramenta de <strong>visualização de dados históricos</strong> da
             Mega-Sena para fins educacionais e recreativos. Oferece:
           </p>
           <ul>
-            <li>Estatisticas de frequencia de numeros sorteados</li>
-            <li>Visualizacao de padroes historicos</li>
-            <li>Geracao de combinacoes aleatorias para apostas</li>
+            <li>Estatísticas de frequência de números sorteados</li>
+            <li>Visualização de padrões históricos</li>
+            <li>Geração de combinações aleatórias para apostas</li>
           </ul>
 
-          <h2>2. O que esta ferramenta NAO e</h2>
+          <h2>2. O que esta ferramenta NÃO é</h2>
           <ul>
-            <li>NAO e um sistema de previsao de resultados</li>
-            <li>NAO e uma estrategia para aumentar chances de ganhar</li>
-            <li>NAO possui nenhum algoritmo capaz de prever numeros</li>
-            <li>NAO tem vinculo com a Caixa Economica Federal</li>
+            <li>NÃO é um sistema de previsão de resultados</li>
+            <li>NÃO é uma estratégia para aumentar chances de ganhar</li>
+            <li>NÃO possui nenhum algoritmo capaz de prever números</li>
+            <li>NÃO tem vínculo com a Caixa Econômica Federal</li>
           </ul>
 
           <h2>3. Sua responsabilidade</h2>
-          <p>Ao usar esta ferramenta, voce declara que:</p>
+          <p>Ao usar esta ferramenta, você declara que:</p>
           <ul>
             <li>Tem 18 anos ou mais</li>
-            <li>Entende que loteria e jogo de azar</li>
-            <li>Aceita <strong>total responsabilidade</strong> por suas decisoes de apostas</li>
-            <li>Apostara apenas valores que pode perder</li>
+            <li>Entende que loteria é jogo de azar</li>
+            <li>Aceita <strong>total responsabilidade</strong> por suas decisões de apostas</li>
+            <li>Apostará apenas valores que pode perder</li>
           </ul>
 
           {/* ISENCAO DE RESPONSABILIDADE */}
           <div className="not-prose my-8 rounded-xl border border-yellow-500/50 bg-yellow-50 p-6 dark:bg-yellow-950/20">
             <h3 className="font-bold text-yellow-800 dark:text-yellow-400 text-lg mb-4">
-              4. ISENCAO DE RESPONSABILIDADE
+              4. ISENÇÃO DE RESPONSABILIDADE
             </h3>
             <p className="text-yellow-800 dark:text-yellow-400 text-sm mb-4 uppercase font-medium">
-              O servico e fornecido &quot;como esta&quot; (as is), sem garantias de qualquer tipo.
+              O serviço é fornecido &quot;como está&quot; (as is), sem garantias de qualquer tipo.
             </p>
             <p className="text-yellow-700 dark:text-yellow-500 text-sm mb-2">
-              <strong>NAO nos responsabilizamos por:</strong>
+              <strong>NÃO nos responsabilizamos por:</strong>
             </p>
             <ul className="text-yellow-700 dark:text-yellow-500 text-sm space-y-1 list-disc list-inside">
               <li>Perdas financeiras de qualquer natureza</li>
-              <li>Decisoes de apostas baseadas nas informacoes exibidas</li>
-              <li>Interpretacao incorreta das estatisticas</li>
+              <li>Decisões de apostas baseadas nas informações exibidas</li>
+              <li>Interpretação incorreta das estatísticas</li>
               <li>Indisponibilidade ou erros da plataforma</li>
               <li>Danos diretos, indiretos ou consequenciais</li>
             </ul>
           </div>
 
-          <h2>5. Jogo responsavel</h2>
+          <h2>5. Jogo responsável</h2>
           <p>
-            Se voce ou alguem proximo esta enfrentando problemas com jogos de azar:
+            Se você ou alguém próximo está enfrentando problemas com jogos de azar:
           </p>
           <ul>
             <li><strong>CVV</strong>: 188 (24h, gratuito)</li>
-            <li><strong>Jogadores Anonimos</strong>:{' '}
+            <li><strong>Jogadores Anônimos</strong>:{' '}
               <a href="https://www.jogadoresanonimos.com.br" target="_blank" rel="noopener noreferrer">
                 jogadoresanonimos.com.br
               </a>
             </li>
           </ul>
 
-          <h2>6. Alteracoes</h2>
+          <h2>6. Alterações</h2>
           <p>
             Estes termos podem ser alterados a qualquer momento.
-            O uso continuado da plataforma apos alteracoes constitui aceitacao dos novos termos.
+            O uso continuado da plataforma após alterações constitui aceitação dos novos termos.
           </p>
 
-          <h2>7. Lei aplicavel</h2>
+          <h2>7. Lei aplicável</h2>
           <p>
-            Estes termos sao regidos pelas leis da Republica Federativa do Brasil.
+            Estes termos são regidos pelas leis da República Federativa do Brasil.
           </p>
 
           <div className="not-prose mt-8 rounded-lg border border-muted bg-muted/30 p-4">
             <p className="text-sm text-muted-foreground">
-              Ao utilizar o Mega-Sena Analyzer, voce confirma ter lido e concordado com estes termos.
+              Ao utilizar o Mega-Sena Analyzer, você confirma ter lido e concordado com estes termos.
             </p>
           </div>
         </article>
       </main>
-
-      <Footer />
     </div>
   );
 }
