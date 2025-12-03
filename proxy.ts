@@ -4,7 +4,8 @@ import { buildCsp, buildSecurityHeaders, generateNonce, isDevelopment } from './
 export function proxy(request: NextRequest): NextResponse {
   const nonce = generateNonce();
   const isDev = isDevelopment();
-  const csp = buildCsp({ nonce, isDev });
+  const isSecure = request.headers.get('x-forwarded-proto') === 'https' || request.url.startsWith('https');
+  const csp = buildCsp({ nonce, isDev, isSecure });
 
   // Propagate nonce to request so Next can attach it to scripts/styles during render
   const requestHeaders = new Headers(request.headers);
@@ -16,7 +17,7 @@ export function proxy(request: NextRequest): NextResponse {
     },
   });
 
-  const securityHeaders = buildSecurityHeaders(csp, isDev);
+  const securityHeaders = buildSecurityHeaders(csp, isDev, isSecure);
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
