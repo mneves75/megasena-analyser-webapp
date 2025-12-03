@@ -1,7 +1,8 @@
 # ============================================================================
-# Staging Docker Compose Configuration
-# Usage: docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+# Staging Docker Compose Configuration (Standalone)
+# Usage: docker compose -f docker-compose.staging.yml up -d
 # Domain: staging.megasena-analyzer.com.br (via Caddy reverse proxy)
+# NOTE: This is a STANDALONE config, not an override, to avoid port conflicts
 # ============================================================================
 
 services:
@@ -11,6 +12,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
 
     # Staging ports (different from production to allow parallel running)
     # Production: 3000, 3301
@@ -28,6 +31,19 @@ services:
       - NEXT_PUBLIC_BASE_URL=https://staging.megasena-analyzer.com.br
       - NEXT_TELEMETRY_DISABLED=1
       - ALLOWED_ORIGINS=https://staging.megasena-analyzer.com.br
+
+    volumes:
+      - ./db:/app/db
+      - ./logs:/app/logs
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
     # Lower resource limits for staging
     deploy:
@@ -49,3 +65,7 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
+
+networks:
+  default:
+    name: megasena_staging_network

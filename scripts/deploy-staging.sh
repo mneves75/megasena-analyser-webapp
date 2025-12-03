@@ -115,11 +115,11 @@ print_success "Files synced"
 print_header "Building and Deploying"
 
 print_step "Building Docker image..."
-ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml build --no-cache"
+ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.staging.yml build --no-cache"
 print_success "Image built"
 
 print_step "Starting staging container..."
-ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --force-recreate"
+ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.staging.yml up -d --force-recreate"
 
 print_step "Waiting for container startup (30s)..."
 sleep 30
@@ -131,13 +131,13 @@ sleep 30
 print_header "Health Checks"
 
 print_step "Checking container status..."
-CONTAINER_UP=$(ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml ps --format '{{.Status}}' | grep -c 'Up'" || echo "0")
+CONTAINER_UP=$(ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.staging.yml ps --format '{{.Status}}' | grep -c 'Up'" || echo "0")
 
 if [ "$CONTAINER_UP" -gt "0" ]; then
     print_success "Container running"
 else
     print_error "Container not running"
-    ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml logs --tail=50"
+    ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.staging.yml logs --tail=50"
     exit 1
 fi
 
@@ -160,7 +160,7 @@ DB_EXISTS=$(ssh_cmd "test -f $STAGING_DIR/db/mega-sena.db && echo 'yes' || echo 
 
 if [ "$DB_EXISTS" = "no" ] || [ "$DB_EXISTS" = "" ]; then
     print_step "Seeding database with historical draws..."
-    ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T app bun run scripts/pull-draws.ts" || print_warning "Seeding failed - run manually"
+    ssh_cmd "cd $STAGING_DIR && docker compose -f docker-compose.staging.yml exec -T app bun run scripts/pull-draws.ts" || print_warning "Seeding failed - run manually"
     print_success "Database seeded"
 else
     print_success "Database already exists"
@@ -179,10 +179,10 @@ echo "  https://staging.megasena-analyzer.com.br"
 echo ""
 
 echo -e "${BLUE}Container Management:${NC}"
-echo "  • Status:  ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml ps'"
-echo "  • Logs:    ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml logs -f'"
-echo "  • Restart: ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml restart'"
-echo "  • Stop:    ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.yml -f docker-compose.staging.yml down'"
+echo "  • Status:  ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.staging.yml ps'"
+echo "  • Logs:    ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.staging.yml logs -f'"
+echo "  • Restart: ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.staging.yml restart'"
+echo "  • Stop:    ssh $SSH_ALIAS 'cd $STAGING_DIR && docker compose -f docker-compose.staging.yml down'"
 echo ""
 
 echo -e "${BLUE}Ports:${NC}"
