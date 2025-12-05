@@ -5,6 +5,25 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.1] - 2025-12-05
+
+### Adicionado
+
+- **Fonte de dados alternativa**: API Heroku para contornar bloqueio da CAIXA
+  - API oficial CAIXA bloqueada por CDN Azion (geo-restricao ou bot protection)
+  - Nova fonte: `loteriascaixa-api.herokuapp.com/api/megasena`
+  - Suporta busca por concurso especifico: `/api/megasena/{numero}`
+  - Documentacao em `docs/CAIXA_API_ALTERNATIVE.md`
+
+### Dados
+
+- **Atualizacao de sorteios**: 27 novos concursos adicionados
+  - Antes: Concurso #2920 (27/09/2025), 150 sorteios
+  - Depois: Concurso #2947 (04/12/2025), 177 sorteios
+  - Periodo: 30/09/2025 a 04/12/2025
+
+---
+
 ## [1.3.0] - 2025-12-03
 
 ### Alterado
