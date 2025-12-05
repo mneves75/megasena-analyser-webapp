@@ -15,6 +15,23 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Suporta busca por concurso especifico: `/api/megasena/{numero}`
   - Documentacao em `docs/CAIXA_API_ALTERNATIVE.md`
 
+### Corrigido
+
+- **Apostas duplicadas no gerador**: Reescrita completa do algoritmo de deduplicacao
+  - Bug critico: orcamento era debitado mesmo quando aposta nao era adicionada
+  - Pools de candidatos pre-carregados (top 30 hot/cold) para eficiencia
+  - Fisher-Yates shuffle para selecao aleatoria verdadeira
+  - Fallback automatico para random apos 10 tentativas falhas
+  - Limite de 50 tentativas de deduplicacao por aposta
+  - Calculo de orcamento agora 100% preciso
+
+### Alterado
+
+- **CLAUDE.md**: Adicionado Structured Reasoning & Planning Protocol
+  - 9 regras sistematicas para tomada de decisao
+  - Analise de dependencias, riscos, hipoteses
+  - Protocolo de persistencia e precisao
+
 ### Dados
 
 - **Atualizacao de sorteios**: 27 novos concursos adicionados
