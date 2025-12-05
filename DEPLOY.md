@@ -1,7 +1,10 @@
 # Production Deployment Guide
 
-**Target:** Hostinger VPS with Coolify
-**Domain:** https://megasena-analyser.conhecendotudo.online
+**Target:** Hostinger VPS with Coolify/Traefik
+**Domains:**
+- https://megasena-analyzer.com.br (primary)
+- https://megasena-analyzer.com
+- https://megasena-analyzer.online
 **Deployment Time:** ~4-5 minutes
 
 ## Pre-Deployment Checklist
@@ -469,6 +472,62 @@ docker compose up -d --build
 
 ---
 
-**Last Updated:** 2025-10-26
-**Version:** 1.1.2
-**Status:** Production Ready ✅
+## Traefik/Coolify Domain Configuration
+
+The VPS uses Coolify with Traefik as reverse proxy. Domain routing is configured via dynamic YAML files.
+
+### Configuration Location
+
+```
+/data/coolify/proxy/dynamic/megasena-analyzer.yaml
+```
+
+### Configuration Content
+
+```yaml
+http:
+  routers:
+    megasena-http:
+      middlewares:
+        - redirect-to-https
+      entryPoints:
+        - http
+      service: megasena-app
+      rule: Host(`megasena-analyzer.com`) || Host(`www.megasena-analyzer.com`) || Host(`megasena-analyzer.online`) || Host(`www.megasena-analyzer.online`) || Host(`megasena-analyzer.com.br`) || Host(`www.megasena-analyzer.com.br`)
+    megasena-https:
+      entryPoints:
+        - https
+      service: megasena-app
+      rule: Host(`megasena-analyzer.com`) || Host(`www.megasena-analyzer.com`) || Host(`megasena-analyzer.online`) || Host(`www.megasena-analyzer.online`) || Host(`megasena-analyzer.com.br`) || Host(`www.megasena-analyzer.com.br`)
+      tls:
+        certresolver: letsencrypt
+  services:
+    megasena-app:
+      loadBalancer:
+        servers:
+          - url: 'http://megasena-analyser:3000'
+```
+
+### Network Requirements
+
+The container must be connected to the `coolify` network for Traefik to route traffic:
+
+```bash
+docker network connect coolify megasena-analyser
+```
+
+### Verify Routing
+
+```bash
+# Test VPS routing with Host header
+curl -s -H 'Host: megasena-analyzer.com.br' http://localhost:80
+
+# Test HTTPS (bypassing SSL verification for local test)
+curl -s --resolve 'megasena-analyzer.com.br:443:127.0.0.1' -k https://megasena-analyzer.com.br
+```
+
+---
+
+**Last Updated:** 2025-12-05
+**Version:** 1.3.1
+**Status:** Production Ready

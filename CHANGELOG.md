@@ -9,6 +9,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Dominios de producao configurados**: Traefik routing para tres dominios
+  - `megasena-analyzer.com.br` (primario, TLD brasileiro)
+  - `megasena-analyzer.com` (internacional)
+  - `megasena-analyzer.online` (alternativo)
+  - Config: `/data/coolify/proxy/dynamic/megasena-analyzer.yaml`
+  - Container conectado a rede `coolify` para roteamento
+  - Let's Encrypt SSL automatico via Traefik
+
 - **Fonte de dados alternativa**: API Heroku para contornar bloqueio da CAIXA
   - API oficial CAIXA bloqueada por CDN Azion (geo-restricao ou bot protection)
   - Nova fonte: `loteriascaixa-api.herokuapp.com/api/megasena`

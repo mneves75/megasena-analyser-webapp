@@ -768,18 +768,61 @@ DOCKER-USER chain. Current setup provides application-level protection.
 
 ## Multi-Domain Configuration
 
-The application supports three domains simultaneously:
+The application supports three domains (+ www variants) simultaneously:
 
 | Domain | Purpose | CORS |
 |--------|---------|------|
-| `megasena-analyzer.com.br` | Primary (canonical URLs) | Allowed |
-| `megasena-analyzer.com` | International | Allowed |
-| `megasena-analyzer.online` | Alternative | Allowed |
+| `megasena-analyzer.com.br` | Primary (canonical URLs, TLD brasileiro) | Allowed |
+| `megasena-analyzer.com` | International (TLD generico) | Allowed |
+| `megasena-analyzer.online` | Alternative (TLD moderno) | Allowed |
 
-Traefik routing is configured in `docker-compose.coolify.yml` with the label:
-```yaml
-traefik.http.routers.megasena-analyzer.rule=Host(`megasena-analyzer.com.br`) || Host(`megasena-analyzer.com`) || Host(`megasena-analyzer.online`)
+### Traefik Dynamic Configuration
+
+Domain routing is managed via Traefik dynamic config at:
+
 ```
+/data/coolify/proxy/dynamic/megasena-analyzer.yaml
+```
+
+Configuration:
+```yaml
+http:
+  routers:
+    megasena-http:
+      middlewares:
+        - redirect-to-https
+      entryPoints:
+        - http
+      service: megasena-app
+      rule: Host(`megasena-analyzer.com`) || Host(`www.megasena-analyzer.com`) || Host(`megasena-analyzer.online`) || Host(`www.megasena-analyzer.online`) || Host(`megasena-analyzer.com.br`) || Host(`www.megasena-analyzer.com.br`)
+    megasena-https:
+      entryPoints:
+        - https
+      service: megasena-app
+      rule: Host(`megasena-analyzer.com`) || Host(`www.megasena-analyzer.com`) || Host(`megasena-analyzer.online`) || Host(`www.megasena-analyzer.online`) || Host(`megasena-analyzer.com.br`) || Host(`www.megasena-analyzer.com.br`)
+      tls:
+        certresolver: letsencrypt
+  services:
+    megasena-app:
+      loadBalancer:
+        servers:
+          - url: 'http://megasena-analyser:3000'
+```
+
+### Network Requirements
+
+Container must be connected to `coolify` network for Traefik routing:
+
+```bash
+docker network connect coolify megasena-analyser
+```
+
+### DNS Configuration (Cloudflare)
+
+All domains point to Cloudflare IPs which proxy to VPS:
+- Cloudflare handles SSL termination at edge
+- Origin requests go to VPS port 443
+- Let's Encrypt certificates issued automatically by Traefik
 
 ---
 
@@ -793,7 +836,7 @@ traefik.http.routers.megasena-analyzer.rule=Host(`megasena-analyzer.com.br`) || 
 
 ---
 
-**Last Updated:** 2025-12-02
-**Deployment Version:** 1.2.1
+**Last Updated:** 2025-12-05
+**Deployment Version:** 1.3.1
 **Docker Version:** 24.0+
 **Docker Compose Version:** 2.0+
