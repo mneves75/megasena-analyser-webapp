@@ -5,6 +5,35 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.3.2] - 2025-12-10
+
+### Corrigido
+
+- **Producao offline**: Container parado e sem labels Traefik
+  - Container `megasena-analyser` exited (0) por 7 horas
+  - docker-compose.prod.yml faltando labels Traefik (traefik.enable=true)
+  - Criado `docker-compose.traefik.yml` como overlay de configuracao
+  - Labels adicionados: router, service, tls, certresolver, http-to-https redirect
+  - Container reconectado a rede `coolify` para roteamento via Traefik
+
+### Adicionado
+
+- **docker-compose.traefik.yml**: Overlay de labels Traefik para producao
+  - Roteamento para `megasena-analyser.conhecendotudo.online`
+  - Suporte HTTPS com Let's Encrypt via certresolver
+  - Redirect automatico HTTP -> HTTPS
+  - Porta 3000 exposta para load balancer
+
+### Documentado
+
+- **VPS Troubleshooting**: Processo de diagnostico documentado
+  - Verificar status container: `docker ps -a | grep megasena`
+  - Verificar labels Traefik: `docker inspect --format "{{json .Config.Labels}}"`
+  - Verificar logs Traefik: `docker logs coolify-proxy | grep megasena`
+  - Regra iptables container-to-container: `10.0.0.0/8 -> 10.0.0.0/8 ACCEPT`
+
+---
+
 ## [1.3.1] - 2025-12-05
 
 ### Adicionado

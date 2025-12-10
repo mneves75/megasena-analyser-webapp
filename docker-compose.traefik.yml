@@ -1,0 +1,24 @@
+# ============================================================================
+# Traefik Labels Overlay for Production Deployment
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.traefik.yml up -d
+# ============================================================================
+
+services:
+  app:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.megasena-analyser.entrypoints=https"
+      - "traefik.http.routers.megasena-analyser.tls=true"
+      - "traefik.http.routers.megasena-analyser.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.megasena-analyser.rule=Host(`megasena-analyser.conhecendotudo.online`)"
+      - "traefik.http.services.megasena-analyser.loadbalancer.server.port=3000"
+      - "traefik.http.routers.megasena-analyser-http.entrypoints=http"
+      - "traefik.http.routers.megasena-analyser-http.rule=Host(`megasena-analyser.conhecendotudo.online`)"
+      - "traefik.http.routers.megasena-analyser-http.middlewares=redirect-to-https@docker"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
