@@ -5,6 +5,25 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.4.2] - 2025-12-17
+
+### Correcoes de Deploy
+
+- **Dockerfile**: Adicionado `COPY tsconfig.json` para resolver aliases de path (`@/lib/*`)
+- **deploy.sh**: Corrigido bug de arquivos ocultos - alterado de `cp -r dir/*` para `cp -r dir/.`
+  - Bug fazia com que pasta `.next` (oculta) nao fosse copiada, causando erro "Could not find production build"
+- **Traefik Config**: Documentada localizacao e formato do arquivo de roteamento Coolify
+  - Path: `/data/coolify/proxy/dynamic/megasena-analyzer.yaml`
+  - Este arquivo sobrescreve labels Docker e deve apontar para `http://megasena-analyzer:80`
+
+### Documentacao
+
+- **CLAUDE.md**: Adicionada secao "Production Deployment" com:
+  - Comandos de deploy manual
+  - Tabela de troubleshooting com erros comuns
+  - Comandos de verificacao no VPS
+  - Configuracao do Traefik/Coolify
+
 ## [1.4.1] - 2025-12-17
 
 ### Observabilidade e Auditoria

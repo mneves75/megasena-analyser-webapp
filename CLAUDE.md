@@ -154,6 +154,93 @@ bunx vitest --coverage          # Generate coverage report (≥80% required)
 bun run build                   # Create production bundle + type check
 ```
 
+## Production Deployment
+
+**Target:** Hostinger VPS with Coolify/Traefik
+**Domains:** megasena-analyzer.com.br, .com, .online
+**SSH:** `ssh -i ~/.ssh/id_vps_hostinger_1 root@srv849078.hstgr.cloud`
+
+### Quick Deploy
+
+```bash
+./deploy.sh                    # Full build + deploy
+./deploy.sh --skip-build       # Reuse existing build
+./deploy.sh --image-only       # Build image only
+```
+
+### Manual Deploy Steps (if deploy.sh fails)
+
+```bash
+# 1. Build Next.js locally (avoids QEMU/AVX issues)
+bun --bun next build
+
+# 2. Copy standalone output (CRITICAL: use '.' to include hidden .next folder)
+rm -rf dist/standalone
+mkdir -p dist/standalone
+cp -r .next/standalone/. dist/standalone/
+mkdir -p dist/standalone/.next/static
+cp -r .next/static/. dist/standalone/.next/static/
+
+# 3. Build Docker image with correct platform
+docker build --no-cache --platform linux/amd64 -t megasena-analyzer:latest .
+
+# 4. Save and transfer
+docker save megasena-analyzer:latest | gzip > megasena-analyzer.tar.gz
+scp -i ~/.ssh/id_vps_hostinger_1 megasena-analyzer.tar.gz root@srv849078.hstgr.cloud:/tmp/
+
+# 5. Deploy on VPS
+ssh -i ~/.ssh/id_vps_hostinger_1 root@srv849078.hstgr.cloud << 'EOF'
+docker stop megasena-analyzer; docker rm megasena-analyzer
+docker load < /tmp/megasena-analyzer.tar.gz
+rm -f /tmp/megasena-analyzer.tar.gz
+cd /home/claude/apps/megasena-analyser
+docker compose -f docker-compose.coolify.yml up -d
+EOF
+```
+
+### Common Deployment Issues
+
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `Cannot find package 'zod'` | node_modules not copied to image | Rebuild with `--no-cache` |
+| `Cannot find module '@/lib/db'` | tsconfig.json missing in container | Ensure `COPY tsconfig.json` in Dockerfile |
+| `Could not find production build in .next` | Hidden `.next` folder not copied | Use `cp -r dir/.` instead of `cp -r dir/*` |
+| 502 Bad Gateway (container healthy) | Traefik routing to wrong host/port | Check `/data/coolify/proxy/dynamic/megasena-analyzer.yaml` |
+
+### Traefik Configuration
+
+Coolify manages Traefik config at: `/data/coolify/proxy/dynamic/megasena-analyzer.yaml`
+
+**CRITICAL:** This file overrides Docker labels. If routing fails, verify:
+```yaml
+services:
+  megasena-app:
+    loadBalancer:
+      servers:
+        - url: 'http://megasena-analyzer:80'  # Must match container name and port
+```
+
+After editing: `docker restart coolify-proxy`
+
+### Verification Commands (on VPS)
+
+```bash
+# Container status
+docker ps --filter name=megasena-analyzer
+
+# Health check
+docker inspect megasena-analyzer --format='{{.State.Health.Status}}'
+
+# Network (must be on 'coolify' network)
+docker network inspect coolify | grep megasena
+
+# Direct container test
+docker exec megasena-analyzer curl -s http://localhost:80 | head -5
+
+# Traefik logs
+docker logs coolify-proxy --tail 20 2>&1 | grep megasena
+```
+
 ## Architecture
 
 ### Directory Structure

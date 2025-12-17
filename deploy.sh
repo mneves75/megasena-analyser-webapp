@@ -81,9 +81,14 @@ if [ "$SKIP_BUILD" = false ]; then
     log_info "Found standalone at: ${STANDALONE_DIR}"
 
     # Copy to a consistent location for Docker
+    # CRITICAL: Use '.' suffix to copy hidden files (like .next folder)
+    rm -rf dist/standalone
     mkdir -p dist/standalone
-    cp -r "${STANDALONE_DIR}"/* dist/standalone/
-    cp -r .next/static dist/standalone/.next/static 2>/dev/null || true
+    cp -r "${STANDALONE_DIR}/." dist/standalone/
+
+    # Copy static assets into the .next folder
+    mkdir -p dist/standalone/.next/static
+    cp -r .next/static/. dist/standalone/.next/static/
 
     log_info "[OK] Next.js build complete"
 else

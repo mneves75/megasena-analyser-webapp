@@ -30,6 +30,7 @@ COPY public ./public
 COPY server.ts ./server.ts
 COPY lib ./lib
 COPY package.json ./package.json
+COPY tsconfig.json ./tsconfig.json
 
 # Copy node_modules for API server dependencies (zod, etc.)
 # These are pure JS and cross-platform compatible
