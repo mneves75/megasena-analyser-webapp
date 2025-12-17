@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,21 @@ import type { StreakStats } from '@/lib/analytics/streak-analysis';
 import type { PrizeCorrelation } from '@/lib/analytics/prize-correlation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { BarChart, DonutChart } from '@/components/charts';
+
+export const metadata: Metadata = {
+  title: 'Estatisticas Detalhadas',
+  description:
+    'Estatisticas completas da Mega-Sena: frequencias, padroes, atrasos, dezenas, pares frequentes, paridade, primos, soma e correlacao com premios.',
+  alternates: {
+    canonical: '/dashboard/statistics',
+  },
+  openGraph: {
+    title: 'Estatisticas Detalhadas | Mega-Sena Analyzer',
+    description:
+      'Analise completa de frequencias e padroes dos sorteios da Mega-Sena.',
+    url: '/dashboard/statistics',
+  },
+};
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';

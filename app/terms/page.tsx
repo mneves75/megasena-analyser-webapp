@@ -1,12 +1,54 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Sparkles, FileText, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { JsonLd } from '@/components/seo/json-ld';
+import { generateFAQSchema } from '@/lib/seo/schemas';
+
+export const metadata: Metadata = {
+  title: 'Termos de Uso',
+  description:
+    'Termos de uso do Mega-Sena Analyzer. Ferramenta de visualizacao de dados historicos para fins educacionais. Nao aumenta chances de ganhar.',
+  alternates: {
+    canonical: '/terms',
+  },
+  openGraph: {
+    title: 'Termos de Uso | Mega-Sena Analyzer',
+    description: 'Termos de uso e isencao de responsabilidade do Mega-Sena Analyzer.',
+    url: '/terms',
+  },
+};
+
+const termsFAQs = [
+  {
+    question: 'O Mega-Sena Analyzer aumenta minhas chances de ganhar?',
+    answer:
+      'Nao. Esta ferramenta NAO aumenta suas chances de ganhar na loteria. A Mega-Sena e um jogo puramente aleatorio e cada sorteio e independente.',
+  },
+  {
+    question: 'O que e o Mega-Sena Analyzer?',
+    answer:
+      'E uma ferramenta de visualizacao de dados historicos da Mega-Sena para fins educacionais e recreativos. Oferece estatisticas de frequencia, visualizacao de padroes e geracao de combinacoes aleatorias.',
+  },
+  {
+    question: 'O servico e gratuito?',
+    answer:
+      'Sim, o Mega-Sena Analyzer e totalmente gratuito. Nao cobramos por nenhuma funcionalidade.',
+  },
+  {
+    question: 'Posso usar as estatisticas para prever numeros?',
+    answer:
+      'Nao. Padroes historicos nao predizem resultados futuros. Todas as combinacoes tem exatamente a mesma probabilidade de serem sorteadas.',
+  },
+];
 
 export default function TermsPage(): React.JSX.Element {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur">
+    <>
+      <JsonLd data={generateFAQSchema(termsFAQs)} />
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
+        <nav className="border-b bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold">
@@ -150,6 +192,7 @@ export default function TermsPage(): React.JSX.Element {
           </div>
         </article>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

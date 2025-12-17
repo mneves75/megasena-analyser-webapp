@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",

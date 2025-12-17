@@ -1,7 +1,23 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Sparkles, TrendingUp, Zap, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+export const metadata: Metadata = {
+  title: 'Mega-Sena Analyzer | Analise Estatistica e Gerador de Apostas',
+  description:
+    'Analise avancada de dados historicos da Mega-Sena. Estatisticas de frequencia, padroes e gerador inteligente de apostas. Ferramenta gratuita e educacional.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Mega-Sena Analyzer | Analise Estatistica e Gerador de Apostas',
+    description:
+      'Analise avancada de dados historicos da Mega-Sena com estatisticas, padroes e gerador inteligente de apostas.',
+    url: '/',
+  },
+};
 
 export default function HomePage() {
   return (

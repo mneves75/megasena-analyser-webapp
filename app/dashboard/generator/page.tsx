@@ -1,8 +1,24 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+export const metadata: Metadata = {
+  title: 'Gerador de Apostas',
+  description:
+    'Gerador inteligente de apostas da Mega-Sena com estrategias baseadas em estatisticas. Otimize seu orcamento e crie combinacoes diversificadas.',
+  alternates: {
+    canonical: '/dashboard/generator',
+  },
+  openGraph: {
+    title: 'Gerador de Apostas | Mega-Sena Analyzer',
+    description:
+      'Sistema inteligente de geracao de apostas que minimiza desperdicio de orcamento.',
+    url: '/dashboard/generator',
+  },
+};
 
 export default function GeneratorPage() {
   return (

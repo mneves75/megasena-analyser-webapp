@@ -1,12 +1,54 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, Sparkles, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { JsonLd } from '@/components/seo/json-ld';
+import { generateFAQSchema } from '@/lib/seo/schemas';
+
+export const metadata: Metadata = {
+  title: 'Politica de Privacidade',
+  description:
+    'Politica de privacidade do Mega-Sena Analyzer. Nao coletamos dados pessoais. Sem cookies de rastreamento. Sem analytics. Tudo fica no seu navegador.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  openGraph: {
+    title: 'Politica de Privacidade | Mega-Sena Analyzer',
+    description: 'Nao coletamos dados pessoais. Sua privacidade e nossa prioridade.',
+    url: '/privacy',
+  },
+};
+
+const privacyFAQs = [
+  {
+    question: 'O Mega-Sena Analyzer coleta meus dados pessoais?',
+    answer:
+      'Nao. Nao coletamos nome, e-mail, CPF, documentos, dados financeiros ou historico de navegacao. Nao usamos cookies de rastreamento ou analytics.',
+  },
+  {
+    question: 'Onde ficam armazenadas minhas apostas geradas?',
+    answer:
+      'Todas as informacoes (tema, apostas, configuracoes) ficam salvas apenas no seu navegador (localStorage) e nunca sao enviadas para nossos servidores.',
+  },
+  {
+    question: 'O Mega-Sena Analyzer vende meus dados?',
+    answer:
+      'Nao. Nao vendemos, alugamos ou compartilhamos dados com terceiros. Nao temos parceiros de publicidade ou marketing.',
+  },
+  {
+    question: 'Posso apagar meus dados?',
+    answer:
+      'Sim. Como os dados ficam no seu navegador, voce pode apaga-los a qualquer momento limpando os dados do site nas configuracoes do navegador.',
+  },
+];
 
 export default function PrivacyPage(): React.JSX.Element {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur">
+    <>
+      <JsonLd data={generateFAQSchema(privacyFAQs)} />
+      <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
+        <nav className="border-b bg-card/50 backdrop-blur">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold">
@@ -124,6 +166,7 @@ export default function PrivacyPage(): React.JSX.Element {
           </div>
         </article>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { StatsCard } from '@/components/stats-card';
@@ -16,6 +17,21 @@ import {
 import { LotteryBall } from '@/components/lottery-ball';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  description:
+    'Dashboard da Mega-Sena com estatisticas em tempo real, ultimos sorteios, numeros mais frequentes e taxa de acumulacao. Dados atualizados da CAIXA.',
+  alternates: {
+    canonical: '/dashboard',
+  },
+  openGraph: {
+    title: 'Dashboard | Mega-Sena Analyzer',
+    description:
+      'Visao geral das estatisticas e ultimos sorteios da Mega-Sena com dados atualizados.',
+    url: '/dashboard',
+  },
+};
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
