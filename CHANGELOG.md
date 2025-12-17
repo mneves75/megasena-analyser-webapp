@@ -57,6 +57,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Incompatibilidade glibc/musl documentada
   - Next.js 16 standalone output explicado
   - Flag `--bun` requirement detalhado
+- `AGENTS.md`: Reforcado como entrypoint de regras do repo (mindset, pre-action protocol, stack)
+- `docs/EXECPLAN_2025-12-17_GuidelinesRef_Alignment.md`: ExecPlan detalhado para alinhar com `docs/GUIDELINES-REF/` (logging, audit, configuracao, e remocao de emojis)
 
 ---
 
@@ -328,18 +330,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.1.3] - 2025-12-02
 
-### 🔐 Segurança
+### Segurança
 
 - CSP migrado para nonces via `proxy.ts` com `strict-dynamic`, `object-src 'none'`, COOP/COEP/CORP e HSTS preload em produção.
 - Removido header estático com `'unsafe-inline'` do `next.config.js`; nonces propagados pelo layout.
 - Adicionado `public/.well-known/security.txt` (RFC 9116) para canal de disclosure.
 - Workflow `update-draws.yml` agora usa usuário `deploy` e caminho configurável, evitando acesso root.
 
-### 🧪 Testes
+### Testes
 
 - Novos testes unitários para `buildCsp`/`buildSecurityHeaders` garantindo ausência de `unsafe-inline` em produção e presença de HSTS/COOP/COEP.
 
-### 🐛 Corrigido
+### Corrigido
 
 - **CRÍTICO**: Eliminado anti-pattern de useEffect em paginação de apostas (`bet-list.tsx`)
   - **Problema**: Componente usava `useEffect` para resetar paginação quando resultado mudava, causando renderizações duplas
@@ -347,7 +349,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - **Impacto**: Renderização única ao invés de dupla (effect), código mais idiomático
   - **Referência**: [React: You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes)
 
-### ⚙️ Adicionado
+### Adicionado
 
 - **Suite de Testes para Componentes React** (34 novos testes)
   - `tests/components/bet-list.test.tsx` (11 testes): Paginação, key prop pattern, regression
@@ -360,7 +362,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Configurado em `tests/setup.ts` para todos os testes de componentes
   - Adiciona matchers como `toBeInTheDocument`, `toBeDisabled`, etc.
 
-### 🔧 Modificado
+### Modificado
 
 - **Otimização de dependency arrays em `theme-provider.tsx`**
   - Removido `storageKey` dos arrays de dependências (constante nunca muda)
@@ -372,7 +374,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Seção sobre ExecPlans e metodologia PLANS.md
   - Guidelines sobre ast-grep, concisão, e critical thinking
 
-### 📚 Documentação
+### Documentação
 
 - **Comentários de código em padrões complexos**
   - `bet-list.tsx`: Explicação do padrão key prop vs useEffect
@@ -382,7 +384,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.1.1] - 2025-10-01
 
-### 🐛 Corrigido
+### Corrigido
 
 - **CRÍTICO**: Corrigido erro `SQLITE_IOERR_VNODE` (disk I/O error) no script de ingestão de dados
   - **Problema**: Script `pull-draws.ts` fazia 2921 commits individuais sem transação, causando I/O excessivo e falhas quando disco próximo da capacidade (>95%)
@@ -390,7 +392,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - **Impacto**: Redução de 99.9% em operações de disco (1 sync ao invés de 2921)
   - **Performance**: Ingestão de dados ~100-1000x mais rápida
 
-### ⚙️ Adicionado
+### Adicionado
 
 - **Modo Incremental no `pull-draws.ts`** (`--incremental` flag)
   - Permite adicionar apenas sorteios novos sem sobrescrever dados existentes
@@ -409,7 +411,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Estatísticas de tamanho do banco de dados
   - Uso recomendado: Executar após grandes ingestões de dados ou semanalmente
 
-### 🔧 Modificado
+### Modificado
 
 - **Transações no `pull-draws.ts`** (linhas 104-147, 174-180)
   - Todos os inserts agora executam dentro de uma única transação
@@ -418,20 +420,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Contadores de estatísticas para novos vs existentes
   - Função `saveDraw` agora retorna boolean indicando se foi inserido
 
-### 📚 Documentação
+### Documentação
 
 - Documentado novo script `optimize-db.ts` em README.md e CLAUDE.md
 - Adicionadas best practices para operações de banco de dados
 - Alertas sobre requisitos de espaço em disco para SQLite WAL mode
 
-### ⚡ Performance
+### Performance
 
 - **Batch Inserts**: 99.9% menos operações de I/O (2921 → 1)
 - **WAL Checkpoint**: Libera espaço do arquivo WAL de volta para o disco
 - **VACUUM**: Compacta banco e recupera páginas não utilizadas
 - **ANALYZE**: Melhora planos de execução de queries ao atualizar estatísticas
 
-### ⚠️ Notas Importantes
+### Notas Importantes
 
 - **Espaço em Disco**: SQLite WAL mode requer espaço temporário durante writes. Recomendado manter pelo menos 15-20% de espaço livre no disco.
 - **Manutenção**: Execute `bun scripts/optimize-db.ts` após ingestões grandes ou semanalmente para manter performance.
@@ -440,7 +442,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.1.0] - 2025-10-01
 
-### 🐳 Adicionado - Docker & DevOps
+### Adicionado - Docker e DevOps
 
 - **Dockerização Completa**: Multi-stage Dockerfile otimizado para produção
   - Imagem Alpine-based (~200-250 MB comprimida)
@@ -466,7 +468,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Suporte a agendamento via cron
   - Estatísticas detalhadas de backup
 
-### ⚙️ Adicionado - Funcionalidades
+### Adicionado - Funcionalidades
 
 - **CORS (Cross-Origin Resource Sharing)**: Configuração completa no API server
   - Whitelist configurável de origens permitidas via `ALLOWED_ORIGIN`
@@ -479,7 +481,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Logs de uptime e status
   - Prevenção de múltiplos shutdowns simultâneos
 
-### 🔧 Corrigido
+### Corrigido
 
 - **CRÍTICO**: Configuração de API rewrite em `next.config.js`
   - **Problema**: URL hardcoded (`http://localhost:3201`) não funcionava em Docker ou deployments distribuídos
@@ -489,7 +491,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Corrige erro de linting que bloqueava CI/CD
   - Build agora passa com `--max-warnings=0`
 
-### 📚 Documentação
+### Documentação
 
 - **Guia Completo de Deployment Docker** (`docs/DEPLOY_VPS/DEPLOY_DOCKER.md`)
   - Quick start para desenvolvimento local
@@ -510,7 +512,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
   - Arquitetura de containers
   - Estratégias de CI/CD
 
-### 🔐 Segurança
+### Segurança
 
 - **Execução como usuário não-root** em containers Docker
 - **Security scanning automático** via Trivy no CI/CD
@@ -518,21 +520,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - **Resource limits** para prevenir DoS
 - **Secrets via environment variables** (nunca commitados)
 
-### ⚡ Performance
+### Performance
 
 - **Multi-stage Docker builds**: Redução de ~70% no tamanho da imagem
 - **BuildKit caching**: Builds ~80% mais rápidos após primeira execução
 - **Layer optimization**: Camadas ordenadas por frequência de mudança
 - **Production-ready**: Configuração otimizada para produção
 
-### 🔄 Alterações de Infraestrutura
+### Alterações de Infraestrutura
 
 - **Novo método de deployment primário**: Docker (PM2 mantido como fallback)
 - **CI/CD totalmente automatizado**: Push to deploy
 - **Backup automatizado**: Agendável via cron
 - **Health monitoring**: Endpoints e Docker health checks
 
-### 📋 Notas de Migração
+### Notas de Migração
 
 #### De PM2 para Docker
 
@@ -557,11 +559,11 @@ BACKUP_MAX_COUNT=50        # Número máximo de backups
 
 Ver `.env.example` atualizado para lista completa.
 
-### ⚠️ Breaking Changes
+### Breaking Changes
 
 Nenhuma breaking change nesta versão. Totalmente retrocompatível com v1.0.x.
 
-### 🎯 Próximos Passos (v1.2.0)
+### Próximos Passos (v1.2.0)
 
 - Playwright E2E tests
 - Kubernetes support (Helm charts)

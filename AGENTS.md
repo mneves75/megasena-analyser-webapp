@@ -1,4 +1,11 @@
-# Repository Guidelines
+# Mega-Sena Analyzer — Agent Guidelines
+
+## Project Overview (read first)
+
+- Next.js App Router webapp for **historical Mega-Sena analysis** (not prediction).
+- Data source is the official CAIXA Mega-Sena API; ingest into SQLite; compute stats/heuristics; render dashboards/strategies.
+- **Non-negotiable product reality:** lottery prediction is statistically impossible; only ship claims that are verifiable from the stored historical dataset.
+- UI bar: clean, minimal, "Apple/Linear-level" polish (consistent tokens/variants; no ad-hoc styling).
 
 ## Core Development Guidelines
 
@@ -6,7 +13,7 @@
 
 - **Never create markdown files after you are done. NEVER!** Use `agent_planning/` for planning docs only, archive when done in `agent_planning/archive/`. Do NOT externalize or document your work, usage guidelines, or benchmarks in markdown files after completing the task, unless explicitly instructed to do so.
 - **Never use emojis!** No emojis in code, commit messages, or any output.
-- **Think critically and push reasoning to 100% of capacity.** I'm trying to stay a critical and sharp analytical thinker. Walk me through your thought process step by step. The best people in the domain will verify what you do. Think hard! Be a critical thinker!
+- **Think critically and push reasoning to 100% of capacity.** The best people in the domain will verify what you do. Explain decisions with concise rationale + evidence (avoid chain-of-thought dumps).
 - **Use `ast-grep` for syntax-aware searches.** This environment has `ast-grep` available. Whenever a search requires syntax-aware or structural matching, default to `ast-grep --lang <language> -p '<pattern>'` (set `--lang` appropriately: typescript, javascript, python, etc.) and avoid falling back to text-only tools like `rg` or `grep` unless explicitly requested for plain-text search.
 - **Sacrifice grammar for the sake of concision.** Be brief and direct.
 - **List any unresolved questions at the end of your response, if any exist.**
@@ -14,7 +21,22 @@
 - **No workarounds.** Deliver full, durable solutions instead of temporary patches.
 - **Treat `docs/GUIDELINES-REF/` as the canonical knowledge base.** Read relevant files for each task (e.g., `PRAGMATIC-RULES.md`, `WEB-NEXTJS-GUIDELINES.md`, `SECURITY-GUIDELINES.md`) and cite them when explaining decisions.
 - **Security, logging, audit are mandatory.** Apply `SECURITY-GUIDELINES.md`, `LOG-GUIDELINES.md`, and `AUDIT-GUIDELINES.md` on every task; avoid client-side secrets and sanitize inputs/outputs.
-- **Product reality:** Lottery prediction is impossible—limit claims to verifiable historical analysis, pattern detection, and budget-aware strategies; avoid speculation.
+- **Prefer tools over guesses.** When facts are uncertain/time-sensitive, verify via repo state (tests/logs/config) and official docs instead of memory.
+
+## Pre-Action Protocol (from `CLAUDE.md` + `docs/GUIDELINES-REF/AGENTS.md`)
+
+Before any tool call or response:
+1. Check constraints (security, repo rules, user constraints) and resolve conflicts by priority.
+2. Confirm dependencies/order: do not take irreversible actions early.
+3. Risk-assess: prefer reversible, small diffs; no destructive ops unless requested.
+4. Grounding: state assumptions when needed; never invent logs, stack traces, versions, metrics, or "it passed" claims.
+
+## Tech Stack (for decisions)
+
+- Next.js (App Router), TypeScript (strict), React 19+.
+- Bun runtime (>= 1.1) is required (this repo is not Node-compatible because of `bun:sqlite`).
+- SQLite via `bun:sqlite`, TailwindCSS + shadcn/ui variants, Framer Motion for micro-interactions.
+- Vitest (unit) + Playwright (E2E).
 
 ## Project Structure & Module Organization
 - `app/` hosts App Router routes; the dashboard entry point is `app/dashboard/page.tsx`.
@@ -28,7 +50,7 @@
 
 ## Build, Test, and Development Commands
 
-**⚠️ CRITICAL:** All commands require **Bun runtime ≥1.1**. This project uses `bun:sqlite` (native) and **will not work with Node.js, npm, yarn, or pnpm**.
+**CRITICAL:** All commands require **Bun runtime ≥1.1**. This project uses `bun:sqlite` (native) and **will not work with Node.js, npm, yarn, or pnpm**.
 
 - `bun install` installs dependencies (Bun ≥1.1 required)
 - `bun scripts/migrate.ts` applies SQLite migrations (uses bun:sqlite native)
@@ -45,6 +67,7 @@
 - Use strict TypeScript with explicit returns on exported APIs.
 - Two-space indentation, `PascalCase` components, `camelCase` utilities, and kebab-case files.
 - Reference design tokens; centralize shared values in `lib/constants.ts`.
+- Prefer semantic Tailwind tokens/variants; avoid ad-hoc inline styles and explicit color classes (`text-white`, `bg-black`) unless the design system defines them.
 - Run `bun run lint --fix` then `bun run format` before pushing.
 
 ## React Server Components (RSC) Guidelines
@@ -105,7 +128,7 @@ Treat the frontend and backend as **a single program** split across two machines
 
 Most `useEffect` usages can be eliminated by restructuring your code.
 
-#### ❌ DON'T use useEffect for:
+#### Do not use useEffect for:
 
 1. **Transforming data for rendering** - use variables or `useMemo`
 2. **Handling user events** - use event handlers directly
@@ -114,7 +137,7 @@ Most `useEffect` usages can be eliminated by restructuring your code.
 5. **Subscribing to external stores** - use `useSyncExternalStore`
 6. **Fetching data** - use Server Components or React Query/SWR (avoids race conditions)
 
-#### ✅ DO use useEffect for:
+#### Use useEffect for:
 
 1. **Synchronizing with external systems** - WebSocket, analytics, browser APIs
 2. **Operations requiring cleanup** - timers, subscriptions, third-party libraries
