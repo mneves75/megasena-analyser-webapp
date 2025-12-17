@@ -68,10 +68,10 @@ async function startServers() {
       throw new Error('API server failed to start');
     }
 
-    // Step 3: Start Next.js server
-    logger.info('🌐 Starting Next.js server...');
+    // Step 3: Start Next.js server with Bun runtime
+    logger.info('🌐 Starting Next.js server (Bun runtime)...');
     const port = process.env.PORT || '3000';
-    nextServer = spawn(['bun', 'run', 'start', '--', '--port', port], {
+    nextServer = spawn(['bun', '--bun', 'next', 'start', '--port', port], {
       stdout: 'inherit',
       stderr: 'inherit',
       env: {

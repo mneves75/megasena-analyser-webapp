@@ -1,5 +1,6 @@
 # ============================================================================
 # Staging Docker Compose Configuration (Standalone)
+# Uses Bun runtime throughout with distroless image
 # Usage: docker compose -f docker-compose.staging.yml up -d
 # Domain: staging.megasena-analyzer.com.br (via Caddy reverse proxy)
 # NOTE: This is a STANDALONE config, not an override, to avoid port conflicts
@@ -15,16 +16,16 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
 
-    # Staging ports (different from production to allow parallel running)
-    # Production: 3000, 3301
-    # Staging: 3100, 3401
+    # Staging ports (container uses 80 internally for Next.js)
+    # Production: 3000:80, 3301:3201
+    # Staging: 3100:80, 3401:3201
     ports:
-      - "3100:3000"
+      - "3100:80"
       - "3401:3201"
 
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=80
       - API_PORT=3201
       - API_HOST=localhost
       - DATABASE_PATH=/app/db/mega-sena.db
@@ -34,7 +35,6 @@ services:
 
     volumes:
       - ./db:/app/db
-      - ./logs:/app/logs
 
     restart: unless-stopped
 
@@ -45,16 +45,16 @@ services:
       retries: 3
       start_period: 40s
 
-    # Lower resource limits for staging
+    # Lower resource limits for staging (optimized for Bun distroless)
     deploy:
       replicas: 1
       resources:
         limits:
           cpus: '0.5'
-          memory: 384M
+          memory: 320M
         reservations:
           cpus: '0.25'
-          memory: 192M
+          memory: 160M
       restart_policy:
         condition: on-failure
         delay: 5s

@@ -1,99 +1,56 @@
 # syntax=docker/dockerfile:1.4
 
 # ============================================================================
-# Stage 1: Production Dependencies
-# Install only production dependencies for final runtime image
+# Mega-Sena Analyzer - Production Dockerfile
+# Uses Bun runtime throughout with distroless base image
 # ============================================================================
-FROM oven/bun:1.2-alpine AS deps
-WORKDIR /app
-
-# Copy dependency files
-COPY package.json bun.lock ./
-
-# Install production dependencies only
-# --frozen-lockfile ensures reproducible builds
-RUN bun install --frozen-lockfile --production
 
 # ============================================================================
-# Stage 2: Builder
-# Build the Next.js application with ALL dependencies
+# Stage 1: Builder
+# Build the Next.js application and compile bundles for glibc (distroless)
+# IMPORTANT: Must use Debian-based image (glibc) for bundle compatibility
 # ============================================================================
-FROM oven/bun:1.2-alpine AS builder
+FROM oven/bun:1.3.4-debian AS builder
 WORKDIR /app
 
 # Copy dependency files
 COPY package.json bun.lock ./
 
 # Install ALL dependencies (including devDependencies) for build
-# Build tools like autoprefixer, tailwindcss, typescript are needed here
 RUN bun install --frozen-lockfile
 
 # Copy application source
 COPY . .
 
-# Build Next.js application
-# This creates the optimized production bundle in .next/
+# Build Next.js with Bun runtime (standalone output)
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN bun run build
+RUN bun --bun next build
 
-# Bundle the API server into a standalone file with all dependencies resolved
-# This eliminates path alias resolution issues at runtime
+# Bundle the API server into a standalone executable
 RUN bun build server.ts --compile --outfile server-bundle --target bun
 
+# Bundle the startup script for distroless
+RUN bun build scripts/start-docker-distroless.ts --compile --outfile start-bundle --target bun
+
 # ============================================================================
-# Stage 3: Runner
-# Minimal production runtime image
+# Stage 2: Production Runner (Distroless)
+# Minimal production runtime image - no shell, no package manager
 # ============================================================================
-FROM oven/bun:1.2-alpine AS runner
+FROM oven/bun:1.3.4-distroless AS runner
 WORKDIR /app
 
-# Install dumb-init for proper signal handling (SIGTERM, SIGINT)
-# This ensures graceful shutdowns in container orchestration
-RUN apk add --no-cache dumb-init
+# Copy Next.js standalone build
+# NOTE: Next.js 16 outputs directly to .next/standalone/ (not nested)
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
 
-# Create non-root user for security
-# Running as non-root is a Docker security best practice
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Copy only necessary files from builder
-# This keeps the final image small (~200-250MB)
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./next.config.js
-
-# Copy TypeScript config for Bun path alias resolution
-COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
-
-# Copy bundled API server (standalone executable with all dependencies)
-COPY --from=builder --chown=nextjs:nodejs /app/server-bundle ./server-bundle
-
-# Copy server and library files (needed for Next.js)
-COPY --from=builder --chown=nextjs:nodejs /app/server.ts ./server.ts
-COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
-COPY --from=builder --chown=nextjs:nodejs /app/components ./components
-COPY --from=builder --chown=nextjs:nodejs /app/app ./app
+# Copy bundled executables (no runtime dependencies needed)
+COPY --from=builder /app/server-bundle ./server-bundle
+COPY --from=builder /app/start-bundle ./start-bundle
 
 # Copy database migrations (schema setup)
-COPY --from=builder --chown=nextjs:nodejs /app/db/migrations ./db/migrations
-
-# Copy all scripts (startup, maintenance, and data ingestion)
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-
-# Create database directory with proper permissions
-# Database file will be created here on first run
-RUN mkdir -p /app/db /app/logs && \
-    chown -R nextjs:nodejs /app/db /app/logs
-
-# Switch to non-root user
-USER nextjs
-
-# Expose ports
-# 80: Next.js application (production uses 80 for Traefik compatibility)
-# 3201: Bun API server
-EXPOSE 80 3201
+COPY --from=builder /app/db/migrations ./db/migrations
 
 # Environment variables with defaults
 # These can be overridden in docker-compose.yml or at runtime
@@ -102,17 +59,19 @@ ENV NODE_ENV=production \
     API_PORT=3201 \
     API_HOST=localhost \
     DATABASE_PATH=/app/db/mega-sena.db \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0
 
-# Health check
+# Expose ports
+# 80: Next.js application (production uses 80 for reverse proxy compatibility)
+# 3201: Bun API server
+EXPOSE 80 3201
+
+# Health check using Bun (no shell available in distroless)
 # Verifies API server is responding correctly
-# Docker/Kubernetes use this to determine container health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD bun -e 'fetch("http://localhost:3201/api/health").then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))'
+    CMD ["bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
 
-# Use dumb-init to handle signals properly
-# This ensures SIGTERM is forwarded to our processes for graceful shutdown
-ENTRYPOINT ["dumb-init", "--"]
-
-# Start both Next.js and API server
-CMD ["bun", "run", "scripts/start-docker.ts"]
+# Start using pre-compiled startup bundle
+# Bun handles SIGTERM/SIGINT natively - no dumb-init required
+ENTRYPOINT ["./start-bundle"]

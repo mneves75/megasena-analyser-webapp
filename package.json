@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
-    "dev:next-only": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev:next-only": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",

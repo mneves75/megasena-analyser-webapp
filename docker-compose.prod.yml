@@ -1,5 +1,6 @@
 # ============================================================================
 # Production Docker Compose Override
+# Uses Bun runtime throughout with distroless image
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # ============================================================================
 
@@ -11,33 +12,31 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    # Temporary ports during migration to avoid PM2 conflict
-    # PM2 uses: 3002 (Next.js), 3201 (API)
-    # Docker uses: 3000 (Next.js), 3301 (API) during migration
+    # Production ports (container uses 80 internally)
     ports:
-      - "3000:3000"
+      - "3000:80"
       - "3301:3201"
 
     # Override environment for production
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=80
       - API_PORT=3201
       - API_HOST=localhost
       - DATABASE_PATH=/app/db/mega-sena.db
       - NEXT_PUBLIC_BASE_URL=https://conhecendotudo.online/megasena-analyzer
       - NEXT_TELEMETRY_DISABLED=1
 
-    # Production resource limits (tighter than development)
+    # Production resource limits (optimized for Bun distroless)
     deploy:
       replicas: 1
       resources:
         limits:
           cpus: '1.0'
-          memory: 512M
+          memory: 384M
         reservations:
           cpus: '0.5'
-          memory: 256M
+          memory: 192M
       restart_policy:
         condition: on-failure
         delay: 5s

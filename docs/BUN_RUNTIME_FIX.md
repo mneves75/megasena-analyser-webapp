@@ -124,3 +124,115 @@ If you want to use a Node.js-compatible SQLite library in the future:
 3. Remove the dual-server setup
 4. Move API logic back to `app/api/*/route.ts` files
 5. Revert `next.config.js` and `package.json` changes
+
+---
+
+## Full Bun Runtime Migration (December 2025)
+
+### The `--bun` Flag Discovery
+
+**Critical insight:** Running `bun run next build` does NOT use Bun runtime for Next.js.
+
+```bash
+# This spawns Node.js internally:
+bun run next build
+
+# This actually uses Bun runtime:
+bun --bun next build
+```
+
+The `--bun` flag forces Bun to be the runtime for the entire process tree, not just the package manager/script runner.
+
+### Updated Scripts
+
+```json
+{
+  "scripts": {
+    "dev": "bun run scripts/dev.ts",
+    "dev:next-only": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start"
+  }
+}
+```
+
+### Distroless Docker Image
+
+Migrated from `oven/bun:1.2-alpine` to `oven/bun:1.3.4-distroless`.
+
+**Distroless constraints:**
+- No shell (`/bin/sh`, `/bin/bash`)
+- No package manager (`apk`, `apt`)
+- No standard utilities (`ls`, `cat`, `grep`)
+- No `dumb-init` available
+
+**Solutions:**
+1. Pre-compile startup scripts: `bun build script.ts --compile --outfile bundle`
+2. Bun handles SIGTERM/SIGINT natively (no dumb-init needed)
+3. Health checks use `bun -e "..."` syntax instead of shell
+
+### Next.js 16 Standalone Output
+
+With Next.js 16 and `output: 'standalone'`, the output structure is simplified:
+
+```
+# Next.js 16 outputs directly to .next/standalone/ (no nested path)
+.next/standalone/
+  server.js          <- Main server entry
+  node_modules/      <- Pruned production deps
+  .next/             <- Build artifacts
+  package.json
+```
+
+Dockerfile COPY is straightforward:
+```dockerfile
+COPY --from=builder /app/.next/standalone ./
+```
+
+**Note:** Earlier versions mirrored the host directory structure, but Next.js 16 simplified this.
+
+### glibc vs musl Compatibility
+
+**Critical:** Bundles compiled with `bun build --compile` are libc-specific:
+- Alpine images use **musl libc**
+- Distroless/Debian images use **glibc**
+
+Bundles compiled on Alpine will NOT run on distroless (error: `exec: no such file or directory`).
+
+**Solution:** Use `oven/bun:1.3.4-debian` for the builder stage when targeting distroless:
+```dockerfile
+FROM oven/bun:1.3.4-debian AS builder  # glibc for bundle compilation
+FROM oven/bun:1.3.4-distroless AS runner  # glibc runtime
+```
+
+### Lessons Learned
+
+| Lesson | Impact |
+|--------|--------|
+| `bun run X` != `bun --bun X` | Without `--bun`, Next.js uses Node.js internally |
+| Distroless = no shell | All scripts must be pre-compiled executables |
+| Bun handles signals natively | No need for `dumb-init` in containers |
+| Alpine bundles fail on distroless | Must compile bundles in glibc environment (Debian) |
+| Next.js 16 simplified standalone | Direct output to `.next/standalone/`, no nested paths |
+
+### Image Size Comparison
+
+| Image | Size | Notes |
+|-------|------|-------|
+| `oven/bun:1.2-alpine` | ~200-250MB | Alpine packages, musl libc |
+| `oven/bun:1.3.4-debian` | ~350-400MB | Full Debian, glibc |
+| `oven/bun:1.3.4-distroless` | ~90-120MB | Runtime only, glibc |
+| **Final app image** | ~392MB | Includes Next.js bundle + compiled servers |
+
+### Resource Optimization
+
+With full Bun runtime, memory usage decreased:
+- **Before:** 512MB limit, 256MB reservation
+- **After:** 384MB limit, 192MB reservation
+
+### References
+
+- [Bun Next.js Guide](https://bun.com/docs/guides/ecosystem/nextjs)
+- [Vercel Bun Runtime](https://vercel.com/blog/bun-runtime-on-vercel-functions)
+- [oven/bun Docker Hub](https://hub.docker.com/r/oven/bun)
+- [Distroless Issues #19786](https://github.com/oven-sh/bun/discussions/19786)

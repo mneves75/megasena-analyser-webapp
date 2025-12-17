@@ -5,6 +5,61 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.4.0] - 2025-12-17
+
+### Infraestrutura
+
+- **Docker Distroless**: Migrado para `oven/bun:1.3.4-distroless` como imagem de producao
+  - Superficie de ataque reduzida (sem shell, sem package manager)
+  - Builder alterado de Alpine para Debian para compatibilidade glibc
+  - Bundles pre-compilados para ambiente sem shell
+  - Health checks usando `bun -e` ao inves de shell scripts
+
+- **Bun Runtime Completo**: Flag `--bun` adicionado em todos os comandos Next.js
+  - `bun --bun next build` - Bun runtime durante build
+  - `bun --bun next start` - Bun runtime em producao
+  - `bun --bun next dev` - Bun runtime em desenvolvimento
+  - Sem `--bun`, Next.js usa Node.js internamente
+
+- **Next.js 16 Standalone**: Output simplificado
+  - Arquivos agora em `.next/standalone/` diretamente
+  - Removida estrutura aninhada de versoes anteriores
+
+### Adicionado
+
+- `scripts/start-docker-distroless.ts`: Orquestrador de startup sem shell
+  - Inicia API server e Next.js em sequencia
+  - Graceful shutdown via SIGTERM/SIGINT
+  - Monitoramento de processos filhos
+
+### Alterado
+
+- `Dockerfile`: Reescrito para distroless
+  - Stage 1: `oven/bun:1.3.4-debian` (builder com glibc)
+  - Stage 2: `oven/bun:1.3.4-distroless` (runner minimal)
+  - Bundles compilados: `server-bundle`, `start-bundle`
+
+- `package.json`: Scripts atualizados com `--bun`
+- `scripts/dev.ts`: Next.js spawn com `--bun`
+- `next.config.js`: Adicionado `output: 'standalone'`
+- `docker-compose.*.yml`: Porta interna alterada para 80
+
+### Metricas
+
+- Tamanho da imagem: 392MB
+- Limite de memoria: 384MB (antes: 512MB)
+- Tempo de startup: ~8 segundos
+- Testes: 83 passando
+
+### Documentacao
+
+- `docs/BUN_RUNTIME_FIX.md`: Atualizado com licoes aprendidas
+  - Incompatibilidade glibc/musl documentada
+  - Next.js 16 standalone output explicado
+  - Flag `--bun` requirement detalhado
+
+---
+
 ## [1.3.2] - 2025-12-10
 
 ### Corrigido

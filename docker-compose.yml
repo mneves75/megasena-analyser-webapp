@@ -1,5 +1,6 @@
 # ============================================================================
 # Development Docker Compose Configuration
+# Uses Bun runtime throughout with distroless production image
 # Usage: docker compose up
 # ============================================================================
 
@@ -14,14 +15,13 @@ services:
         BUILDKIT_INLINE_CACHE: 1
     container_name: megasena-analyser
     ports:
-      # Expose Next.js on localhost:3000
-      - "3000:3000"
-      # Expose Bun API on localhost:3301 (during migration to avoid PM2 conflict)
-      # PM2 uses port 3201, so Docker uses 3301 temporarily
+      # Expose Next.js on localhost:3000 (maps to container port 80)
+      - "3000:80"
+      # Expose Bun API on localhost:3301
       - "3301:3201"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=80
       - API_PORT=3201
       # Within container, both servers run on localhost
       - API_HOST=localhost
@@ -31,11 +31,9 @@ services:
     volumes:
       # Persist SQLite database across container restarts
       - ./db:/app/db
-      # Persist logs for debugging
-      - ./logs:/app/logs
     restart: unless-stopped
 
-    # Health check using the API health endpoint
+    # Health check using Bun (distroless-compatible, no shell)
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
       interval: 30s
@@ -43,15 +41,15 @@ services:
       retries: 3
       start_period: 40s
 
-    # Resource limits to prevent runaway processes
+    # Resource limits (optimized for Bun runtime)
     deploy:
       resources:
         limits:
           cpus: '1.0'
-          memory: 512M
+          memory: 384M
         reservations:
           cpus: '0.25'
-          memory: 256M
+          memory: 192M
 
   # Optional: Caddy reverse proxy for local testing
   # Start with: docker compose --profile with-proxy up
