@@ -7,6 +7,7 @@ import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics
 import {
   BarChart3,
   TrendingUp,
+  Flame,
   Trophy,
   Calculator,
   Database,
@@ -249,8 +250,8 @@ export default async function DashboardPage() {
                   <div key={hot.number} className="flex flex-col items-center gap-1">
                     <div className="relative">
                       <LotteryBall number={hot.number} size="md" />
-                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        🔥
+                      <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        <Flame aria-hidden className="h-3 w-3" />
                       </div>
                     </div>
                     <div className="text-center">

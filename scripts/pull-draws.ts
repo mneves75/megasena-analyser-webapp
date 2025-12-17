@@ -118,11 +118,11 @@ async function main() {
 
         if (wasInserted) {
           newDraws++;
-          console.log(`✓ Added draw #${contest}`);
+          console.log(`[OK] Added draw #${contest}`);
         } else {
           skippedDraws++;
           if (incremental) {
-            console.log(`⊘ Skipped draw #${contest} (already exists)`);
+            console.log(`[SKIP] Skipped draw #${contest} (already exists)`);
           }
         }
       }
@@ -146,7 +146,7 @@ async function main() {
     // Commit transaction
     db.exec('COMMIT');
 
-    console.log('\n✓ Data ingestion completed');
+    console.log('\n[OK] Data ingestion completed');
 
     // Show ingestion statistics
     console.log(`\nIngestion Statistics:`);
@@ -163,7 +163,7 @@ async function main() {
     const stats = new StatisticsEngine();
     stats.updateNumberFrequencies();
 
-    console.log('✓ Statistics updated');
+    console.log('[OK] Statistics updated');
 
     const summary = stats.getDrawStatistics();
     console.log(`\nDatabase Summary:`);
@@ -178,7 +178,7 @@ async function main() {
     } catch (rollbackError) {
       // Ignore rollback errors if transaction wasn't started
     }
-    console.error('\n✗ Error during ingestion:', error);
+    console.error('\n[ERROR] Error during ingestion:', error);
     process.exit(1);
   } finally {
     closeDatabase();
@@ -186,4 +186,3 @@ async function main() {
 }
 
 main();
-

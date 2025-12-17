@@ -6,10 +6,23 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogEntry {
+  event: string;
   level: LogLevel;
-  message: string;
   timestamp: string;
-  context?: Record<string, unknown>;
+  requestId?: string;
+  sessionId?: string;
+  userId?: string;
+  route?: string;
+  userAgent?: string;
+  launchStage?: string;
+  durationMs?: number;
+  statusCode?: number;
+  metadata?: Record<string, unknown>;
+  error?: {
+    name: string;
+    message: string;
+    stack?: string;
+  };
 }
 
 class Logger {
@@ -21,29 +34,109 @@ class Logger {
     this.isDebugEnabled = process.env.DEBUG === 'true';
   }
 
-  private formatMessage(entry: LogEntry): string {
-    const { level, message, timestamp, context } = entry;
-    const levelTag = `[${level.toUpperCase()}]`;
-    const timeTag = `[${timestamp}]`;
-    
-    let formatted = `${timeTag} ${levelTag} ${message}`;
-    
-    if (context && Object.keys(context).length > 0) {
-      formatted += ` ${JSON.stringify(context)}`;
+  private truncate(value: string, maxLength: number): string {
+    if (value.length <= maxLength) {
+      return value;
     }
-    
-    return formatted;
+    return value.slice(0, maxLength);
   }
 
-  private log(level: LogLevel, message: string, context?: Record<string, unknown>): void {
+  private shouldIncludeErrorStack(): boolean {
+    return this.isDevelopment || this.isDebugEnabled;
+  }
+
+  private sanitizeString(value: string, maxLength: number): string {
+    // Prevent log injection and runaway payload sizes.
+    return this.truncate(value.replace(/[\r\n\t]/g, ' '), maxLength);
+  }
+
+  private sanitizeMetadata(metadata: Record<string, unknown>): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {};
+    const redactionKeyPattern = /(authorization|token|secret|password|cookie|set-cookie)/i;
+
+    for (const [key, value] of Object.entries(metadata)) {
+      if (typeof value === 'undefined') {
+        continue;
+      }
+
+      if (redactionKeyPattern.test(key)) {
+        sanitized[key] = '[REDACTED]';
+        continue;
+      }
+
+      if (typeof value === 'string') {
+        sanitized[key] = this.sanitizeString(value, 500);
+        continue;
+      }
+
+      sanitized[key] = value;
+    }
+
+    return sanitized;
+  }
+
+  private safeJsonStringify(value: unknown): string {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      const fallbackError =
+        error instanceof Error
+          ? { name: error.name, message: this.truncate(error.message, 120) }
+          : { name: 'NonErrorThrown', message: this.sanitizeString(String(error), 120) };
+
+      return JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        event: 'logger.stringify_failed',
+        error: fallbackError,
+      } satisfies LogEntry);
+    }
+  }
+
+  private log(level: LogLevel, event: string, context?: Record<string, unknown>, error?: unknown): void {
+    const {
+      requestId,
+      sessionId,
+      userId,
+      route,
+      endpoint,
+      userAgent,
+      launchStage,
+      durationMs,
+      statusCode,
+      ...rest
+    } = context ?? {};
+
     const entry: LogEntry = {
-      level,
-      message,
       timestamp: new Date().toISOString(),
-      context,
+      level,
+      event,
+      requestId: typeof requestId === 'string' ? requestId : undefined,
+      sessionId: typeof sessionId === 'string' ? sessionId : undefined,
+      userId: typeof userId === 'string' ? userId : undefined,
+      route: typeof route === 'string' ? route : typeof endpoint === 'string' ? endpoint : undefined,
+      userAgent: typeof userAgent === 'string' ? this.sanitizeString(userAgent, 120) : undefined,
+      launchStage: typeof launchStage === 'string' ? launchStage : process.env.NODE_ENV ?? 'development',
+      durationMs: typeof durationMs === 'number' ? Math.round(durationMs) : undefined,
+      statusCode: typeof statusCode === 'number' ? Math.round(statusCode) : undefined,
+      metadata: Object.keys(rest).length > 0 ? this.sanitizeMetadata(rest) : undefined,
     };
 
-    const formatted = this.formatMessage(entry);
+    if (error instanceof Error) {
+      const includeStack = this.shouldIncludeErrorStack();
+      entry.error = {
+        name: error.name,
+        message: this.truncate(error.message, 120),
+        ...(includeStack ? { stack: error.stack } : {}),
+      };
+    } else if (typeof error !== 'undefined') {
+      entry.error = {
+        name: 'NonErrorThrown',
+        message: this.sanitizeString(String(error), 120),
+      };
+    }
+
+    const formatted = this.safeJsonStringify(entry);
 
     switch (level) {
       case 'debug':
@@ -63,50 +156,47 @@ class Logger {
     }
   }
 
-  debug(message: string, context?: Record<string, unknown>): void {
-    this.log('debug', message, context);
+  debug(event: string, context?: Record<string, unknown>): void {
+    this.log('debug', event, context);
   }
 
-  info(message: string, context?: Record<string, unknown>): void {
-    this.log('info', message, context);
+  info(event: string, context?: Record<string, unknown>): void {
+    this.log('info', event, context);
   }
 
-  warn(message: string, context?: Record<string, unknown>): void {
-    this.log('warn', message, context);
+  warn(event: string, context?: Record<string, unknown>): void {
+    this.log('warn', event, context);
   }
 
   error(message: string, error?: unknown, context?: Record<string, unknown>): void {
-    const errorContext = {
-      ...context,
-      error: error instanceof Error 
-        ? { name: error.name, message: error.message, stack: error.stack }
-        : error,
-    };
-    this.log('error', message, errorContext);
+    this.log('error', message, context, error);
   }
 
   // Utility methods for common scenarios
   apiRequest(method: string, path: string, duration?: number): void {
-    this.info(`API ${method} ${path}`, duration ? { duration: `${duration}ms` } : undefined);
+    this.info('api.request', {
+      method,
+      route: path,
+      durationMs: typeof duration === 'number' ? duration : undefined,
+    });
   }
 
   apiError(method: string, path: string, error: unknown): void {
-    this.error(`API ${method} ${path} failed`, error);
+    this.error('api.error', error, { method, route: path });
   }
 
   dbQuery(query: string, duration?: number): void {
     if (this.isDebugEnabled) {
-      this.debug(`DB Query: ${query}`, duration ? { duration: `${duration}ms` } : undefined);
+      this.debug('db.query', {
+        query: this.sanitizeString(query, 500),
+        durationMs: typeof duration === 'number' ? duration : undefined,
+      });
     }
   }
 
   migration(name: string, status: 'start' | 'success' | 'error'): void {
-    const message = `Migration ${name} ${status}`;
-    if (status === 'error') {
-      this.error(message);
-    } else {
-      this.info(message);
-    }
+    const level: LogLevel = status === 'error' ? 'error' : 'info';
+    this.log(level, 'db.migration', { name, status });
   }
 }
 
@@ -115,4 +205,3 @@ export const logger = new Logger();
 
 // Convenience exports
 export const { debug, info, warn, error } = logger;
-

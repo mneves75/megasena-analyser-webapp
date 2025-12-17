@@ -6,9 +6,11 @@
 
 set -e  # Exit on error
 
-DOMAIN="megasena-analyser.conhecendotudo.online"
-API_PORT=3201
-CONTAINER_NAME="megasena-analyser"
+DOMAIN="${DOMAIN:-megasena-analyzer.com.br}"
+API_PORT="${API_PORT:-3201}"
+CONTAINER_NAME="${CONTAINER_NAME:-megasena-analyzer}"
+DEPLOY_DIR="${DEPLOY_DIR:-/home/claude/apps/megasena-analyser}"
+DB_PATH="${DB_PATH:-$DEPLOY_DIR/db/mega-sena.db}"
 
 echo "════════════════════════════════════════════════════════════"
 echo "Mega-Sena Analyser - Deployment Verification"
@@ -32,10 +34,10 @@ test_step() {
     echo -n "Testing: $description... "
 
     if eval "$command" > /dev/null 2>&1; then
-        echo -e "${GREEN}✓ PASS${NC}"
+        echo -e "${GREEN}[OK]${NC}"
         return 0
     else
-        echo -e "${RED}✗ FAIL${NC}"
+        echo -e "${RED}[FAIL]${NC}"
         FAILURES=$((FAILURES + 1))
         return 1
     fi
@@ -63,10 +65,10 @@ echo ""
 
 echo "3. Database"
 echo "─────────────────────────────────────────────────────────────"
-test_step "Database file exists" "[ -f /root/coolify-migration/compose/megasena-analyser/db/mega-sena.db ]"
-test_step "Database is not empty" "[ -s /root/coolify-migration/compose/megasena-analyser/db/mega-sena.db ]"
+test_step "Database file exists" "[ -f \"$DB_PATH\" ]"
+test_step "Database is not empty" "[ -s \"$DB_PATH\" ]"
 
-DB_SIZE=$(du -h /root/coolify-migration/compose/megasena-analyser/db/mega-sena.db 2>/dev/null | cut -f1)
+DB_SIZE=$(du -h "$DB_PATH" 2>/dev/null | cut -f1)
 if [ -n "$DB_SIZE" ]; then
     echo "   Database size: $DB_SIZE"
 fi
@@ -76,7 +78,7 @@ echo "4. Health Endpoints"
 echo "─────────────────────────────────────────────────────────────"
 test_step "Internal API health (port 3201)" "docker exec $CONTAINER_NAME curl -f http://localhost:3201/api/health"
 test_step "HTTPS endpoint responds" "curl -f -s -o /dev/null -w '%{http_code}' https://$DOMAIN | grep -q 200"
-test_step "API health via HTTPS" "curl -f -s https://$DOMAIN/api/health | grep -q 'ok'"
+test_step "API health via HTTPS" "curl -f -s https://$DOMAIN/api/health | grep -q '\"status\":\"healthy\"'"
 echo ""
 
 echo "5. SSL Certificate"
@@ -100,13 +102,13 @@ echo ""
 
 echo "7. Database Migrations"
 echo "─────────────────────────────────────────────────────────────"
-# Check container logs for migration messages
-if docker logs $CONTAINER_NAME 2>&1 | grep -q "Applied migration"; then
-    echo -e "   ${GREEN}✓${NC} Migrations applied"
-    MIGRATION_COUNT=$(docker logs $CONTAINER_NAME 2>&1 | grep "Applied migration" | wc -l)
-    echo "   Applied: $MIGRATION_COUNT migrations"
+# Check container logs for migration messages (lib/db.ts emits: "Migration <file> success")
+if docker logs $CONTAINER_NAME 2>&1 | grep -q "Migration .* success"; then
+    echo -e "   ${GREEN}[OK]${NC} Migrations applied"
+    MIGRATION_COUNT=$(docker logs $CONTAINER_NAME 2>&1 | grep -E "Migration .* success" | wc -l)
+    echo "   Applied: $MIGRATION_COUNT migration(s)"
 else
-    echo -e "   ${YELLOW}⚠${NC} No migration logs found (may be normal if already applied)"
+    echo -e "   ${YELLOW}[WARN]${NC} No migration logs found (may be normal if already applied)"
 fi
 echo ""
 
@@ -122,10 +124,10 @@ echo "9. Logs Check"
 echo "─────────────────────────────────────────────────────────────"
 ERROR_COUNT=$(docker logs $CONTAINER_NAME 2>&1 | grep -i error | grep -v "0 errors" | wc -l)
 if [ "$ERROR_COUNT" -gt 0 ]; then
-    echo -e "   ${YELLOW}⚠${NC} Found $ERROR_COUNT error messages in logs"
+    echo -e "   ${YELLOW}[WARN]${NC} Found $ERROR_COUNT error messages in logs"
     echo "   Run: docker logs $CONTAINER_NAME | grep -i error"
 else
-    echo -e "   ${GREEN}✓${NC} No errors in logs"
+    echo -e "   ${GREEN}[OK]${NC} No errors in logs"
 fi
 echo ""
 
@@ -134,7 +136,7 @@ echo "Verification Summary"
 echo "════════════════════════════════════════════════════════════"
 
 if [ $FAILURES -eq 0 ]; then
-    echo -e "${GREEN}✓ ALL TESTS PASSED${NC}"
+    echo -e "${GREEN}[OK] ALL TESTS PASSED${NC}"
     echo ""
     echo "Application is ready at: https://$DOMAIN"
     echo ""
@@ -144,7 +146,7 @@ if [ $FAILURES -eq 0 ]; then
     echo "  3. Monitor logs: docker logs -f $CONTAINER_NAME"
     exit 0
 else
-    echo -e "${RED}✗ $FAILURES TEST(S) FAILED${NC}"
+    echo -e "${RED}[FAIL] $FAILURES TEST(S) FAILED${NC}"
     echo ""
     echo "Troubleshooting:"
     echo "  1. Check logs: docker logs $CONTAINER_NAME"

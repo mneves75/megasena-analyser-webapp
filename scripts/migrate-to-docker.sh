@@ -70,19 +70,19 @@ print_header() {
 }
 
 print_step() {
-    echo -e "${GREEN}▶${NC} $1"
+    echo -e "${GREEN}[STEP]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 print_success() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}[OK]${NC} $1"
 }
 
 log_message() {
@@ -113,7 +113,7 @@ confirm() {
 }
 
 rollback() {
-    print_header "🔄 ROLLBACK INITIATED"
+    print_header "ROLLBACK INITIATED"
     print_error "Migration failed. Rolling back to PM2..."
 
     log_message "ROLLBACK: Stopping Docker containers"
@@ -140,7 +140,7 @@ trap 'rollback' ERR
 # Migration Start
 ################################################################################
 
-print_header "🚀 PM2 to Docker Migration"
+print_header "PM2 to Docker Migration"
 echo "Migration Log: $MIGRATION_LOG"
 echo ""
 
@@ -360,7 +360,7 @@ echo "  Public URL: HTTP $PUBLIC_TEST"
 # Migration Complete
 ################################################################################
 
-print_header "✅ Migration Complete!"
+print_header "Migration Complete"
 
 print_success "Successfully migrated from PM2 to Docker!"
 echo ""

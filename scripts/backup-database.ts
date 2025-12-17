@@ -131,7 +131,7 @@ async function verifyDatabase(dbPath: string): Promise<boolean> {
       return false;
     }
 
-    logger.info('✓ Database integrity check passed');
+    logger.info('[OK] Database integrity check passed');
     return true;
   } catch (error) {
     logger.error('Database verification failed', error);
@@ -144,7 +144,7 @@ async function verifyDatabase(dbPath: string): Promise<boolean> {
  */
 async function createBackup(): Promise<string | null> {
   try {
-    logger.info('📦 Starting database backup...');
+    logger.info('Starting database backup...');
 
     // Step 1: Verify source database
     logger.info(`Source: ${DB_PATH}`);
@@ -190,14 +190,14 @@ async function createBackup(): Promise<string | null> {
       );
     }
 
-    logger.info(`✅ Backup created successfully`);
+    logger.info('[OK] Backup created successfully');
     logger.info(`   Size: ${formatBytes(backupStats.size)}`);
     logger.info(`   Duration: ${duration}ms`);
     logger.info(`   Location: ${backupPath}`);
 
     return backupPath;
   } catch (error) {
-    logger.error('❌ Backup creation failed', error);
+    logger.error('Backup creation failed', error);
     return null;
   }
 }
@@ -207,7 +207,7 @@ async function createBackup(): Promise<string | null> {
  */
 async function cleanupOldBackups(): Promise<void> {
   try {
-    logger.info('🧹 Cleaning up old backups...');
+    logger.info('Cleaning up old backups...');
 
     const backups = getBackupFiles();
 
@@ -247,10 +247,10 @@ async function cleanupOldBackups(): Promise<void> {
     }
 
     if (removedCount > 0) {
-      logger.info(`✅ Removed ${removedCount} old backup(s)`);
+      logger.info(`[OK] Removed ${removedCount} old backup(s)`);
       logger.info(`   Space freed: ${formatBytes(freedSpace)}`);
     } else {
-      logger.info('✅ No backups need to be removed');
+      logger.info('[OK] No backups need to be removed');
     }
 
     // Final summary
@@ -259,12 +259,12 @@ async function cleanupOldBackups(): Promise<void> {
       .slice(0, remainingBackups)
       .reduce((sum, b) => sum + b.size, 0);
 
-    logger.info(`📊 Retention status:`);
+    logger.info('Retention status:');
     logger.info(`   Total backups: ${remainingBackups}`);
     logger.info(`   Total size: ${formatBytes(totalSize)}`);
     logger.info(`   Oldest backup: ${backups[remainingBackups - 1]?.created.toISOString() || 'N/A'}`);
   } catch (error) {
-    logger.error('❌ Cleanup failed', error);
+    logger.error('Cleanup failed', error);
   }
 }
 
@@ -275,11 +275,11 @@ function displayStats(): void {
   const backups = getBackupFiles();
 
   if (backups.length === 0) {
-    logger.info('📊 No backups found');
+    logger.info('No backups found');
     return;
   }
 
-  logger.info('📊 Backup Statistics:');
+  logger.info('Backup statistics:');
   logger.info(`   Total backups: ${backups.length}`);
   logger.info(`   Latest: ${backups[0].filename}`);
   logger.info(`   Oldest: ${backups[backups.length - 1].filename}`);
@@ -295,7 +295,7 @@ function displayStats(): void {
 
 (async () => {
   logger.info('═'.repeat(60));
-  logger.info('🗄️  Database Backup Utility');
+  logger.info('Database Backup Utility');
   logger.info('═'.repeat(60));
   logger.info(`Configuration:`);
   logger.info(`  Retention: ${RETENTION_DAYS} days or ${MAX_BACKUPS} backups`);
@@ -307,7 +307,7 @@ function displayStats(): void {
   const backupPath = await createBackup();
 
   if (!backupPath) {
-    logger.error('❌ Backup failed');
+    logger.error('Backup failed');
     process.exit(1);
   }
 
@@ -318,7 +318,7 @@ function displayStats(): void {
   displayStats();
 
   logger.info('═'.repeat(60));
-  logger.info('✅ Backup process completed successfully');
+  logger.info('[OK] Backup process completed successfully');
   logger.info('═'.repeat(60));
 
   process.exit(0);

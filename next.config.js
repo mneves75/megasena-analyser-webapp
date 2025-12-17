@@ -3,6 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  // Ensure Turbopack/Next build uses this repo as the workspace root.
+  // Prevents accidental inference from unrelated lockfiles elsewhere on disk.
+  turbopack: {
+    root: __dirname,
+  },
+
   // Enable standalone output for Docker deployment
   // Creates a self-contained build with minimal dependencies
   output: 'standalone',

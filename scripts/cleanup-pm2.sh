@@ -12,7 +12,7 @@
 #   --force          Skip confirmation prompts
 #   --uninstall-pm2  Also uninstall PM2 globally
 #
-# ⚠️  WARNING: Only run this after confirming Docker deployment is stable!
+# WARNING: Only run this after confirming Docker deployment is stable!
 ################################################################################
 
 set -e
@@ -64,19 +64,19 @@ print_header() {
 }
 
 print_step() {
-    echo -e "${GREEN}▶ $1${NC}"
+    echo -e "${GREEN}[STEP]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}✗ $1${NC}"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK]${NC} $1"
 }
 
 ssh_command() {
@@ -102,7 +102,7 @@ confirm() {
 # Safety Checks
 ################################################################################
 
-print_header "🧹 PM2 Cleanup Utility"
+print_header "PM2 Cleanup Utility"
 
 print_warning "This script will remove PM2 processes and configuration."
 print_warning "Only proceed if Docker deployment has been running stably for 24+ hours."
@@ -261,7 +261,7 @@ fi
 # Summary
 ################################################################################
 
-print_header "✅ PM2 Cleanup Complete"
+print_header "PM2 Cleanup Complete"
 
 echo -e "${GREEN}Successfully cleaned up PM2 deployment!${NC}"
 echo ""

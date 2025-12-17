@@ -37,6 +37,22 @@ type DrawRow = {
   accumulated: number;
 };
 
+type AuditLogRow = {
+  id: string;
+  timestamp: string;
+  event: string;
+  request_id: string | null;
+  route: string | null;
+  method: string | null;
+  status_code: number | null;
+  success: 0 | 1;
+  duration_ms: number | null;
+  client_id_hash: string | null;
+  user_agent: string | null;
+  metadata_json: string | null;
+  deleted_at: string | null;
+};
+
 type CountResult = { count: number };
 
 type AvgResult = { avg: number | null };
@@ -75,6 +91,7 @@ class InMemoryStatement implements PreparedStatement {
 class InMemoryDatabase implements BunDatabase {
   numberFrequency: Map<number, NumberFrequencyRow> = new Map();
   draws: DrawRow[] = [];
+  auditLogs: AuditLogRow[] = [];
   closed = false;
 
   exec(_sql: string): void {
@@ -99,6 +116,7 @@ class InMemoryDatabase implements BunDatabase {
     this.closed = false;
     this.numberFrequency.clear();
     this.draws = [];
+    this.auditLogs = [];
   }
 
   executeRun(rawSql: string, params: unknown[]): unknown {
@@ -188,6 +206,59 @@ class InMemoryDatabase implements BunDatabase {
       return null;
     }
 
+    if (sql.startsWith('insert into audit_logs')) {
+      const [
+        id,
+        timestamp,
+        event,
+        requestId,
+        route,
+        method,
+        statusCode,
+        success,
+        durationMs,
+        clientIdHash,
+        userAgent,
+        metadataJson,
+      ] = params;
+
+      this.auditLogs.push({
+        id: String(id),
+        timestamp: String(timestamp),
+        event: String(event),
+        request_id: requestId === null || typeof requestId === 'undefined' ? null : String(requestId),
+        route: route === null || typeof route === 'undefined' ? null : String(route),
+        method: method === null || typeof method === 'undefined' ? null : String(method),
+        status_code: statusCode === null || typeof statusCode === 'undefined' ? null : Number(statusCode),
+        success: Number(success) === 0 ? 0 : 1,
+        duration_ms: durationMs === null || typeof durationMs === 'undefined' ? null : Number(durationMs),
+        client_id_hash:
+          clientIdHash === null || typeof clientIdHash === 'undefined' ? null : String(clientIdHash),
+        user_agent: userAgent === null || typeof userAgent === 'undefined' ? null : String(userAgent),
+        metadata_json:
+          metadataJson === null || typeof metadataJson === 'undefined' ? null : String(metadataJson),
+        deleted_at: null,
+      });
+
+      return null;
+    }
+
+    if (sql.startsWith('update audit_logs set deleted_at = ?')) {
+      const [deletedAtRaw, cutoffRaw] = params;
+      const deletedAt = String(deletedAtRaw);
+      const cutoff = String(cutoffRaw);
+
+      let changes = 0;
+      for (const row of this.auditLogs) {
+        if (row.deleted_at === null && row.timestamp < cutoff) {
+          row.deleted_at = deletedAt;
+          changes++;
+        }
+      }
+
+      return { changes };
+    }
+
     return null;
   }
 
@@ -219,6 +290,14 @@ class InMemoryDatabase implements BunDatabase {
         return ({ count } satisfies CountResult);
       }
       return ({ count: this.draws.length } satisfies CountResult);
+    }
+
+    if (sql.startsWith('select count(*) as count from audit_logs')) {
+      const activeOnly = sql.includes('where deleted_at is null');
+      const count = activeOnly
+        ? this.auditLogs.filter((row) => row.deleted_at === null).length
+        : this.auditLogs.length;
+      return ({ count } satisfies CountResult);
     }
 
     if (sql.startsWith('select avg(prize_sena) as avg from draws')) {
@@ -306,6 +385,24 @@ class InMemoryDatabase implements BunDatabase {
 
     if (sql.startsWith('select name from migrations')) {
       return [];
+    }
+
+    if (sql.startsWith('select') && sql.includes('from audit_logs')) {
+      let rows = [...this.auditLogs];
+      if (sql.includes('where deleted_at is null')) {
+        rows = rows.filter((row) => row.deleted_at === null);
+      }
+
+      if (sql.includes('order by timestamp desc')) {
+        rows.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      }
+
+      if (sql.includes('limit ?')) {
+        const limit = Number(params[0]);
+        rows = rows.slice(0, limit);
+      }
+
+      return rows;
     }
 
     return [];
@@ -463,7 +560,9 @@ export function runMigrations(): void {
     const hasStatusColumn = tableInfo.some((col) => col.name === 'status');
 
     if (!hasStatusColumn) {
-      logger.info('Upgrading migrations table schema (adding status and error_message columns)');
+      logger.info('db.migrations_table_schema_upgrade', {
+        columnsAdded: ['status', 'error_message'],
+      });
       database.exec(`
         ALTER TABLE migrations ADD COLUMN status TEXT DEFAULT 'success';
       `);
@@ -472,7 +571,7 @@ export function runMigrations(): void {
       `);
     }
   } catch (error) {
-    logger.error('Error checking migrations table schema', error);
+    logger.error('db.migrations_table_schema_check_failed', error);
     throw error;
   }
 
@@ -484,7 +583,7 @@ export function runMigrations(): void {
 
   // Get list of migration files
   if (!fs.existsSync(MIGRATIONS_DIR)) {
-    logger.warn('No migrations directory found');
+    logger.warn('db.migrations_dir_missing');
     return;
   }
 

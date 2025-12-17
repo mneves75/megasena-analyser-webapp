@@ -5,6 +5,19 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.4.1] - 2025-12-17
+
+### Observabilidade e Auditoria
+
+- **Logs estruturados (JSON)**: `server.ts` agora emite logs com `requestId`, `route`, `statusCode` e `durationMs`, com redacao de chaves sensiveis e sem stack traces em producao.
+- **Trilha de auditoria (SQLite)**: adicionado `audit_logs` (append-only) para eventos significativos (`api.dashboard_read`, `api.statistics_read`, `api.trends_read`, `bets.generate_requested`) com identificador do cliente em hash (sem IP bruto).
+- **Retencao (soft delete)**: adicionado `bun run audit:prune` para aplicar politica de retencao via `deleted_at` (idempotente, sem hard delete).
+
+### Infraestrutura
+
+- **Saude**: `/api/health` agora reporta `version` a partir de `package.json` (com fallback por `APP_VERSION`).
+- **Docker**: imagem de runtime mantida como `oven/bun:1.3.4-alpine` (runtime-only) para evitar problemas operacionais observados em imagens distroless.
+
 ## [1.4.0] - 2025-12-17
 
 ### Infraestrutura

@@ -1,13 +1,14 @@
 # Dependencies
-node_modules/
-.pnp
+# NOTE: node_modules is included for API server dependencies (zod, etc.)
+# .pnp
 .pnp.js
 
 # Build outputs
 .next/
 out/
 build/
-dist/
+# Note: dist/standalone/ is needed for Docker build (pre-built Next.js)
+# Exclude other dist files but keep dist/standalone/
 
 # Testing
 coverage/

@@ -1,17 +1,16 @@
 # ============================================================================
 # Coolify Production Deployment Configuration
 # Multi-domain setup: megasena-analyzer.com.br, .com, .online
-# Path: /root/coolify-migration/compose/megasena-analyser/docker-compose.yml
+# Path: /home/claude/apps/megasena-analyser/docker-compose.coolify.yml
+#
+# USAGE: Deploy with ./deploy.sh which pre-builds and loads the image
 # ============================================================================
 
 services:
   app:
-    # Build from repository root
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILDKIT_INLINE_CACHE: 1
+    # Use pre-loaded image (deployed via deploy.sh)
+    # Image is built locally and transferred to VPS to avoid QEMU/AVX issues
+    image: megasena-analyzer:latest
 
     container_name: megasena-analyzer
 

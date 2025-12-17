@@ -33,10 +33,10 @@ print_header() {
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 }
 
-print_step() { echo -e "${GREEN}▶ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}⚠ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; }
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
+print_step() { echo -e "${GREEN}[STEP]${NC} $1"; }
+print_warning() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_success() { echo -e "${GREEN}[OK]${NC} $1"; }
 
 ssh_cmd() { ssh "$SSH_ALIAS" "$1"; }
 
@@ -172,7 +172,7 @@ fi
 
 print_header "Deployment Summary"
 
-echo -e "${GREEN}✓ Staging deployment completed!${NC}\n"
+echo -e "${GREEN}[OK] Staging deployment completed!${NC}\n"
 
 echo -e "${BLUE}Staging URL:${NC}"
 echo "  https://staging.megasena-analyzer.com.br"

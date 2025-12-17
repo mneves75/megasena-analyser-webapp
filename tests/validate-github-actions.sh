@@ -26,17 +26,17 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 pass() {
-    echo -e "${GREEN}✓${NC} $1"
+    echo -e "${GREEN}[OK]${NC} $1"
     PASSED=$((PASSED + 1))
 }
 
 fail() {
-    echo -e "${RED}✗${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
     FAILED=$((FAILED + 1))
 }
 
 warn() {
-    echo -e "${YELLOW}⚠${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 # Test 1: Workflow file exists

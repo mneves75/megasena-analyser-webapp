@@ -7,9 +7,9 @@ async function main() {
   
   try {
     runMigrations();
-    console.log('✓ All migrations completed successfully');
+    console.log('[OK] All migrations completed successfully');
   } catch (error) {
-    console.error('✗ Migration failed:', error);
+    console.error('[ERROR] Migration failed:', error);
     process.exit(1);
   } finally {
     closeDatabase();
@@ -17,4 +17,3 @@ async function main() {
 }
 
 main();
-

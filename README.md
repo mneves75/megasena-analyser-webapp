@@ -67,6 +67,7 @@ Visit `http://localhost:3000` to see the application.
 - `bun run test` - Run tests with Vitest (usa fallback de banco em memória)
 - `bun run db:migrate` - Run database migrations
 - `bun run db:pull` - Pull draw data from CAIXA API
+- `bun run audit:prune` - Soft delete old audit logs (retention)
 - `bun scripts/optimize-db.ts` - Optimize database (checkpoint WAL + VACUUM + ANALYZE)
 
 ## Database Scripts

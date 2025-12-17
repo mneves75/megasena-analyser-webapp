@@ -73,19 +73,19 @@ print_header() {
 }
 
 print_step() {
-    echo -e "${GREEN}▶ $1${NC}"
+    echo -e "${GREEN}[STEP]${NC} $1"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
 print_error() {
-    echo -e "${RED}✗ $1${NC}"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
 print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}[OK]${NC} $1"
 }
 
 ssh_command() {
@@ -100,7 +100,7 @@ ssh_command() {
 # Pre-deployment Checks
 ################################################################################
 
-print_header "🔍 Pre-Deployment Checks"
+print_header "Pre-Deployment Checks"
 
 # Check if we're in project root
 if [ ! -f "package.json" ]; then
@@ -151,7 +151,7 @@ fi
 ################################################################################
 
 if [ "$SKIP_BUILD" = false ]; then
-    print_header "🏗️  Local Build"
+    print_header "Local Build"
 
     print_step "Installing dependencies..."
     bun install --frozen-lockfile
@@ -176,7 +176,7 @@ fi
 # File Transfer
 ################################################################################
 
-print_header "📦 Transferring Files"
+print_header "Transferring Files"
 
 print_step "Syncing files via rsync..."
 
@@ -208,7 +208,7 @@ fi
 ################################################################################
 
 if [ "$NO_BACKUP" = false ]; then
-    print_header "💾 Database Backup"
+    print_header "Database Backup"
 
     print_step "Creating pre-deployment backup..."
     ssh_command "cd $REMOTE_DIR && ~/.bun/bin/bun run scripts/backup-database.ts" || print_warning "Backup failed, continuing..."
@@ -221,7 +221,7 @@ fi
 # Docker Deployment
 ################################################################################
 
-print_header "🐳 Docker Deployment"
+print_header "Docker Deployment"
 
 # Create necessary directories
 print_step "Creating directories..."
@@ -259,7 +259,7 @@ sleep 10
 # Health Checks
 ################################################################################
 
-print_header "✅ Health Checks"
+print_header "Health Checks"
 
 # Check container status
 print_step "Checking container status..."
@@ -304,7 +304,7 @@ ssh_command "cd $REMOTE_DIR && docker stats --no-stream --format 'table {{.Conta
 # Cleanup
 ################################################################################
 
-print_header "🧹 Cleanup"
+print_header "Cleanup"
 
 print_step "Removing old Docker images..."
 ssh_command "docker image prune -af --filter 'until=72h'" || print_warning "Cleanup failed"
@@ -316,9 +316,9 @@ ssh_command "cd $REMOTE_DIR && du -sh ."
 # Summary
 ################################################################################
 
-print_header "📊 Deployment Summary"
+print_header "Deployment Summary"
 
-echo -e "${GREEN}✓ Deployment completed successfully!${NC}\n"
+echo -e "${GREEN}[OK] Deployment completed successfully!${NC}\n"
 
 echo -e "${BLUE}Access URLs:${NC}"
 echo "  • Direct (Next.js): http://$SSH_HOST:3000/megasena-analyzer"
@@ -340,6 +340,6 @@ echo "  3. Monitor logs for 10-15 minutes"
 echo "  4. If stable, stop PM2 processes"
 echo ""
 
-print_header "🎉 Deployment Complete"
+print_header "Deployment Complete"
 
 exit 0

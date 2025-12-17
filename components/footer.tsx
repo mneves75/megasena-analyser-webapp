@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { APP_INFO } from '@/lib/constants';
+import { AlertTriangle } from 'lucide-react';
 
 export function Footer(): React.JSX.Element {
   const currentYear = new Date().getFullYear();
@@ -98,8 +99,9 @@ export function Footer(): React.JSX.Element {
         {/* Disclaimer */}
         <div className="mt-8 border-t pt-6">
           <div className="space-y-3 text-xs text-muted-foreground">
-            <p className="font-medium text-yellow-600 dark:text-yellow-500">
-              ⚠️ AVISO IMPORTANTE
+            <p className="font-medium text-yellow-600 dark:text-yellow-500 flex items-center gap-2">
+              <AlertTriangle aria-hidden className="h-4 w-4" />
+              AVISO IMPORTANTE
             </p>
             <p>
               Esta ferramenta tem finalidade <strong>educacional e recreativa</strong>. As análises

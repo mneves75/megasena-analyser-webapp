@@ -1,59 +1,44 @@
 # syntax=docker/dockerfile:1.4
 
 # ============================================================================
-# Mega-Sena Analyzer - Production Dockerfile
-# Uses Bun runtime throughout with distroless base image
+# Mega-Sena Analyzer - Production Dockerfile (Runtime-Only)
+# Pre-build locally, then copy artifacts to avoid QEMU/AVX issues
+# ============================================================================
+#
+# USAGE: Deploy with ./deploy.sh (recommended)
+#
+# Manual build:
+#   bun --bun next build                           # Build Next.js
+#   ./deploy.sh --image-only                       # Build Docker image
+#
+# See agent_planning/archive/lessons-learned-docker-builds.md for cross-platform build issues
 # ============================================================================
 
-# ============================================================================
-# Stage 1: Builder
-# Build the Next.js application and compile bundles for glibc (distroless)
-# IMPORTANT: Must use Debian-based image (glibc) for bundle compatibility
-# ============================================================================
-FROM oven/bun:1.3.4-debian AS builder
+FROM oven/bun:1.3.4-alpine AS runtime
+
 WORKDIR /app
 
-# Copy dependency files
-COPY package.json bun.lock ./
+# Install curl for healthcheck
+RUN apk add --no-cache curl
 
-# Install ALL dependencies (including devDependencies) for build
-RUN bun install --frozen-lockfile
+# Copy pre-built Next.js standalone output
+# NOTE: Must run ./deploy.sh which builds and copies to dist/standalone/
+COPY dist/standalone ./
+COPY public ./public
 
-# Copy application source
-COPY . .
+# Copy API server source and dependencies (runs with Bun at runtime)
+COPY server.ts ./server.ts
+COPY lib ./lib
+COPY package.json ./package.json
 
-# Build Next.js with Bun runtime (standalone output)
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN bun --bun next build
+# Copy node_modules for API server dependencies (zod, etc.)
+# These are pure JS and cross-platform compatible
+COPY node_modules ./node_modules
 
-# Bundle the API server into a standalone executable
-RUN bun build server.ts --compile --outfile server-bundle --target bun
-
-# Bundle the startup script for distroless
-RUN bun build scripts/start-docker-distroless.ts --compile --outfile start-bundle --target bun
-
-# ============================================================================
-# Stage 2: Production Runner (Distroless)
-# Minimal production runtime image - no shell, no package manager
-# ============================================================================
-FROM oven/bun:1.3.4-distroless AS runner
-WORKDIR /app
-
-# Copy Next.js standalone build
-# NOTE: Next.js 16 outputs directly to .next/standalone/ (not nested)
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-# Copy bundled executables (no runtime dependencies needed)
-COPY --from=builder /app/server-bundle ./server-bundle
-COPY --from=builder /app/start-bundle ./start-bundle
-
-# Copy database migrations (schema setup)
-COPY --from=builder /app/db/migrations ./db/migrations
+# Copy database migrations
+COPY db/migrations ./db/migrations
 
 # Environment variables with defaults
-# These can be overridden in docker-compose.yml or at runtime
 ENV NODE_ENV=production \
     PORT=80 \
     API_PORT=3201 \
@@ -63,15 +48,17 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0
 
 # Expose ports
-# 80: Next.js application (production uses 80 for reverse proxy compatibility)
+# 80: Next.js application
 # 3201: Bun API server
 EXPOSE 80 3201
 
-# Health check using Bun (no shell available in distroless)
-# Verifies API server is responding correctly
+# Health check using curl (alpine has curl available)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD ["bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+    CMD curl -f http://localhost:3201/api/health || exit 1
 
-# Start using pre-compiled startup bundle
+# Copy startup script
+COPY scripts/start-docker.ts ./start-docker.ts
+
+# Start both servers using Bun
 # Bun handles SIGTERM/SIGINT natively - no dumb-init required
-ENTRYPOINT ["./start-bundle"]
+CMD ["bun", "start-docker.ts"]

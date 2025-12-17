@@ -1,14 +1,17 @@
 #!/usr/bin/env bun
 /**
- * Docker Container Startup Script
+ * Docker Container Startup Script (Runtime-Only)
  *
- * Manages both Next.js and Bun API servers within a single container.
+ * Manages both Next.js (standalone) and Bun API servers within a single container.
  * Handles graceful shutdown, health monitoring, and proper signal forwarding.
+ *
+ * For runtime-only Docker images (pre-built locally, copied to container):
+ * - API server: runs server.ts directly with Bun
+ * - Next.js: runs standalone server.js with Bun
  *
  * Signal Handling:
  * - SIGTERM: Graceful shutdown (sent by Docker/Kubernetes)
  * - SIGINT: Graceful shutdown (Ctrl+C)
- * - SIGUSR1/SIGUSR2: Reload configuration (future use)
  *
  * Exit Codes:
  * - 0: Clean shutdown
@@ -17,7 +20,6 @@
  */
 
 import { spawn } from 'bun';
-import { logger } from '../lib/logger';
 
 // Process references for cleanup
 let apiServer: ReturnType<typeof spawn> | null = null;
@@ -29,68 +31,77 @@ let isShuttingDown = false;
 // Startup timestamp for uptime tracking
 const startTime = Date.now();
 
+const PORT = process.env.PORT || '80';
+const API_PORT = process.env.API_PORT || '3201';
+const DATABASE_PATH = process.env.DATABASE_PATH || '/app/db/mega-sena.db';
+
 /**
  * Start both API server and Next.js server
  */
-async function startServers() {
-  logger.info('🐳 Starting Mega-Sena Analyzer in Docker container...');
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`Ports: Next.js=${process.env.PORT || 3000}, API=${process.env.API_PORT || 3201}`);
+async function startServers(): Promise<boolean> {
+  console.log('='.repeat(60));
+  console.log('Mega-Sena Analyzer - Docker Container (Runtime)');
+  console.log('='.repeat(60));
+  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`Ports: Next.js=${PORT}, API=${API_PORT}`);
+  console.log(`Database: ${DATABASE_PATH}`);
+  console.log('');
 
   try {
-    // Step 1: Start Bun API server
-    logger.info('📡 Starting Bun API server...');
-    // Use pre-bundled server binary (resolves path aliases at build time)
-    apiServer = spawn(['/app/server-bundle'], {
-      cwd: '/app', // Ensure running from project root
+    // Step 1: Start Bun API server (runs server.ts directly)
+    console.log('[1/3] Starting API server...');
+    apiServer = spawn(['bun', 'server.ts'], {
+      cwd: '/app',
       stdout: 'inherit',
       stderr: 'inherit',
       env: {
         ...process.env,
-        API_PORT: process.env.API_PORT || '3201',
+        API_PORT,
+        DATABASE_PATH,
       },
     });
 
     // Wait for API server to initialize
-    // Give it time to bind to port and run migrations
-    logger.info('⏳ Waiting for API server to initialize...');
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('[2/3] Waiting for API server initialization...');
+    await Bun.sleep(3000);
 
-    // Step 2: Verify API server is running
+    // Verify API server is running
     try {
-      const healthCheck = await fetch(`http://localhost:${process.env.API_PORT || '3201'}/api/health`);
+      const healthCheck = await fetch(`http://localhost:${API_PORT}/api/health`);
       if (!healthCheck.ok) {
         throw new Error(`API health check failed with status: ${healthCheck.status}`);
       }
-      logger.info('✅ API server ready');
+      console.log('[OK] API server ready');
     } catch (error) {
-      logger.error('❌ API server health check failed', error);
+      console.error('[FAIL] API server health check failed:', error);
       throw new Error('API server failed to start');
     }
 
-    // Step 3: Start Next.js server with Bun runtime
-    logger.info('🌐 Starting Next.js server (Bun runtime)...');
-    const port = process.env.PORT || '3000';
-    nextServer = spawn(['bun', '--bun', 'next', 'start', '--port', port], {
+    // Step 2: Start Next.js server (standalone build with Bun runtime)
+    console.log('[3/3] Starting Next.js server (standalone, Bun runtime)...');
+    nextServer = spawn(['bun', '--bun', './server.js'], {
+      cwd: '/app',
       stdout: 'inherit',
       stderr: 'inherit',
       env: {
         ...process.env,
-        PORT: port,
+        PORT,
+        HOSTNAME: '0.0.0.0',
       },
     });
 
     // Wait for Next.js to be ready
-    logger.info('⏳ Waiting for Next.js server to initialize...');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await Bun.sleep(2000);
 
-    logger.info('✅ All services started successfully');
-    logger.info(`🚀 Application ready at http://localhost:${port}`);
-    logger.info(`📊 API endpoints at http://localhost:${process.env.API_PORT || '3201'}/api/*`);
+    console.log('');
+    console.log('[OK] All services started successfully');
+    console.log(`Application ready at http://localhost:${PORT}`);
+    console.log(`API endpoints at http://localhost:${API_PORT}/api/*`);
+    console.log('');
 
     return true;
   } catch (error) {
-    logger.error('❌ Failed to start servers', error);
+    console.error('[FAIL] Failed to start servers:', error);
     await shutdown('STARTUP_ERROR', 2);
     return false;
   }
@@ -105,73 +116,73 @@ async function startServers() {
  * 3. Stop API server
  * 4. Clean up resources
  */
-async function shutdown(signal: string, exitCode = 0) {
+async function shutdown(signal: string, exitCode = 0): Promise<void> {
   if (isShuttingDown) {
-    logger.warn('Shutdown already in progress, ignoring signal:', { signal });
+    console.warn('Shutdown already in progress, ignoring signal:', signal);
     return;
   }
 
   isShuttingDown = true;
   const uptime = Math.round((Date.now() - startTime) / 1000);
 
-  logger.info(`\n📦 Received ${signal}, initiating graceful shutdown...`);
-  logger.info(`⏱️  Container uptime: ${uptime} seconds`);
+  console.log('');
+  console.log(`Received ${signal}, initiating graceful shutdown...`);
+  console.log(`Container uptime: ${uptime} seconds`);
 
   try {
     // Stop Next.js first (frontend)
     if (nextServer) {
-      logger.info('🛑 Stopping Next.js server...');
+      console.log('Stopping Next.js server...');
       nextServer.kill('SIGTERM');
 
       // Give Next.js time to finish in-flight requests
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await Bun.sleep(2000);
 
       // Force kill if still running
       if (!nextServer.killed) {
-        logger.warn('⚠️  Next.js did not stop gracefully, forcing shutdown...');
+        console.warn('Next.js did not stop gracefully, forcing shutdown...');
         nextServer.kill('SIGKILL');
       }
 
-      logger.info('✓ Next.js server stopped');
+      console.log('[OK] Next.js server stopped');
     }
 
     // Stop API server
     if (apiServer) {
-      logger.info('🛑 Stopping API server...');
+      console.log('Stopping API server...');
       apiServer.kill('SIGTERM');
 
       // Give API time to close database connections
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await Bun.sleep(1000);
 
       // Force kill if still running
       if (!apiServer.killed) {
-        logger.warn('⚠️  API server did not stop gracefully, forcing shutdown...');
+        console.warn('API server did not stop gracefully, forcing shutdown...');
         apiServer.kill('SIGKILL');
       }
 
-      logger.info('✓ API server stopped');
+      console.log('[OK] API server stopped');
     }
 
-    logger.info('✅ Graceful shutdown complete');
-    logger.info(`👋 Goodbye! (uptime: ${uptime}s)`);
-
+    console.log('');
+    console.log('[OK] Graceful shutdown complete');
+    console.log(`Goodbye! (uptime: ${uptime}s)`);
   } catch (error) {
-    logger.error('❌ Error during shutdown', error);
+    console.error('[FAIL] Error during shutdown:', error);
     exitCode = 1;
   }
 
-  // Exit process
   process.exit(exitCode);
 }
 
 /**
  * Monitor server processes and restart if they crash unexpectedly
  */
-async function monitorProcesses() {
+function monitorProcesses(): void {
   if (apiServer) {
     apiServer.exited.then((code) => {
       if (!isShuttingDown) {
-        logger.error(`❌ API server exited unexpectedly with code: ${code}`);
+        console.error(`[CRASH] API server exited unexpectedly with code: ${code}`);
         shutdown('API_CRASH', 1);
       }
     });
@@ -180,7 +191,7 @@ async function monitorProcesses() {
   if (nextServer) {
     nextServer.exited.then((code) => {
       if (!isShuttingDown) {
-        logger.error(`❌ Next.js server exited unexpectedly with code: ${code}`);
+        console.error(`[CRASH] Next.js server exited unexpectedly with code: ${code}`);
         shutdown('NEXT_CRASH', 1);
       }
     });
@@ -193,31 +204,25 @@ async function monitorProcesses() {
 
 // SIGTERM: Graceful shutdown (Docker stop, Kubernetes pod termination)
 process.on('SIGTERM', () => {
-  logger.info('Received SIGTERM signal');
+  console.log('Received SIGTERM signal');
   shutdown('SIGTERM', 0);
 });
 
 // SIGINT: Graceful shutdown (Ctrl+C)
 process.on('SIGINT', () => {
-  logger.info('Received SIGINT signal');
+  console.log('Received SIGINT signal');
   shutdown('SIGINT', 0);
-});
-
-// SIGUSR1: Reload configuration (future use)
-process.on('SIGUSR1', () => {
-  logger.info('Received SIGUSR1 signal (reload configuration)');
-  // TODO: Implement configuration reload without downtime
 });
 
 // Uncaught exceptions: Log and shutdown
 process.on('uncaughtException', (error) => {
-  logger.error('💥 Uncaught exception', error);
+  console.error('[FATAL] Uncaught exception:', error);
   shutdown('UNCAUGHT_EXCEPTION', 1);
 });
 
 // Unhandled promise rejections: Log and shutdown
 process.on('unhandledRejection', (reason) => {
-  logger.error('💥 Unhandled promise rejection', reason);
+  console.error('[FATAL] Unhandled promise rejection:', reason);
   shutdown('UNHANDLED_REJECTION', 1);
 });
 
@@ -225,22 +230,15 @@ process.on('unhandledRejection', (reason) => {
 // Main Execution
 // ============================================================================
 
-(async () => {
-  logger.info('═'.repeat(60));
-  logger.info('🎰 Mega-Sena Analyzer - Docker Container');
-  logger.info('═'.repeat(60));
+const success = await startServers();
 
-  // Start servers
-  const success = await startServers();
+if (!success) {
+  console.error('[FAIL] Startup failed');
+  process.exit(2);
+}
 
-  if (!success) {
-    logger.error('❌ Startup failed');
-    process.exit(2);
-  }
+// Monitor processes for unexpected exits
+monitorProcesses();
 
-  // Monitor processes for unexpected exits
-  await monitorProcesses();
-
-  // Keep process alive and wait for shutdown signal
-  await new Promise(() => {}); // Infinite wait
-})();
+// Keep process alive and wait for shutdown signal
+await new Promise(() => {});

@@ -5,7 +5,40 @@
 - https://megasena-analyzer.com.br (primary)
 - https://megasena-analyzer.com
 - https://megasena-analyzer.online
-**Deployment Time:** ~4-5 minutes
+**Deployment Time:** ~3-4 minutes
+
+---
+
+## IMPORTANT: Cross-Platform Builds (Mac to VPS)
+
+**Before deploying from Mac (ARM64) to VPS (AMD64), read:**
+- `agent_planning/archive/lessons-learned-docker-builds.md` - Critical cross-platform build issues
+
+**Quick rules:**
+1. Always use `docker build --platform linux/amd64`
+2. Bun only crashes when it **runs during build** - works fine for runtime
+3. Pre-build locally (`bun --bun next build`) and copy dist/ to Docker
+
+---
+
+## Quick Deploy (Recommended)
+
+```bash
+./deploy.sh
+```
+
+This script will:
+1. Build Next.js locally (avoids QEMU/AVX issues)
+2. Build Docker image with `--platform linux/amd64`
+3. Transfer image to VPS
+4. Load and start container
+5. Verify health endpoint
+
+**Options:**
+- `./deploy.sh --skip-build` - Skip Next.js build (reuse existing)
+- `./deploy.sh --image-only` - Build image only, don't deploy
+
+---
 
 ## Pre-Deployment Checklist
 
@@ -528,6 +561,6 @@ curl -s --resolve 'megasena-analyzer.com.br:443:127.0.0.1' -k https://megasena-a
 
 ---
 
-**Last Updated:** 2025-12-05
-**Version:** 1.3.1
-**Status:** Production Ready
+**Last Updated:** 2025-12-17
+**Version:** 2.0.0
+**Status:** Production Ready (Runtime-Only Build)
