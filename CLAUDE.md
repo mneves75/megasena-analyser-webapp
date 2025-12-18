@@ -54,8 +54,15 @@ bun --version                   # Verify Bun runtime (>=1.1)
 bun run db:migrate              # Apply SQLite migrations
 bun scripts/pull-draws.ts       # Pull all historical draws
 bun scripts/pull-draws.ts --incremental  # Pull only new draws
+bun scripts/pull-draws.ts --start 2946   # Pull from specific contest
 bun scripts/optimize-db.ts      # Optimize database (WAL checkpoint + VACUUM)
 bun scripts/backup-database.ts  # Create database backup
+
+# Database Sync (Local <-> VPS)
+bun run db:sync                 # Full sync: update local, push to VPS
+bun run db:sync --update-only   # Only update local with new draws
+bun run db:sync --push-only     # Only upload local DB to VPS
+bun run db:sync --pull-only     # Only download VPS DB to local
 
 # Development
 bun run dev                     # Start dev server (localhost:3000)

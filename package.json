@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -13,6 +13,7 @@
     "test": "vitest",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:pull": "bun run scripts/pull-draws.ts",
+    "db:sync": "bun run scripts/sync-database.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts"
   },
   "dependencies": {
