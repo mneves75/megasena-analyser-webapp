@@ -1,9 +1,35 @@
 # Changelog
 
-Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
+Todas as mudancas notaveis neste projeto serao documentadas neste arquivo.
 
-O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
+O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
+
+## [1.4.3] - 2025-12-18
+
+### Corrigido
+
+- **Docker Runtime**: Adicionado flag `--bun` no spawn do API server em `scripts/start-docker.ts`
+  - Antes: `spawn(['bun', 'server.ts'])` - Bun usava polyfills Node.js para algumas APIs
+  - Depois: `spawn(['bun', '--bun', 'server.ts'])` - Bun runtime nativo completo (crypto, fetch, fs)
+  - Impacto: Melhor performance e consistencia com build local
+
+### Alterado
+
+- **CLAUDE.md**: Refatorado para seguir universal guide (`docs/GUIDELINES-REF/claude.md`)
+  - Adicionada secao "Development Guidelines" com referencias a `docs/GUIDELINES-REF/*.md`
+  - Referencias incluem: PRAGMATIC-RULES, DEV-GUIDELINES, DB-GUIDELINES, SECURITY-GUIDELINES, etc.
+  - Tamanho otimizado: ~940 linhas -> ~230 linhas (75% reducao)
+
+- **Reasoning Protocol**: Extraido para arquivo separado
+  - Movido de CLAUDE.md inline para `docs/PROMPTS/REASONING_PROTOCOL.md`
+  - CLAUDE.md agora referencia o arquivo externo
+
+### Documentacao
+
+- **docs/PROMPTS/REASONING_PROTOCOL.md**: Novo arquivo contendo protocolo de raciocinio estruturado
+  - 9 regras sistematicas para tomada de decisao de agentes AI
+  - Inclui: dependencias logicas, avaliacao de risco, raciocinio abdutivo, persistencia
 
 ## [1.4.2] - 2025-12-17
 

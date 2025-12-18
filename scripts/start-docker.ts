@@ -48,9 +48,9 @@ async function startServers(): Promise<boolean> {
   console.log('');
 
   try {
-    // Step 1: Start Bun API server (runs server.ts directly)
+    // Step 1: Start Bun API server (runs server.ts directly with full Bun runtime)
     console.log('[1/3] Starting API server...');
-    apiServer = spawn(['bun', 'server.ts'], {
+    apiServer = spawn(['bun', '--bun', 'server.ts'], {
       cwd: '/app',
       stdout: 'inherit',
       stderr: 'inherit',
