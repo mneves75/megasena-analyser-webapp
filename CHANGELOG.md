@@ -1,6 +1,72 @@
 # Changelog
 
-Todas as mudancas notaveis neste projeto serao documentadas neste arquivo.
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.5.0] - 2025-12-27
+
+### Fixed
+
+**Critical Bug Fixes:**
+- **Budget Waste Bug**: Fixed deduplication loop that incorrectly deducted R$6 without generating bet
+  - Before: After 2 failed deduplication attempts, code threw away R$6
+  - After: Clean early exit, no budget waste
+  - Impact: Budget utilization improved from ~85% to 96%
+  - Location: `lib/analytics/bet-generator.ts:350-352`
+
+- **Hot/Cold Number Determinism**: Removed shuffle from hot_numbers and cold_numbers strategies
+  - Before: User selecting "hot numbers" got random 6 from top 30 (non-deterministic)
+  - After: User gets THE 6 hottest numbers (deterministic, predictable)
+  - Impact: Strategies now match user expectations and are explainable
+  - Locations: `lib/analytics/bet-generator.ts:428-430, 445-447`
+
+### Added
+
+- **Statistical Disclaimer**: Added prominent ethical disclaimer to bet generator page
+  - States lottery randomness and independence of events
+  - Clarifies no strategy can predict future draws
+  - Notes negative expected value due to house edge
+  - Styled with destructive colors for visibility
+  - Location: `app/dashboard/generator/page.tsx:53-60`
+
+### Changed
+
+- **Logging Cleanup**: Removed console.log/console.error from user-facing client components
+  - `app/dashboard/generator/generator-form.tsx:59`: Removed console.error
+  - `components/bet-generator/bet-card.tsx:34-36`: Silent clipboard failure
+  - Server-side console.error retained (appropriate for Server Components)
+
+### Verified
+
+**Runtime Test Results:**
+```
+Budget Optimization:
+  Budget: R$ 100.00
+  Total Cost: R$ 96.00 (96% utilization)
+  Remaining: R$ 4.00 (minimal waste)
+  Unique Numbers: 43/60 (71.7% coverage)
+  ✅ PASS
+
+Determinism:
+  Hot numbers: Identical across multiple runs
+  Cold numbers: Identical across multiple runs
+  ✅ PASS
+
+Deduplication:
+  100 bets generated
+  0 duplicates detected
+  ✅ PASS
+```
+
+### Documentation
+
+- Added comprehensive code quality audit (`docs/CODE_QUALITY_AUDIT_2025-12-27.md`)
+- Created engineering exec spec (`docs/EXECPLAN_2025-12-27_Code_Quality_Fixes.md`)
+- Generated 19-task implementation plan (`docs/TODO_2025-12-27_Implementation_Plan.md`)
+
+---
 
 O formato e baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).

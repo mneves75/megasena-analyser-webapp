@@ -346,10 +346,9 @@ export class BetGenerator {
       } else {
         // Could not generate unique bet - try smaller bet or exit
         consecutiveFailures++;
-        // Force try simple bet next iteration by removing larger options temporarily
+        // Exit after 2 failures to prevent infinite loop without wasting budget
         if (consecutiveFailures >= 2) {
-          // Force budget reduction to prevent infinite loop
-          remainingBudget -= BET_PRICES[6];
+          break;
         }
       }
     }
@@ -424,12 +423,11 @@ export class BetGenerator {
   }
 
   /**
-   * Selects random numbers from hot pool
+   * Selects numbers from hot pool (deterministic - top N hottest)
    */
   private selectFromHotPool(count: number, pools: CandidatePool): number[] {
-    // Shuffle and select from hot pool
-    const shuffled = this.shuffle(pools.hot);
-    const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+    // Take top N hot numbers deterministically (already sorted by frequency DESC)
+    const selected = pools.hot.slice(0, Math.min(count, pools.hot.length));
 
     // If hot pool doesn't have enough, fill with random
     if (selected.length < count) {
@@ -442,11 +440,11 @@ export class BetGenerator {
   }
 
   /**
-   * Selects random numbers from cold pool
+   * Selects numbers from cold pool (deterministic - top N coldest)
    */
   private selectFromColdPool(count: number, pools: CandidatePool): number[] {
-    const shuffled = this.shuffle(pools.cold);
-    const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+    // Take top N cold numbers deterministically (already sorted by frequency ASC)
+    const selected = pools.cold.slice(0, Math.min(count, pools.cold.length));
 
     if (selected.length < count) {
       const remaining = pools.all.filter(n => !selected.includes(n));

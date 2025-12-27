@@ -56,7 +56,7 @@ export function GeneratorForm() {
       if (isMountedRef.current) {
         const errorMessage = err instanceof Error ? err.message : 'Erro ao gerar apostas. Tente novamente.';
         setError(errorMessage);
-        console.error('Error generating bets:', err);
+        // Error already logged by server, no need to log again on client
       }
     } finally {
       // Only update state if component is still mounted

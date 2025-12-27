@@ -31,8 +31,9 @@ export function BetCard({ bet, index, className }: BetCardProps) {
       await navigator.clipboard.writeText(numbersText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      // Clipboard API not available or user denied permission - fail silently
+      setCopied(false);
     }
   };
 

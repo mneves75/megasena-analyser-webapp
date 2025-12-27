@@ -50,6 +50,14 @@ export default function GeneratorPage() {
           <p className="text-muted-foreground text-lg">
             Sistema inteligente de geração de apostas que minimiza desperdício de orçamento
           </p>
+          <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-sm max-w-3xl mx-auto">
+            <strong className="text-destructive">⚠️ Aviso Estatístico:</strong>{' '}
+            <span className="text-muted-foreground">
+              Sorteios de loteria são eventos aleatórios e independentes. Nenhuma estratégia pode prever resultados futuros.
+              Este sistema oferece ferramentas de seleção baseadas em heurísticas estatísticas, não garantias de ganho.
+              O valor esperado de qualquer aposta é negativo devido à margem da casa.
+            </span>
+          </div>
         </header>
 
         <GeneratorForm />
