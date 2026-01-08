@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Next.js
+.next/
+out/
+build/
+dist/
+artifacts/
+
+# Database
+db/*.db
+db/*.db-shm
+db/*.db-wal
+db/backups/*.db
+db/backups/*.sql
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+*.log
+
+# SSH Keys (NEVER commit!)
+*.pem
+*.key
+*_rsa
+*_rsa.pub
+*_ed25519
+*_ed25519.pub
+*_ecdsa
+*_ecdsa.pub
+id_*
+!.ssh/config
+
+# Secrets and Credentials
+.env.production
+.env.staging
+secrets/
+*.secret
+*.credentials
+credentials.json
+auth.json
+
+# Backup Files (may contain sensitive data)
+*.backup
+*_backup
+*.bak
+*.old
+*~
+.ssh-backup-*.tar.gz
+
+# Deployment Scripts with Secrets
+deploy-with-password.sh
+
+# Build Artifacts
+tsconfig.tsbuildinfo
+
+# Tool Configs (local settings)
+.claude/settings.local.json
+
+# BFG Reports (git history cleanup)
+.bfg-report/
+..bfg-report/
+
+# Traefik Infrastructure (belongs in deployment repo)
+traefik*.yaml

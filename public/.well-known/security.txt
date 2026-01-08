@@ -1,0 +1,5 @@
+Contact: mailto:security@megasena-analyzer.com.br
+Expires: 2026-12-31T23:59:59Z
+Preferred-Languages: pt-BR, en
+Canonical: https://megasena-analyzer.com.br/.well-known/security.txt
+Policy: https://megasena-analyzer.com.br/security-policy

@@ -1,0 +1,139 @@
+// Application Information
+export const APP_INFO = {
+  NAME: 'Mega-Sena Analyzer',
+  VERSION: '1.5.8',
+  BUILD_DATE: '2025-12-29',
+  DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
+  AUTHOR: 'Mega-Sena Analyzer Team',
+} as const;
+
+// Mega-Sena Game Constants
+export const MEGASENA_CONSTANTS = {
+  MIN_NUMBER: 1,
+  MAX_NUMBER: 60,
+  NUMBERS_PER_BET: 6,
+  MIN_NUMBERS_MULTIPLE: 6,
+  MAX_NUMBERS_MULTIPLE: 20,
+} as const;
+
+// Bet Prices (as of July 2025 - Official CAIXA values after 20% increase)
+// Source: https://loterias.caixa.gov.br/Paginas/Mega-Sena.aspx
+export const BET_PRICES: Record<number, number> = {
+  6: 6.0,
+  7: 42.0,
+  8: 168.0,
+  9: 504.0,
+  10: 1260.0,
+  11: 2772.0,
+  12: 5544.0,
+  13: 10296.0,
+  14: 18018.0,
+  15: 30030.0,
+  // Extended values (16-20 are rarely used but included for completeness)
+  16: 48048.0,
+  17: 74256.0,
+  18: 111384.0,
+  19: 162792.0,
+  20: 232560.0,
+};
+
+// API Configuration
+export const API_CONFIG = {
+  CAIXA_BASE_URL: 'https://servicebus2.caixa.gov.br/portaldeloterias/api',
+  REQUEST_TIMEOUT: 30000, // 30 seconds (increased from 10s for slow responses)
+  RATE_LIMIT_DELAY: 1000, // Base delay between requests
+  MAX_RETRIES: 5, // Maximum retry attempts (increased from 3)
+  BACKOFF_MULTIPLIER: 2, // Exponential backoff multiplier
+  PROGRESSIVE_DELAY_THRESHOLD: 50, // Start progressive delays after N requests
+  PROGRESSIVE_DELAY_INCREMENT: 500, // Add 500ms every N requests
+} as const;
+
+// Prize Tiers
+export const PRIZE_TIERS = {
+  SENA: 6,
+  QUINA: 5,
+  QUADRA: 4,
+} as const;
+
+// Chart Colors
+export const CHART_COLORS = {
+  primary: 'hsl(var(--chart-1))',
+  secondary: 'hsl(var(--chart-2))',
+  tertiary: 'hsl(var(--chart-3))',
+  quaternary: 'hsl(var(--chart-4))',
+  quinary: 'hsl(var(--chart-5))',
+} as const;
+
+// Bet Generation Strategies
+export const BET_GENERATION_MODE = {
+  SIMPLE_ONLY: 'simple_only',
+  MULTIPLE_ONLY: 'multiple_only',
+  MIXED: 'mixed',
+  OPTIMIZED: 'optimized',
+} as const;
+
+export type BetGenerationMode = (typeof BET_GENERATION_MODE)[keyof typeof BET_GENERATION_MODE];
+
+// Budget Presets (R$)
+export const BUDGET_PRESETS = [
+  10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
+] as const;
+
+// Number of combinations per bet size
+export const BET_COMBINATIONS: Record<number, number> = {
+  6: 1,
+  7: 7,
+  8: 28,
+  9: 84,
+  10: 210,
+  11: 462,
+  12: 924,
+  13: 1716,
+  14: 3003,
+  15: 5005,
+  16: 8008,
+  17: 12376,
+  18: 18564,
+  19: 27132,
+  20: 38760,
+} as const;
+
+// Bet Generation Algorithm Constants
+export const BET_ALLOCATION = {
+  MIXED_MULTIPLE_PERCENTAGE: 0.6, // 60% for multiple bets in mixed mode
+  BALANCED_HOT_PERCENTAGE: 0.5, // 50% hot numbers in balanced strategy
+} as const;
+
+export const BET_GENERATION_LIMITS = {
+  MAX_BETS_PER_GENERATION: 200,
+} as const;
+
+// Statistics Display Constants
+export const STATISTICS_DISPLAY = {
+  TOP_NUMBERS_COUNT: 20, // Top N hot/cold numbers to display
+  DASHBOARD_TOP_COUNT: 10, // Top N for dashboard overview
+  RECENT_DRAWS_DEFAULT: 50, // Default number of recent draws to fetch
+  PATTERNS_MIN_OCCURRENCES: 1, // Minimum occurrences to show pattern
+} as const;
+
+// Chart Configuration
+export const CHART_CONFIG = {
+  HEATMAP_COLORS: ['#dbeafe', '#93c5fd', '#60a5fa', '#fb923c', '#ef4444'],
+  MAX_TIME_SERIES_NUMBERS: 6,
+  DEFAULT_STREAK_WINDOW: 10,
+} as const;
+
+// Prime Numbers (1-60)
+export const PRIME_NUMBERS = [
+  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+] as const;
+
+// Decade Ranges
+export const DECADES = [
+  { label: '01-10', range: [1, 10] as const },
+  { label: '11-20', range: [11, 20] as const },
+  { label: '21-30', range: [21, 30] as const },
+  { label: '31-40', range: [31, 40] as const },
+  { label: '41-50', range: [41, 50] as const },
+  { label: '51-60', range: [51, 60] as const },
+] as const;
