@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
+    type: 'website',
     title: pt.meta.home.title,
     description: pt.meta.home.openGraphDescription,
     url: '/',
@@ -104,7 +105,7 @@ function FeatureCard({
   return (
     <div className="p-6 rounded-2xl border bg-card hover:shadow-glow transition-smooth">
       <Icon className="w-10 h-10 text-primary mb-4" />
-      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <h2 className="text-lg font-semibold mb-2">{title}</h2>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );

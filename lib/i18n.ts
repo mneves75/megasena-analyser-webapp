@@ -5,7 +5,7 @@ export const pt = {
   },
   meta: {
     home: {
-      title: 'Mega-Sena Analyzer | Análise Estatística e Gerador de Apostas',
+      title: 'Mega-Sena Analyzer | Estatísticas e Gerador de Apostas',
       description:
         'Análise avançada de dados históricos da Mega-Sena. Estatísticas de frequência, padrões e gerador inteligente de apostas. Ferramenta gratuita e educacional.',
       openGraphDescription:
