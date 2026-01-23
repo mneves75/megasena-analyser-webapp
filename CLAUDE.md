@@ -272,3 +272,37 @@ Prune old logs: `bun run audit:prune` (audit) and `bun run log:prune` (structure
 - Always edit design system (`app/globals.css`, `tailwind.config.js`) before components
 - Use semantic tokens: `bg-background`, `text-foreground`, `border-accent`
 - Never use explicit color classes in JSX
+
+## SEO Configuration
+
+### HTML Lang Attribute
+- Must be `lang="pt-BR"` (primary language is Brazilian Portuguese)
+- Already configured in `app/layout.tsx`
+
+### Schema.org Structured Data
+Uses `MultiJsonLd` component with multiple schemas:
+- WebSite, Organization, SoftwareApplication
+- Proper `@graph` structure for rich results
+
+### Validation URLs
+- https://search.google.com/test/rich-results?url=https://megasena.conhecendotudo.online
+- https://validator.schema.org/?url=https://megasena.conhecendotudo.online
+
+## Deployment
+
+### URLs
+- **Production:** https://megasena.conhecendotudo.online
+- **VPS Host:** 212.85.2.24 (Hostinger)
+- **Container:** Docker with Next.js standalone output
+- **Auto-deploy:** Coolify monitors git repo and auto-deploys on push
+
+### SSH Access
+```bash
+ssh -i ~/.ssh/id_megasena_vps claude@212.85.2.24
+```
+
+### Container Management
+```bash
+docker logs -f megasena-analyser
+docker restart megasena-analyser
+```
