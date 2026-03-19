@@ -5,21 +5,27 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Não Lançado]
+## [1.5.9] - 2026-03-18
 
-### Adicionado
-- Nenhum
+### Dados
+- **Atualização de sorteios**: 40 novos concursos adicionados
+  - Antes: Concurso #2945 (Dez 2025), 2944 sorteios
+  - Depois: Concurso #2985 (17/03/2026), 2984 sorteios
+
+### Corrigido
+- Titulo SEO encurtado e adicionado skip link para acessibilidade
 
 ### Alterado
-- Workflow de build agora gera saída standalone do Next.js antes do build da imagem Docker.
+- Workflow de build agora gera saida standalone do Next.js antes do build da imagem Docker.
 - Regras de docker ignore agora permitem dist/standalone no contexto de build.
 - Etapa SBOM do CI agora usa anchore/sbom-action para substituir a action syft faltante.
 
 ### Corrigido
-- Requisições retry para API CAIXA em respostas transitórias 5xx/429, respeitando Retry-After quando presente, e adicionada cobertura para comportamento de retry.
+- Requisicoes retry para API CAIXA em respostas transitorias 5xx/429, respeitando Retry-After quando presente, e adicionada cobertura para comportamento de retry.
 
-### Documentação
-- Documentada correção de aspas `GITHUB_OUTPUT` no GitHub Actions para a etapa de versão SBOM.
+### Documentacao
+- Documentada correcao de aspas `GITHUB_OUTPUT` no GitHub Actions para a etapa de versao SBOM.
+- Adicionadas secoes de SEO e deployment ao CLAUDE.md.
 
 ## [1.5.8] - 2025-12-29
 
