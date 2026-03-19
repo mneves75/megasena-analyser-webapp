@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -33,18 +35,52 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+function renderButtonAsChild(
+  child: React.ReactNode,
+  props: Omit<ButtonProps, 'asChild' | 'children'>
+): React.ReactElement | null {
+  const element = React.Children.toArray(child).find(React.isValidElement) as
+    | React.ReactElement<{ className?: string }>
+    | undefined;
+
+  if (!element) {
+    return null;
+  }
+
+  const ChildComponent = element.type as React.ElementType;
+  return (
+    <ChildComponent
+      {...element.props}
+      {...props}
+      className={cn(buttonVariants(props), element.props.className)}
+    />
+  );
+}
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild: _asChild, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, children, type, ...props }, ref) => {
+    if (asChild) {
+      return renderButtonAsChild(children, {
+        ...props,
+        className,
+        size,
+        type,
+        variant,
+      });
+    }
+
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        type={type ?? 'button'}
         {...props}
-      />
+      >
+        {children}
+      </button>
     );
   }
 );
 Button.displayName = 'Button';
 
 export { Button, buttonVariants };
-

@@ -70,10 +70,7 @@ Abra `package.json`:
 ```json
 {
   "scripts": {
-    "test": "vitest",
-    "test:run": "vitest --run",
-    "test:coverage": "vitest --coverage",
-    "test:ui": "vitest --ui"
+    "test": "vitest"
   }
 }
 ```
@@ -81,9 +78,8 @@ Abra `package.json`:
 **Uso:**
 ```bash
 bun run test              # Modo watch (re-roda em mudanças)
-bun run test:run          # Executa uma vez e sai
-bun run test:coverage     # Com relatório de cobertura
-bun run test:ui           # Interface visual
+bun run test -- --run     # Executa uma vez e sai
+bunx vitest --coverage    # Cobertura local (validar se o provider está emitindo dados reais)
 ```
 
 ---
@@ -443,7 +439,7 @@ describe('CaixaClient', () => {
 
 **Verificar cobertura:**
 ```bash
-bun run test:coverage
+bunx vitest --coverage
 ```
 
 **Saída:**
@@ -727,8 +723,8 @@ export class MockDatabase {
 
 Antes de fazer commit, verifique:
 
-- [ ] Todos os testes passam: `bun run test:run`
-- [ ] Cobertura >= 80%: `bun run test:coverage`
+- [ ] Todos os testes passam: `bun run test -- --run`
+- [ ] Se usar cobertura, valide primeiro se o provider não está gerando relatório vazio
 - [ ] Sem warnings de TypeScript
 - [ ] Testes de integração com mock DB funcionam
 - [ ] Testes unitários de funções puras completos

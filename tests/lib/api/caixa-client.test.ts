@@ -85,4 +85,45 @@ describe('CaixaAPIClient', () => {
     expect(data.numero).toBe(2);
     expect(delaySpy).toHaveBeenCalledWith(2000);
   });
+
+  it('normalizes the current CAIXA payload shape into the canonical draw contract', async () => {
+    const client = new CaixaAPIClient();
+
+    const payload = {
+      numero: 2985,
+      dataApuracao: '2026-03-17',
+      listaDezenas: ['09', '31', '32', '40', '45', '55'],
+      listaRateioPremio: [
+        { descricaoFaixa: '6 acertos', faixa: 1, numeroDeGanhadores: 3, valorPremio: 34856052.53 },
+        { descricaoFaixa: '5 acertos', faixa: 2, numeroDeGanhadores: 96, valorPremio: 34815.62 },
+        { descricaoFaixa: '4 acertos', faixa: 3, numeroDeGanhadores: 4494, valorPremio: 1225.92 },
+      ],
+      valorArrecadado: 126007547.5,
+      valorAcumuladoProximoConcurso: 12540698.04,
+      valorEstimadoProximoConcurso: 3500000,
+      acumulado: false,
+      tipoJogo: 'MEGA_SENA',
+    };
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(payload), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
+    );
+
+    const data = await client.fetchDraw(2985);
+
+    expect(data.rateioProcessamento?.map((item) => item.descricaoFaixa)).toEqual([
+      'Sena',
+      'Quina',
+      'Quadra',
+    ]);
+    expect(data.rateioProcessamento?.[0]?.valorPremio).toBe(34856052.53);
+    expect(data.valorAcumuladoConcurso).toBe(12540698.04);
+    expect(data.valorEstimadoProximoConcurso).toBe(3500000);
+  });
 });

@@ -5,6 +5,31 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.1] - 2026-03-19
+
+### Corrigido
+
+- Fluxo de produção local corrigido com `bun run start` real para `standalone` + API Bun.
+- Bootstrap de desenvolvimento endurecido para aguardar saúde da API antes de liberar páginas SSR dependentes.
+- Rota `/dashboard/generator` voltou a hidratar corretamente em produção com CSP compatível com App Router/standalone.
+- `manifest.webmanifest` adicionado para eliminar 404 e ruído de runtime no navegador.
+- Script morto `db:sync` removido do `package.json`.
+
+### CI/CD
+
+- Pipeline agora executa E2E antes do build de imagem.
+- Gate falso de cobertura vazio removido do CI; a suíte continua obrigatória, mas sem publicar artefato enganoso.
+- Toolchain fixada em versões compatíveis com o fluxo validado do projeto.
+
+### Documentação
+
+- `README.md`, `CLAUDE.md`, `docs/DEPLOY.md`, `docs/PRIVACY.md` e `docs/learn/chapter-08-testing.md` alinhados ao fluxo real de produção, aos comandos atuais e ao fato de este ser um repositório público.
+
+### Segurança
+
+- Rate limiting passou a confiar apenas em `requestIP()` por padrão, com `TRUST_PROXY_HEADERS=true` exigido para confiar em headers de proxy.
+- Limite de payload do `POST /api/generate-bets` agora é aplicado por leitura stream-based, não apenas por `Content-Length`.
+
 ## [1.6.0] - 2026-03-18
 
 ### SEO

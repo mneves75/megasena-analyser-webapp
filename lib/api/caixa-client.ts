@@ -17,6 +17,78 @@ export interface MegaSenaDrawData {
   tipoJogo?: string;
 }
 
+interface CaixaPrizeTier {
+  descricaoFaixa?: string;
+  faixa?: number;
+  numeroDeGanhadores?: number;
+  valorPremio?: number;
+}
+
+interface CaixaRawDrawData {
+  numero: number;
+  dataApuracao: string;
+  listaDezenas: string[];
+  rateioProcessamento?: CaixaPrizeTier[];
+  listaRateioPremio?: CaixaPrizeTier[];
+  valorArrecadado?: number;
+  valorAcumuladoConcurso?: number;
+  valorAcumuladoProximoConcurso?: number;
+  valorEstimadoProximoConcurso?: number;
+  acumulado?: boolean;
+  tipoJogo?: string;
+}
+
+function normalizePrizeDescription(
+  description: string | undefined,
+  faixa: number | undefined
+): string {
+  const normalized = description?.trim().toLowerCase();
+
+  if (faixa === 1 || normalized === 'sena' || normalized === '6 acertos') {
+    return 'Sena';
+  }
+  if (faixa === 2 || normalized === 'quina' || normalized === '5 acertos') {
+    return 'Quina';
+  }
+  if (faixa === 3 || normalized === 'quadra' || normalized === '4 acertos') {
+    return 'Quadra';
+  }
+
+  return description?.trim() || `Faixa ${faixa ?? 'desconhecida'}`;
+}
+
+export function normalizeMegaSenaDrawData(raw: CaixaRawDrawData): MegaSenaDrawData {
+  const prizeBreakdown = raw.rateioProcessamento ?? raw.listaRateioPremio ?? [];
+  const normalized: MegaSenaDrawData = {
+    numero: raw.numero,
+    dataApuracao: raw.dataApuracao,
+    listaDezenas: raw.listaDezenas,
+    rateioProcessamento: prizeBreakdown.map((tier) => ({
+      descricaoFaixa: normalizePrizeDescription(tier.descricaoFaixa, tier.faixa),
+      numeroDeGanhadores: tier.numeroDeGanhadores ?? 0,
+      valorPremio: tier.valorPremio ?? 0,
+    })),
+    // The current CAIXA payload exposes carry-over value as valorAcumuladoProximoConcurso.
+    valorAcumuladoConcurso:
+      raw.valorAcumuladoConcurso ?? raw.valorAcumuladoProximoConcurso ?? 0,
+  };
+
+  if (typeof raw.valorArrecadado === 'number') {
+    normalized.valorArrecadado = raw.valorArrecadado;
+  }
+  if (typeof raw.valorEstimadoProximoConcurso === 'number') {
+    normalized.valorEstimadoProximoConcurso = raw.valorEstimadoProximoConcurso;
+  }
+  if (typeof raw.acumulado === 'boolean') {
+    normalized.acumulado = raw.acumulado;
+  }
+  if (typeof raw.tipoJogo === 'string' && raw.tipoJogo.length > 0) {
+    normalized.tipoJogo = raw.tipoJogo;
+  }
+
+  return normalized;
+}
+
 export class CaixaAPIClient {
   private baseURL: string;
   private timeout: number;
@@ -52,7 +124,8 @@ export class CaixaAPIClient {
     try {
       const response = await this.fetchWithRetry(url);
 
-      const data = await response.json();
+      const rawData = (await response.json()) as CaixaRawDrawData;
+      const data = normalizeMegaSenaDrawData(rawData);
 
       // Cache the result
       this.cache.set(url, data);

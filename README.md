@@ -10,12 +10,12 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 - **Dashboard Interativo**: Visualização clara e moderna dos dados
 - **Banco de Dados Local**: SQLite com dados históricos completos da CAIXA
 - **Integração com API**: Conexão com a API oficial do Portal de Loterias da CAIXA
-- **Segurança Reforçada**: CSP com nonces, CORS estrito, rate limiting, validação Zod
+- **Segurança Reforçada**: CSP compatível com App Router/standalone, CORS estrito, rate limiting, validação Zod
 
 ## Stack Tecnológica
 
 - **Frontend**: Next.js 16 + React 19
-- **Runtime**: Bun >=1.1 (obrigatório)
+- **Runtime**: Bun >=1.3.10 (baseline recomendada e alinhada ao CI/Docker)
 - **Banco de Dados**: SQLite (bun:sqlite - nativo)
 - **Estilização**: Tailwind CSS + componentes shadcn/ui
 - **TypeScript**: Tipagem completa
@@ -25,7 +25,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ### Pré-requisitos
 
-- **Bun >=1.1.0** (obrigatório - utiliza SQLite nativo)
+- **Bun >=1.3.10** (obrigatório para o baseline testado com SQLite nativo)
 
 ### Instalação
 
@@ -56,19 +56,26 @@ bun run dev
 
 Acesse `http://localhost:3000` para ver a aplicação.
 
+Para validar o runtime de produção local:
+
+```bash
+bun run build
+bun run start
+```
+
 ## Comandos Disponíveis
 
 - `bun run dev` - Iniciar servidor de desenvolvimento (API Bun + proxy Next.js)
 - `bun run build` - Build para produção
-- `bun run start` - Iniciar servidor de produção
+- `bun run start` - Iniciar a stack de produção local (API Bun + Next standalone já buildado)
 - `bun run lint` - Executar ESLint (falha em warnings)
 - `bun run lint:fix` - Corrigir problemas de lint automaticamente
 - `bun run format` - Formatar código com Prettier
 - `bun run test` - Executar testes com Vitest (usa fallback de banco em memória)
 - `bun run db:migrate` - Executar migrações do banco de dados
 - `bun run db:pull` - Baixar dados de sorteios da API CAIXA
-- `bun run audit:prune` - Soft delete de logs de auditoria antigos (retenção)
-- `bun run log:prune` - Soft delete de eventos de log antigos (retenção)
+- `bun run audit:prune` - Hard delete de logs de auditoria antigos (retenção)
+- `bun run log:prune` - Hard delete de eventos de log antigos (retenção)
 - `bun scripts/optimize-db.ts` - Otimizar banco de dados (checkpoint WAL + VACUUM + ANALYZE)
 
 ## Scripts de Banco de Dados
@@ -93,8 +100,8 @@ bun run db:pull -- --incremental
 ```
 
 **Modos:**
-- **Padrão (Completo)**: Usa `INSERT OR REPLACE` - sobrescreve sorteios existentes com dados atualizados
-- **Incremental** (`--incremental`): Usa `INSERT OR IGNORE` - apenas adiciona novos sorteios, pula existentes
+- **Padrão (Completo)**: Usa UPSERT com `ON CONFLICT ... DO UPDATE` - atualiza sorteios existentes preservando a linha
+- **Incremental** (`--incremental`): Usa `ON CONFLICT ... DO NOTHING` - apenas adiciona novos sorteios, pula existentes
 
 **Quando usar modo incremental:**
 - Atualizações diárias/semanais para adicionar apenas novos sorteios
@@ -144,7 +151,7 @@ Este script executa:
 ├── db/                    # Banco de dados SQLite
 │   ├── migrations/       # Migrações SQL
 │   └── mega-sena.db      # Arquivo do banco (gerado)
-├── proxy.ts               # Proxy Next.js (nonces CSP, headers de segurança)
+├── proxy.ts               # Proxy Next.js (CSP e headers de segurança)
 ├── server.ts              # Servidor API Bun
 └── scripts/               # Scripts CLI
     ├── migrate.ts        # Executor de migrações
@@ -189,6 +196,9 @@ API_PORT=3201
 
 # CORS: lista de origens permitidas (separadas por vírgula)
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3002
+
+# Confie em headers de proxy apenas quando seu reverse proxy sobrescrevê-los
+TRUST_PROXY_HEADERS=false
 ```
 
 > Os testes executados via `bun run test` simulam o banco de dados usando um driver em memória quando a variável `VITEST` está definida, permitindo rodar a suite sem o `bun:sqlite` real.
@@ -251,17 +261,17 @@ Gera apostas baseadas em orçamento, estratégia e modo.
 
 ## Segurança
 
-Esta aplicação implementa medidas de segurança abrangentes seguindo OWASP e melhores práticas de 2025:
+Esta aplicação implementa medidas de segurança seguindo OWASP e melhores práticas atuais:
 
 ### Content Security Policy (CSP)
-- **CSP baseado em Nonce**: Nonces criptográficos gerados por requisição via middleware Next.js
+- **CSP compatível com App Router/standalone**: política por origem, tipos de recurso e headers restritivos
 - **strict-dynamic**: Permite carregamento de scripts confiados sem unsafe-inline
 - **Proteção de Frame**: frame-src, frame-ancestors definidos como 'none'
 
 ### Headers de Segurança
 | Header | Valor |
 |--------|-------|
-| Content-Security-Policy | Baseado em nonce com strict-dynamic |
+| Content-Security-Policy | Restritivo por origem e tipos de recurso |
 | Cross-Origin-Embedder-Policy | require-corp |
 | Cross-Origin-Opener-Policy | same-origin |
 | Cross-Origin-Resource-Policy | same-origin |
@@ -271,13 +281,19 @@ Esta aplicação implementa medidas de segurança abrangentes seguindo OWASP e m
 
 ### Segurança da API
 - **Validação de Input**: Schemas Zod em todos os endpoints
-- **Rate Limiting**: 100 requisições/minuto por IP com cache LRU
+- **Rate Limiting**: 100 requisições/minuto por identificador de cliente derivado do IP
 - **CORS**: Validação estrita de origem, sem wildcards em produção
 - **SQL Injection**: Queries parametrizadas com bun:sqlite
+- **Limite real de payload**: POST JSON é rejeitado acima do teto configurado mesmo sem `Content-Length`
 
 ### Infraestrutura
 - **Docker**: Build multi-stage com usuário não-root (UID 1001)
-- **Secrets**: Pre-commit hooks com detect-secrets
+- **Segredos**: arquivos de ambiente fora do VCS e baseline local de secret scanning
+
+### Telemetria Operacional
+- **Logs estruturados**: request ID, rota, status e contexto técnico mínimo
+- **Identificador pseudônimo de cliente**: hash derivado do IP para rate limit/auditoria
+- **User-Agent sanitizado**: armazenado com limite de tamanho para investigação operacional
 
 ## Deploy em Produção
 

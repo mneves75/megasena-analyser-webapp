@@ -5,6 +5,7 @@ node_modules/
 
 # Testing
 coverage/
+test-results/
 
 # Next.js
 .next/
@@ -80,6 +81,7 @@ tsconfig.tsbuildinfo
 
 # Tool Configs (local settings)
 .claude/settings.local.json
+.omx/
 
 # BFG Reports (git history cleanup)
 .bfg-report/

@@ -63,7 +63,7 @@ describe('Footer - Core Sections', () => {
   it('should render about section', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/sobre o projeto/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sobre o projeto/i })).toBeInTheDocument();
     expect(screen.getByText(/ferramenta de an.lise estat.stica/i)).toBeInTheDocument();
   });
 

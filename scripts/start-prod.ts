@@ -1,22 +1,20 @@
 #!/usr/bin/env bun
-/**
- * Development script that runs both the Bun API server and Next.js dev server concurrently
- * Uses Bun runtime for both servers via --bun flag
- */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { spawn } from 'bun';
 
-console.log('Starting development servers with Bun runtime...\n');
-const NEXT_PORT = '3000';
-const API_PORT = '3201';
+const PORT = process.env['PORT'] || '3000';
+const API_PORT = process.env['API_PORT'] || '3201';
+const STANDALONE_SERVER = path.join(process.cwd(), '.next', 'standalone', 'server.js');
 
-// Start the Bun API server (already runs on Bun natively)
-console.log(`Starting Bun API server on port ${API_PORT}...`);
-const apiServer = spawn(['bun', 'server.ts'], {
-  stdout: 'inherit',
-  stderr: 'inherit',
-  env: { ...process.env, API_PORT },
-});
+if (!fs.existsSync(STANDALONE_SERVER)) {
+  throw new Error(
+    `Standalone build not found at ${STANDALONE_SERVER}. Run "bun run build" before "bun run start".`
+  );
+}
+
+let shuttingDown = false;
 
 const ensureProcessIsAlive = async (
   label: string,
@@ -42,7 +40,7 @@ const waitForApiHealth = async (): Promise<void> => {
         return;
       }
     } catch {
-      // Retry until the API is actually ready for dependent SSR pages.
+      // Retry until the API is healthy.
     }
 
     await Bun.sleep(500);
@@ -51,41 +49,45 @@ const waitForApiHealth = async (): Promise<void> => {
   throw new Error(`API server did not become healthy on port ${API_PORT}`);
 };
 
+console.log('Starting production servers...');
+
+const apiServer = spawn(['bun', 'server.ts'], {
+  stdout: 'inherit',
+  stderr: 'inherit',
+  env: { ...process.env, NODE_ENV: 'production', API_PORT },
+});
 await ensureProcessIsAlive('API server', apiServer);
 await waitForApiHealth();
 
-// Start the Next.js dev server with Bun runtime (--bun flag)
-console.log(`Starting Next.js dev server on port ${NEXT_PORT} (Bun runtime)...\n`);
-const nextServer = spawn(['bun', 'run', 'dev:next-only', '--', '-p', NEXT_PORT], {
+const nextServer = spawn(['bun', '--bun', '.next/standalone/server.js'], {
   stdout: 'inherit',
   stderr: 'inherit',
-  env: { ...process.env, API_PORT, PORT: NEXT_PORT },
+  env: {
+    ...process.env,
+    NODE_ENV: 'production',
+    PORT,
+    HOSTNAME: '0.0.0.0',
+  },
 });
-await ensureProcessIsAlive('Next.js dev server', nextServer);
-
-let shuttingDown = false;
+await ensureProcessIsAlive('Standalone Next.js server', nextServer);
 
 const shutdown = (signal: string, exitCode: number): never => {
   if (!shuttingDown) {
     shuttingDown = true;
-    console.log(`\n\nShutting down servers (${signal})...`);
+    console.log(`\nShutting down production servers (${signal})...`);
     apiServer.kill();
     nextServer.kill();
   }
+
   process.exit(exitCode);
 };
 
-// Handle cleanup on exit
-process.on('SIGINT', () => {
-  shutdown('SIGINT', 0);
-});
-process.on('SIGTERM', () => {
-  shutdown('SIGTERM', 0);
-});
+process.on('SIGINT', () => shutdown('SIGINT', 0));
+process.on('SIGTERM', () => shutdown('SIGTERM', 0));
 
 const crashed = await Promise.race([
   apiServer.exited.then((code) => ({ label: 'API server', code })),
-  nextServer.exited.then((code) => ({ label: 'Next.js dev server', code })),
+  nextServer.exited.then((code) => ({ label: 'Standalone Next.js server', code })),
 ]);
 
 if (!shuttingDown) {

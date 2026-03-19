@@ -60,6 +60,8 @@ export function BudgetSelector({
               type="text"
               value={inputValue}
               onChange={handleInputChange}
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="pl-10 text-lg font-semibold"
               placeholder={pt.betGenerator.budget.placeholder}
             />

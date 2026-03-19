@@ -23,9 +23,9 @@ Redirects configured in Traefik dynamic config (`megasena-analyzer.yaml`).
 
 ## Prerequisites
 
-- Bun >= 1.1 (local machine for building)
+- Bun >= 1.3.10 (local machine for building)
 - Docker (on VPS)
-- SSH access to VPS (details in Claude memory, not committed)
+- SSH access to VPS managed outside the repository (password manager / secret manager)
 
 ## Deploy Workflow
 
@@ -129,7 +129,7 @@ Middlewares:
 
 ## Database Updates
 
-See Claude memory for VPS connection details. General workflow:
+Use your standard secret-management workflow for VPS access details. General workflow:
 
 1. Copy DB from server
 2. Pull new draws: `bun scripts/pull-draws.ts --incremental`

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { BetGenerator } from '@/lib/analytics/bet-generator';
 import { runMigrations } from '@/lib/db';
-import { MEGASENA_CONSTANTS, BET_PRICES } from '@/lib/constants';
+import { MEGASENA_CONSTANTS, BET_GENERATION_MODE, BET_PRICES } from '@/lib/constants';
 
 describe('BetGenerator', () => {
   beforeAll(() => {
@@ -58,5 +58,13 @@ describe('BetGenerator', () => {
     expect(result.totalCost).toBeLessThanOrEqual(budget);
     expect(result.remainingBudget).toBeGreaterThanOrEqual(0);
     expect(result.totalCost + result.remainingBudget).toBe(budget);
+  });
+
+  it('should reject multiple_only mode when budget cannot fund a multiple bet', () => {
+    const generator = new BetGenerator();
+
+    expect(() =>
+      generator.generateOptimizedBets(10, BET_GENERATION_MODE.MULTIPLE_ONLY, 'balanced')
+    ).toThrow('Orcamento insuficiente para aposta multipla');
   });
 });

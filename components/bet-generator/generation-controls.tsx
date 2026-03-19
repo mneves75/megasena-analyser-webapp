@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
-import { type BetStrategy } from '@/lib/analytics/bet-generator';
+import { type BetStrategy } from '@/lib/analytics/bet-generator.types';
 import { cn } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 import {
@@ -75,14 +75,21 @@ export function GenerationControls({
         {/* Strategy Selection */}
         <div className="space-y-3">
           <Label className="text-base">{pt.betGenerator.controls.strategyLabel}</Label>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          <div
+            className="grid grid-cols-2 md:grid-cols-5 gap-2"
+            role="radiogroup"
+            aria-label={pt.betGenerator.controls.strategyLabel}
+          >
             {pt.betGenerator.strategies.map(({ value, label, description }) => {
               const Icon = STRATEGY_ICONS[value as BetStrategy];
               return (
               <button
                 key={value}
+                type="button"
                 onClick={() => onStrategyChange(value)}
                 disabled={disabled}
+                role="radio"
+                aria-checked={strategy === value}
                 className={cn(
                   'relative flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-smooth hover:scale-105',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
@@ -113,14 +120,21 @@ export function GenerationControls({
         {/* Mode Selection */}
         <div className="space-y-3">
           <Label className="text-base">{pt.betGenerator.controls.modeLabel}</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 gap-3"
+            role="radiogroup"
+            aria-label={pt.betGenerator.controls.modeLabel}
+          >
             {pt.betGenerator.modes.map(({ value, label, description }) => {
               const Icon = MODE_ICONS[value as BetGenerationMode];
               return (
               <button
                 key={value}
+                type="button"
                 onClick={() => onModeChange(value)}
                 disabled={disabled}
+                role="radio"
+                aria-checked={mode === value}
                 className={cn(
                   'relative flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-smooth hover:scale-105',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

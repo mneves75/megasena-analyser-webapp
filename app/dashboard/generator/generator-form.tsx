@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { BudgetSelector, GenerationControls, BetList } from '@/components/bet-generator';
-import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator';
+import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator.types';
 import { BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
 import { generateBets } from './actions';
 import { pt } from '@/lib/i18n';
@@ -15,54 +15,41 @@ export function GeneratorForm() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Track component mount status to prevent state updates after unmount
+  // Guard async state updates after unmount.
   const isMountedRef = useRef(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const activeRequestIdRef = useRef(0);
 
   useEffect(() => {
     isMountedRef.current = true;
     
     return () => {
       isMountedRef.current = false;
-      // Cancel any pending requests when component unmounts
-      abortControllerRef.current?.abort();
+      activeRequestIdRef.current += 1;
     };
   }, []);
 
   async function handleGenerate(): Promise<void> {
-    // Cancel any existing pending request
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = new AbortController();
-    
-    // Check if component is still mounted
-    if (!isMountedRef.current) return;
-    
+    activeRequestIdRef.current += 1;
+    const requestId = activeRequestIdRef.current;
+
     setIsGenerating(true);
     setError(null);
 
     try {
       const data = await generateBets(budget, strategy, mode);
       
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
+      if (isMountedRef.current && requestId === activeRequestIdRef.current) {
         setResult(data);
       }
     } catch (err) {
-      // Ignore aborted requests
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-      
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
+      if (isMountedRef.current && requestId === activeRequestIdRef.current) {
         const errorMessage =
           err instanceof Error ? err.message : pt.generatorForm.errorFallback;
         setError(errorMessage);
         // Error already logged by server, no need to log again on client
       }
     } finally {
-      // Only update state if component is still mounted
-      if (isMountedRef.current) {
+      if (isMountedRef.current && requestId === activeRequestIdRef.current) {
         setIsGenerating(false);
       }
     }
@@ -108,14 +95,8 @@ export function GeneratorForm() {
       <div className="mt-8">
         {result ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/*
-              CRITICAL: key prop resets BetList state when result changes.
-              Creates unique identifier from result properties to force remount on new generation.
-              This automatically resets pagination without useEffect (React best practice).
-              See: https://react.dev/learn/you-might-not-need-an-effect#resetting-all-state-when-a-prop-changes
-            */}
             <BetList
-              key={`${result.bets.length}-${result.totalCost}`}
+              key={result.bets.map((bet) => bet.id).join('|')}
               result={result}
             />
           </div>

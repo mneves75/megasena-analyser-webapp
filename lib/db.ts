@@ -783,7 +783,14 @@ export function runMigrations(): void {
           // Record failed migration
           const errorMessage = innerError instanceof Error ? innerError.message : 'Unknown error';
           database
-            .prepare("INSERT INTO migrations (name, status, error_message) VALUES (?, 'failed', ?)")
+            .prepare(`
+              INSERT INTO migrations (name, status, error_message)
+              VALUES (?, 'failed', ?)
+              ON CONFLICT(name) DO UPDATE SET
+                status = 'failed',
+                error_message = excluded.error_message,
+                applied_at = CURRENT_TIMESTAMP
+            `)
             .run(file, errorMessage);
           
           throw innerError;

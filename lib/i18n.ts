@@ -35,9 +35,9 @@ export const pt = {
     privacy: {
       title: 'Política de Privacidade',
       description:
-        'Política de privacidade do Mega-Sena Analyzer. Não coletamos dados pessoais. Sem cookies de rastreamento. Sem analytics. Tudo fica no seu navegador.',
+        'Política de privacidade do Mega-Sena Analyzer. Coletamos apenas telemetria operacional mínima para segurança e disponibilidade. Sem cookies de rastreamento. Sem analytics de marketing.',
       openGraphDescription:
-        'Não coletamos dados pessoais. Sua privacidade é nossa prioridade.',
+        'Coletamos apenas o mínimo necessário para operar o serviço com segurança.',
     },
     terms: {
       title: 'Termos de Uso',
@@ -503,10 +503,10 @@ export const pt = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updatedAt: '3 de dezembro de 2025',
-    summaryTitle: 'Resumo: Não coletamos seus dados pessoais.',
+    updatedAt: '18 de março de 2026',
+    summaryTitle: 'Resumo: Coletamos o mínimo necessário para operar o serviço.',
     summaryBody:
-      'Sem cookies de rastreamento. Sem analytics. Sem cadastro. Tudo que você faz aqui fica no seu navegador.',
+      'Sem cookies de rastreamento. Sem analytics de marketing. Sem cadastro. Mantemos apenas telemetria operacional mínima para segurança, auditoria e disponibilidade.',
     sections: [
       {
         title: '1. Dados que NÃO coletamos',
@@ -514,39 +514,43 @@ export const pt = {
           'Nome, e-mail ou qualquer dado de identificação',
           'CPF, RG ou documentos',
           'Dados financeiros ou de pagamento',
-          'Histórico de navegação ou comportamento',
+          'Histórico de navegação para fins de perfilização, publicidade ou analytics de marketing',
           'Cookies de rastreamento ou analytics',
         ],
       },
       {
         title: '2. Dados armazenados localmente',
         paragraphs: [
-          'As informações abaixo ficam salvas apenas no seu navegador (localStorage) e nunca são enviadas para nossos servidores:',
+          'Atualmente, apenas a preferência de tema fica salva no seu navegador (localStorage):',
         ],
         items: [
           'Preferência de tema (claro/escuro)',
-          'Apostas geradas',
-          'Configurações de orçamento',
         ],
         note:
           'Você pode apagar esses dados a qualquer momento limpando os dados do site no seu navegador.',
       },
       {
-        title: '3. Infraestrutura',
+        title: '3. Dados operacionais processados no servidor',
         paragraphs: [
-          'Utilizamos Cloudflare como CDN e proteção DDoS. A Cloudflare pode registrar logs agregados de tráfego (como número de visitas por país), mas esses dados são anonimizados e não identificam usuários individuais.',
+          'Para operar a API com segurança, registramos telemetria técnica mínima, como timestamp, rota, método HTTP, status, duração, user-agent sanitizado e um identificador derivado do IP por hash. Esses dados são usados para rate limiting, auditoria, troubleshooting e retenção operacional.',
         ],
       },
       {
-        title: '4. Terceiros',
+        title: '4. Infraestrutura',
+        paragraphs: [
+          'Utilizamos Cloudflare como CDN e proteção DDoS. A Cloudflare pode registrar dados técnicos de tráfego conforme a própria política dela.',
+        ],
+      },
+      {
+        title: '5. Terceiros',
         paragraphs: [
           'Não vendemos, alugamos ou compartilhamos dados com terceiros. Não temos parceiros de publicidade ou marketing.',
         ],
       },
       {
-        title: '5. Seus direitos (LGPD)',
+        title: '6. Seus direitos (LGPD)',
         paragraphs: [
-          'Como não coletamos dados pessoais identificáveis, não há dados para acessar, corrigir ou excluir em nossos sistemas. Os dados no seu navegador estão sob seu controle total.',
+          'Os dados técnicos mínimos mantidos para operação e segurança podem ser considerados dados pessoais em contexto regulatório, mesmo quando pseudonimizados. Se você tiver uma solicitação relacionada à LGPD, trate-a como pedido formal de privacidade.',
         ],
         link: {
           label: 'ANPD (Autoridade Nacional de Proteção de Dados)',
@@ -555,7 +559,7 @@ export const pt = {
         },
       },
       {
-        title: '6. Sobre a Plataforma',
+        title: '7. Sobre a Plataforma',
         paragraphs: [
           'O Mega-Sena Analyzer é um projeto independente de análise estatística, desenvolvido para fins educacionais. Não possui vínculo com a Caixa Econômica Federal ou qualquer operador de loterias.',
         ],
@@ -566,12 +570,12 @@ export const pt = {
       {
         question: 'O Mega-Sena Analyzer coleta meus dados pessoais?',
         answer:
-          'Não. Não coletamos nome, e-mail, CPF, documentos, dados financeiros ou histórico de navegação. Não usamos cookies de rastreamento ou analytics.',
+          'Coletamos o mínimo necessário para operar o serviço com segurança: telemetria técnica como rota, timestamp, status, user-agent sanitizado e um identificador derivado do IP por hash. Não coletamos cadastro, documentos, dados financeiros nem analytics de marketing.',
       },
       {
         question: 'Onde ficam armazenadas minhas apostas geradas?',
         answer:
-          'Todas as informações (tema, apostas, configurações) ficam salvas apenas no seu navegador (localStorage) e nunca são enviadas para nossos servidores.',
+          'As apostas geradas não são persistidas no navegador nem no servidor por padrão. Hoje, apenas a preferência de tema fica salva no navegador.',
       },
       {
         question: 'O Mega-Sena Analyzer vende meus dados?',
@@ -605,7 +609,7 @@ export const pt = {
       'Este projeto não é afiliado, patrocinado ou endossado pela Caixa Econômica Federal. Os dados de sorteios são obtidos de fontes públicas oficiais.',
     rightsReservedPrefix: 'Todos os direitos reservados.',
     developedWith: 'Desenvolvido com dados públicos da CAIXA',
-    compliance: 'Conformidade: LGPD',
+    compliance: 'Privacidade e transparência',
   },
 } as const;
 
@@ -613,7 +617,7 @@ const STRATEGY_LABELS: Record<string, string> = {
   balanced: 'Balanceada',
   hot_numbers: 'Quentes',
   cold_numbers: 'Frios',
-  random: 'Aleatoria',
+  random: 'Aleatória',
   fibonacci: 'Fibonacci',
   custom: 'Personalizada',
 };

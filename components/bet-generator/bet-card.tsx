@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LotteryBall } from '@/components/lottery-ball';
-import { type Bet } from '@/lib/analytics/bet-generator';
+import { type Bet } from '@/lib/analytics/bet-generator.types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { Check, Copy } from 'lucide-react';
 import { formatBetTypeLabel, formatStrategyLabel, pt } from '@/lib/i18n';

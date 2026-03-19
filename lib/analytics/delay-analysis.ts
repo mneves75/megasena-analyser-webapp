@@ -18,20 +18,26 @@ export class DelayAnalysisEngine {
   }
 
   getNumberDelays(): DelayStats[] {
-    const maxResult = this.db
-      .prepare('SELECT MAX(contest_number) as max FROM draws')
-      .get() as { max: number | null } | undefined;
+    const totalDraws = (
+      this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
+    ).count;
 
-    // Handle empty database case
-    const latestContest = maxResult?.max ?? 0;
-    if (latestContest === 0) {
+    if (totalDraws === 0) {
       // No draws in database - return empty array or default stats
       return [];
     }
 
-    // Single optimized query using UNION ALL to get all number occurrences
+    // Use draw ordering instead of raw contest numbers so the analysis stays correct
+    // even when the local database contains only a recent window of contests.
     const query = `
-      WITH all_occurrences AS (
+      WITH ordered_draws AS (
+        SELECT
+          contest_number,
+          draw_date,
+          ROW_NUMBER() OVER (ORDER BY contest_number DESC) as draw_index
+        FROM draws
+      ),
+      all_occurrences AS (
         SELECT number_1 as num, contest_number, draw_date FROM draws
         UNION ALL
         SELECT number_2, contest_number, draw_date FROM draws
@@ -48,12 +54,20 @@ export class DelayAnalysisEngine {
         SELECT 
           num,
           COUNT(*) as total_occurrences,
-          MAX(contest_number) as last_contest,
-          MAX(draw_date) as last_date
+          MAX(contest_number) as last_contest
         FROM all_occurrences
         GROUP BY num
       )
-      SELECT * FROM number_stats ORDER BY num
+      SELECT
+        number_stats.num,
+        number_stats.total_occurrences,
+        number_stats.last_contest,
+        ordered_draws.draw_date as last_date,
+        ordered_draws.draw_index - 1 as delay_draws
+      FROM number_stats
+      JOIN ordered_draws
+        ON ordered_draws.contest_number = number_stats.last_contest
+      ORDER BY number_stats.num
     `;
 
     const numberStats = this.db.prepare(query).all() as Array<{
@@ -61,6 +75,7 @@ export class DelayAnalysisEngine {
       total_occurrences: number;
       last_contest: number;
       last_date: string;
+      delay_draws: number;
     }>;
 
     // Create a map for quick lookup
@@ -76,15 +91,15 @@ export class DelayAnalysisEngine {
       const lastDrawnContest = stat?.last_contest || null;
       const lastDrawnDate = stat?.last_date || null;
 
-      const delayDraws = lastDrawnContest ? latestContest - lastDrawnContest : latestContest;
+      const delayDraws = stat?.delay_draws ?? totalDraws;
 
       // Calculate expected average delay between occurrences
       // Formula: totalDraws / frequency = expected draws per occurrence
       // This represents how often we statistically expect to see this number
-      // Note: For uniform distribution, expected value is totalDraws / (60/6) = totalDraws / 10
+      // within the locally available dataset, even if it is only a recent slice.
       const averageDelay = totalOccurrences > 0
-        ? latestContest / totalOccurrences
-        : latestContest;
+        ? totalDraws / totalOccurrences
+        : totalDraws;
 
       // Categorize delay
       let delayCategory: DelayStats['delayCategory'];
@@ -133,4 +148,3 @@ export class DelayAnalysisEngine {
     ];
   }
 }
-

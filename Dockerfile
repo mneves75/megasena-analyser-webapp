@@ -10,7 +10,7 @@
 #   2. Build image:    docker build -t megasena-analyser .
 # ============================================================================
 
-FROM oven/bun:1.3.4-alpine AS runtime
+FROM oven/bun:1.3.10-alpine AS runtime
 
 WORKDIR /app
 

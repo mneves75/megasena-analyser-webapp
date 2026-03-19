@@ -7,38 +7,11 @@ import {
   BET_GENERATION_LIMITS,
   type BetGenerationMode
 } from '@/lib/constants';
-
-export interface Bet {
-  id: string;
-  numbers: number[];
-  cost: number;
-  type: 'simple' | 'multiple';
-  numberCount: number;
-  strategy: string;
-}
-
-export interface BetGenerationResult {
-  bets: Bet[];
-  totalCost: number;
-  remainingBudget: number | null;
-  budgetUtilization: number | null; // percentage
-  totalNumbers: number; // unique numbers covered
-  strategy: string;
-  mode: BetGenerationMode;
-  summary: {
-    simpleBets: number;
-    multipleBets: number;
-    averageCost: number;
-  };
-}
-
-export type BetStrategy =
-  | 'random'
-  | 'hot_numbers'
-  | 'cold_numbers'
-  | 'balanced'
-  | 'fibonacci'
-  | 'custom';
+import {
+  type Bet,
+  type BetGenerationResult,
+  type BetStrategy,
+} from '@/lib/analytics/bet-generator.types';
 
 /**
  * Candidate pool for strategy-based number selection
@@ -56,6 +29,7 @@ export class BetGenerator {
   private static readonly STRATEGY_POOL_SIZE = 30; // Top 30 hot/cold numbers
   private static readonly FALLBACK_THRESHOLD = 10; // Fallback to random after N failed attempts
   private static readonly MAX_BETS_PER_GENERATION = BET_GENERATION_LIMITS.MAX_BETS_PER_GENERATION;
+  private static readonly MIN_MULTIPLE_BET_NUMBERS = 7;
 
   constructor() {
     this.db = getDatabase();
@@ -277,9 +251,16 @@ export class BetGenerator {
     strategy: BetStrategy = 'balanced'
   ): BetGenerationResult {
     const simpleBetCost = this.getBetCost(6);
+    const minimumMultipleBetCost = this.getBetCost(BetGenerator.MIN_MULTIPLE_BET_NUMBERS);
 
     if (budget < simpleBetCost) {
       throw new Error(`Orcamento insuficiente. Minimo: R$ ${simpleBetCost.toFixed(2)}`);
+    }
+
+    if (mode === BET_GENERATION_MODE.MULTIPLE_ONLY && budget < minimumMultipleBetCost) {
+      throw new Error(
+        `Orcamento insuficiente para aposta multipla. Minimo: R$ ${minimumMultipleBetCost.toFixed(2)}`
+      );
     }
 
     // Pre-fetch candidate pools once for this generation session
@@ -361,10 +342,14 @@ export class BetGenerator {
    * Generates the largest possible multiple bet within budget
    */
   private generateLargestMultipleBet(budget: number, strategy: BetStrategy, pools: CandidatePool): Bet[] {
-    let selectedNumberCount = 6;
+    let selectedNumberCount = BetGenerator.MIN_MULTIPLE_BET_NUMBERS;
 
     // Find the largest multiple bet within budget (up to 20 numbers)
-    for (let count = MEGASENA_CONSTANTS.MAX_NUMBERS_MULTIPLE; count >= 6; count--) {
+    for (
+      let count = MEGASENA_CONSTANTS.MAX_NUMBERS_MULTIPLE;
+      count >= BetGenerator.MIN_MULTIPLE_BET_NUMBERS;
+      count--
+    ) {
       const cost = BET_PRICES[count];
       if (cost !== undefined && cost <= budget) {
         selectedNumberCount = count;
@@ -383,7 +368,7 @@ export class BetGenerator {
         id: this.generateBetId(),
         numbers: this.selectRandomFromPool(pools.all, selectedNumberCount),
         cost: selectedCost,
-        type: selectedNumberCount > 6 ? 'multiple' : 'simple',
+        type: 'multiple',
         numberCount: selectedNumberCount,
         strategy: `multiple_${strategy}_fallback`,
       }];
@@ -393,7 +378,7 @@ export class BetGenerator {
       id: this.generateBetId(),
       numbers,
       cost: selectedCost,
-      type: selectedNumberCount > 6 ? 'multiple' : 'simple',
+      type: 'multiple',
       numberCount: selectedNumberCount,
       strategy: `multiple_${strategy}`,
     }];
@@ -702,7 +687,11 @@ export class BetGenerator {
   getAvailableMultipleBets(budget: number): Array<{ numbers: number; cost: number }> {
     const available: Array<{ numbers: number; cost: number }> = [];
 
-    for (let count = 6; count <= MEGASENA_CONSTANTS.MAX_NUMBERS_MULTIPLE; count++) {
+    for (
+      let count = BetGenerator.MIN_MULTIPLE_BET_NUMBERS;
+      count <= MEGASENA_CONSTANTS.MAX_NUMBERS_MULTIPLE;
+      count++
+    ) {
       const cost = BET_PRICES[count];
       if (cost && cost <= budget) {
         available.push({ numbers: count, cost });

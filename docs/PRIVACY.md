@@ -1,12 +1,12 @@
 # Política de Privacidade
 
-**Última atualização:** 3 de dezembro de 2025
+**Última atualização:** 18 de março de 2026
 
 ---
 
-## Resumo: Não coletamos seus dados pessoais.
+## Resumo: Coletamos o mínimo necessário para operar o serviço.
 
-Sem cookies de rastreamento. Sem analytics. Sem cadastro. Tudo que você faz aqui fica no seu navegador.
+Sem cookies de rastreamento. Sem analytics de marketing. Sem cadastro. Mantemos apenas telemetria operacional mínima para segurança, auditoria e disponibilidade.
 
 ---
 
@@ -15,34 +15,36 @@ Sem cookies de rastreamento. Sem analytics. Sem cadastro. Tudo que você faz aqu
 - Nome, e-mail ou qualquer dado de identificação
 - CPF, RG ou documentos
 - Dados financeiros ou de pagamento
-- Histórico de navegação ou comportamento
+- Histórico de navegação para fins de perfilização, publicidade ou analytics de marketing
 - Cookies de rastreamento ou analytics
 
 ## 2. Dados armazenados localmente
 
-As informações abaixo ficam salvas apenas no seu navegador (localStorage) e nunca são enviadas para nossos servidores:
+Atualmente, apenas a preferência de tema fica salva no seu navegador (localStorage):
 
 - Preferência de tema (claro/escuro)
-- Apostas geradas
-- Configurações de orçamento
 
 **Nota:** Você pode apagar esses dados a qualquer momento limpando os dados do site no seu navegador.
 
-## 3. Infraestrutura
+## 3. Dados operacionais processados no servidor
 
-Utilizamos Cloudflare como CDN e proteção DDoS. A Cloudflare pode registrar logs agregados de tráfego (como número de visitas por país), mas esses dados são anonimizados e não identificam usuários individuais.
+Para operar a API com segurança, registramos telemetria técnica mínima, como timestamp, rota, método HTTP, status, duração, user-agent sanitizado e um identificador derivado do IP por hash. Esses dados são usados para rate limiting, auditoria, troubleshooting e retenção operacional.
 
-## 4. Terceiros
+## 4. Infraestrutura
+
+Utilizamos Cloudflare como CDN e proteção DDoS. A Cloudflare pode registrar dados técnicos de tráfego conforme a própria política dela.
+
+## 5. Terceiros
 
 Não vendemos, alugamos ou compartilhamos dados com terceiros. Não temos parceiros de publicidade ou marketing.
 
-## 5. Seus direitos (LGPD)
+## 6. Seus direitos (LGPD)
 
-Como não coletamos dados pessoais identificáveis, não há dados para acessar, corrigir ou excluir em nossos sistemas. Os dados no seu navegador estão sob seu controle total.
+Os dados técnicos mínimos mantidos para operação e segurança podem ser considerados dados pessoais em contexto regulatório, mesmo quando pseudonimizados. Se você tiver uma solicitação relacionada à LGPD, trate-a como pedido formal de privacidade.
 
 Para dúvidas sobre privacidade no Brasil, consulte a [ANPD (Autoridade Nacional de Proteção de Dados)](https://www.gov.br/anpd/pt-br).
 
-## 6. Sobre a Plataforma
+## 7. Sobre a Plataforma
 
 O Mega-Sena Analyzer é um projeto independente de análise estatística, desenvolvido para fins educacionais. Não possui vínculo com a Caixa Econômica Federal ou qualquer operador de loterias.
 
@@ -56,11 +58,11 @@ O Mega-Sena Analyzer é um projeto independente de análise estatística, desenv
 
 ### O Mega-Sena Analyzer coleta meus dados pessoais?
 
-Não. Não coletamos nome, e-mail, CPF, documentos, dados financeiros ou histórico de navegação. Não usamos cookies de rastreamento ou analytics.
+Coletamos o mínimo necessário para operar o serviço com segurança: telemetria técnica como rota, timestamp, status, user-agent sanitizado e um identificador derivado do IP por hash. Não coletamos cadastro, documentos, dados financeiros nem analytics de marketing.
 
 ### Onde ficam armazenadas minhas apostas geradas?
 
-Todas as informações (tema, apostas, configurações) ficam salvas apenas no seu navegador (localStorage) e nunca são enviadas para nossos servidores.
+As apostas geradas não são persistidas no navegador nem no servidor por padrão. Hoje, apenas a preferência de tema fica salva no navegador.
 
 ### O Mega-Sena Analyzer vende meus dados?
 

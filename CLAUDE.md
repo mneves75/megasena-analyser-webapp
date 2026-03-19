@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.6.0) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.6.1) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 ### Core Requirements
 
@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Framework:** Next.js 16 with App Router
 - **Language:** TypeScript (strict mode)
-- **Runtime:** Bun (>=1.3.2) **[REQUIRED - Not compatible with Node.js]**
+- **Runtime:** Bun (>=1.3.10) **[REQUIRED - Not compatible with Node.js]**
 - **Database:** SQLite (bun:sqlite - native, zero compilation)
 - **Styling:** TailwindCSS v4 with semantic design tokens
 - **UI Components:** shadcn/ui (heavily customized)
@@ -44,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Environment setup
 bun install                     # Install dependencies
-bun --version                   # Verify Bun runtime (>=1.3.2)
+bun --version                   # Verify Bun runtime (>=1.3.10)
 
 # Database
 bun run db:migrate              # Apply SQLite migrations
@@ -73,6 +73,7 @@ bun run log:prune               # Hard delete old structured log events
 
 # Production
 bun run build                   # Create production bundle + type check
+bun run start                   # Start production stack locally after build
 ```
 
 ## Key Entry Points
@@ -308,4 +309,4 @@ See `docs/DEPLOY.md` for full deployment workflow.
 - Deployment is **manual** (not auto-deploy from GitHub)
 - Dockerfile is **runtime-only** -- build Next.js locally, ship `dist/standalone/` artifacts
 - Container name: `megasena-analyzer`
-- SSH and server details in Claude memory (not committed -- public repo)
+- Keep deployment secrets and server-specific access details outside the repository.

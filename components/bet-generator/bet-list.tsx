@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BetCard } from './bet-card';
-import { type BetGenerationResult } from '@/lib/analytics/bet-generator';
+import { type BetGenerationResult } from '@/lib/analytics/bet-generator.types';
 import { cn, formatCurrency, formatPercentage } from '@/lib/utils';
 import { TrendingUp, Target, PieChart, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pt } from '@/lib/i18n';

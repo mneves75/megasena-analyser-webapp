@@ -11,13 +11,14 @@ export function generateNonce(): string {
 }
 
 export function buildCsp({ nonce, isDev, isSecure = true }: CspOptions): string {
-  // Build CSP following 2025 best practices (OWASP, MDN, CSP Level 3)
-  // See: https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+  // Use the official non-nonce Next.js CSP path for App Router + standalone output.
+  // This keeps hydration functional in production while preserving restrictive origins.
+  void nonce;
   const directives = [
     // Fetch directives - control where resources can be loaded from
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
-    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com${isDev ? " 'unsafe-inline'" : ''}`,
+    `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob:",
     "font-src 'self' https://fonts.gstatic.com data:",
     `connect-src 'self' ${CAIXA_API_ORIGIN}${

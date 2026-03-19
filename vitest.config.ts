@@ -14,6 +14,10 @@ export default defineConfig({
     ],
     coverage: {
       provider: 'v8',
+      include: [
+        'components/**/*.tsx',
+        'lib/**/*.ts',
+      ],
       reporter: ['text', 'json', 'html'],
       thresholds: {
         lines: 80,

@@ -27,6 +27,7 @@ import { enqueueAuditEvent, startAuditWriter, stopAuditWriter, type AuditEventNa
 import { startAuditRetentionScheduler } from './lib/audit-retention';
 import { startLogRetentionScheduler } from './lib/log-retention';
 import { stopLogWriter } from './lib/log-store';
+import { RequestBodyTooLargeError, readJsonBodyWithLimit, resolveClientIp } from './lib/security/http';
 
 function resolveAppVersion(): string {
   const envVersion = process.env['APP_VERSION'];
@@ -207,32 +208,21 @@ function sha256ForAudit(value: string, maxLength: number = 500): string {
   return `sha256:${sha256Hex(truncated)}`;
 }
 
-function getClientIp(req: Request): string | null {
-  // Try to get real IP from various headers (do not log/store raw value)
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  const realIp = req.headers.get('x-real-ip');
-  const cfConnectingIp = req.headers.get('cf-connecting-ip');
-
-  const ip = forwardedFor?.split(',')[0]?.trim() || realIp?.trim() || cfConnectingIp?.trim();
-  return ip && ip.length > 0 ? ip : null;
-}
-
-function getRateLimitKey(req: Request): string {
-  const ip = getClientIp(req);
-  if (!ip) {
+function getRateLimitKey(clientIp: string | null): string {
+  if (!clientIp) {
     return 'unknown';
   }
 
   // Privacy: store only a stable hash in memory/logs (no raw IP).
-  return `sha256:${sha256Hex(ip)}`;
+  return `sha256:${sha256Hex(clientIp)}`;
 }
 
-function createRequestContext(req: Request, url: URL): RequestContext {
+function createRequestContext(req: Request, url: URL, clientId: string): RequestContext {
   const context: RequestContext = {
     requestId: crypto.randomUUID(),
     route: url.pathname,
     method: req.method,
-    clientId: getRateLimitKey(req),
+    clientId,
     origin: req.headers.get('origin'),
     launchStage: process.env['NODE_ENV'] ?? 'development',
   };
@@ -256,8 +246,8 @@ function withRequestIdHeader(response: Response, requestId: string): Response {
   });
 }
 
-function checkRateLimit(req: Request): { allowed: boolean; remaining: number; resetAt: number } {
-  const key = getRateLimitKey(req);
+function checkRateLimit(clientIp: string | null): { allowed: boolean; remaining: number; resetAt: number } {
+  const key = getRateLimitKey(clientIp);
   const now = Date.now();
   
   let entry = rateLimiterCache.get(key);
@@ -337,6 +327,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400', // 24 hours
+    'Vary': 'Origin',
   };
 }
 
@@ -420,7 +411,11 @@ const apiHandlers: Record<
           status: 'unhealthy',
           timestamp: new Date().toISOString(),
           requestId: ctx.requestId,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: process.env['NODE_ENV'] === 'production'
+            ? 'Health check failed'
+            : error instanceof Error
+              ? error.message
+              : 'Unknown error',
         }),
         {
           status: 503,
@@ -637,17 +632,24 @@ const apiHandlers: Record<
         return createErrorResponse(ctx, 'Method not allowed', null, 405);
       }
 
-      // Check content length
-      const contentLength = req.headers.get('content-length');
-      if (contentLength && parseInt(contentLength) > MAX_REQUEST_BODY_SIZE) {
-        return createErrorResponse(ctx, 'Request body too large', { maxSize: MAX_REQUEST_BODY_SIZE }, 413);
-      }
-
       // Parse and validate request body
       let body: unknown;
       try {
-        body = await req.json();
-      } catch {
+        body = await readJsonBodyWithLimit(req, MAX_REQUEST_BODY_SIZE);
+      } catch (error) {
+        if (error instanceof RequestBodyTooLargeError) {
+          ctx.audit = {
+            event: 'bets.generate_requested',
+            metadata: {
+              validationError: true,
+              reason: 'body_too_large',
+              actualSize: error.actualBytes,
+              maxSize: error.maxBytes,
+            },
+          };
+          return createErrorResponse(ctx, 'Request body too large', { maxSize: MAX_REQUEST_BODY_SIZE }, 413);
+        }
+
         ctx.audit = {
           event: 'bets.generate_requested',
           metadata: { validationError: true, reason: 'invalid_json' },
@@ -726,10 +728,11 @@ const PORT = Number(process.env['API_PORT']) || 3201;
 
 serve({
   port: PORT,
-  async fetch(req) {
+  async fetch(req, server) {
     const url = new URL(req.url);
     const startTime = Date.now();
-    const ctx = createRequestContext(req, url);
+    const clientIp = resolveClientIp(req, server);
+    const ctx = createRequestContext(req, url, getRateLimitKey(clientIp));
     const corsHeaders = getCorsHeaders(ctx.origin ?? null);
 
     logger.info('api.request_received', {
@@ -761,7 +764,7 @@ serve({
 
       // Apply rate limiting to API routes (except health check)
       if (url.pathname.startsWith('/api/') && url.pathname !== '/api/health') {
-        const rateLimit = checkRateLimit(req);
+        const rateLimit = checkRateLimit(clientIp);
 
         if (!rateLimit.allowed) {
           logger.warn('api.rate_limit_exceeded', {

@@ -26,10 +26,8 @@ describe('buildCsp', () => {
     const nonce = 'testnonce';
     const csp = buildCsp({ nonce, isDev: false });
 
-    expect(csp).toContain(`nonce-${nonce}`);
-    expect(csp).toContain("script-src 'self' 'nonce-testnonce' 'strict-dynamic'");
+    expect(csp).toContain("script-src 'self' 'unsafe-inline'");
     expect(csp).toContain("object-src 'none'");
-    expect(csp).not.toContain('unsafe-inline');
     expect(csp).toContain('upgrade-insecure-requests');
     expect(csp).toMatch(/connect-src[^;]*servicebus2\.caixa\.gov\.br/);
   });

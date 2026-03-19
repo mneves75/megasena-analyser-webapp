@@ -1,6 +1,6 @@
 'use server';
 
-import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator';
+import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator.types';
 import { type BetGenerationMode } from '@/lib/constants';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { logger } from '@/lib/logger';
