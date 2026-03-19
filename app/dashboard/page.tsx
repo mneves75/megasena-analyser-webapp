@@ -22,10 +22,12 @@ import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 
-const metadataBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL } from '@/lib/constants';
+import { JsonLd } from '@/components/seo/json-ld';
+import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(metadataBaseUrl),
+  metadataBase: new URL(BASE_URL),
   title: pt.meta.dashboard.title,
   description: pt.meta.dashboard.description,
   alternates: {
@@ -120,32 +122,36 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur">
+      <JsonLd data={generateBreadcrumbSchema([
+        { name: 'Início', url: '/' },
+        { name: 'Dashboard', url: '/dashboard' },
+      ])} />
+      <nav className="border-b bg-card/50 backdrop-blur" aria-label="Navegacao do dashboard">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold font-title">
               {pt.app.name}
             </Link>
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/statistics">
-                <Button variant="ghost">
+              <Button asChild variant="ghost">
+                <Link href="/dashboard/statistics">
                   <BarChart3 className="mr-2 h-4 w-4" />
                   {pt.nav.statistics}
-                </Button>
-              </Link>
-              <Link href="/dashboard/generator">
-                <Button variant="default">
+                </Link>
+              </Button>
+              <Button asChild variant="default">
+                <Link href="/dashboard/generator">
                   <Sparkles className="mr-2 h-4 w-4" />
                   {pt.nav.generator}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <header className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{pt.dashboard.title}</h1>
           <p className="text-muted-foreground">{pt.dashboard.subtitle}</p>
@@ -323,7 +329,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

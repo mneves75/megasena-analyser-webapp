@@ -37,6 +37,14 @@ export function Footer(): React.JSX.Element {
                   {pt.footer.privacyLink}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/about"
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Sobre o Projeto
+                </Link>
+              </li>
             </ul>
           </div>
 

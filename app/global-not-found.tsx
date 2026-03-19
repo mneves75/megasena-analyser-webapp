@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { pt } from '@/lib/i18n';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  metadataBase: new URL(BASE_URL),
   title: pt.errors.notFound.title,
   description: pt.errors.notFound.description,
   robots: {

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.5.8) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.6.0) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 ### Core Requirements
 
@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Framework:** Next.js 16 with App Router
 - **Language:** TypeScript (strict mode)
-- **Runtime:** Bun (>=1.1) **[REQUIRED - Not compatible with Node.js]**
+- **Runtime:** Bun (>=1.3.2) **[REQUIRED - Not compatible with Node.js]**
 - **Database:** SQLite (bun:sqlite - native, zero compilation)
 - **Styling:** TailwindCSS v4 with semantic design tokens
 - **UI Components:** shadcn/ui (heavily customized)
@@ -44,7 +44,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # Environment setup
 bun install                     # Install dependencies
-bun --version                   # Verify Bun runtime (>=1.1)
+bun --version                   # Verify Bun runtime (>=1.3.2)
 
 # Database
 bun run db:migrate              # Apply SQLite migrations
@@ -65,11 +65,11 @@ bun run test                    # Run Vitest in watch mode
 bun run test -- --run           # Run tests once (CI mode)
 bunx vitest tests/lib/bet-generator.test.ts --run  # Run single test file
 bunx vitest -t "pattern"        # Run tests matching pattern
-bunx vitest --coverage          # Generate coverage report (>=80% required)
+bunx vitest --coverage          # Coverage local; valide se o provider está emitindo dados reais
 
 # Maintenance
-bun run audit:prune             # Soft delete old audit logs
-bun run log:prune               # Soft delete old structured log events
+bun run audit:prune             # Hard delete old audit logs
+bun run log:prune               # Hard delete old structured log events
 
 # Production
 bun run build                   # Create production bundle + type check
@@ -225,7 +225,7 @@ Prune old logs: `bun run audit:prune` (audit) and `bun run log:prune` (structure
 ### Core Rules
 
 1. **Bun by default** - 28x faster than npm, native TypeScript
-2. **Never hard delete** - Always soft delete with `deleted_at` timestamp
+2. **Hard delete only where the repo documents the no-soft-delete exception**
 3. **No `any` types** - Use `unknown` + type guards instead
 4. **Server Components first** - In Next.js, `'use client'` only for interactivity
 5. **React Compiler handles optimization** - Remove manual useMemo/useCallback
@@ -280,29 +280,32 @@ Prune old logs: `bun run audit:prune` (audit) and `bun run log:prune` (structure
 - Already configured in `app/layout.tsx`
 
 ### Schema.org Structured Data
-Uses `MultiJsonLd` component with multiple schemas:
-- WebSite, Organization, SoftwareApplication
-- Proper `@graph` structure for rich results
+Uses `MultiJsonLd` component with `@graph` structure:
+- WebSite, Organization, WebApplication in a single `<script>` tag
+- BreadcrumbList on all dashboard pages
+- FAQPage on home, privacy, and terms pages
 
 ### Validation URLs
-- https://search.google.com/test/rich-results?url=https://megasena.conhecendotudo.online
-- https://validator.schema.org/?url=https://megasena.conhecendotudo.online
+- https://search.google.com/test/rich-results?url=https://megasena-analyzer.com.br
+- https://validator.schema.org/?url=https://megasena-analyzer.com.br
+
+### SEO Constants
+- `BASE_URL` centralized in `lib/constants.ts` -- all 12+ files import from there
+- Never hardcode `megasena-analyzer.com.br` in page files
 
 ## Deployment
 
+See `docs/DEPLOY.md` for full deployment workflow.
+
 ### URLs
-- **Production:** https://megasena.conhecendotudo.online
-- **VPS Host:** 212.85.2.24 (Hostinger)
-- **Container:** Docker with Next.js standalone output
-- **Auto-deploy:** Coolify monitors git repo and auto-deploys on push
+- **Production:** https://megasena-analyzer.com.br
+- **Aliases:** megasena-analyzer.com, megasena-analyzer.online (301 redirect to .com.br)
+- **Container:** Docker with Next.js standalone output + Bun API server
+- **Reverse proxy:** Traefik v3 (managed by Coolify)
+- **CDN:** Cloudflare (SSL termination, DDoS protection)
 
-### SSH Access
-```bash
-ssh -i ~/.ssh/id_megasena_vps claude@212.85.2.24
-```
-
-### Container Management
-```bash
-docker logs -f megasena-analyser
-docker restart megasena-analyser
-```
+### Key Points
+- Deployment is **manual** (not auto-deploy from GitHub)
+- Dockerfile is **runtime-only** -- build Next.js locally, ship `dist/standalone/` artifacts
+- Container name: `megasena-analyzer`
+- SSH and server details in Claude memory (not committed -- public repo)

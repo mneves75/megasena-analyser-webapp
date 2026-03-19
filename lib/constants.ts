@@ -1,8 +1,10 @@
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+
 // Application Information
 export const APP_INFO = {
   NAME: 'Mega-Sena Analyzer',
-  VERSION: '1.5.8',
-  BUILD_DATE: '2025-12-29',
+  VERSION: '1.6.0',
+  BUILD_DATE: '2026-03-18',
   DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
   AUTHOR: 'Mega-Sena Analyzer Team',
 } as const;

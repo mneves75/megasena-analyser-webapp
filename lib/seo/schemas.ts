@@ -3,9 +3,7 @@
  * Following Schema.org specifications and Google's structured data guidelines
  */
 
-import { APP_INFO } from '@/lib/constants';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { APP_INFO, BASE_URL as baseUrl } from '@/lib/constants';
 
 export interface BreadcrumbItem {
   name: string;
@@ -24,7 +22,6 @@ export function generateOrganizationSchema() {
     logo: `${baseUrl}/icon.png`,
     description: 'Análise estatística avançada e gerador inteligente de apostas da Mega-Sena',
     foundingDate: '2025',
-    sameAs: [],
   };
 }
 
@@ -49,7 +46,7 @@ export function generateWebApplicationSchema() {
     featureList: [
       'Estatísticas de frequência de números',
       'Análise de padrões históricos',
-      'Gerador de apostas aleatorias',
+      'Gerador de apostas aleatórias',
       'Dados atualizados da CAIXA',
     ],
     browserRequirements: 'Requires JavaScript. Requires HTML5.',
@@ -108,32 +105,5 @@ export function generateFAQSchema(
         text: faq.answer,
       },
     })),
-  };
-}
-
-/**
- * SoftwareApplication schema variant for analytics tools
- */
-export function generateAnalyticsToolSchema() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: 'Mega-Sena Analyzer',
-    applicationCategory: 'FinanceApplication',
-    applicationSubCategory: 'Lottery Statistics',
-    operatingSystem: 'Web Browser',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'BRL',
-      availability: 'https://schema.org/InStock',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.5',
-      ratingCount: '100',
-      bestRating: '5',
-      worstRating: '1',
-    },
   };
 }

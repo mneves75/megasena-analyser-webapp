@@ -1,46 +1,35 @@
 import type { MetadataRoute } from 'next';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL } from '@/lib/constants';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
   return [
     {
-      url: baseUrl,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 1.0,
+      url: BASE_URL,
+      lastModified: new Date('2025-12-29'),
     },
     {
-      url: `${baseUrl}/dashboard`,
-      lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.9,
+      url: `${BASE_URL}/dashboard`,
+      lastModified: new Date('2026-03-18'),
     },
     {
-      url: `${baseUrl}/dashboard/generator`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.8,
+      url: `${BASE_URL}/dashboard/generator`,
+      lastModified: new Date('2025-12-29'),
     },
     {
-      url: `${baseUrl}/dashboard/statistics`,
-      lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.8,
+      url: `${BASE_URL}/dashboard/statistics`,
+      lastModified: new Date('2026-03-18'),
     },
     {
-      url: `${baseUrl}/terms`,
+      url: `${BASE_URL}/about`,
+      lastModified: new Date('2026-03-18'),
+    },
+    {
+      url: `${BASE_URL}/terms`,
       lastModified: new Date('2025-12-03'),
-      changeFrequency: 'monthly',
-      priority: 0.3,
     },
     {
-      url: `${baseUrl}/privacy`,
+      url: `${BASE_URL}/privacy`,
       lastModified: new Date('2025-12-03'),
-      changeFrequency: 'monthly',
-      priority: 0.3,
     },
   ];
 }

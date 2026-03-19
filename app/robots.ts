@@ -1,6 +1,5 @@
 import type { MetadataRoute } from 'next';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL as baseUrl } from '@/lib/constants';
 
 export default function robots(): MetadataRoute.Robots {
   return {

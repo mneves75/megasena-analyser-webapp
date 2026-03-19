@@ -6,8 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL as baseUrl } from '@/lib/constants';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -43,32 +42,32 @@ export default function PrivacyPage(): React.JSX.Element {
     <>
       <JsonLd data={generateFAQSchema(privacyFaqs)} />
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
-        <nav className="border-b bg-card/50 backdrop-blur">
+        <nav className="border-b bg-card/50 backdrop-blur" aria-label="Navegacao do dashboard">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold font-title">
               {pt.app.name}
             </Link>
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/statistics">
-                <Button variant="ghost">
+              <Button asChild variant="ghost">
+                <Link href="/dashboard/statistics">
                   <BarChart3 className="mr-2 h-4 w-4" />
                   {pt.nav.statistics}
-                </Button>
-              </Link>
-              <Link href="/dashboard/generator">
-                <Button variant="default">
+                </Link>
+              </Button>
+              <Button asChild variant="default">
+                <Link href="/dashboard/generator">
                   <Sparkles className="mr-2 h-4 w-4" />
                   {pt.nav.generator}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto flex-1 px-4 py-8">
+      <div className="container mx-auto flex-1 px-4 py-8">
         <div className="mb-6">
           <Button variant="ghost" asChild>
             <Link href="/dashboard" className="gap-2">
@@ -131,7 +130,7 @@ export default function PrivacyPage(): React.JSX.Element {
             </p>
           </div>
         </article>
-      </main>
+      </div>
       </div>
     </>
   );

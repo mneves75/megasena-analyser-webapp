@@ -6,11 +6,10 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL } from '@/lib/constants';
 
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  metadataBase: new URL(BASE_URL),
   title: pt.meta.terms.title,
   description: pt.meta.terms.description,
   alternates: {
@@ -52,25 +51,25 @@ export default function TermsPage(): React.JSX.Element {
               {pt.app.name}
             </Link>
             <div className="flex items-center gap-2">
-              <Link href="/dashboard/statistics">
-                <Button variant="ghost">
+              <Button asChild variant="ghost">
+                <Link href="/dashboard/statistics">
                   <BarChart3 className="mr-2 h-4 w-4" />
                   {pt.nav.statistics}
-                </Button>
-              </Link>
-              <Link href="/dashboard/generator">
-                <Button variant="default">
+                </Link>
+              </Button>
+              <Button asChild variant="default">
+                <Link href="/dashboard/generator">
                   <Sparkles className="mr-2 h-4 w-4" />
                   {pt.nav.generator}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto flex-1 px-4 py-8">
+      <div className="container mx-auto flex-1 px-4 py-8">
         <div className="mb-6">
           <Button variant="ghost" asChild>
             <Link href="/dashboard" className="gap-2">
@@ -171,7 +170,7 @@ export default function TermsPage(): React.JSX.Element {
             </p>
           </div>
         </article>
-      </main>
+      </div>
       </div>
     </>
   );

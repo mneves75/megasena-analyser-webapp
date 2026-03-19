@@ -1,7 +1,7 @@
 {
   "name": "Mega-Sena Analyzer",
   "short_name": "MegaSena",
-  "description": "Analise estatistica avancada e gerador inteligente de apostas da Mega-Sena",
+  "description": "Análise estatística avançada e gerador inteligente de apostas da Mega-Sena",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

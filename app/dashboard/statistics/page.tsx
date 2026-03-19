@@ -20,8 +20,9 @@ import { BarChart, DonutChart } from '@/components/charts';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+import { BASE_URL as baseUrl } from '@/lib/constants';
+import { JsonLd } from '@/components/seo/json-ld';
+import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -160,32 +161,39 @@ export default async function StatisticsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur">
+      <JsonLd data={generateBreadcrumbSchema([
+        { name: 'Início', url: '/' },
+        { name: 'Dashboard', url: '/dashboard' },
+        { name: 'Estatísticas', url: '/dashboard/statistics' },
+      ])} />
+      <nav className="border-b bg-card/50 backdrop-blur" aria-label="Navegacao do dashboard">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="text-2xl font-bold font-title">
               {pt.app.name}
             </Link>
             <div className="flex items-center gap-2">
-              <Link href="/dashboard">
-                <Button variant="ghost">
+              <Button asChild variant="ghost">
+                <Link href="/dashboard">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   {pt.nav.back}
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <ThemeToggle />
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <header className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{pt.statistics.title}</h1>
           <p className="text-muted-foreground">
             {pt.statistics.subtitle}
           </p>
         </header>
+
+        <h2 className="text-2xl font-bold mt-2 mb-4">Análise de Frequência</h2>
 
         <div className="grid gap-6 lg:grid-cols-2 mb-8">
           <Card>
@@ -246,6 +254,8 @@ export default async function StatisticsPage() {
             </CardContent>
           </Card>
         </div>
+
+        <h2 className="text-2xl font-bold mt-8 mb-4">Padrões e Tendências</h2>
 
         <Card>
           <CardHeader>
@@ -309,9 +319,9 @@ export default async function StatisticsPage() {
               
               {delayDistribution && (
                 <div className="mt-4 pt-4 border-t">
-                  <h4 className="text-sm font-semibold mb-3">
+                  <h3 className="text-sm font-semibold mb-3">
                     {pt.statistics.delays.distributionTitle}
-                  </h4>
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {delayDistribution.map((dist) => (
                       <div key={dist.category} className="p-3 rounded-lg border bg-card/50">
@@ -419,6 +429,8 @@ export default async function StatisticsPage() {
           </Card>
         )}
 
+        <h2 className="text-2xl font-bold mt-8 mb-4">Distribuições Numéricas</h2>
+
         {parity && parity.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
@@ -506,7 +518,7 @@ export default async function StatisticsPage() {
               </div>
 
               <div className="mb-6">
-                <h4 className="text-sm font-semibold mb-3">{pt.statistics.primes.distributionTitle}</h4>
+                <h3 className="text-sm font-semibold mb-3">{pt.statistics.primes.distributionTitle}</h3>
                 <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
                   {primes.distribution.map((dist) => (
                     <div key={dist.primeCount} className="p-2 rounded-lg border bg-card/50 text-center">
@@ -518,7 +530,7 @@ export default async function StatisticsPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold mb-3">{pt.statistics.primes.topTitle}</h4>
+                <h3 className="text-sm font-semibold mb-3">{pt.statistics.primes.topTitle}</h3>
                 <div className="flex flex-wrap gap-3">
                   {primes.primeFrequencies.map((prime) => (
                     <div key={prime.number} className="flex flex-col items-center gap-1">
@@ -593,6 +605,8 @@ export default async function StatisticsPage() {
           </Card>
         )}
 
+        <h2 className="text-2xl font-bold mt-8 mb-4">Análise Temporal</h2>
+
         {hotNumbers && hotNumbers.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
@@ -615,10 +629,10 @@ export default async function StatisticsPage() {
               </div>
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary" />
                     {pt.statistics.streaks.hotTitle}
-                  </h4>
+                  </h3>
                   <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
                     {hotNumbers.map((hot) => (
                       <div key={hot.number} className="flex flex-col items-center gap-1">
@@ -641,10 +655,10 @@ export default async function StatisticsPage() {
 
                 {coldNumbers && coldNumbers.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                       <TrendingDown className="h-4 w-4 text-secondary-foreground" />
                       {pt.statistics.streaks.coldTitle}
-                    </h4>
+                    </h3>
                     <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
                       {coldNumbers.map((cold) => (
                         <div key={cold.number} className="flex flex-col items-center gap-1">
@@ -692,9 +706,9 @@ export default async function StatisticsPage() {
               </div>
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-sm font-semibold mb-3">
+                  <h3 className="text-sm font-semibold mb-3">
                     {pt.statistics.prizeCorrelation.luckyTitle}
-                  </h4>
+                  </h3>
                   <div className="grid gap-3 md:grid-cols-2">
                     {luckyNumbers.slice(0, 10).map((lucky) => (
                       <div key={lucky.number} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
@@ -720,9 +734,9 @@ export default async function StatisticsPage() {
 
                 {unluckyNumbers && unluckyNumbers.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold mb-3">
+                    <h3 className="text-sm font-semibold mb-3">
                       {pt.statistics.prizeCorrelation.unluckyTitle}
-                    </h4>
+                    </h3>
                     <div className="grid gap-3 md:grid-cols-2">
                       {unluckyNumbers.slice(0, 10).map((unlucky) => (
                         <div key={unlucky.number} className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
@@ -769,7 +783,7 @@ export default async function StatisticsPage() {
             </div>
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }

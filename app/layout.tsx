@@ -11,6 +11,7 @@ import {
   generateWebSiteSchema,
 } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
+import { BASE_URL as baseUrl } from '@/lib/constants';
 
 const geist = Geist({
   subsets: ['latin'],
@@ -23,8 +24,6 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
   variable: '--font-title',
 });
-
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -106,8 +105,6 @@ export const metadata: Metadata = {
   category: 'finance',
 };
 
-export const dynamic = 'force-dynamic';
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -130,7 +127,7 @@ export default async function RootLayout({
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none"
         >
-          Pular para o conteudo principal
+          Pular para o conteúdo principal
         </a>
         <MultiJsonLd schemas={schemas} />
         <ThemeProvider defaultTheme="system">

@@ -5,6 +5,38 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.0] - 2026-03-18
+
+### SEO
+
+- **[CRITICAL] Removed fake aggregateRating** from Schema.org structured data (manual action risk)
+- **[CRITICAL] Removed `force-dynamic` from root layout** -- home, privacy, terms, generator, about now statically prerendered (was forcing SSR on every page)
+- **[CRITICAL] Centralized BASE_URL** -- consolidated 12 inline `process.env.NEXT_PUBLIC_BASE_URL` definitions into single `lib/constants.ts` export
+- **Fixed sitemap.xml** -- removed `changeFrequency`/`priority` (Google ignores), added meaningful `lastModified` dates
+- **Fixed heading hierarchy** on statistics page -- added H2 section headers, changed orphaned H4s to H3s
+- **Activated breadcrumb schema** on all dashboard pages with `BreadcrumbList` structured data
+- **Updated MultiJsonLd to @graph structure** -- single `<script>` with proper `@graph` array
+- **Removed empty `sameAs`** from Organization schema
+- **Added FAQ schema** to home page with 5 FAQs (featured snippet targets)
+- **Fixed Portuguese accents** in all user-facing content (SEO-critical for pt-BR indexing)
+
+### Adicionado
+
+- **Pagina Sobre** (`/about`) -- projeto, fonte de dados (API CAIXA), metodologia, disclaimer, contato
+- **Conteudo educacional na home** -- secao "O que e o Mega-Sena Analyzer?" + FAQ accordion
+- **Conteudo educacional no gerador** -- explicacao das 4 estrategias (Balanceada, Otimizada, Quentes/Frios, Fibonacci)
+- **Link "Sobre o Projeto"** no footer
+
+### Acessibilidade
+
+- Adicionado `aria-label` em todos os `<nav>` do dashboard (5 paginas)
+
+### Corrigido
+
+- `security.txt` -- removida URL de Policy inexistente
+- `manifest.json` -- adicionados acentos corretos no campo description
+- `CLAUDE.md` -- atualizada URL de producao para `megasena-analyzer.com.br`
+
 ## [1.5.9] - 2026-03-18
 
 ### Dados
