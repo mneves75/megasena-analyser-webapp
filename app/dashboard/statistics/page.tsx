@@ -6,7 +6,7 @@ import { LotteryBall } from '@/components/lottery-ball';
 import { ArrowLeft, TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake, Info } from 'lucide-react';
 import { formatNumber } from '@/lib/utils';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
-import type { NumberFrequency, Pattern } from '@/lib/analytics/statistics';
+import type { DrawStatistics, NumberFrequency, Pattern } from '@/lib/analytics/statistics';
 import type { DelayStats } from '@/lib/analytics/delay-analysis';
 import type { DecadeStats } from '@/lib/analytics/decade-analysis';
 import type { PairStats } from '@/lib/analytics/pair-analysis';
@@ -42,6 +42,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface StatisticsApiResponse {
+  summary: DrawStatistics;
   frequencies: NumberFrequency[];
   patterns: Pattern[];
   delays?: DelayStats[];
@@ -127,7 +128,23 @@ async function getStatisticsData(): Promise<StatisticsApiResponse> {
 }
 
 export default async function StatisticsPage() {
-  const { frequencies, patterns, delays, delayDistribution, decades, pairs, parity, parityStats, primes, sumStats, hotNumbers, coldNumbers, luckyNumbers, unluckyNumbers } = await getStatisticsData();
+  const {
+    summary,
+    frequencies,
+    patterns,
+    delays,
+    delayDistribution,
+    decades,
+    pairs,
+    parity,
+    parityStats,
+    primes,
+    sumStats,
+    hotNumbers,
+    coldNumbers,
+    luckyNumbers,
+    unluckyNumbers,
+  } = await getStatisticsData();
 
   const topHot = frequencies.slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
   const topCold = [...frequencies].reverse().slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
@@ -192,6 +209,24 @@ export default async function StatisticsPage() {
             {pt.statistics.subtitle}
           </p>
         </header>
+
+        <Card className="mb-8 border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Info className="h-5 w-5 text-primary" />
+              {pt.statistics.freshness.title}
+            </CardTitle>
+            <CardDescription>
+              {pt.statistics.freshness.descriptionPrefix} #{summary.lastContestNumber} {pt.statistics.freshness.onDatePrefix}{' '}
+              {summary.lastDrawDate}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {pt.statistics.freshness.totalDrawsLabel}: {formatNumber(summary.totalDraws)}
+            </p>
+          </CardContent>
+        </Card>
 
         <h2 className="text-2xl font-bold mt-2 mb-4">Análise de Frequência</h2>
 

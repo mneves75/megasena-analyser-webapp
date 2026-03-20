@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.6.2) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.6.3) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+
+The detailed statistics page must expose, in the UI, which contest/date the analysis is currently based on so users can verify data freshness without leaving the screen.
 
 ### Core Requirements
 

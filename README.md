@@ -5,6 +5,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 ## Funcionalidades
 
 - **Análise Estatística Completa**: Frequências, padrões e tendências históricas
+- **Referência de Atualização Visível**: A página de estatísticas detalhadas informa claramente o concurso e a data-base exibidos
 - **Números Quentes e Frios**: Identificação de números mais e menos sorteados
 - **Gerador Inteligente de Apostas**: Múltiplas estratégias (aleatório, balanceado, Fibonacci, etc.)
 - **Dashboard Interativo**: Visualização clara e moderna dos dados

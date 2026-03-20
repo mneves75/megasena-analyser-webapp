@@ -306,6 +306,12 @@ export const pt = {
   statistics: {
     title: 'Estatísticas Detalhadas',
     subtitle: 'Análise completa de frequências e padrões dos sorteios',
+    freshness: {
+      title: 'Base de referência',
+      descriptionPrefix: 'Dados atualizados até o concurso',
+      onDatePrefix: 'em',
+      totalDrawsLabel: 'Total de sorteios processados',
+    },
     hotNumbersTitle: 'Números Quentes (Top 20)',
     hotNumbersDescription: 'Números mais sorteados historicamente',
     coldNumbersTitle: 'Números Frios (Top 20)',

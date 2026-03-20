@@ -476,10 +476,11 @@ const apiHandlers: Record<
       };
 
       const stats = new StatisticsEngine();
+      const summary = stats.getDrawStatistics();
       const frequencies = stats.getNumberFrequencies();
       const patterns = stats.detectPatterns();
 
-      const response: Record<string, unknown> = { frequencies, patterns };
+      const response: Record<string, unknown> = { summary, frequencies, patterns };
 
       if (includeDelays) {
         const delayEngine = new DelayAnalysisEngine();

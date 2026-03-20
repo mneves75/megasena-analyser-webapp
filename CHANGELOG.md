@@ -5,6 +5,12 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.3] - 2026-03-20
+
+### Alterado
+
+- A página de estatísticas detalhadas agora mostra explicitamente o concurso, a data e o total de sorteios usados como base da análise.
+
 ## [1.6.2] - 2026-03-20
 
 ### Alterado
