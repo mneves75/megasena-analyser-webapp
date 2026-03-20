@@ -66,7 +66,8 @@ bun run start
 ## Comandos Disponíveis
 
 - `bun run dev` - Iniciar servidor de desenvolvimento (API Bun + proxy Next.js)
-- `bun run build` - Build para produção
+- `bun run build` - Build para produção com o bundler padrão do Next.js 16
+- `bun run dist:standalone` - Sincronizar `dist/standalone` a partir de `.next/standalone` para deploy self-hosted
 - `bun run start` - Iniciar a stack de produção local (API Bun + Next standalone já buildado)
 - `bun run lint` - Executar ESLint (falha em warnings)
 - `bun run lint:fix` - Corrigir problemas de lint automaticamente
@@ -128,6 +129,23 @@ Este script executa:
 - Semanalmente em ambientes de produção (via cron)
 - Quando experimentar problemas de performance
 
+## Build e Empacotamento
+
+O build oficial do projeto usa o fluxo padrão do Next.js 16 com Bun:
+
+```bash
+bun run build
+```
+
+Para preparar os artefatos usados no deploy self-hosted e no `Dockerfile`, gere `dist/standalone` a partir do output oficial do Next:
+
+```bash
+bun run dist:standalone
+```
+
+Esse comando copia `.next/standalone` e `.next/static` sem depender de glob de shell, preservando arquivos ocultos como `BUILD_ID` e manifests.
+O script também remove qualquer banco SQLite ou backup local que tenha sido traçado para dentro do bundle standalone, mantendo o deploy fail-closed e dependente do volume/runtime reais.
+
 ## Estrutura do Projeto
 
 ```
@@ -136,7 +154,6 @@ Este script executa:
 │   │   ├── page.tsx      # Dashboard principal
 │   │   ├── statistics/   # Página de estatísticas
 │   │   └── generator/    # Página do gerador de apostas
-│   ├── api/              # Rotas de API
 │   └── layout.tsx        # Layout raiz
 ├── components/            # Componentes React
 │   ├── ui/               # Componentes shadcn/ui
@@ -151,11 +168,13 @@ Este script executa:
 ├── db/                    # Banco de dados SQLite
 │   ├── migrations/       # Migrações SQL
 │   └── mega-sena.db      # Arquivo do banco (gerado)
+├── next.config.js         # Rewrites e output standalone do Next.js
 ├── proxy.ts               # Proxy Next.js (CSP e headers de segurança)
-├── server.ts              # Servidor API Bun
+├── server.ts              # Superfície `/api/*` executada em Bun
 └── scripts/               # Scripts CLI
     ├── migrate.ts        # Executor de migrações
-    └── pull-draws.ts     # Ingestão de dados
+    ├── pull-draws.ts     # Ingestão de dados
+    └── sync-standalone-dist.ts  # Prepara `dist/standalone` para deploy
 ```
 
 ## Estratégias de Geração de Apostas

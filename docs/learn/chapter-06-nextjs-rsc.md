@@ -161,9 +161,9 @@ export function BetForm() {
 
 ---
 
-## Evitando API Routes
+## Evitando API Routes sem inventar uma arquitetura que o projeto não usa
 
-**Abordagem antiga (API Routes):**
+**Abordagem antiga (API Routes do App Router):**
 ```typescript
 // app/api/generate-bets/route.ts
 export async function POST(req: Request) {
@@ -184,7 +184,7 @@ async function generate() {
 }
 ```
 
-**Abordagem moderna (Server Actions):**
+**Abordagem moderna mais comum (Server Actions chamando lógica local):**
 ```typescript
 // app/dashboard/generator/actions.ts
 'use server';
@@ -200,11 +200,35 @@ async function generate() {
 }
 ```
 
-**Vantagens:**
+**Mas este repositório não usa esse atalho.**
+
+Aqui, a Server Action chama a API Bun porque a lógica de geração e leitura de dados depende do runtime Bun/SQLite de `server.ts`:
+
+```typescript
+// app/dashboard/generator/actions.ts
+'use server';
+
+export async function generateBets(budget: number) {
+  const response = await fetchApi('/api/generate-bets', {
+    method: 'POST',
+    body: JSON.stringify({ budget }),
+    cache: 'no-store',
+  });
+
+  return response.json();
+}
+```
+
+**Por que esse projeto faz isso:**
+- Server Actions do Next.js não executam no mesmo runtime Bun do `server.ts`
+- `bun:sqlite` e a camada HTTP do projeto vivem no servidor Bun
+- O `proxy` do Next e os rewrites mantêm a fronteira `/api/*` consistente no navegador e no SSR
+
+**Vantagens do desenho atual:**
 - Menos código boilerplate
-- Type safety (sem `Response.json()` manual)
-- Automaticamente revalida cache
-- Progressive enhancement (funciona sem JS)
+- Runtime Bun preservado para banco de dados e rotas `/api/*`
+- Fronteira HTTP explícita entre App Router e servidor Bun
+- Deploy standalone continua simples, porque o frontend roda no `server.js` gerado pelo Next
 
 ---
 

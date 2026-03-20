@@ -5,6 +5,26 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.6.2] - 2026-03-20
+
+### Alterado
+
+- Fluxo de `dev` e `build` alinhado ao padrão do Next.js 16 com Bun, removendo o opt-out explícito de Webpack dos scripts principais.
+- `proxy.ts` simplificado para o caminho sem nonce morto, mantendo CSP compatível com App Router/standalone sem cabeçalhos de request desnecessários.
+
+### Adicionado
+
+- Novo comando `bun run dist:standalone` para sincronizar `dist/standalone` a partir de `.next/standalone` e `.next/static` sem depender de globs frágeis de shell.
+- Novos testes para endurecer a migração: `tests/proxy.test.ts` e `tests/scripts/sync-standalone-dist.test.ts`.
+
+### Documentação
+
+- `README.md`, `CLAUDE.md`, `docs/DEPLOY.md` e `docs/learn/chapter-06-nextjs-rsc.md` alinhados ao fluxo real do projeto: frontend Next.js standalone, superfície `/api/*` em `server.ts` com Bun e deploy self-hosted sem `deploy.sh`.
+
+### Segurança
+
+- O artefato `dist/standalone` agora descarta bancos SQLite e backups locais traçados pelo build, evitando deploy acidental com snapshot embutido.
+
 ## [1.6.1] - 2026-03-19
 
 ### Corrigido

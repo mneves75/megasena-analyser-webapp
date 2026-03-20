@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.6.1) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.6.2) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 ### Core Requirements
 
@@ -73,6 +73,7 @@ bun run log:prune               # Hard delete old structured log events
 
 # Production
 bun run build                   # Create production bundle + type check
+bun run dist:standalone         # Sync dist/standalone from Next standalone output
 bun run start                   # Start production stack locally after build
 ```
 
@@ -97,7 +98,10 @@ CAIXA API --> scripts/pull-draws.ts --> SQLite (db/mega-sena.db)
                                     lib/analytics/* (StatisticsEngine, BetGenerator)
                                               |
                                               v
-                                    app/dashboard/* (Server Components)
+                                     server.ts (/api/* em Bun)
+                                              |
+                                              v
+                        app/dashboard/* + Server Actions via lib/api/api-fetch.ts
                                               |
                                               v
                                     Client Components (interactivity only)
@@ -307,6 +311,6 @@ See `docs/DEPLOY.md` for full deployment workflow.
 
 ### Key Points
 - Deployment is **manual** (not auto-deploy from GitHub)
-- Dockerfile is **runtime-only** -- build Next.js locally, ship `dist/standalone/` artifacts
+- Dockerfile is **runtime-only** -- build Next.js locally, rode `bun run dist:standalone` e então envie `dist/standalone/`
 - Container name: `megasena-analyzer`
 - Keep deployment secrets and server-specific access details outside the repository.

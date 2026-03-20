@@ -151,18 +151,16 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: '1'
         run: |
-          bun --bun next build
-          STANDALONE_SERVER=$(find .next/standalone -name "server.js" -type f | head -1)
-          if [ -z "${STANDALONE_SERVER}" ]; then
-            echo "Build failed: server.js not found in standalone output"
+          bun run build
+          bun run dist:standalone
+          if [ ! -f dist/standalone/server.js ]; then
+            echo "Build failed: dist/standalone/server.js not found"
             exit 1
           fi
-          STANDALONE_DIR=$(dirname "${STANDALONE_SERVER}")
-          rm -rf dist/standalone
-          mkdir -p dist/standalone
-          cp -r "${STANDALONE_DIR}/." dist/standalone/
-          mkdir -p dist/standalone/.next/static
-          cp -r .next/static/. dist/standalone/.next/static/
+          if find dist/standalone -type f \( -name '*.db' -o -name '*.db-shm' -o -name '*.db-wal' \) | grep -q .; then
+            echo "Build failed: dist/standalone still contains SQLite artifacts"
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

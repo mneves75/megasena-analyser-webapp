@@ -1,56 +1,63 @@
-# Deployment Guide
+# Guia de Deploy
 
-Mega-Sena Analyzer runs on a Hostinger VPS with Docker, Traefik reverse proxy, and Cloudflare CDN.
+O Mega-Sena Analyzer roda em VPS com Docker, Traefik e Cloudflare, usando:
 
-## Architecture
+- frontend Next.js em `output: 'standalone'`
+- superfície `/api/*` em `server.ts`, executada com Bun
+- build local e imagem Docker apenas de runtime
 
+## Arquitetura
+
+```text
+Usuário -> Cloudflare -> Traefik v3 -> contêiner Docker
+                                       ├── Next.js standalone (porta 80)
+                                       └── API Bun (porta 3201)
 ```
-User -> Cloudflare (SSL/CDN) -> Traefik v3 (routing) -> Docker container
-                                                          ├── Next.js (port 80, standalone)
-                                                          └── Bun API server (port 3201)
-```
 
-## Domains
+## Domínios
 
-| Domain | Role |
+| Domínio | Papel |
 |--------|------|
-| `megasena-analyzer.com.br` | Primary (serves content) |
-| `megasena-analyzer.com` | 301 redirect to .com.br |
-| `megasena-analyzer.online` | 301 redirect to .com.br |
-| `www.*` variants | 301 redirect to .com.br |
+| `megasena-analyzer.com.br` | Primário |
+| `megasena-analyzer.com` | Redireciona 301 para `.com.br` |
+| `megasena-analyzer.online` | Redireciona 301 para `.com.br` |
+| `www.*` | Redireciona 301 para o domínio primário |
 
-Redirects configured in Traefik dynamic config (`megasena-analyzer.yaml`).
+Os redirects ficam no arquivo dinâmico do Traefik (`megasena-analyzer.yaml`) no ambiente de deploy.
 
-## Prerequisites
+## Pré-requisitos
 
-- Bun >= 1.3.10 (local machine for building)
-- Docker (on VPS)
-- SSH access to VPS managed outside the repository (password manager / secret manager)
+- Bun `>= 1.3.10` na máquina que gera o build
+- Docker no servidor
+- Acesso SSH gerenciado fora do repositório
 
-## Deploy Workflow
+## Fluxo de Deploy
 
-### 1. Build locally
+### 1. Build local
 
 ```bash
 bun install
 bun run build
 ```
 
-### 2. Create standalone artifacts
+### 2. Preparar `dist/standalone`
 
-The Dockerfile is **runtime-only** -- it copies pre-built artifacts, not source code. You must create the standalone dist locally:
+O `Dockerfile` é runtime-only e copia artefatos já gerados. Em vez de depender de `cp` com globs frágeis, use o script oficial do repositório:
 
 ```bash
-rm -rf dist/standalone
-mkdir -p dist/standalone/.next
-cp -r .next/standalone/* dist/standalone/
-cp -r .next/standalone/.next/* dist/standalone/.next/
-cp -r .next/static dist/standalone/.next/static
+bun run dist:standalone
 ```
 
-### 3. Create deploy archive
+Esse comando recria `dist/standalone` a partir de:
 
-**macOS users:** Must disable resource forks to avoid `._*` files breaking migrations in Alpine Linux:
+- `.next/standalone`
+- `.next/static`
+
+Além disso, o script remove qualquer `db/*.db`, `db/*.db-shm`, `db/*.db-wal` ou `db/backups/*` que o output tracing tenha puxado para dentro do bundle do Next.
+
+### 3. Criar arquivo de deploy
+
+No macOS, desabilite resource forks para evitar arquivos `._*` dentro do tarball:
 
 ```bash
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
@@ -58,13 +65,13 @@ COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
   scripts/start-docker.ts db/migrations/ Dockerfile
 ```
 
-### 4. Upload to VPS
+### 4. Enviar para o servidor
 
 ```bash
 scp /tmp/megasena-deploy.tar.gz user@server:/path/to/compose/dir/
 ```
 
-### 5. Build and deploy on VPS
+### 5. Descompactar e subir no servidor
 
 ```bash
 cd /path/to/compose/dir
@@ -75,89 +82,92 @@ docker stop megasena-analyzer && docker rm megasena-analyzer
 docker compose up -d
 ```
 
-### 6. Verify
+### 6. Verificar
 
 ```bash
-# Check container health
 docker logs megasena-analyzer
-
-# Should show:
-# [OK] API server ready
-# Ready in 0ms
-# [OK] All services started successfully
-
-# Test from outside
 curl -I https://megasena-analyzer.com.br/
-curl -I https://megasena-analyzer.com/  # Should 301
+curl -I https://megasena-analyzer.com/
 ```
+
+Saída esperada nos logs:
+
+- `[OK] API server ready`
+- `[OK] All services started successfully`
 
 ## Dockerfile
 
-The Dockerfile (`Dockerfile`) is a runtime-only image based on `oven/bun:alpine`:
+O `Dockerfile` atual:
 
-- Copies pre-built Next.js standalone output (`dist/standalone/`)
-- Copies API server source (`server.ts`, `lib/`)
-- Copies `node_modules/` for runtime dependencies
-- Runs `start-docker.ts` which starts both Next.js and the Bun API server
-- Health check: `curl http://localhost:3201/api/health`
+- copia `dist/standalone/`
+- copia `public/`
+- copia `server.ts`, `lib/`, `package.json` e `tsconfig.json`
+- sobe `start-docker.ts`, que inicia o `server.ts` em Bun e o `server.js` standalone do Next
+- usa health check em `http://localhost:3201/api/health`
 
-**Why runtime-only?** Building Next.js inside Docker fails because `bun:sqlite` cannot resolve in the Next.js client component bundler during build. Building locally avoids this.
+### Por que o build é local
 
-## docker-compose.yml
+O projeto depende de `bun:sqlite` no backend Bun. O caminho validado aqui é:
 
-Key configuration:
+1. gerar o build fora do Docker
+2. sincronizar `dist/standalone`
+3. montar uma imagem somente de runtime
 
-- `image: megasena-analyser-app:vX.Y.Z` (pre-built image)
-- Exposes port 80 (Traefik routes to it)
-- Volumes: `./db:/app/db` (persists SQLite), `./logs:/app/logs`
-- Network: `coolify` (external, shared with Traefik)
-- Environment: `NEXT_PUBLIC_BASE_URL=https://megasena-analyzer.com.br`
+## `docker-compose.yml`
 
-## Traefik Configuration
+Pontos relevantes:
 
-Located at `/data/coolify/proxy/dynamic/megasena-analyzer.yaml` on VPS.
+- expõe a porta `80` para o frontend
+- mantém volume `./db:/app/db` para persistir o SQLite
+- mantém volume `./logs:/app/logs`
+- injeta `NEXT_PUBLIC_BASE_URL=https://megasena-analyzer.com.br`
 
-Three routers:
-1. `megasena-http` -- HTTP to HTTPS redirect (all domains)
-2. `megasena-https` -- Serves content (primary domain only)
-3. `megasena-redirect` -- 301 redirect (secondary domains to primary)
+## Traefik
 
-Middlewares:
-- `megasena-rate-limit` -- 5 req/s average, 10 burst (uses `Cf-Connecting-Ip`)
-- `megasena-redirect-to-primary` -- regex redirect preserving path
-- `security-headers` -- shared security headers middleware
+No ambiente de produção, o Traefik gerencia:
 
-## Database Updates
+1. redirect HTTP -> HTTPS
+2. conteúdo do domínio primário
+3. redirect 301 dos domínios secundários
 
-Use your standard secret-management workflow for VPS access details. General workflow:
+Middlewares relevantes:
 
-1. Copy DB from server
-2. Pull new draws: `bun scripts/pull-draws.ts --incremental`
-3. Optimize: `bun scripts/optimize-db.ts`
-4. Upload DB back and restart container
+- rate limiting
+- redirect para domínio primário
+- headers de segurança compartilhados no edge do proxy reverso
+
+## Atualização de Banco
+
+Fluxo geral:
+
+1. copiar o banco do servidor
+2. rodar `bun scripts/pull-draws.ts --incremental`
+3. rodar `bun scripts/optimize-db.ts`
+4. devolver o banco ao servidor e reiniciar o contêiner
 
 ## Troubleshooting
 
-### Container crash-loops with "Could not find a production build"
+### `Could not find a production build`
 
-The `.next/` directory inside `dist/standalone/` is incomplete. Rebuild locally:
+O `dist/standalone` foi gerado de forma incompleta. Refaça:
 
 ```bash
-rm -rf dist/standalone
-# Follow step 2 above -- make sure to copy .next/standalone/.next/* (BUILD_ID, manifests)
+bun run build
+bun run dist:standalone
 ```
 
-### Migration errors with `._001_initial_schema.sql`
+### Erros com arquivos `._001_initial_schema.sql`
 
-macOS resource fork files leaked into the archive. Re-create with `COPYFILE_DISABLE=1` and `--no-mac-metadata`.
+O tarball foi criado sem `COPYFILE_DISABLE=1` e `--no-mac-metadata`. Refaça o arquivo de deploy com essas flags.
 
-### API health check fails (ConnectionRefused)
+### Health check da API falhando
 
-The Bun API server on port 3201 didn't start. Check:
-- Database file exists at `/app/db/mega-sena.db`
-- Volume mount is correct in docker-compose.yml
-- Migration files are valid SQL (not binary `._*` files)
+Verifique:
 
-### Cloudflare caching stale responses
+- existência de `/app/db/mega-sena.db`
+- volume correto em `docker-compose.yml`
+- migrações SQL válidas em `db/migrations/`
 
-Add `?cb=timestamp` to bypass cache during testing. For persistent issues, purge cache in Cloudflare dashboard.
+### Cache stale no Cloudflare
+
+Durante testes, use `?cb=timestamp`. Se o problema persistir, faça purge de cache no painel do Cloudflare.

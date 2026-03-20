@@ -6,8 +6,9 @@
 # ============================================================================
 #
 # USAGE:
-#   1. Build Next.js:  bun --bun next build
-#   2. Build image:    docker build -t megasena-analyser .
+#   1. Build Next.js:           bun run build
+#   2. Preparar dist/standalone: bun run dist:standalone
+#   3. Build image:             docker build -t megasena-analyser .
 # ============================================================================
 
 FROM oven/bun:1.3.10-alpine AS runtime
@@ -18,7 +19,7 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 # Copy pre-built Next.js standalone output
-# NOTE: Must run ./deploy.sh which builds and copies to dist/standalone/
+# NOTE: Gere `dist/standalone/` com `bun run dist:standalone` antes do build da imagem
 COPY dist/standalone ./
 COPY public ./public
 

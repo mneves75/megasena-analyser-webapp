@@ -1,19 +1,12 @@
 const CAIXA_API_ORIGIN = 'https://servicebus2.caixa.gov.br';
 
 export interface CspOptions {
-  nonce: string;
   isDev: boolean;
   isSecure?: boolean;
 }
 
-export function generateNonce(): string {
-  return Buffer.from(crypto.randomUUID()).toString('base64');
-}
-
-export function buildCsp({ nonce, isDev, isSecure = true }: CspOptions): string {
-  // Use the official non-nonce Next.js CSP path for App Router + standalone output.
-  // This keeps hydration functional in production while preserving restrictive origins.
-  void nonce;
+export function buildCsp({ isDev, isSecure = true }: CspOptions): string {
+  // Mantém o caminho compatível com App Router + standalone sem depender de nonce.
   const directives = [
     // Fetch directives - control where resources can be loaded from
     "default-src 'self'",

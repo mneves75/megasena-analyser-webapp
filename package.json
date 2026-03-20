@@ -1,11 +1,12 @@
 {
   "name": "megasena-analyser",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
-    "dev:next-only": "bun --bun next dev --webpack",
-    "build": "bun --bun next build --webpack",
+    "dev:next-only": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "dist:standalone": "bun run scripts/sync-standalone-dist.ts",
     "start": "bun run scripts/start-prod.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
@@ -45,7 +46,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "5.1.2",
     "@vitest/coverage-v8": "4.0.16",
-    "baseline-browser-mapping": "^2.10.8",
+    "baseline-browser-mapping": "^2.10.9",
     "caniuse-lite": "^1.0.30001780",
     "eslint": "9.36.0",
     "eslint-config-next": "16.2.0",
@@ -60,7 +61,7 @@
   },
   "overrides": {
     "ajv": "6.14.0",
-    "baseline-browser-mapping": "2.10.8",
+    "baseline-browser-mapping": "2.10.9",
     "caniuse-lite": "1.0.30001780",
     "flatted": "3.4.0",
     "js-yaml": "4.1.1",
