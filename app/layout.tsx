@@ -1,0 +1,144 @@
+import type { Metadata, Viewport } from 'next';
+import { Geist, Space_Grotesk } from 'next/font/google';
+import { headers } from 'next/headers';
+import './globals.css';
+import '@/lib/log-sink.server';
+import { Footer } from '@/components/footer';
+import { StorageDisclosure } from '@/components/storage-disclosure';
+import { ThemeProvider } from '@/components/theme-provider';
+import { MultiJsonLd } from '@/components/seo/json-ld';
+import {
+  generateOrganizationSchema,
+  generateWebApplicationSchema,
+  generateWebSiteSchema,
+} from '@/lib/seo/schemas';
+import { pt } from '@/lib/i18n';
+import { BASE_URL as baseUrl } from '@/lib/constants';
+
+const geist = Geist({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-title',
+});
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
+  ],
+};
+
+export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: pt.meta.home.title,
+    template: '%s | Mega-Sena Analyzer',
+  },
+  description: pt.meta.home.description,
+  keywords: [
+    'mega-sena',
+    'loteria',
+    'estatística',
+    'análise',
+    'apostas',
+    'gerador',
+    'números sorteados',
+    'frequência',
+    'caixa',
+    'brasil',
+  ],
+  authors: [{ name: 'Mega-Sena Analyzer' }],
+  creator: 'Mega-Sena Analyzer',
+  publisher: 'Mega-Sena Analyzer',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    url: baseUrl,
+    siteName: 'Mega-Sena Analyzer',
+    title: pt.meta.home.title,
+    description: pt.meta.home.openGraphDescription,
+    images: [
+      {
+        url: `${baseUrl}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: 'Mega-Sena Analyzer - Análise Estatística',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: pt.meta.home.title,
+    description: pt.meta.home.openGraphDescription,
+    images: [`${baseUrl}/twitter-image`],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Mega-Sena Analyzer',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  manifest: '/manifest.json',
+  category: 'finance',
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+  const schemas = [
+    generateOrganizationSchema(),
+    generateWebApplicationSchema(),
+    generateWebSiteSchema(),
+  ];
+
+  return (
+    <html
+      lang="pt-BR"
+      className={`${geist.variable} ${spaceGrotesk.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased flex min-h-screen flex-col font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none"
+        >
+          Pular para o conteúdo principal
+        </a>
+        <MultiJsonLd schemas={schemas} nonce={nonce} />
+        <ThemeProvider defaultTheme="system">
+          <main id="main-content" className="flex-1">{children}</main>
+          <Footer />
+          <StorageDisclosure />
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+description: Build, dev, lint, and test command quick reference
+---
+## Commands Quick Reference
+
+- Install deps: `bun install` (Bun ≥1.1)
+- Dev server: `bun run dev` → `http://localhost:3000`
+- Build: `bun run build` (bundles + type-checks)
+- Lint: `bun run lint` (fail on warnings). Autofix: `bun run lint --fix`
+- Format: `bun run format`
+- Tests: `bun run test` (Vitest). Coverage: `bunx vitest --coverage`
+- DB: `bun run db:migrate` (after `supabase start`)
+
+Security & config:
+- Copy `.env.example` to `.env.local`. Keep Supabase keys and Caixa tokens out of VCS.
+- Rotate Supabase service keys quarterly; note updates in [docs/SYSTEM_PROMPT.md](mdc:docs/SYSTEM_PROMPT.md).
+
