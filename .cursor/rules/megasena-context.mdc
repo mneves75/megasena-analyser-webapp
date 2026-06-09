@@ -1,0 +1,85 @@
+# Mega-Sena Analyser Context
+
+## Project Overview
+This is a professional Mega-Sena lottery analyzer built with Next.js 15, TypeScript, and SQLite. The application provides statistical analysis and intelligent bet generation based on historical data from the CAIXA API.
+
+## Architecture
+- **Framework**: Next.js 15 with App Router
+- **Database**: SQLite (better-sqlite3) with migration system
+- **Runtime**: Bun (preferred) or Node.js ≥20
+- **Styling**: Tailwind CSS with custom design system
+- **Type Safety**: Strict TypeScript throughout
+
+## Key Modules
+
+### Database (`lib/db.ts`)
+- Connection management with WAL mode
+- Migration runner
+- Thread-safe operations
+
+### Analytics Engine (`lib/analytics/`)
+- `statistics.ts`: Frequency analysis and pattern detection
+- `bet-generator.ts`: Multiple strategy-based bet generation
+
+### API Layer (`lib/api/`)
+- `caixa-client.ts`: CAIXA API integration with retry logic
+
+### UI Components (`components/`)
+- shadcn/ui based components
+- Custom `LotteryBall` and `StatsCard` components
+- Design system tokens in globals.css
+
+## Important Patterns
+
+### Database Queries
+Always use prepared statements for safety:
+```typescript
+db.prepare('SELECT * FROM draws WHERE contest_number = ?').get(number)
+```
+
+### Bet Generation Strategies
+- `random`: Pure random selection
+- `hot_numbers`: Based on frequency analysis
+- `cold_numbers`: Least frequent numbers
+- `balanced`: Mix of hot and cold
+- `fibonacci`: Mathematical sequence
+
+### Design System
+- Use semantic tokens (e.g., `text-primary`, `bg-card`)
+- Never hardcode colors (e.g., `text-white`, `bg-blue-500`)
+- All tokens defined in `app/globals.css`
+
+## Common Tasks
+
+### Add New Strategy
+1. Update `BetStrategy` type in `bet-generator.ts`
+2. Add case in `generateNumberSet` method
+3. Add to strategy list in generator page
+
+### Add Statistics
+1. Add method to `StatisticsEngine` class
+2. Update `getDrawStatistics` return type
+3. Display in dashboard or statistics page
+
+### Modify Schema
+1. Create new migration in `db/migrations/`
+2. Run `bun run db:migrate`
+3. Update TypeScript types as needed
+
+## Testing Guidelines
+- Unit tests in `tests/lib/`
+- Mock database for tests
+- Target ≥80% coverage
+- Run with `bun run test`
+
+## Performance Notes
+- Database uses WAL mode for concurrent reads
+- Number frequency cached in dedicated table
+- API calls rate-limited to 1 req/second
+- Use prepared statements for repeated queries
+
+## Security Considerations
+- Never commit `.env` files
+- Database file excluded from git
+- API keys managed via environment variables
+- Input validation on all user inputs

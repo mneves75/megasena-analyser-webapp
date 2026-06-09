@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Implementation Notes - Mega-Sena Analyzer Review</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.5;
+      }
+      body {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+      code {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          monospace;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: color-mix(in srgb, currentColor 8%, transparent);
+      }
+      .status {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Implementation Notes - Mega-Sena Analyzer Review</h1>
+    <p>
+      Live notes for the full frontend UI/UX and source-code review requested on
+      2026-05-26. This file records decisions, deviations, tradeoffs, risks, and
+      validation evidence while the work is in progress.
+    </p>
+
+    <h2>Scope Lock</h2>
+    <ul>
+      <li>Repository root: project checkout root.</li>
+      <li>Initial branch/status: <code>main...origin/main</code>, no dirty files before this notes file.</li>
+      <li>Remote: <code>origin</code> configured.</li>
+      <li>Runtime/package manager: Bun, with project baseline <code>&gt;=1.3.14</code>.</li>
+      <li>Stack: Next.js 16.2.6, React 19.2.x, App Router, standalone output.</li>
+      <li>Completion target: local fixes, docs, database update, production deploy, health verification, Lore commit, push if credentials permit.</li>
+    </ul>
+
+    <h2>Required Verification</h2>
+    <ul>
+      <li><code>bun run lint</code></li>
+      <li><code>bun x tsc --noEmit</code></li>
+      <li><code>bun run test -- --run</code></li>
+      <li><code>bun audit</code></li>
+      <li><code>bun run build</code></li>
+      <li><code>bun run test:e2e</code></li>
+      <li><code>bun run security:secrets:history</code> before sensitive release/deploy work.</li>
+      <li><code>bun run deploy:verify</code> after production deploy.</li>
+    </ul>
+
+    <h2>Guidance Loaded</h2>
+    <ul>
+      <li>Repo <code>AGENTS.md</code> and <code>CLAUDE.md</code>.</li>
+      <li>Skills: modern-web-guidance, frontend-design, design-review, code-review, security-best-practices.</li>
+      <li>Security references: Next.js web server, React frontend, general browser frontend.</li>
+      <li>External design-review availability checked locally; no credentials or private operational details are recorded here.</li>
+      <li>Modern-web-guidance note: official/current guidance was checked outside the repo to avoid package-manager override side effects.</li>
+    </ul>
+
+    <h2>Decisions, Deviations, and Tradeoffs</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Decision</th>
+          <th>Rationale</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Deployment target</td>
+          <td>Use production deployment at the end, not staging, per latest user update.</td>
+          <td>The newer instruction overrides the earlier staging target. Production remains gated by local verification, database update, credentials, and post-deploy health/version proof.</td>
+          <td class="status">Active</td>
+        </tr>
+        <tr>
+          <td>Dependencies</td>
+          <td>No new dependencies unless a critical/high fix clearly requires one.</td>
+          <td>Repo AGENTS and cleanup guidance prefer deletion, simplification, and existing utilities.</td>
+          <td class="status">Active</td>
+        </tr>
+        <tr>
+          <td>Privacy copy</td>
+          <td>Preserve the distinction between no accounts/no marketing analytics and minimal technical processing.</td>
+          <td>Repo memory and docs indicate LGPD transparency pages are intentional for operational logs, CDN/proxy metadata, and localStorage keys.</td>
+          <td class="status">Active</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Open Questions and Risks</h2>
+    <ul>
+      <li>Production deploy is blocked by the repository release gate: <code>bun run security:secrets:history</code> fails on reachable historical findings in older commits. This cannot be safely resolved by ordinary code edits; credential rotation/history rewrite remains required before production release.</li>
+      <li>Post-deploy verification currently reports production as stale: expected package version <code>1.7.9</code>, observed <code>1.7.0</code>. Treat production as not updated.</li>
+      <li>Local database was updated and optimized, but no production database mutation was attempted because the production deploy/release gate is blocked.</li>
+      <li>Current-tree secret scan, dependency audit, lint, typecheck, unit tests, build, E2E, and browser/layout smoke checks are green.</li>
+      <li>Follow-up reviewer reported no remaining critical/high findings after the second fix pass.</li>
+    </ul>
+
+    <h2>Validation Evidence</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Milestone</th>
+          <th>Command / Evidence</th>
+          <th>Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Scope lock</td>
+          <td><code>pwd</code>, <code>git rev-parse --show-toplevel</code>, <code>git status --short --branch</code>, <code>git remote -v</code>, <code>package.json</code> inspection</td>
+          <td>Repo root confirmed; branch <code>main</code>; no initial dirty files; remote available; Bun/Next scripts identified.</td>
+        </tr>
+        <tr>
+          <td>External design-review availability</td>
+          <td>Local availability check</td>
+          <td>Availability confirmed without recording credentials, local account identifiers, or private operational details.</td>
+        </tr>
+        <tr>
+          <td>Initial review</td>
+          <td>Codex code-reviewer, designer, architect lanes plus Claude Code availability check</td>
+          <td>REQUEST CHANGES / BLOCK before fixes. High issues: JSON-LD nonce hydration mismatch, mobile nav overflow, generator error announcement, internal API rate-limit identity collapse, weak data readiness checks, partial CAIXA ingestion success, duplicate draw numbers accepted.</td>
+        </tr>
+        <tr>
+          <td>Guidance retrieval</td>
+          <td><code>npx -y modern-web-guidance@latest retrieve accessible-error-announcement,performance,defer-rendering-heavy-content</code>; official Next.js CSP/self-hosting/output docs and React HTML injection docs</td>
+          <td>Used to keep nonce/CSP, self-hosting reverse proxy, standalone output, accessible error, and chart/performance fixes aligned with current guidance.</td>
+        </tr>
+        <tr>
+          <td>Security scan</td>
+          <td><code>bun audit</code>, <code>bun run security:secrets</code>, <code>bun run security:secrets:history</code></td>
+          <td><code>bun audit</code> passed; working-tree secret scan passed; history scan failed with redacted report at <code>.tmp/gitleaks-history-redacted.json</code> for reachable historical findings.</td>
+        </tr>
+        <tr>
+          <td>Implemented fixes milestone</td>
+          <td>Local edits through UI, API, ingestion, migration, Docker, deploy verification, CI, and tests</td>
+          <td>Added JSON-LD hydration suppression, mobile nav truncation/accessible labels, 44px touch baseline, generator alert/focus/busy states, accessible chart summaries, explicit prose styling, shared-secret-gated internal API rate-limit bypass, health data readiness metadata, deploy data freshness checks, duplicate draw validation/triggers, partial-ingestion failure by default, Linux production dependency install in Docker, API startup readiness polling, CI <code>bun audit</code>, and public version derivation from <code>package.json</code>.</td>
+        </tr>
+        <tr>
+          <td>Focused verification</td>
+          <td><code>bun run lint</code>; <code>bun x tsc --noEmit</code>; focused Vitest files; <code>bun run db:migrate</code></td>
+          <td>Lint passed; typecheck passed after fixing env property access; focused tests passed (46/46); migration <code>007_draw_number_integrity.sql</code> applied successfully to the local DB.</td>
+        </tr>
+        <tr>
+          <td>Reviewer convergence</td>
+          <td>Follow-up read-only code-reviewer after high-finding fixes</td>
+          <td>No critical/high findings remained. Low/medium residuals were addressed by naming the terms nav landmark and adding direct unit coverage for wrong internal secrets and non-loopback peers.</td>
+        </tr>
+        <tr>
+          <td>Browser/UI smoke</td>
+          <td>Playwright against rebuilt standalone on local alternate port; screenshots under <code>.tmp/</code></td>
+          <td>CSS loaded, no console/CSP errors, and no horizontal overflow across home, dashboard, generator, statistics, privacy, rights, terms, and about at mobile 390px and desktop 1440px.</td>
+        </tr>
+        <tr>
+          <td>Final verification</td>
+          <td><code>git diff --check</code>; <code>bun run lint</code>; <code>bun x tsc --noEmit</code>; <code>bun run test -- --run</code>; <code>bun audit</code>; <code>bun run security:secrets</code>; <code>bun run build</code>; <code>bun run test:e2e</code></td>
+          <td>All passed. Unit suite: 31 files passed, 1 skipped; 188 tests passed, 12 skipped. E2E suite: 12 passed, including standalone CSS/mobile overflow and spoofed internal-header rate-limit regression.</td>
+        </tr>
+        <tr>
+          <td>Database update</td>
+          <td><code>bun run db:migrate</code>; <code>bun run db:pull -- --limit 30 --incremental</code>; <code>bun scripts/optimize-db.ts</code></td>
+          <td>Migration was current; bounded CAIXA update added contest #3010 and skipped 29 existing contests; statistics regenerated; SQLite checkpoint, VACUUM, and ANALYZE completed.</td>
+        </tr>
+        <tr>
+          <td>Release/deploy gate</td>
+          <td><code>bun run security:secrets:history</code>; <code>bun run deploy:verify</code></td>
+          <td>History scan failed with 1201 redacted findings across 4 historical commits, including one reachable from <code>origin/main</code>; deploy verify failed because production is still version <code>1.7.0</code> while package version is <code>1.7.9</code>.</td>
+        </tr>
+        <tr>
+          <td>Post-push CI</td>
+          <td>GitHub Actions run <code>26431415771</code> for commit <code>220208a</code>; repeat <code>bun run deploy:verify</code></td>
+          <td>CI completed successfully: unit tests, working-tree secret scan, dependency audit, lint, typecheck, E2E, Docker image build/push, SBOM generation, and Trivy security scan all passed. Production freshness verification still failed with observed version <code>1.7.0</code> versus expected <code>1.7.9</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

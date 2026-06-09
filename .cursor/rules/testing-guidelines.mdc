@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+description: Testing layout, tools, and coverage expectations
+---
+## Testing Guidelines
+
+- Unit tests: `tests/lib/**/{file}.test.ts` (Vitest). Mock HTTP via MSW in `tests/mocks`.
+- UI flows: `tests/app/**/{route}.spec.ts` (Playwright).
+- Seed a Supabase snapshot before integration runs with `scripts/pull-draws.ts --limit 5`.
+- Coverage: target ≥80% lines. Enforce with `bunx vitest --coverage`.
+
+Commands:
+- `bun run test` to execute Vitest suites (add `--run` in CI to disable watch).
+- `bun run lint` with `--max-warnings=0`; use `bun run lint --fix` for autofix.
+
+See: [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md)
+
