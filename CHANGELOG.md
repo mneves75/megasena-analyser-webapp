@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.14] - 2026-06-09
+
+### Fixed
+
+- `bun run deploy:verify` (`scripts/check-production-freshness.ts`) now bypasses the CDN/edge cache: the health request carries a unique `cb=` cache-buster plus `Cache-Control: no-cache` / `Pragma: no-cache` and `cache: 'no-store'`. This removes the false "produção desatualizada" negatives caused by Cloudflare serving a cached `/api/health`. The displayed health URL stays canonical (no query); only the request carries the buster. Regression test added in `tests/scripts/check-production-freshness.test.ts`.
+
 ## [1.7.13] - 2026-06-09
 
 ### Fixed

@@ -1,7 +1,11 @@
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest';
-import { buildHealthUrl, validateHealthPayload } from '../../scripts/check-production-freshness';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  buildHealthUrl,
+  checkProductionFreshness,
+  validateHealthPayload,
+} from '../../scripts/check-production-freshness';
 
 describe('scripts/check-production-freshness.ts', () => {
   it('normaliza a URL pública para /api/health', () => {
@@ -108,5 +112,49 @@ describe('scripts/check-production-freshness.ts', () => {
         { maxDrawAgeDays: 21, now: new Date('2026-05-26T00:00:00Z') }
       )
     ).toThrow('stale');
+  });
+});
+
+describe('checkProductionFreshness cache-busting', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('bypassa cache de CDN com cache-buster e headers no-cache, mantendo a URL exibida limpa', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const seen: Array<{ url: string; headers: Record<string, string> }> = [];
+    const fetchMock = vi.fn(async (input: unknown, init?: { headers?: Record<string, string> }) => {
+      seen.push({ url: String(input), headers: init?.headers ?? {} });
+      return new Response(
+        JSON.stringify({
+          status: 'healthy',
+          version: '9.9.9',
+          database: {
+            connected: true,
+            totalDraws: 3100,
+            lastContestNumber: 3100,
+            lastDrawDate: today,
+          },
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await checkProductionFreshness({
+      baseUrl: 'https://example.com',
+      expectedVersion: '9.9.9',
+      timeoutMs: 5000,
+      minTotalDraws: 3000,
+      maxDrawAgeDays: 21,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(seen[0].url).toContain('/api/health');
+    expect(seen[0].url).toContain('cb=');
+    expect(seen[0].headers['cache-control']).toBe('no-cache');
+    // URL exibida permanece canônica (sem query), apenas o fetch leva o buster.
+    expect(result.healthUrl).toBe('https://example.com/api/health');
+    expect(result.observedVersion).toBe('9.9.9');
   });
 });

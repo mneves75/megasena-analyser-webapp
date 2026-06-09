@@ -122,15 +122,23 @@ export async function readPackageVersion(packageJsonPath = path.join(process.cwd
 
 export async function checkProductionFreshness(options: CheckOptions): Promise<CheckResult> {
   const healthUrl = buildHealthUrl(options.baseUrl);
-  const response = await fetch(healthUrl, {
+  // Bypass any CDN/edge cache (Cloudflare caches /api/health): a unique
+  // cache-buster plus no-cache headers, so the check reads the live origin
+  // version instead of a stale cached version (false "outdated" negatives).
+  const fetchUrl = new URL(healthUrl);
+  fetchUrl.searchParams.set('cb', `${Date.now()}-${Math.round(Math.random() * 1e9)}`);
+  const response = await fetch(fetchUrl, {
     headers: {
       accept: 'application/json',
+      'cache-control': 'no-cache',
+      pragma: 'no-cache',
     },
+    cache: 'no-store',
     signal: AbortSignal.timeout(options.timeoutMs),
   });
 
   if (!response.ok) {
-    throw new Error(`GET ${healthUrl} falhou com HTTP ${response.status}.`);
+    throw new Error(`GET ${fetchUrl.toString()} falhou com HTTP ${response.status}.`);
   }
 
   const result = validateHealthPayload((await response.json()) as HealthPayload, options.expectedVersion, {
