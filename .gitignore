@@ -91,3 +91,4 @@ tsconfig.tsbuildinfo
 
 # Traefik Infrastructure (belongs in deployment repo)
 traefik*.yaml
+.gstack/

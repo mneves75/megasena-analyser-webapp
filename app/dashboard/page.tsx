@@ -153,7 +153,7 @@ export default async function DashboardPage() {
 
       <div className="container mx-auto px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">{pt.dashboard.title}</h1>
+          <h1 className="mb-2 text-4xl font-bold tracking-tight">{pt.dashboard.title}</h1>
           <p className="text-muted-foreground">{pt.dashboard.subtitle}</p>
         </header>
 

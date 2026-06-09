@@ -41,7 +41,7 @@ export default function GeneratorPage() {
               {pt.app.name}
             </Link>
             <div className="flex shrink-0 items-center gap-2">
-              <Button asChild variant="ghost" className="transition-smooth hover:scale-105">
+              <Button asChild variant="ghost">
                 <Link href="/dashboard" aria-label={pt.nav.back}>
                   <ArrowLeft className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">{pt.nav.back}</span>
@@ -55,7 +55,7 @@ export default function GeneratorPage() {
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+          <h1 className="mb-3 text-balance text-4xl font-bold tracking-tight text-foreground md:text-5xl">
             {pt.generatorPage.title}
           </h1>
           <p className="text-muted-foreground text-lg">

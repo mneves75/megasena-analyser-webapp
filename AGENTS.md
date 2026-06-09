@@ -51,6 +51,12 @@ bun run deploy:verify
 
 Se `/api/health` retornar versão diferente de `package.json`, trate a release como não implantada.
 
+## Fluxo de trabalho obrigatório
+
+- **Verifique após cada mudança** com o agent-browser (skill `/browser` do gstack) e corrija qualquer problema de UI/UX. Não pare até que todas as mudanças tenham sido verificadas.
+- **Relato de bug começa por um teste que falha.** Não tente corrigir antes; primeiro escreva um teste que reproduza exatamente o bug, depois delegue a subagentes a correção e prove com o teste passando. Sem teste, não há fix.
+- **Encerre com a skill `autoreview`** e corrija tudo o que ela apontar.
+
 ## Regras de mudança
 
 - Se comportamento público mudar, atualize `README.md`, `CHANGELOG.md` e `CLAUDE.md`.

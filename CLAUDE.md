@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.7.9) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.7.12) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 The detailed statistics page must expose, in the UI, which contest/date the analysis is currently based on so users can verify data freshness without leaving the screen.
 
@@ -26,6 +26,14 @@ The detailed statistics page must expose, in the UI, which contest/date the anal
 - **List any unresolved questions at the end of your response, if any exist.**
 - **ALWAYS work through lists / todo / plans items and not stop until all the work is done!**
 - **WE NEVER WANT WORKAROUNDS**: Always full implementations that are long-term sustainable.
+
+## Workflow Rules
+
+**CRITICAL - ALWAYS FOLLOW:**
+
+- **Verify after every change.** After every change, verify all changes with agent-browser (the `/browser` gstack skill) and fix any UI/UX issues. Do not stop until all changes have been verified.
+- **Bug reports start with a failing test.** When there is a bug report, do NOT start by trying to fix it. First write a test that reproduces the exact bug, then have subagents try to fix the bug and prove it with a passing test. No test = no fix.
+- **Close out with autoreview.** When all work is done, use the `autoreview` skill and fix everything it surfaces.
 
 ## Tech Stack
 
