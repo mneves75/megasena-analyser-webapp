@@ -12,7 +12,7 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, description, icon, className }: StatsCardProps) {
   return (
-    <Card className={cn('transition-smooth hover:shadow-glow', className)}>
+    <Card className={cn('hover-lift', className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         {icon ? <span className="text-muted-foreground">{icon}</span> : null}
