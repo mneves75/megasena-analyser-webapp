@@ -63,7 +63,7 @@ export default function HomePage() {
           </div>
 
           <header className="mb-16 text-center">
-            <h1 className="mb-4 bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-5xl font-bold text-transparent md:text-6xl">
+            <h1 className="mb-4 text-balance text-5xl font-bold tracking-tight text-foreground md:text-6xl">
               {pt.home.heroTitle}
             </h1>
             <p className="mx-auto max-w-2xl text-xl text-muted-foreground">

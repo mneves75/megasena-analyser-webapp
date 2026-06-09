@@ -7,6 +7,19 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.12] - 2026-06-09
+
+### Changed
+
+- UI redesign across all screens (home, dashboard, statistics, generator, about, privacy, rights, terms, and error/loading states). Audited with the design-taste skill in redesign-preserve mode; information architecture, routes, and copy unchanged.
+- Design tokens recalibrated in `app/globals.css`: primary recolored from oversaturated cyan (`191 95% 50%`) to a deep desaturated teal (`192 72% 38%`) so white-on-primary text now meets WCAG AA contrast; surfaces moved from pure `#fff`/near-black to tinted off-white/off-black for depth; the 40px neon `--shadow-glow` halo replaced by a subtle tinted elevation; destructive/secondary/muted/chart tokens re-harmonized to a single cool hue family. Recolor propagates to all pages that consumed these tokens.
+- Lottery balls (`components/lottery-ball.tsx`) rebuilt as real spheres (top-light to bottom-dark gradient, inset highlight, tight shadow, tabular figures) instead of the neon-glow gradient; hover softened to `scale-105`.
+- Hero headlines on home and generator changed from gradient-clipped text to solid foreground with tighter tracking; data-page headings aligned to the same scale.
+
+### Added
+
+- Workflow rules in `CLAUDE.md` and `AGENTS.md`: verify every change with the agent-browser, reproduce bugs with a failing test before fixing, and close out with the autoreview skill.
+
 ## [1.7.11] - 2026-06-08
 
 ### Added
