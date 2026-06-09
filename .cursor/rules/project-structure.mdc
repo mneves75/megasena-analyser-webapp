@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+description: Project structure and where things live
+---
+## Project Structure Guide
+
+- `app/`: Next.js App Router routes (start with `app/dashboard/page.tsx`).
+- `components/`: Reusable UI using Tailwind tokens and shadcn variants.
+- `lib/`:
+  - `lib/analytics/`: Analytics logic
+  - `lib/api/`: Caixa API helpers
+  - `lib/constants.ts`: Shared constants and design tokens
+- `sqlite/`: SQL migrations (`sqlite/migrations`) and generated types (`sqlite/types`).
+- `scripts/`: Bun CLIs like `scripts/pull-draws.ts` for ingest/seeding.
+- `tests/`: Vitest (`tests/lib`) and Playwright (`tests/app`) with MSW mocks in `tests/mocks`.
+- `docs/`: Product prompts. Update when feature scope shifts:
+  - [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md)
+  - [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md)
+  - [docs/SYSTEM_PROMPT.md](mdc:docs/SYSTEM_PROMPT.md)
+
+Constraints:
+- Keep changes minimal and targeted to explicitly requested areas.
+- Place new Cursor rules under `.cursor/rules` with `.mdc` extension.
+- Prefer absolute paths rooted at the workspace when invoking tools.
+- Always attach @docs/SYSTEM_PROMPT.md to every chat.
+

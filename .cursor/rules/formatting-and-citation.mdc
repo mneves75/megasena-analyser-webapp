@@ -1,0 +1,24 @@
+---
+alwaysApply: true
+description: Workspace formatting, markdown, and code citation rules
+---
+## Formatting and Code Citation Rules
+
+- Prefer concise, skimmable communication with headings and bullet points. Use `###`/`##` headings, never `#`.
+- Use backticks for file, directory, class, and function names (for example, `app/components/Card.tsx`).
+- When citing existing code, use CODE REFERENCES with exact syntax:
+
+```12:34:path/to/file.ext
+// code here
+```
+
+- Required elements in a code reference: startLine, endLine, and filepath. Do not add language tags or any other metadata to code references.
+- Include at least one line of code in any reference block; never leave it empty.
+- You may truncate long sections with comments like `// ... more code ...` inside the reference for clarity.
+- For new or proposed code not in the repo, use standard fenced code blocks with a language tag (for example, ```ts, ```python, ```bash).
+- Never mix formats. Do not add language tags to CODE REFERENCES. Do not add line numbers inside code content.
+- Never indent the opening/closing triple backticks.
+- Preserve existing indentation style and width in all edits; do not convert tabs/spaces.
+
+See also: [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md), [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md), and [docs/SYSTEM_PROMPT.md](mdc:docs/SYSTEM_PROMPT.md).
+

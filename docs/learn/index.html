@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Declara suporte a temas antes do primeiro paint (evita flash) -->
+  <meta name="color-scheme" content="light dark" />
+  <title>Onboarding Interativo - Mega-Sena Analyzer</title>
+  <meta name="description" content="Trilha interativa de onboarding do Mega-Sena Analyzer: arquitetura, dados, subsistemas, operacoes e LGPD, com codigo como fonte primaria." />
+  <style>
+    :root {
+      color-scheme: light dark;
+
+      /* Tokens crus (espelham app/globals.css) */
+      --cyan-l: oklch(72% 0.13 215);
+      --cyan-d: oklch(78% 0.12 215);
+
+      --bg: light-dark(#fbfdfe, #0a0a0c);
+      --surface: light-dark(#ffffff, #131318);
+      --surface-2: light-dark(#f1f5f9, #1b1b22);
+      --text: light-dark(#0f172a, #f3f4f6);
+      --muted: light-dark(#5b6675, #9aa3b2);
+      --border: light-dark(#e3e8ef, #2a2a33);
+      --primary: light-dark(var(--cyan-l), var(--cyan-d));
+      --primary-contrast: light-dark(#ffffff, #06121a);
+      --ok: light-dark(oklch(58% 0.14 150), oklch(72% 0.13 150));
+      --warn: light-dark(oklch(64% 0.16 70), oklch(78% 0.15 75));
+      --danger: light-dark(oklch(58% 0.2 25), oklch(72% 0.18 25));
+      --code-bg: light-dark(#f4f7fa, #15151b);
+      --shadow: 0 10px 30px -12px light-dark(rgba(8,40,60,.18), rgba(0,0,0,.6));
+      --radius: 14px;
+      --maxw: 920px;
+      --sidebar: 264px;
+
+      accent-color: var(--primary);
+      scrollbar-color: light-dark(#b8c2cf, #3a3a44) transparent;
+    }
+    :root[data-theme="light"] { color-scheme: light; }
+    :root[data-theme="dark"]  { color-scheme: dark; }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    h1, h2, h3 { line-height: 1.2; letter-spacing: -0.02em; }
+    h2 { font-size: clamp(1.4rem, 1rem + 1.6vw, 2rem); margin: 0 0 .2em; }
+    h3 { font-size: 1.12rem; margin: 1.6em 0 .4em; color: var(--text); }
+    p { color: var(--text); }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre, .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace; }
+    code { background: var(--code-bg); padding: .12em .42em; border-radius: 6px; font-size: .86em; }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; overflow:auto; font-size: .82rem; }
+
+    .skip { position: absolute; left: -999px; top: 0; background: var(--primary); color: var(--primary-contrast); padding: 10px 16px; border-radius: 0 0 8px 0; z-index: 100; }
+    .skip:focus { left: 0; }
+
+    /* Barra de progresso de leitura (scroll-driven com fallback) */
+    .progress {
+      position: fixed; inset: 0 0 auto 0; height: 3px; transform-origin: left; z-index: 60;
+      background: var(--primary); transform: scaleX(var(--p, 0));
+    }
+    @supports (animation-timeline: scroll()) {
+      .progress { animation: growbar linear both; animation-timeline: scroll(root); }
+      @keyframes growbar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    }
+    @media (prefers-reduced-motion: reduce) { .progress { animation: none; } }
+
+    header.top {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; gap: 14px; align-items: center;
+      padding: 12px clamp(14px, 3vw, 28px);
+      background: color-mix(in oklab, var(--surface) 88%, transparent);
+      backdrop-filter: saturate(140%) blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { font-weight: 700; letter-spacing: -.02em; display:flex; gap:10px; align-items:center; }
+    .ball { width: 26px; height: 26px; border-radius: 50%; display:grid; place-items:center;
+      background: radial-gradient(circle at 30% 28%, color-mix(in oklab, var(--primary) 70%, white), var(--primary));
+      color: var(--primary-contrast); font-size: .8rem; font-weight: 800; box-shadow: var(--shadow); }
+    .top .spacer { flex: 1; }
+    .search { position: relative; }
+    .search input {
+      width: clamp(140px, 26vw, 280px); padding: 8px 12px 8px 32px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-size: .9rem;
+    }
+    .search::before { content: "⌕"; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .iconbtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+      width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1rem; display:grid; place-items:center; }
+    .iconbtn:hover { border-color: var(--primary); }
+
+    .layout { display: grid; grid-template-columns: var(--sidebar) 1fr; gap: 0; align-items: start; }
+    nav.side {
+      position: sticky; top: 63px; height: calc(100dvh - 63px); overflow-y: auto;
+      border-right: 1px solid var(--border); padding: 18px 12px 60px; background: var(--surface);
+    }
+    nav.side a {
+      display: block; padding: 7px 12px; border-radius: 9px; color: var(--text); font-size: .9rem;
+      border-left: 3px solid transparent;
+    }
+    nav.side a small { color: var(--muted); }
+    nav.side a:hover { background: var(--surface-2); text-decoration: none; }
+    nav.side a.active { background: color-mix(in oklab, var(--primary) 14%, transparent); border-left-color: var(--primary); font-weight: 600; }
+    nav.side .grp { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 16px 12px 6px; }
+    nav.side a[hidden] { display: none; }
+
+    main { padding: clamp(20px, 4vw, 48px) clamp(16px, 5vw, 56px) 120px; max-width: calc(var(--maxw) + 112px); }
+    section.view { display: none; }
+    section.view.active { display: block; animation: fade .4s ease both; }
+    @media (prefers-reduced-motion: reduce) { section.view.active { animation: none; } }
+    @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    .eyebrow { color: var(--primary); font-weight: 700; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+    .lead { font-size: 1.06rem; color: var(--muted); max-width: 64ch; }
+
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin: 22px 0; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 18px; box-shadow: var(--shadow); }
+    .card h3 { margin-top: 0; }
+    .card.tight { padding: 14px 16px; }
+    .pill { display:inline-block; font-size: .72rem; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); }
+    .tag-ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, var(--border)); }
+    .tag-warn { color: var(--warn); border-color: color-mix(in oklab, var(--warn) 40%, var(--border)); }
+    .tag-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
+
+    .ref { font-size: .82rem; color: var(--muted); }
+    .ref code { color: var(--text); }
+
+    .callout { border-left: 4px solid var(--primary); background: color-mix(in oklab, var(--primary) 8%, var(--surface)); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+    .callout.warn { border-left-color: var(--warn); background: color-mix(in oklab, var(--warn) 9%, var(--surface)); }
+    .callout.danger { border-left-color: var(--danger); background: color-mix(in oklab, var(--danger) 9%, var(--surface)); }
+
+    table.data { width: 100%; border-collapse: collapse; font-size: .88rem; margin: 14px 0; }
+    table.data th, table.data td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.data th { color: var(--muted); font-weight: 600; }
+
+    details.q { border: 1px solid var(--border); border-radius: 10px; padding: 4px 14px; margin: 10px 0; background: var(--surface); }
+    details.q summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+    details.q[open] { box-shadow: var(--shadow); }
+    details.q .gab { color: var(--ok); }
+
+    .mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin: 18px 0; overflow:auto; }
+    .mermaid-fallback { display:none; }
+
+    /* Widgets */
+    .widget { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin: 20px 0; }
+    .widget label { font-weight: 600; font-size: .9rem; display:block; margin-bottom: 6px; }
+    .widget input[type="number"], .widget select {
+      padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; width: 100%;
+    }
+    .row { display:flex; gap: 14px; flex-wrap: wrap; align-items: end; }
+    .row > div { flex: 1 1 160px; }
+    .btn { background: var(--primary); color: var(--primary-contrast); border: none; border-radius: 10px; padding: 10px 18px; font: inherit; font-weight: 700; cursor: pointer; }
+    .btn:hover { filter: brightness(1.06); }
+    .kpis { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; margin-top: 16px; }
+    .kpi { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+    .kpi b { display:block; font-size: 1.3rem; }
+    .kpi span { font-size: .76rem; color: var(--muted); }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top: 12px; }
+    .chip { background: color-mix(in oklab, var(--primary) 16%, transparent); border:1px solid color-mix(in oklab, var(--primary) 40%, var(--border)); border-radius: 999px; padding: 3px 11px; font-size: .8rem; font-weight:600; }
+
+    .term { border-bottom: 1px dotted var(--muted); cursor: help; }
+
+    /* Container query: empilha o layout em telas estreitas */
+    @container (max-width: 760px) { }
+    @media (max-width: 880px) {
+      .layout { grid-template-columns: 1fr; }
+      nav.side { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+      nav.side .navwrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); }
+    }
+
+    footer.foot { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--border); padding: 24px clamp(16px,5vw,56px); }
+    .glossary dt { font-weight: 700; margin-top: 14px; }
+    .glossary dd { margin: 2px 0 0; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Pular para o conteúdo</a>
+  <div class="progress" aria-hidden="true"></div>
+
+  <header class="top">
+    <span class="brand"><span class="ball">6</span> Mega-Sena Analyzer · Onboarding</span>
+    <span class="spacer"></span>
+    <div class="search">
+      <input id="search" type="search" placeholder="Buscar capítulos e termos…" aria-label="Buscar" autocomplete="off" />
+    </div>
+    <button class="iconbtn" id="theme" title="Alternar tema (claro/escuro/sistema)" aria-label="Alternar tema">◐</button>
+  </header>
+
+  <div class="layout">
+    <nav class="side" aria-label="Sumário">
+      <div class="navwrap" id="nav"></div>
+    </nav>
+
+    <main id="content" tabindex="-1">
+      <!-- INÍCIO -->
+      <section class="view active" id="v-home" data-title="Início">
+        <p class="eyebrow">Trilha do Sistema</p>
+        <h2 id="h-home" tabindex="-1">Entenda o sistema antes do código</h2>
+        <p class="lead">Esta é a versão interativa da trilha de onboarding. O conteúdo completo e rastreável está nos arquivos Markdown (<code>01</code>–<code>10</code>); aqui você navega com diagramas, busca, glossário e widgets ao vivo. <strong>O código é a fonte primária</strong> de toda afirmação.</p>
+
+        <div class="callout">
+          O Mega-Sena Analyzer baixa sorteios oficiais da CAIXA para um <span class="term" data-t="sqlite">SQLite</span> local, calcula estatísticas com engines em TypeScript num servidor <span class="term" data-t="bun">Bun</span> (<code>server.ts</code>, porta 3201) e mostra tudo num app <span class="term" data-t="rsc">Next.js 16</span> (porta 3000). Ele <strong>analisa o passado; não prevê o futuro</strong>.
+        </div>
+
+        <h3>Arquitetura em um diagrama</h3>
+        <div class="mermaid" id="m-arch">
+graph TD
+  Browser["Navegador"]
+  subgraph NextProc["Next.js (3000)"]
+    MW["proxy.ts: nonce + CSP"]
+    RSC["Server Components / Actions"]
+    RW["rewrite /api/* (next.config.js)"]
+  end
+  subgraph BunProc["Bun (3201) - server.ts"]
+    API["Handlers /api/* + rate limit + CORS + auditoria"]
+    ENG["StatisticsEngine / BetGenerator / *AnalysisEngine"]
+    DB[("SQLite (bun:sqlite)")]
+  end
+  CAIXA["API CAIXA"]
+  PULL["scripts/pull-draws.ts"]
+  Browser --> MW --> RSC
+  RSC -->|fetchApi| API
+  Browser -->|/api/*| RW --> API
+  API --> ENG --> DB
+  PULL -->|fetchDraw| CAIXA
+  PULL --> DB
+        </div>
+        <pre class="mermaid-fallback">Fluxo: Navegador → Next.js (3000) → fetchApi → Bun API (3201) → engines → SQLite. Ingestão: pull-draws.ts → CAIXA → SQLite.</pre>
+
+        <div class="grid">
+          <div class="card tight"><h3>Dois processos</h3><p class="ref">Next.js (3000) renderiza; Bun (3201, <code>server.ts</code>) é o único que toca o banco (<code>bun:sqlite</code>).</p></div>
+          <div class="card tight"><h3>RSC chama a API</h3><p class="ref">Server Components/Actions usam <code>fetchApi</code> (<code>lib/api/api-fetch.ts</code>); nada de SQL no Next.</p></div>
+          <div class="card tight"><h3>Sem login</h3><p class="ref">Sem conta de usuário; <code>user_bets</code> existe no schema mas é tabela morta.</p></div>
+        </div>
+        <p class="ref">Leia em detalhe: <code>01-system-overview.md</code>.</p>
+      </section>
+
+      <!-- 01 -->
+      <section class="view" id="v-01" data-title="01 · Visão geral">
+        <p class="eyebrow">Capítulo 01</p>
+        <h2 tabindex="-1">Visão geral do sistema</h2>
+        <p class="lead">O que o sistema faz, para quem, e como as peças de runtime se encaixam.</p>
+        <h3>Modelo mental</h3>
+        <p>Uma biblioteca com dois funcionários: o <strong>arquivista</strong> (Bun/<code>server.ts</code>) cuida do acervo (SQLite) e responde em JSON; o <strong>recepcionista</strong> (Next.js) atende o público e, quando precisa de dados, pergunta ao arquivista.</p>
+        <h3>O que ele faz (verificado)</h3>
+        <table class="data">
+          <tr><th>Etapa</th><th>Onde</th></tr>
+          <tr><td>Baixa sorteios da CAIXA</td><td><code>lib/api/caixa-client.ts</code></td></tr>
+          <tr><td>Armazena em SQLite</td><td><code>lib/db.ts</code> + <code>db/migrations/*.sql</code></td></tr>
+          <tr><td>Analisa padrões</td><td><code>lib/analytics/*</code></td></tr>
+          <tr><td>Gera apostas por orçamento</td><td><code>lib/analytics/bet-generator.ts</code></td></tr>
+          <tr><td>Expõe via API JSON</td><td><code>server.ts</code></td></tr>
+          <tr><td>Apresenta páginas</td><td><code>app/dashboard/*</code></td></tr>
+        </table>
+        <div class="callout warn">Premissa explícita do produto: loteria <strong>não</strong> é previsível. Avisos em <code>app/page.tsx</code>, <code>app/about/page.tsx</code> e na página do gerador.</div>
+        <p class="ref">Capítulo completo: <code>01-system-overview.md</code>.</p>
+      </section>
+
+      <!-- 02 -->
+      <section class="view" id="v-02" data-title="02 · Mapa do repositório">
+        <p class="eyebrow">Capítulo 02</p>
+        <h2 tabindex="-1">Mapa do repositório</h2>
+        <p class="lead">Onde fica o quê e o que roda no startup.</p>
+        <div class="grid">
+          <div class="card tight"><h3>Servidor de dados</h3><p class="ref"><code>server.ts</code>, <code>lib/</code>, <code>db/</code>, <code>scripts/</code></p></div>
+          <div class="card tight"><h3>Web</h3><p class="ref"><code>app/</code>, <code>components/</code>, <code>proxy.ts</code>, <code>next.config.js</code></p></div>
+          <div class="card tight"><h3>Qualidade/entrega</h3><p class="ref"><code>tests/</code>, <code>.github/</code>, <code>Dockerfile</code>, <code>docs/</code></p></div>
+        </div>
+        <h3>Pastas críticas (não quebre sem cuidado)</h3>
+        <ul>
+          <li><code>lib/db.ts</code> — única porta para o SQLite.</li>
+          <li><code>server.ts</code> — toda a superfície da API.</li>
+          <li><code>db/migrations/*.sql</code> — nunca edite uma já aplicada; crie nova.</li>
+          <li><code>lib/security/*</code> — afeta CSP/LGPD; tem testes dedicados.</li>
+          <li><code>lib/constants.ts</code> — <code>BET_PRICES</code>, <code>BASE_URL</code>, <code>API_CONFIG</code>.</li>
+        </ul>
+        <p class="ref">Capítulo completo: <code>02-repository-map.md</code>.</p>
+      </section>
+
+      <!-- 03 -->
+      <section class="view" id="v-03" data-title="03 · Runtime">
+        <p class="eyebrow">Capítulo 03</p>
+        <h2 tabindex="-1">Arquitetura de runtime</h2>
+        <p class="lead">Os processos, o ciclo de uma requisição na API e as fronteiras.</p>
+        <h3>Ciclo de uma requisição (estatísticas)</h3>
+        <div class="mermaid" id="m-seq">
+sequenceDiagram
+  participant B as Navegador
+  participant N as Next.js (RSC)
+  participant A as Bun API
+  participant S as StatisticsEngine
+  participant D as SQLite
+  B->>N: GET /dashboard/statistics
+  N->>A: fetchApi('/api/statistics?delays=true&...')
+  A->>A: rate limit + CORS + audit
+  A->>S: getDrawStatistics / getNumberFrequencies
+  S->>D: SELECT ... FROM draws / number_frequency
+  D-->>S: linhas
+  S-->>A: objetos tipados
+  A-->>N: JSON
+  N-->>B: HTML (card de "atualização")
+        </div>
+        <pre class="mermaid-fallback">Navegador → Next (RSC) → fetchApi → Bun (rate limit/CORS/audit) → StatisticsEngine → SQLite → JSON → HTML.</pre>
+        <h3>Inspetor de cabeçalhos de segurança da API</h3>
+        <p class="ref">Saída real de <code>buildApiSecurityHeaders(false, true)</code> em <code>lib/security/csp.ts</code> (produção, HTTPS):</p>
+        <div class="widget"><pre id="hdrs" class="mono"></pre></div>
+        <div class="callout">Pegadinhas: o rate limit cobre <strong>todo</strong> <code>/api/*</code>, inclusive <code>/api/health</code>; <code>proxy.ts</code> força <code>isSecure=false</code>, então HSTS fica no proxy reverso, não no app.</div>
+        <p class="ref">Capítulo completo: <code>03-runtime-architecture.md</code>.</p>
+      </section>
+
+      <!-- 04 -->
+      <section class="view" id="v-04" data-title="04 · Dados & MER">
+        <p class="eyebrow">Capítulo 04</p>
+        <h2 tabindex="-1">Fluxo de dados e MER</h2>
+        <p class="lead">De onde os dados vêm, como são guardados e como saem. Clique numa tabela para ver as colunas.</p>
+        <div class="mermaid" id="m-er">
+erDiagram
+  draws ||..|| number_frequency : "deriva (cache)"
+  draws ||..|| number_pair_frequency : "deriva (cache)"
+  draws {
+    INTEGER id PK
+    INTEGER contest_number UK
+    TEXT draw_date
+    INTEGER number_1_a_6 "CHECK 1..60"
+    REAL prize_sena
+    BOOLEAN accumulated
+  }
+  number_frequency {
+    INTEGER number PK
+    INTEGER frequency
+    INTEGER last_drawn_contest
+  }
+  audit_logs {
+    TEXT id PK
+    TEXT event
+    TEXT client_id_hash "IP pseudonimizado"
+  }
+        </div>
+        <pre class="mermaid-fallback">Tabelas: draws, number_frequency*, number_pair_frequency*, user_bets (morta), audit_logs, log_events, migrations. (*cache derivado)</pre>
+
+        <h3>Explorador do MER</h3>
+        <div class="widget">
+          <div class="row">
+            <div>
+              <label for="tbl">Tabela</label>
+              <select id="tbl"></select>
+            </div>
+          </div>
+          <table class="data" id="tbl-cols"><tbody></tbody></table>
+          <p class="ref" id="tbl-note"></p>
+        </div>
+        <div class="callout">Os 6 números ficam em <strong>colunas</strong> separadas (<code>number_1..number_6</code>), não em lista. <code>number_frequency</code> é cache; recalcule com <code>updateNumberFrequencies()</code> após cada ingestão.</div>
+        <p class="ref">Capítulo completo: <code>04-data-flow.md</code>.</p>
+      </section>
+
+      <!-- 05 -->
+      <section class="view" id="v-05" data-title="05 · Subsistemas">
+        <p class="eyebrow">Capítulo 05</p>
+        <h2 tabindex="-1">Subsistemas centrais</h2>
+        <p class="lead">Cada caixa tem uma missão: baixar, guardar, medir, gerar, proteger, registrar, apresentar.</p>
+        <table class="data">
+          <tr><th>Engine</th><th>Flag em /api/statistics</th><th>Conceito</th></tr>
+          <tr><td>DelayAnalysisEngine</td><td><code>delays</code></td><td>atraso desde a última saída</td></tr>
+          <tr><td>DecadeAnalysisEngine</td><td><code>decades</code></td><td>distribuição por décadas</td></tr>
+          <tr><td>PairAnalysisEngine</td><td><code>pairs</code></td><td>co-ocorrência/correlação (cache)</td></tr>
+          <tr><td>ParityAnalysisEngine</td><td><code>parity</code></td><td>par/ímpar</td></tr>
+          <tr><td>PrimeAnalysisEngine</td><td><code>primes</code></td><td>primos por sorteio</td></tr>
+          <tr><td>SumAnalysisEngine</td><td><code>sum</code></td><td>soma das dezenas</td></tr>
+          <tr><td>StreakAnalysisEngine</td><td><code>streaks</code></td><td>quentes/frios</td></tr>
+          <tr><td>PrizeCorrelationEngine</td><td><code>prize</code></td><td>prêmio médio por número</td></tr>
+          <tr><td>TimeSeriesEngine</td><td><span class="pill">via /api/trends</span></td><td>frequência ao longo do tempo</td></tr>
+          <tr><td>ComplexityScoreEngine</td><td><span class="pill tag-danger">não utilizada</span></td><td>complexidade de uma aposta (definida, sem uso no código)</td></tr>
+        </table>
+        <p class="ref">Capítulo completo: <code>05-core-subsystems.md</code>.</p>
+      </section>
+
+      <!-- 06 -->
+      <section class="view" id="v-06" data-title="06 · Tecnologias">
+        <p class="eyebrow">Capítulo 06</p>
+        <h2 tabindex="-1">Tecnologias explicadas</h2>
+        <p class="lead">O que é, por que está aqui e onde aparece.</p>
+        <table class="data">
+          <tr><th>Tecnologia</th><th>Onde</th><th>Status</th></tr>
+          <tr><td>Bun ≥1.3.14</td><td><code>server.ts</code>, <code>bun:sqlite</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Next.js 16</td><td><code>app/</code>, <code>proxy.ts</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>React 19</td><td>RSC + <code>'use client'</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Zod</td><td><code>server.ts</code> (schemas)</td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Tailwind v4</td><td><code>globals.css</code> tokens</td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Recharts</td><td><code>components/charts/*</code></td><td><span class="pill tag-ok">usado</span></td></tr>
+          <tr><td>Intl (não date-fns)</td><td><code>lib/utils.ts</code></td><td><span class="pill tag-ok">usado</span></td></tr>
+          <tr><td>framer-motion</td><td>—</td><td><span class="pill tag-danger">não importado</span></td></tr>
+          <tr><td>date-fns</td><td>—</td><td><span class="pill tag-danger">não importado</span></td></tr>
+        </table>
+        <div class="callout danger">Discrepância verificada: <code>CLAUDE.md</code> cita "Framer Motion para micro-interações", mas nenhum arquivo importa <code>framer-motion</code> nem <code>date-fns</code>. Trate como dependências mortas.</div>
+        <p class="ref">Capítulo completo: <code>06-tech-stack-explained.md</code>.</p>
+      </section>
+
+      <!-- 07 -->
+      <section class="view" id="v-07" data-title="07 · Operações">
+        <p class="eyebrow">Capítulo 07</p>
+        <h2 tabindex="-1">Operações e qualidade</h2>
+        <p class="lead">Um funil de portões: lint/typecheck → testes → E2E → build → imagem → varredura → deploy → verificação.</p>
+        <h3>Comandos essenciais</h3>
+        <pre>bun install
+bun run db:migrate
+bun run db:pull -- --limit 100
+bun run dev            # http://localhost:3000
+bun run test -- --run  # Vitest (banco em memória)
+bun run build          # next build + assert-standalone-clean
+bun run dist:standalone
+bun run deploy:verify        # versão e frescor da produção
+bun run security:csp:edge    # a borda não substituiu a CSP?</pre>
+        <div class="callout">Deploy é <strong>manual</strong> (Coolify não auto-deploy). <code>bun run build</code> não gera o <code>dist</code>: <code>dist:standalone</code> é passo separado.</div>
+        <p class="ref">Capítulo completo: <code>07-operations-and-quality.md</code>.</p>
+      </section>
+
+      <!-- 08 -->
+      <section class="view" id="v-08" data-title="08 · Exercícios">
+        <p class="eyebrow">Capítulo 08</p>
+        <h2 tabindex="-1">Exercícios</h2>
+        <p class="lead">Pratique do entendimento à mudança. Gabaritos escondidos — tente antes de abrir.</p>
+        <details class="q"><summary>Fácil · Liste as 5 rotas <code>/api/*</code></summary><p class="gab">/api/health, /api/dashboard, /api/statistics, /api/trends, /api/generate-bets (ver <code>apiHandlers</code> em <code>server.ts</code>).</p></details>
+        <details class="q"><summary>Médio · Por que as frequências podem ficar erradas após importar?</summary><p class="gab">Faltou rodar <code>StatisticsEngine.updateNumberFrequencies()</code>; <code>number_frequency</code> é cache derivado.</p></details>
+        <details class="q"><summary>Médio · Onde a produção recusa iniciar sem segredo?</summary><p class="gab"><code>server.ts</code>: bloco que faz <code>process.exit(1)</code> sem <code>IP_HASH_SECRET</code>, antes de <code>runMigrations()</code> (fail-closed).</p></details>
+        <details class="q"><summary>Difícil · Prove a defesa em profundidade da unicidade</summary><p class="gab">Escreva um teste que insira números repetidos e espere <code>ABORT</code> (trigger da migração <code>007</code>); use <code>VITEST_FORCE_FILE_DB=1</code>.</p></details>
+        <p class="ref">Conjunto completo (3+ por capítulo): <code>08-exercises.md</code>.</p>
+      </section>
+
+      <!-- 09 -->
+      <section class="view" id="v-09" data-title="09 · Riscos">
+        <p class="eyebrow">Capítulo 09</p>
+        <h2 tabindex="-1">Perguntas em aberto e riscos</h2>
+        <p class="lead">Fato separado de palpite. O que verificar antes de confiar.</p>
+        <table class="data">
+          <tr><th>Discrepância</th><th>Realidade no código</th></tr>
+          <tr><td>"Framer Motion anima a UI"</td><td>nenhum import de <code>framer-motion</code></td></tr>
+          <tr><td><code>date-fns</code> listado</td><td>datas via <code>Intl</code> em <code>lib/utils.ts</code></td></tr>
+          <tr><td><code>.cursor</code>: Supabase/tokens CAIXA</td><td>não existem no código</td></tr>
+          <tr><td>migrações 004/005: "deleted_at"</td><td>removido na 006 (hard delete)</td></tr>
+          <tr><td>auditoria 400 dias (env)</td><td>CLI usa default 365</td></tr>
+        </table>
+        <div class="callout warn">Dívida: tabela <code>user_bets</code> morta; engines "chatty" (decade/prime/time-series); <code>InMemoryDatabase</code> só conhece SQLs atuais; assimetria de <code>.unref()</code> entre log e auditoria.</div>
+        <p class="ref">Capítulo completo: <code>09-open-questions-and-risks.md</code>.</p>
+      </section>
+
+      <!-- 10 -->
+      <section class="view" id="v-10" data-title="10 · LGPD">
+        <p class="eyebrow">Capítulo 10</p>
+        <h2 tabindex="-1">LGPD: verificação e plano</h2>
+        <p class="lead">O que tratamos, por quê e por quanto tempo — e o plano até a conformidade plena.</p>
+        <h3>Dados pessoais tratados (verificado)</h3>
+        <table class="data">
+          <tr><th>Dado</th><th>Proteção</th></tr>
+          <tr><td>IP</td><td>pseudonimizado (HMAC-SHA256, salt 30 dias) — <code>pseudonymize.ts</code></td></tr>
+          <tr><td>user-agent</td><td>truncado 120 chars, sem controle</td></tr>
+          <tr><td>metadados</td><td>redação de <code>token/secret/password/cookie</code></td></tr>
+          <tr><td>localStorage</td><td><code>megasena-theme</code>, <code>megasena-privacy-ack</code> (só cliente)</td></tr>
+        </table>
+        <h3>Plano de remediação (prioridade)</h3>
+        <ol>
+          <li><span class="pill tag-danger">alta</span> Sanitizar metadados também em <code>buildLogRow</code> (<code>log-store.ts</code>).</li>
+          <li><span class="pill tag-danger">alta</span> Decidir/implementar criptografia em repouso (sem SQLCipher hoje).</li>
+          <li><span class="pill tag-danger">alta</span> Unificar prazo de retenção de auditoria (400/365/180).</li>
+          <li><span class="pill tag-warn">média</span> Resolver colunas <code>session_id/user_id</code> não usadas.</li>
+          <li><span class="pill tag-warn">média</span> Procedimento formal de verificação de identidade do titular.</li>
+          <li><span class="pill tag-warn">média</span> Rotação/cifra de backups verificável.</li>
+        </ol>
+        <div class="callout">Pseudonimizar ≠ anonimizar: IP ainda é dado pessoal sob a LGPD. Não é parecer jurídico — validar com DPO.</div>
+        <p class="ref">Capítulo completo: <code>10-lgpd-compliance-plan.md</code>.</p>
+      </section>
+
+      <!-- OTIMIZADOR -->
+      <section class="view" id="v-opt" data-title="Otimizador de apostas">
+        <p class="eyebrow">Widget ao vivo</p>
+        <h2 tabindex="-1">Otimizador de apostas (porta de <code>bet-generator.ts</code>)</h2>
+        <p class="lead">Esta é uma reimplementação fiel, em JavaScript, do algoritmo de programação dinâmica <code>buildOptimizedBetSizes(budget)</code>, usando os preços reais de <code>lib/constants.ts</code>. Ele escolhe tamanhos de aposta (6–20) priorizando, nesta ordem: gastar o máximo do orçamento, maximizar a cobertura de números, usar menos apostas e, por fim, cobrir mais números.</p>
+        <div class="widget">
+          <div class="row">
+            <div>
+              <label for="budget">Orçamento (R$)</label>
+              <input id="budget" type="number" min="6" step="1" value="100" />
+            </div>
+            <div style="flex:0 0 auto"><button class="btn" id="run">Otimizar</button></div>
+          </div>
+          <div class="kpis" id="opt-kpis"></div>
+          <div class="chips" id="opt-chips"></div>
+          <p class="ref" id="opt-note"></p>
+        </div>
+        <div class="callout warn">Lembre: isto não dá vantagem preditiva. Ele só otimiza o uso do orçamento. Loteria é aleatória.</div>
+      </section>
+
+      <!-- GLOSSÁRIO -->
+      <section class="view" id="v-glo" data-title="Glossário">
+        <p class="eyebrow">Referência</p>
+        <h2 tabindex="-1">Glossário</h2>
+        <dl class="glossary" id="glossary"></dl>
+      </section>
+
+      <footer class="foot">
+        Trilha do sistema (01–10) + trilha de matemática (<code>chapter-01</code>…<code>chapter-08</code>). Código é a fonte primária. Sem emojis, pt-BR. Gerado para onboarding de juniores.
+      </footer>
+    </main>
+  </div>
+
+  <div id="tooltip" role="tooltip" style="position:fixed;z-index:80;max-width:280px;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);font-size:.84rem;display:none;"></div>
+
+  <script type="module">
+    /* ---------- Dados verificados no código ---------- */
+    // lib/constants.ts BET_PRICES (jul/2025)
+    const BET_PRICES = {6:6,7:42,8:168,9:504,10:1260,11:2772,12:5544,13:10296,14:18018,15:30030,16:48048,17:74256,18:111384,19:162792,20:232560};
+    const MAX_NUMBER = 60, MIN_M = 6, MAX_M = 20, MAX_BETS = 200;
+
+    // db/migrations: colunas reais (resumo para o explorador)
+    const MER = {
+      draws: { note: "Sorteios. 6 números em colunas separadas, com CHECK 1..60. Origem de tudo.", cols: [
+        ["id","INTEGER PK"],["contest_number","INTEGER UNIQUE NOT NULL"],["draw_date","TEXT NOT NULL"],
+        ["number_1..number_6","INTEGER CHECK(1..60)"],["prize_sena / prize_quina / prize_quadra","REAL"],
+        ["winners_sena / winners_quina / winners_quadra","INTEGER"],["total_collection","REAL"],
+        ["accumulated","BOOLEAN"],["accumulated_value","REAL"],["next_estimated_prize","REAL"],
+        ["special_draw","BOOLEAN"],["created_at / updated_at","TEXT"]]},
+      number_frequency: { note: "Cache derivado de draws. Recalculado por updateNumberFrequencies().", cols: [
+        ["number","INTEGER PK CHECK(1..60)"],["frequency","INTEGER"],["last_drawn_contest","INTEGER"],
+        ["last_drawn_date","TEXT"],["updated_at","TEXT"]]},
+      number_pair_frequency: { note: "Cache de pares (PairAnalysisEngine). PK composta, number_2>number_1.", cols: [
+        ["number_1","INTEGER (PK)"],["number_2","INTEGER (PK, > number_1)"],["frequency","INTEGER"],
+        ["correlation","REAL"],["last_occurred_contest","INTEGER"],["last_occurred_date","TEXT"],["updated_at","TEXT"]]},
+      user_bets: { note: "TABELA MORTA: existe desde a migração 001, mas nenhum código a lê/escreve.", cols: [
+        ["id","INTEGER PK"],["bet_numbers","TEXT"],["bet_date","TEXT"],["contest_number","INTEGER"],
+        ["strategy","TEXT"],["cost","REAL"],["result","TEXT"],["hits","INTEGER"],["prize_won","REAL"],["notes","TEXT"]]},
+      audit_logs: { note: "Auditoria de negócio. IP nunca cru: client_id_hash é pseudonimizado. Sem deleted_at (migração 006).", cols: [
+        ["id","TEXT PK"],["timestamp","TEXT"],["event","TEXT"],["request_id","TEXT"],["route / method","TEXT"],
+        ["status_code","INTEGER"],["success","INTEGER (0|1)"],["duration_ms","INTEGER"],
+        ["client_id_hash","TEXT (IP pseudonimizado)"],["user_agent","TEXT (truncado)"],["metadata_json","TEXT (sanitizado)"]]},
+      log_events: { note: "Logs estruturados. session_id/user_id existem mas NÃO são populados.", cols: [
+        ["id","TEXT PK"],["timestamp","TEXT"],["level","TEXT (debug|info|warn|error)"],["event","TEXT"],
+        ["request_id / session_id / user_id","TEXT"],["route / user_agent / launch_stage","TEXT"],
+        ["duration_ms / status_code","INTEGER"],["metadata_json / error_json","TEXT"]]},
+      migrations: { note: "Bookkeeping. Criada e estendida (status/error_message) por runMigrations() em lib/db.ts.", cols: [
+        ["id","INTEGER PK"],["name","TEXT UNIQUE"],["applied_at","TEXT"],["status","TEXT (success|failed)"],["error_message","TEXT"]]}
+    };
+
+    const GLOSSARY = [
+      ["bun","Runtime JS/TS usado aqui; traz bun:sqlite. O app não roda em Node."],
+      ["sqlite","Banco de arquivo único, embutido via bun:sqlite (lib/db.ts)."],
+      ["rsc","React Server Component: renderiza no servidor, sem estado de browser."],
+      ["csp","Content-Security-Policy: limita de onde scripts/estilos vêm; aqui por nonce (proxy.ts)."],
+      ["nonce","Valor aleatório por requisição que autoriza um script inline específico."],
+      ["pseudonimizacao","Transformar IP em pseudônimo via HMAC-SHA256; ainda é dado pessoal sob a LGPD."],
+      ["mer","Modelo Entidade-Relacionamento; o desenho das tabelas e relações."],
+      ["wal","Write-Ahead Logging do SQLite (PRAGMA em lib/db.ts)."],
+      ["standalone","Build do Next que empacota o servidor para deploy (dist/standalone)."],
+      ["rate-limit","Limite de requisições por IP (100/min) em server.ts."],
+    ];
+    const GLO_TITLES = { bun:"Bun", sqlite:"SQLite", rsc:"Server Component (RSC)", csp:"CSP", nonce:"Nonce", pseudonimizacao:"Pseudonimização", mer:"MER", wal:"WAL", standalone:"Standalone", "rate-limit":"Rate limiting" };
+
+    /* ---------- DP fiel de buildOptimizedBetSizes ---------- */
+    function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a;}
+    function toCents(v){return Math.round(v*100);}
+    function costUnitCents(){
+      const costs = Object.values(BET_PRICES).map(toCents).filter(c=>c>0);
+      return costs.slice(1).reduce((acc,c)=>gcd(acc,c), costs[0]);
+    }
+    function buildOptimizedBetSizes(budget){
+      const unit = costUnitCents();
+      const budgetUnits = Math.floor(toCents(budget)/unit);
+      const options = Object.entries(BET_PRICES).map(([n,p])=>({n:+n, units: Math.round(toCents(p)/unit)}))
+        .filter(o=>o.n>=MIN_M && o.n<=MAX_M && o.units>0).sort((a,b)=>a.units-b.units);
+      const cover = t=>Math.min(MAX_NUMBER,t);
+      const better=(c,cur)=>{
+        if(!cur) return true;
+        if(cover(c.total)!==cover(cur.total)) return cover(c.total)>cover(cur.total);
+        if(c.count!==cur.count) return c.count<cur.count;
+        return c.total>cur.total;
+      };
+      const best=Array.from({length:budgetUnits+1},()=>null);
+      best[0]={total:0,count:0,prev:-1,size:0};
+      for(let u=0;u<=budgetUnits;u++){
+        const plan=best[u]; if(!plan) continue;
+        for(const o of options){
+          const nu=u+o.units; if(nu>budgetUnits) continue;
+          const nc=plan.count+1; if(nc>MAX_BETS) continue;
+          const cand={total:plan.total+o.n, count:nc, prev:u, size:o.n};
+          if(better(cand,best[nu])) best[nu]=cand;
+        }
+      }
+      let bu=-1, bp=null;
+      for(let u=budgetUnits;u>=0;u--){
+        const plan=best[u]; if(!plan) continue;
+        if(bu===-1){bu=u;bp=plan;continue;}
+        if(u>bu){bu=u;bp=plan;continue;}
+        if(u===bu && better(plan,bp)) bp=plan;
+      }
+      if(!bp || bu<=0) return [];
+      const sizes=[]; let cur=bp;
+      while(cur && cur.prev>=0){ sizes.push(cur.size); cur=best[cur.prev]; }
+      return sizes.reverse();
+    }
+
+    function runOptimizer(){
+      const budget = Math.max(0, +document.getElementById('budget').value || 0);
+      const sizes = buildOptimizedBetSizes(budget);
+      const totalCost = sizes.reduce((s,n)=>s+(BET_PRICES[n]||0),0);
+      const coverage = Math.min(MAX_NUMBER, sizes.reduce((s,n)=>s+n,0));
+      const util = budget>0 ? (totalCost/budget*100) : 0;
+      const fmt = v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      const kpis = document.getElementById('opt-kpis');
+      kpis.innerHTML = sizes.length===0
+        ? `<div class="kpi"><b>—</b><span>Orçamento insuficiente (mín. R$ 6,00)</span></div>`
+        : [
+          ['Apostas', sizes.length],
+          ['Custo', fmt(totalCost)],
+          ['Sobra', fmt(budget-totalCost)],
+          ['Uso do orçamento', util.toFixed(1)+'%'],
+          ['Cobertura (máx.)', coverage+'/60'],
+        ].map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('');
+      document.getElementById('opt-chips').innerHTML = sizes.map(n=>`<span class="chip">${n} núm.</span>`).join('');
+      document.getElementById('opt-note').textContent = sizes.length
+        ? 'Objetivo da DP: gastar o máximo do orçamento; depois maximizar cobertura e usar menos apostas. Unidade = GCD dos preços em centavos = R$ 6,00.'
+        : '';
+    }
+
+    /* ---------- Inspetor de cabeçalhos da API ---------- */
+    // lib/security/csp.ts buildApiSecurityHeaders(isDev=false, isSecure=true)
+    document.getElementById('hdrs').textContent = [
+      "Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "Cross-Origin-Opener-Policy: same-origin",
+      "Cross-Origin-Resource-Policy: same-origin",
+      "Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()",
+      "Referrer-Policy: no-referrer",
+      "X-Content-Type-Options: nosniff",
+      "X-Frame-Options: DENY",
+      "X-DNS-Prefetch-Control: off",
+      "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
+    ].join("\n");
+
+    /* ---------- MER explorer ---------- */
+    const sel = document.getElementById('tbl');
+    Object.keys(MER).forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+    function renderTable(){
+      const t = sel.value; const d = MER[t];
+      document.querySelector('#tbl-cols tbody').innerHTML =
+        `<tr><th>Coluna</th><th>Tipo / restrição</th></tr>` +
+        d.cols.map(([c,ty])=>`<tr><td><code>${c}</code></td><td class="ref">${ty}</td></tr>`).join('');
+      document.getElementById('tbl-note').textContent = d.note;
+    }
+    sel.addEventListener('change', renderTable); renderTable();
+
+    /* ---------- Glossário ---------- */
+    document.getElementById('glossary').innerHTML = GLOSSARY.map(([k,v])=>
+      `<dt id="g-${k}">${GLO_TITLES[k]||k}</dt><dd>${v}</dd>`).join('');
+
+    /* ---------- Tooltips de termos ---------- */
+    const tip = document.getElementById('tooltip');
+    const GMAP = Object.fromEntries(GLOSSARY);
+    document.querySelectorAll('.term').forEach(el=>{
+      const key = el.dataset.t;
+      const show = e=>{ tip.textContent = GMAP[key]||''; tip.style.display='block';
+        const r = el.getBoundingClientRect(); tip.style.left = Math.min(innerWidth-300, r.left)+'px'; tip.style.top = (r.bottom+8)+'px'; };
+      el.addEventListener('mouseenter',show); el.addEventListener('focus',show);
+      el.tabIndex=0;
+      el.addEventListener('mouseleave',()=>tip.style.display='none');
+      el.addEventListener('blur',()=>tip.style.display='none');
+    });
+
+    /* ---------- Navegação SPA com View Transitions ---------- */
+    const views = [...document.querySelectorAll('.view')];
+    const nav = document.getElementById('nav');
+    const groups = [
+      ['', [['v-home','Início']]],
+      ['Trilha do sistema', [['v-01','01 · Visão geral'],['v-02','02 · Mapa do repo'],['v-03','03 · Runtime'],['v-04','04 · Dados & MER'],['v-05','05 · Subsistemas'],['v-06','06 · Tecnologias'],['v-07','07 · Operações'],['v-08','08 · Exercícios'],['v-09','09 · Riscos'],['v-10','10 · LGPD']]],
+      ['Interativo', [['v-opt','Otimizador de apostas'],['v-glo','Glossário']]],
+    ];
+    nav.innerHTML = groups.map(([g,items])=>
+      (g?`<div class="grp">${g}</div>`:'') + items.map(([id,label])=>`<a href="#${id}" data-id="${id}">${label}</a>`).join('')
+    ).join('');
+
+    function navigate(id, push=true){
+      const target = document.getElementById(id) || document.getElementById('v-home');
+      const apply = ()=>{
+        views.forEach(v=>v.classList.toggle('active', v===target));
+        document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.id===target.id));
+        const h = target.querySelector('h2'); if(h){ h.focus({preventScroll:true}); }
+        document.getElementById('content').scrollTop = 0; window.scrollTo({top:0});
+      };
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if(document.startViewTransition && !reduce){
+        const t = document.startViewTransition(apply);
+        t.updateCallbackDone.then(()=>renderMermaid(target)).catch(()=>{});
+      } else { apply(); renderMermaid(target); }
+      if(push) history.replaceState(null,'', '#'+target.id);
+    }
+    document.getElementById('nav').addEventListener('click', e=>{
+      const a = e.target.closest('a'); if(!a) return; e.preventDefault(); navigate(a.dataset.id);
+    });
+    document.getElementById('run').addEventListener('click', runOptimizer);
+    document.getElementById('budget').addEventListener('keydown', e=>{ if(e.key==='Enter') runOptimizer(); });
+
+    /* ---------- Busca / filtro ---------- */
+    const NAV_INDEX = groups.flatMap(([,items])=>items);
+    document.getElementById('search').addEventListener('input', e=>{
+      const q = e.target.value.trim().toLowerCase();
+      document.querySelectorAll('#nav a').forEach(a=>{
+        const txt = (a.textContent + ' ' + (document.getElementById(a.dataset.id)?.innerText||'')).toLowerCase();
+        a.hidden = q.length>1 && !txt.includes(q);
+      });
+    });
+
+    /* ---------- Tema (claro / escuro / sistema) ---------- */
+    const root = document.documentElement;
+    const THEME_KEY = 'megasena-learn-theme'; // chave própria; não toca as do app
+    const saved = localStorage.getItem(THEME_KEY);
+    if(saved==='light'||saved==='dark') root.dataset.theme = saved;
+    const btn = document.getElementById('theme');
+    const label = ()=>{ const t=root.dataset.theme||'system'; btn.textContent = t==='dark'?'☾':t==='light'?'☀':'◐'; btn.title='Tema: '+(t==='system'?'sistema':t); };
+    btn.addEventListener('click', ()=>{
+      const order=['system','light','dark']; const cur=root.dataset.theme||'system';
+      const next=order[(order.indexOf(cur)+1)%order.length];
+      if(next==='system'){ delete root.dataset.theme; localStorage.removeItem(THEME_KEY); }
+      else { root.dataset.theme=next; localStorage.setItem(THEME_KEY,next); }
+      label();
+    });
+    label();
+
+    /* ---------- Progresso de leitura (fallback JS) ---------- */
+    if(!CSS.supports('animation-timeline: scroll()')){
+      const bar=document.querySelector('.progress');
+      const upd=()=>{ const h=document.documentElement; const max=h.scrollHeight-h.clientHeight;
+        bar.style.setProperty('--p', max>0 ? (h.scrollTop/max) : 0); };
+      addEventListener('scroll', upd, {passive:true}); upd();
+    }
+
+    /* ---------- Mermaid (CDN ESM, com degradação) ----------
+       Diagramas em seções ocultas (display:none) não podem ser medidos pelo
+       Mermaid e falham ("Syntax error"). Por isso renderizamos sob demanda,
+       quando a seção fica visível. */
+    let mermaidLib = null;
+    function mermaidFallback(scope){
+      scope.querySelectorAll('.mermaid').forEach(el=>{ el.style.whiteSpace='pre'; el.style.fontFamily='ui-monospace,monospace'; el.style.fontSize='.72rem'; });
+      scope.querySelectorAll('.mermaid-fallback').forEach(el=>{ el.style.display='block'; });
+    }
+    async function renderMermaid(scope){
+      scope = scope || document;
+      if(!mermaidLib) return;
+      const nodes = [...scope.querySelectorAll('.mermaid:not([data-processed])')].filter(n=>n.offsetParent !== null || n===document.body);
+      if(!nodes.length) return;
+      try { await mermaidLib.run({ nodes }); }
+      catch (err) { mermaidFallback(scope); }
+    }
+    (async ()=>{
+      try {
+        const m = (await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')).default;
+        const dark = (root.dataset.theme==='dark') || (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+        m.initialize({ startOnLoad:false, theme: dark?'dark':'neutral', securityLevel:'strict', flowchart:{useMaxWidth:true} });
+        mermaidLib = m;
+        await renderMermaid(document.querySelector('.view.active'));
+      } catch (err) {
+        // Offline ou CDN bloqueado: mostra o texto-fonte de todos os diagramas.
+        mermaidFallback(document);
+      }
+    })();
+
+    /* ---------- Rota inicial ---------- */
+    const initial = location.hash.replace('#','');
+    if(initial && document.getElementById(initial)) navigate(initial, false);
+  </script>
+</body>
+</html>

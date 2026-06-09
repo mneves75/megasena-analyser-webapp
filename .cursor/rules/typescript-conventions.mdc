@@ -1,0 +1,19 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript coding conventions for this repo
+---
+## TypeScript Conventions
+
+- Strict TypeScript. Exported APIs must have explicit return types.
+- Naming:
+  - `PascalCase` for components
+  - `camelCase` for utilities
+  - Kebab-case for file names (for example, `budget-panel.tsx`)
+- Indentation: two spaces.
+- Reference shared tokens/constants instead of hard-coded values; centralize in `lib/constants.ts`.
+- Align with existing patterns; do not introduce new abstractions unless explicitly requested.
+- Match existing formatting; prefer multi-line for readability over dense one-liners.
+- Avoid unsafe casts and `any`. Prefer precise types.
+
+Related: [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md)
+
