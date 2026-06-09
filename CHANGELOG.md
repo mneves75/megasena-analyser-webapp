@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.15] - 2026-06-09
+
+### Fixed
+
+- `/api/*` responses now send `Cache-Control: no-store` via the shared `buildApiSecurityHeaders` (`lib/security/csp.ts`). This is the root-cause fix for the stale `/api/health` served by the Cloudflare edge across deploys (1.7.14 cache-busted the verifier; this stops the endpoint from being cached at all). All API responses are dynamic JSON and must never be stored in a shared/CDN cache. Test added in `tests/lib/security/csp.test.ts`. Note: if a Cloudflare "Cache Everything" rule explicitly ignores origin headers, a CDN-side bypass for `/api/*` is still required.
+
 ## [1.7.14] - 2026-06-09
 
 ### Fixed

@@ -130,6 +130,11 @@ describe('buildApiSecurityHeaders', () => {
     expect(headers['Referrer-Policy']).toBe('no-referrer');
   });
 
+  it('marks API responses as non-cacheable so the CDN cannot serve stale JSON', () => {
+    expect(buildApiSecurityHeaders(false)['Cache-Control']).toBe('no-store');
+    expect(buildApiSecurityHeaders(true)['Cache-Control']).toBe('no-store');
+  });
+
   it('adds HSTS to API responses only when served securely in production', () => {
     expect(buildApiSecurityHeaders(false, true)['Strict-Transport-Security']).toContain('preload');
     expect(buildApiSecurityHeaders(false, false)['Strict-Transport-Security']).toBeUndefined();
