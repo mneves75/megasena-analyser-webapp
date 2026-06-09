@@ -40,6 +40,12 @@
     --shadow-ball: inset 0 0 0 1px hsl(0 0% 100% / 0.2), 0 2px 5px -1px hsl(192 56% 22% / 0.45);
 
     --transition-smooth: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Curated easing curves (Emil Kowalski animation principles) */
+    --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+    --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dark {
@@ -119,5 +125,33 @@
 
   .hover\:shadow-glow:hover {
     box-shadow: var(--shadow-glow);
+  }
+
+  /* GPU-friendly hover elevation: transform + shadow only, premium easing */
+  .hover-lift {
+    transition:
+      transform 220ms var(--ease-out-quint),
+      box-shadow 220ms var(--ease-out-quint);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+}
+
+/* Respect the user's reduced-motion preference (accessibility golden rule) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover {
+    transform: none;
   }
 }

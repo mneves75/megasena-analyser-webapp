@@ -7,6 +7,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.17] - 2026-06-09
+
+### Added
+
+- Reduced-motion support: a global `@media (prefers-reduced-motion: reduce)` guard in `app/globals.css` neutralizes all transitions and animations (forces near-zero `transition-duration`/`animation-duration` and disables the hover-lift transform). This is the first accessibility handling of the OS "reduce motion" preference in the app. Verified via Playwright `reducedMotion: 'reduce'` (computed `transition-duration` drops to `1e-05s`).
+- Curated easing-curve tokens grounded in Emil Kowalski's "Animations on the Web" principles (the `animate` skill): `--ease-out-quint`, `--ease-out-cubic`, `--ease-in-out-cubic`, `--ease-out-back` as CSS custom properties in `app/globals.css` and matching Tailwind `transitionTimingFunction` keys (`ease-out-quint`, etc.) in `tailwind.config.js`.
+- `.hover-lift` utility (`app/globals.css`): GPU-friendly hover elevation animating only `transform: translateY(-2px)` + `box-shadow` with the quint easing.
+
+### Changed
+
+- Buttons now have tactile press feedback: `active:scale-[0.98]` added to the `buttonVariants` base (`components/ui/button.tsx`), so every button and `asChild` button-styled link reacts to press.
+- `components/stats-card.tsx` uses the new `.hover-lift` (transform + elevation) instead of the shadow-only `hover:shadow-glow`.
+- `components/lottery-ball.tsx` hover scale now uses the `ease-out-quint` curve for a more premium feel (motion unchanged otherwise).
+- Animation approach decision recorded: the project animates exclusively via CSS tokens + Tailwind utilities, not `framer-motion` (which remains a dead, unused dependency in `package.json`).
+
 ## [1.7.16] - 2026-06-09
 
 ### Fixed
