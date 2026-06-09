@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.16] - 2026-06-09
+
+### Fixed
+
+- Theme flash (FOUC): the page no longer paints white before switching to the resolved theme. `ThemeProvider` only applied the `dark`/`light` class in a post-hydration effect, so the first paint used the light `:root` tokens. Added `components/theme-script.tsx`, a blocking pre-paint inline script (rendered as the first child of `<body>` with the CSP nonce) that reads the stored theme with a `prefers-color-scheme` fallback and sets the class on `<html>` during HTML parse, before first paint. Mirrors the ThemeProvider storage key and matches Vercel's `rendering-hydration-no-flicker` guidance. Regression test in `tests/app/theme-flash.spec.ts`.
+
 ## [1.7.15] - 2026-06-09
 
 ### Fixed
