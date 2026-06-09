@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.7.14) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.7.15) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 The detailed statistics page must expose, in the UI, which contest/date the analysis is currently based on so users can verify data freshness without leaving the screen.
 
@@ -282,7 +282,7 @@ Prune old logs: `bun run audit:prune` (audit) and `bun run log:prune` (structure
 - Public edge failures also include a probable owner (`shared_response_headers`, `cloudflare_client_side_security`, `origin_or_app`, or `inconclusive`) and public-safe remediation actions; `shared_response_headers` means check Cloudflare Response Header Transform Rules or reverse-proxy header middleware before Page Shield.
 - `ORIGIN_BASE_URL` is an opt-in direct-origin comparison input for `bun run security:csp:edge`; never commit real origin hosts/IPs and never print the private URL in diagnostics.
 - The static/SRI CSP alternative currently restores static cache but breaks App Router hydration because streaming uses inline scripts; keep the nonce path unless Next.js removes that runtime requirement.
-- Bun `/api/*` responses must keep their own defensive headers: deny-by-default JSON CSP, `nosniff`, frame deny, no-referrer, and HSTS only on secure production requests.
+- Bun `/api/*` responses must keep their own defensive headers: deny-by-default JSON CSP, `nosniff`, frame deny, no-referrer, `Cache-Control: no-store` (API JSON is dynamic and must never be CDN-cached), and HSTS only on secure production requests.
 - CORS preflights should stay minimal and rate-limited with the rest of `/api/*`; do not re-add `Authorization` unless an authenticated API path actually requires it and tests cover the new surface.
 - Structured log and audit metadata must pass through the shared recursive sanitizer before persistence/output.
 - JSON-LD scripts must use the shared serializer and nonce-aware components
