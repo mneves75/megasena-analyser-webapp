@@ -67,6 +67,9 @@ export function buildSecurityHeaders(csp: string, isDev: boolean, isSecure = tru
 
 export function buildApiSecurityHeaders(isDev: boolean, isSecure = true): Record<string, string> {
   const headers: Record<string, string> = {
+    // Dynamic JSON; never store in a shared/CDN cache. Prevents the edge from
+    // serving a stale /api/health (and other endpoints) across deploys.
+    'Cache-Control': 'no-store',
     'Content-Security-Policy': "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Cross-Origin-Resource-Policy': 'same-origin',
