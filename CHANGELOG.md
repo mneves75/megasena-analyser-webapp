@@ -7,9 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.11] - 2026-06-08
+
 ### Added
 
 - `bun run db:export-draws` exports the public CAIXA draw history to a versionable, PII-free JSON seed at `db/seed/draws.json` (draws table only; internal id and local timestamps dropped for stable diffs). Telemetry tables are never included.
+- Seed integrity test (`tests/scripts/export-draws.test.ts`) asserting contiguous contests, six unique numbers per draw in 1-60, well-formed dates/fields, and no telemetry/internal columns.
 
 ## [1.7.10] - 2026-06-08
 
