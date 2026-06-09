@@ -7,6 +7,12 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.7.13] - 2026-06-09
+
+### Fixed
+
+- Lottery ball styling moved to a semantic `--shadow-ball` token (light + dark) and a `boxShadow.ball` Tailwind utility, replacing the hardcoded `ring-white/20` and inline hsl() shadow in `components/lottery-ball.tsx`. Resolves a closeout review finding against the project's "semantic tokens only, never hardcode colors" rule. Light rendering is unchanged (token values are byte-identical); the dark-mode drop shadow is now theme-adaptive instead of a fixed teal.
+
 ## [1.7.12] - 2026-06-09
 
 ### Changed
