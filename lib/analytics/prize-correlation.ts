@@ -11,6 +11,11 @@ export interface PrizeCorrelation {
   correlationScore: number;
 }
 
+export interface PrizeCorrelationSets {
+  luckyNumbers: PrizeCorrelation[];
+  unluckyNumbers: PrizeCorrelation[];
+}
+
 export class PrizeCorrelationEngine {
   private db: ReturnType<typeof getDatabase>;
 
@@ -101,17 +106,28 @@ export class PrizeCorrelationEngine {
     return results.sort((a, b) => b.correlationScore - a.correlationScore);
   }
 
+  getCorrelationSets(
+    luckyLimit: number = 10,
+    unluckyLimit: number = 10
+  ): PrizeCorrelationSets {
+    const correlations = this.getPrizeCorrelation();
+
+    return {
+      luckyNumbers: correlations
+        .filter((correlation) => correlation.correlationScore > 1)
+        .slice(0, luckyLimit),
+      unluckyNumbers: correlations
+        .filter((correlation) => correlation.correlationScore < 1)
+        .sort((a, b) => a.correlationScore - b.correlationScore)
+        .slice(0, unluckyLimit),
+    };
+  }
+
   getLuckyNumbers(limit: number = 10): PrizeCorrelation[] {
-    return this.getPrizeCorrelation()
-      .filter((c) => c.correlationScore > 1)
-      .slice(0, limit);
+    return this.getCorrelationSets(limit, 0).luckyNumbers;
   }
 
   getUnluckyNumbers(limit: number = 10): PrizeCorrelation[] {
-    return this.getPrizeCorrelation()
-      .filter((c) => c.correlationScore < 1)
-      .sort((a, b) => a.correlationScore - b.correlationScore)
-      .slice(0, limit);
+    return this.getCorrelationSets(0, limit).unluckyNumbers;
   }
 }
-

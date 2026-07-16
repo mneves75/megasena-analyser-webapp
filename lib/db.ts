@@ -355,6 +355,14 @@ class InMemoryDatabase implements BunDatabase {
   executeGet(rawSql: string, params: unknown[]): unknown {
     const sql = normalizeSql(rawSql);
 
+    if (sql === 'select max(contest_number) as lastcontestnumber from draws') {
+      const lastContestNumber = this.draws.reduce<number | null>(
+        (latest, draw) => latest === null || draw.contest_number > latest ? draw.contest_number : latest,
+        null
+      );
+      return { lastContestNumber };
+    }
+
     if (sql.startsWith('select count(*) as count from draws where number_')) {
       const column = getNumberColumn(sql);
       const target = Number(params[0]);

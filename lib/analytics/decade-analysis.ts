@@ -2,6 +2,26 @@ import { getDatabase } from '@/lib/db';
 import { DECADES } from '@/lib/constants';
 import { roundTo } from '@/lib/utils';
 
+const NUMBER_FREQUENCY_QUERY = `
+  WITH all_occurrences AS (
+    SELECT number_1 as number FROM draws
+    UNION ALL
+    SELECT number_2 FROM draws
+    UNION ALL
+    SELECT number_3 FROM draws
+    UNION ALL
+    SELECT number_4 FROM draws
+    UNION ALL
+    SELECT number_5 FROM draws
+    UNION ALL
+    SELECT number_6 FROM draws
+  )
+  SELECT number, COUNT(*) as frequency
+  FROM all_occurrences
+  GROUP BY number
+  ORDER BY number
+`;
+
 export interface DecadeStats {
   decade: string;
   totalOccurrences: number;
@@ -19,50 +39,27 @@ export class DecadeAnalysisEngine {
   }
 
   getDecadeDistribution(): DecadeStats[] {
-    const totalDraws = (
-      this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
-    ).count;
-
-    const totalNumbersDrawn = totalDraws * 6;
+    const frequencyRows = this.db.prepare(NUMBER_FREQUENCY_QUERY).all() as Array<{
+      number: number;
+      frequency: number;
+    }>;
+    const frequencyByNumber = new Map(
+      frequencyRows.map((row) => [row.number, row.frequency] as const)
+    );
+    const totalNumbersDrawn = frequencyRows.reduce((sum, row) => sum + row.frequency, 0);
     const expectedPercentage = 100 / DECADES.length;
 
     const results: DecadeStats[] = [];
 
     for (const decade of DECADES) {
       const [min, max] = decade.range;
-      let totalOccurrences = 0;
-
-      // Count all occurrences in this decade range
-      for (let col = 1; col <= 6; col++) {
-        const count = (
-          this.db
-            .prepare(
-              `SELECT COUNT(*) as count
-               FROM draws
-               WHERE number_${col} BETWEEN ? AND ?`
-            )
-            .get(min, max) as { count: number }
-        ).count;
-        totalOccurrences += count;
-      }
-
-      const percentage = (totalOccurrences / totalNumbersDrawn) * 100;
+      const topNumbers = Array.from({ length: max - min + 1 }, (_, index) => {
+        const number = min + index;
+        return { number, frequency: frequencyByNumber.get(number) ?? 0 };
+      });
+      const totalOccurrences = topNumbers.reduce((sum, row) => sum + row.frequency, 0);
+      const percentage = totalNumbersDrawn > 0 ? (totalOccurrences / totalNumbersDrawn) * 100 : 0;
       const deviation = percentage - expectedPercentage;
-
-      // Get top 3 numbers from this decade
-      const topNumbers: Array<{ number: number; frequency: number }> = [];
-      for (let num = min; num <= max; num++) {
-        let frequency = 0;
-        for (let col = 1; col <= 6; col++) {
-          const count = (
-            this.db
-              .prepare(`SELECT COUNT(*) as count FROM draws WHERE number_${col} = ?`)
-              .get(num) as { count: number }
-          ).count;
-          frequency += count;
-        }
-        topNumbers.push({ number: num, frequency });
-      }
 
       topNumbers.sort((a, b) => b.frequency - a.frequency);
 
@@ -79,4 +76,3 @@ export class DecadeAnalysisEngine {
     return results;
   }
 }
-

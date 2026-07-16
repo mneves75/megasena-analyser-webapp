@@ -194,7 +194,7 @@ Observações importantes (verificadas):
 | Cache | Reconstruído por | Quando |
 | --- | --- | --- |
 | `number_frequency` | `StatisticsEngine.updateNumberFrequencies()` | após cada ingestão (`pull-draws.ts`) |
-| `number_pair_frequency` | `PairAnalysisEngine.updatePairFrequencies()` | sob demanda, auto-popula se vazio em `getNumberPairs()` |
+| `number_pair_frequency` | `PairAnalysisEngine.updatePairFrequencies()` | após cada ingestão (`pull-draws.ts`); se vazio, `getNumberPairs()` retorna lista vazia com log de aviso (sem rebuild no caminho de leitura) |
 
 ### Tabelas de auditoria/log: como os dados entram
 

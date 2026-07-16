@@ -3,7 +3,9 @@
 import { caixaClient, type MegaSenaDrawData } from '@/lib/api/caixa-client';
 import { getDatabase, closeDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
+import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
+import { toIsoDate } from '@/lib/utils';
 
 interface SaveDrawOptions {
   draw: MegaSenaDrawData;
@@ -62,7 +64,7 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
 
   const result = stmt.run(
     draw.numero,
-    draw.dataApuracao,
+    toIsoDate(draw.dataApuracao),
     numbers[0],
     numbers[1],
     numbers[2],
@@ -190,6 +192,8 @@ async function main() {
 
     const stats = new StatisticsEngine();
     stats.updateNumberFrequencies();
+    const pairAnalysis = new PairAnalysisEngine();
+    pairAnalysis.updatePairFrequencies();
 
     console.log('[OK] Statistics updated');
 

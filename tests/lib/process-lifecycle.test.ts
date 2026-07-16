@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stopSubprocess, type ManagedSubprocess } from '@/lib/process-lifecycle';
 
 function createProcessMock(): {
@@ -23,6 +23,14 @@ function createProcessMock(): {
 }
 
 describe('stopSubprocess', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('waits for graceful exit after SIGTERM', async () => {
     const { processRef, resolveExit, kill } = createProcessMock();
     const logs: string[] = [];
@@ -34,7 +42,7 @@ describe('stopSubprocess', () => {
       warn: (message) => logs.push(message),
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await vi.advanceTimersByTimeAsync(10);
     resolveExit(0);
 
     await expect(stopPromise).resolves.toBe('exited');
@@ -54,7 +62,7 @@ describe('stopSubprocess', () => {
       warn: (message) => logs.push(message),
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await vi.advanceTimersByTimeAsync(10);
     resolveExit(null);
 
     await expect(stopPromise).resolves.toBe('force-killed');

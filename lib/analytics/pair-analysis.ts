@@ -1,5 +1,7 @@
 import { getDatabase } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { roundTo } from '@/lib/utils';
+import { StatisticsEngine } from '@/lib/analytics/statistics';
 
 export interface PairStats {
   pair: [number, number];
@@ -89,6 +91,7 @@ export class PairAnalysisEngine {
 
       // Calculate total draws for correlation
       const totalDraws = draws.length;
+      const frequencyByNumber = this.getNumberFrequencyMap();
 
       // Insert into database with correlation
       const insertStmt = this.db.prepare(
@@ -106,8 +109,8 @@ export class PairAnalysisEngine {
         }
         
         // Calculate correlation: actual frequency vs expected frequency
-        const freq1 = this.getNumberFrequency(num1);
-        const freq2 = this.getNumberFrequency(num2);
+        const freq1 = frequencyByNumber.get(num1) ?? 0;
+        const freq2 = frequencyByNumber.get(num2) ?? 0;
         const prob1 = freq1 / (totalDraws * 6);
         const prob2 = freq2 / (totalDraws * 6);
         const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw
@@ -122,35 +125,24 @@ export class PairAnalysisEngine {
   }
 
   getNumberPairs(minOccurrences: number = 1): PairStats[] {
-    // Check if cache is populated with transaction to prevent race conditions
-    try {
-      this.db.exec('BEGIN IMMEDIATE TRANSACTION');
-      
-      const cacheCount = (
-        this.db.prepare('SELECT COUNT(*) as count FROM number_pair_frequency').get() as {
-          count: number;
-        }
-      ).count;
+    const cacheCount = (
+      this.db.prepare('SELECT COUNT(*) as count FROM number_pair_frequency').get() as {
+        count: number;
+      }
+    ).count;
 
-      if (cacheCount === 0) {
-        // Cache is empty, populate it
-        this.updatePairFrequencies();
-      }
-      
-      this.db.exec('COMMIT');
-    } catch (error) {
-      try {
-        this.db.exec('ROLLBACK');
-      } catch {
-        // Transaction was already rolled back by SQLite
-      }
-      throw error;
+    if (cacheCount === 0) {
+      logger.warn('analytics.pair_cache_empty', {
+        action: 'run_pair_frequency_ingestion',
+      });
+      return [];
     }
 
     // Get individual number frequencies for expected calculation
     const totalDraws = (
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
+    const frequencyByNumber = this.getNumberFrequencyMap();
 
     const pairs = this.db
       .prepare(
@@ -173,8 +165,8 @@ export class PairAnalysisEngine {
 
     return pairs.map((pair) => {
       // Calculate expected frequency for display (correlation is already cached)
-      const freq1 = this.getNumberFrequency(pair.number_1);
-      const freq2 = this.getNumberFrequency(pair.number_2);
+      const freq1 = frequencyByNumber.get(pair.number_1) ?? 0;
+      const freq2 = frequencyByNumber.get(pair.number_2) ?? 0;
       const prob1 = freq1 / (totalDraws * 6);
       const prob2 = freq2 / (totalDraws * 6);
       const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw (6 choose 2)
@@ -190,17 +182,9 @@ export class PairAnalysisEngine {
     });
   }
 
-  private getNumberFrequency(num: number): number {
-    let frequency = 0;
-    for (let col = 1; col <= 6; col++) {
-      const count = (
-        this.db
-          .prepare(`SELECT COUNT(*) as count FROM draws WHERE number_${col} = ?`)
-          .get(num) as { count: number }
-      ).count;
-      frequency += count;
-    }
-    return frequency;
+  private getNumberFrequencyMap(): Map<number, number> {
+    const frequencies = new StatisticsEngine().getNumberFrequencies();
+    return new Map(frequencies.map((row) => [row.number, row.frequency] as const));
   }
 
   getTopPairsForNumber(number: number, limit: number = 10): PairStats[] {
