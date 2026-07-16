@@ -26,14 +26,15 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ### Pré-requisitos
 
-- **Bun >=1.3.14** (obrigatório para o baseline testado com SQLite nativo)
+- **Bun >=1.3.14** (runtime obrigatório para o baseline testado com SQLite nativo)
+- **pnpm >=11** (gerenciador de dependências; ative com `corepack enable`)
 
 ### Instalação
 
 1. Instalar dependências:
 
 ```bash
-bun install
+pnpm install
 ```
 
 2. Executar migrações do banco de dados:

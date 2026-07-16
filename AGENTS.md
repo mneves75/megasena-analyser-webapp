@@ -10,7 +10,8 @@ Guia público para agentes e contribuidores automáticos deste repositório.
 
 ## Stack
 
-- Bun `>=1.3.14`
+- Bun `>=1.3.14` (runtime)
+- pnpm `>=11` (gerenciador de dependências; `pnpm-lock.yaml` + overrides em `pnpm-workspace.yaml`)
 - Next.js `16.2.6`
 - React `19.2.x`
 - App Router + `output: standalone`
@@ -19,9 +20,9 @@ Guia público para agentes e contribuidores automáticos deste repositório.
 
 ```bash
 bun run lint
-bun x tsc --noEmit
+bun run typecheck
 bun run test -- --run
-bun audit
+pnpm audit --prod
 bun run build
 bun run test:e2e
 ```
@@ -69,5 +70,5 @@ Se `/api/health` retornar versão diferente de `package.json`, trate a release c
 - A exceção `style-src-attr 'unsafe-inline'` é permitida somente para atributos de estilo de bibliotecas de visualização; não adicione `unsafe-inline` a `script-src` ou `style-src`.
 - Se `TRUST_PROXY_HEADERS=true`, liste peers não-loopback em `TRUSTED_PROXY_IPS`; não volte a confiar redes privadas inteiras sem ameaça/teste documentados.
 - Bypass de rate limit interno exige `INTERNAL_API_SECRET` forte e peer loopback; nunca aceite apenas um header público como prova de chamada interna.
-- Overrides de dependências em `package.json` são gates de segurança temporários; remova apenas quando `bun audit` continuar limpo sem eles.
+- Overrides de dependências vivem em `pnpm-workspace.yaml` (o pnpm ignora `overrides` do `package.json`); são gates de segurança temporários — remova apenas quando `pnpm audit` continuar limpo sem eles.
 - Não reintroduza scripts mortos, artefatos locais ou gates falsos no CI.

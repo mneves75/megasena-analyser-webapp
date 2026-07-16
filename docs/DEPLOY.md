@@ -117,7 +117,8 @@ scp /tmp/megasena-deploy.tar.gz user@server:/path/to/compose/dir/
 ```bash
 cd /path/to/compose/dir
 tar xzf megasena-deploy.tar.gz
-bun install --production --frozen-lockfile
+# Dependencias de producao sao instaladas dentro do docker build (stage deps
+# com corepack pnpm install --prod --frozen-lockfile); nao instale no host.
 docker build -t megasena-analyser-app:vX.Y.Z .
 docker stop megasena-analyzer && docker rm megasena-analyzer
 docker compose up -d
