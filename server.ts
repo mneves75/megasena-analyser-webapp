@@ -481,11 +481,10 @@ const apiHandlers: Record<
     }
   },
 
-  '/api/dashboard': async (req, ctx) => {
+  '/api/dashboard': async (_req, ctx) => {
     ctx.audit = { event: 'api.dashboard_read' };
     try {
-      const url = new URL(req.url);
-      const cacheKey = buildResponseCacheKey(ctx.route, url.searchParams);
+      const cacheKey = buildResponseCacheKey(ctx.route);
       const lastContestNumber = getLatestContestNumber();
       const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
         const stats = new StatisticsEngine();
@@ -538,7 +537,16 @@ const apiHandlers: Record<
         },
       };
 
-      const cacheKey = buildResponseCacheKey(ctx.route, url.searchParams);
+      const cacheKey = buildResponseCacheKey(ctx.route, {
+        delays: includeDelays,
+        decades: includeDecades,
+        pairs: includePairs,
+        parity: includeParity,
+        primes: includePrimes,
+        sum: includeSum,
+        streaks: includeStreaks,
+        prize: includePrizeCorr,
+      });
       const lastContestNumber = getLatestContestNumber();
       const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
         const stats = new StatisticsEngine();

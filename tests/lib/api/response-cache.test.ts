@@ -11,13 +11,28 @@ describe('ContestResponseCache', () => {
     runMigrations();
   });
 
-  it('canonicalizes equivalent query strings', () => {
-    const first = new URLSearchParams('pairs=true&delays=true&pairs=false');
-    const second = new URLSearchParams('pairs=false&pairs=true&delays=true');
-
-    expect(buildResponseCacheKey('/api/statistics', first)).toBe(
-      buildResponseCacheKey('/api/statistics', second)
+  it('builds keys from validated effective options only, independent of insertion order', () => {
+    expect(buildResponseCacheKey('/api/statistics', { pairs: true, delays: false })).toBe(
+      buildResponseCacheKey('/api/statistics', { delays: false, pairs: true })
     );
+    expect(buildResponseCacheKey('/api/statistics', { pairs: true })).not.toBe(
+      buildResponseCacheKey('/api/statistics', { pairs: false })
+    );
+    expect(buildResponseCacheKey('/api/dashboard')).toBe('/api/dashboard');
+  });
+
+  it('expires entries after the TTL even when the contest is unchanged', () => {
+    let clock = 0;
+    const cache = new ContestResponseCache(32, 1000, () => clock);
+    let computations = 0;
+    const compute = (): { value: number } => ({ value: ++computations });
+
+    expect(cache.getOrCompute('/api/dashboard', 3031, compute)).toBe('{"value":1}');
+    clock = 999;
+    expect(cache.getOrCompute('/api/dashboard', 3031, compute)).toBe('{"value":1}');
+    clock = 1000;
+    expect(cache.getOrCompute('/api/dashboard', 3031, compute)).toBe('{"value":2}');
+    expect(computations).toBe(2);
   });
 
   it('hits once per contest and invalidates when the contest changes', () => {
