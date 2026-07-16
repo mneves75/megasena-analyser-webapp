@@ -7,6 +7,30 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-16
+
+### Added
+
+- Redesign 2026 de todas as páginas: novo app-shell com header fixo (`components/site-header.tsx`, indicador de rota ativa, menu mobile acessível, theme toggle), home data-forward com painel do último sorteio real via `/api/dashboard` (prêmio acumulado exibe "Acumulou", nunca "R$ 0,00"), navegação de seções com scrollspy na página de estatísticas (`components/statistics/section-nav.tsx`), radiogroups ARIA reais no gerador (roving tabindex) e páginas de conteúdo em prosa de 70ch. Brief de design registrado em `PRODUCT.md`.
+- Cache de respostas em memória por concurso para `/api/statistics` e `/api/dashboard` (`lib/api/response-cache.ts`): chave construída apenas das opções validadas do handler, invalidação por `MAX(contest_number)` e TTL defensivo de 10 minutos. Mitiga exaustão de CPU por requisições repetidas (bun:sqlite é síncrono).
+- Hook pre-commit versionado em `.githooks/pre-commit` com scan de segredos via gitleaks (fail-open sem a ferramenta; ativação: `git config core.hooksPath .githooks`).
+- Suítes de teste com banco real para time-series, pares, compute-once e agregações; testes de unidade para `toIsoDate`/`formatDate`, lógica de rota ativa do header e asserts exatos do otimizador DP de apostas.
+- Script `typecheck` (`tsc --noEmit`) no `package.json`.
+
+### Fixed
+
+- Datas de sorteio normalizadas para ISO 8601 no banco e no wire (migrations `008`/`009` + conversão na ingestão): corrige `/api/trends`, que retornava um único bucket nulo (`strftime` não entende `DD/MM/YYYY`), e o "visto pela última vez" dos padrões, que usava `MAX` lexical e reportava datas erradas. A UI formata para pt-BR via `formatDate` (parse estrito ISO, timezone UTC).
+- Tabela `number_pair_frequency` agora é reconstruída em toda ingestão (`pull-draws` e `fetch-missing`); os dados de pares estavam congelados 111 concursos atrás. O rebuild lazy foi removido do caminho de leitura (GET não segura mais write-lock); cache vazio retorna lista vazia com log de aviso.
+- Rebuild de pares calcula frequências individuais diretamente de `draws` (não depende mais do estado da tabela cache `number_frequency`).
+- Engines de análise não repetem mais agregações caras: prize-correlation, streaks e delay-distribution computam uma vez por resposta; decade/prime/pair usam uma única query `GROUP BY` em vez de centenas de `COUNT(*)` por chamada.
+
+### Changed
+
+- Gerenciamento de dependências migrado de Bun para pnpm 11 (corepack): `pnpm-lock.yaml` substitui `bun.lock`, overrides de segurança vivem em `pnpm-workspace.yaml` (com `nodeLinker: hoisted`), CI usa cache do store pnpm e o Dockerfile instala deps de produção no stage `deps` com `pnpm install --prod --frozen-lockfile`. Bun segue como runtime obrigatório.
+- Override de `@babel/core` restrito a `>=7.29.1 <8` (o range aberto resolvia para Babel 8, major breaking ESM-only).
+- Dependências mortas removidas (`framer-motion`, `date-fns`); motion é 100% tokens CSS.
+- Docs alinhadas ao fluxo real (README, CLAUDE.md, AGENTS.md, docs/DEPLOY.md, docs/SECURITY.md, docs/learn/04-data-flow.md).
+
 ## [1.7.17] - 2026-06-09
 
 ### Added

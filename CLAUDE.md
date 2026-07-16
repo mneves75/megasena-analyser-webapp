@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Mega-Sena Analyzer** (v1.7.17) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
+**Mega-Sena Analyzer** (v1.8.0) is a Next.js-based lottery analysis application focused on Brazil's Mega-Sena lottery. The system fetches historical draw data from the official CAIXA API, stores it in a local SQLite database, performs statistical analysis, and generates betting strategies based on various heuristics.
 
 The detailed statistics page must expose, in the UI, which contest/date the analysis is currently based on so users can verify data freshness without leaving the screen.
 
@@ -43,17 +43,17 @@ The detailed statistics page must expose, in the UI, which contest/date the anal
 - **Database:** SQLite (bun:sqlite - native, zero compilation)
 - **Styling:** TailwindCSS v4 with semantic design tokens
 - **UI Components:** shadcn/ui (heavily customized)
-- **Animations:** Framer Motion for micro-interactions
-- **Package Manager:** Bun (npm/yarn/pnpm not supported)
+- **Animations:** CSS motion tokens (globals.css easing vars + Tailwind utilities, reduced-motion guard)
+- **Package Manager:** pnpm (>=11, via corepack) manages dependencies; Bun is the RUNTIME
 - **Testing:** Vitest (unit) + Playwright (E2E)
 
-**CRITICAL:** This project uses Bun's native SQLite (`bun:sqlite`) and **will not work with Node.js**. All commands must use `bun`, not `node` or `npm`.
+**CRITICAL:** This project uses Bun's native SQLite (`bun:sqlite`) and **will not work with Node.js as runtime**. All scripts/servers run with `bun`; dependency management uses `pnpm` (`pnpm-lock.yaml` + overrides in `pnpm-workspace.yaml`, `nodeLinker: hoisted`).
 
 ## Essential Commands
 
 ```bash
 # Environment setup
-bun install                     # Install dependencies
+pnpm install                    # Install dependencies (corepack enable; pnpm@11)
 bun --version                   # Verify Bun runtime (>=1.3.14)
 
 # Database
@@ -253,7 +253,7 @@ Prune old logs: `bun run audit:prune` (audit) and `bun run log:prune` (structure
 
 ### Core Rules
 
-1. **Bun by default** - 28x faster than npm, native TypeScript
+1. **Bun as runtime, pnpm for dependencies** - native TypeScript execution; strict, content-addressable installs
 2. **Hard delete only where the repo documents the no-soft-delete exception**
 3. **No `any` types** - Use `unknown` + type guards instead
 4. **Server Components first** - In Next.js, `'use client'` only for interactivity
