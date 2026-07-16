@@ -1,7 +1,6 @@
 import { getDatabase } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { roundTo } from '@/lib/utils';
-import { StatisticsEngine } from '@/lib/analytics/statistics';
 
 export interface PairStats {
   pair: [number, number];
@@ -183,8 +182,29 @@ export class PairAnalysisEngine {
   }
 
   private getNumberFrequencyMap(): Map<number, number> {
-    const frequencies = new StatisticsEngine().getNumberFrequencies();
-    return new Map(frequencies.map((row) => [row.number, row.frequency] as const));
+    // Compute from draws directly: depending on the number_frequency cache table
+    // here would let a stale/empty cache persist wrong expected frequencies.
+    const rows = this.db
+      .prepare(
+        `WITH all_occurrences AS (
+           SELECT number_1 as number FROM draws
+           UNION ALL
+           SELECT number_2 FROM draws
+           UNION ALL
+           SELECT number_3 FROM draws
+           UNION ALL
+           SELECT number_4 FROM draws
+           UNION ALL
+           SELECT number_5 FROM draws
+           UNION ALL
+           SELECT number_6 FROM draws
+         )
+         SELECT number, COUNT(*) as frequency
+         FROM all_occurrences
+         GROUP BY number`
+      )
+      .all() as Array<{ number: number; frequency: number }>;
+    return new Map(rows.map((row) => [row.number, row.frequency] as const));
   }
 
   getTopPairsForNumber(number: number, limit: number = 10): PairStats[] {

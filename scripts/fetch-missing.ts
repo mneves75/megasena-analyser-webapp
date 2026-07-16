@@ -1,4 +1,6 @@
 import { Database } from 'bun:sqlite';
+import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
+import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { toIsoDate } from '@/lib/utils';
 
 const db = new Database('db/mega-sena.db');
@@ -69,13 +71,25 @@ async function main() {
   const latest = await latestRes.json() as Draw;
   console.log('Latest draw from CAIXA:', latest.numero);
 
+  let insertedCount = 0;
   for (let n = lastContest.max + 1; n <= latest.numero; n++) {
     const result = await fetchAndInsert(n);
-    if (result) console.log('Inserted:', result);
+    if (result) {
+      insertedCount++;
+      console.log('Inserted:', result);
+    }
     await new Promise(r => setTimeout(r, 500));
   }
   const count = db.query('SELECT COUNT(*) as cnt FROM draws').get() as { cnt: number };
   console.log('Total draws now:', count.cnt);
+
+  if (insertedCount > 0) {
+    // Every ingestion path must rebuild the derived caches: the read path no
+    // longer lazily repopulates number_pair_frequency (see pair-analysis.ts).
+    new StatisticsEngine().updateNumberFrequencies();
+    new PairAnalysisEngine().updatePairFrequencies();
+    console.log('[OK] Frequency and pair caches updated');
+  }
 }
 
 main();
