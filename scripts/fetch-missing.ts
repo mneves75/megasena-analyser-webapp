@@ -84,12 +84,15 @@ async function main() {
   console.log('Total draws now:', count.cnt);
 
   if (insertedCount > 0) {
-    // Every ingestion path must rebuild the derived caches: the read path no
-    // longer lazily repopulates number_pair_frequency (see pair-analysis.ts).
-    new StatisticsEngine().updateNumberFrequencies();
-    new PairAnalysisEngine().updatePairFrequencies();
-    console.log('[OK] Frequency and pair caches updated');
+    console.log('Inserted draws this run:', insertedCount);
   }
+
+  // Rebuild unconditionally: draws commit before this point, so gating on
+  // insertedCount would let a crash between insert and rebuild leave the
+  // derived caches stale forever (the read path no longer repairs them).
+  new StatisticsEngine().updateNumberFrequencies();
+  new PairAnalysisEngine().updatePairFrequencies();
+  console.log('[OK] Frequency and pair caches updated');
 }
 
 main();
