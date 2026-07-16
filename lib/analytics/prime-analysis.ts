@@ -2,6 +2,26 @@ import { getDatabase } from '@/lib/db';
 import { PRIME_NUMBERS } from '@/lib/constants';
 import { roundTo } from '@/lib/utils';
 
+const NUMBER_FREQUENCY_QUERY = `
+  WITH all_occurrences AS (
+    SELECT number_1 as number FROM draws
+    UNION ALL
+    SELECT number_2 FROM draws
+    UNION ALL
+    SELECT number_3 FROM draws
+    UNION ALL
+    SELECT number_4 FROM draws
+    UNION ALL
+    SELECT number_5 FROM draws
+    UNION ALL
+    SELECT number_6 FROM draws
+  )
+  SELECT number, COUNT(*) as frequency
+  FROM all_occurrences
+  GROUP BY number
+  ORDER BY number
+`;
+
 export interface PrimeStats {
   totalPrimes: number;
   averagePrimesPerDraw: number;
@@ -84,27 +104,18 @@ export class PrimeAnalysisEngine {
       curr.occurrences > prev.occurrences ? curr : prev
     );
 
-    // Get individual prime number frequencies
-    const primeFrequencies: Array<{ number: number; frequency: number; isPrime: boolean }> = [];
-    for (let num = 1; num <= 60; num++) {
-      let frequency = 0;
-      for (let col = 1; col <= 6; col++) {
-        const count = (
-          this.db
-            .prepare(`SELECT COUNT(*) as count FROM draws WHERE number_${col} = ?`)
-            .get(num) as { count: number }
-        ).count;
-        frequency += count;
-      }
-
-      if (this.isPrime(num)) {
-        primeFrequencies.push({
-          number: num,
-          frequency,
-          isPrime: true,
-        });
-      }
-    }
+    const frequencyRows = this.db.prepare(NUMBER_FREQUENCY_QUERY).all() as Array<{
+      number: number;
+      frequency: number;
+    }>;
+    const frequencyByNumber = new Map(
+      frequencyRows.map((row) => [row.number, row.frequency] as const)
+    );
+    const primeFrequencies = PRIME_NUMBERS.map((number) => ({
+      number,
+      frequency: frequencyByNumber.get(number) ?? 0,
+      isPrime: true,
+    }));
 
     // Sort by frequency
     primeFrequencies.sort((a, b) => b.frequency - a.frequency);
@@ -118,4 +129,3 @@ export class PrimeAnalysisEngine {
     };
   }
 }
-

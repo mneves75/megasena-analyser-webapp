@@ -1,4 +1,5 @@
 import { Database } from 'bun:sqlite';
+import { toIsoDate } from '@/lib/utils';
 
 const db = new Database('db/mega-sena.db');
 const lastContest = db.query('SELECT MAX(contest_number) as max FROM draws').get() as { max: number };
@@ -47,7 +48,7 @@ async function fetchAndInsert(n: number): Promise<number | null> {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     data.numero,
-    data.dataApuracao,
+    toIsoDate(data.dataApuracao),
     n1, n2, n3, n4, n5, n6,
     sena?.valorPremio || 0,
     sena?.numeroDeGanhadores || 0,

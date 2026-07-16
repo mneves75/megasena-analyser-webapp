@@ -37,6 +37,11 @@ import {
 import { MAX_TREND_NUMBERS_PARAM_LENGTH, parseTrendNumbers } from './lib/security/trends-input';
 import { hashForAudit, isHmacEnabled, pseudonymizeIp } from './lib/security/pseudonymize';
 import { isInternalApiRequest } from './lib/security/internal-api';
+import {
+  buildResponseCacheKey,
+  ContestResponseCache,
+  getLatestContestNumber,
+} from './lib/api/response-cache';
 
 function resolveAppVersion(): string {
   const envVersion = process.env['APP_VERSION'];
@@ -185,6 +190,7 @@ class LRUCache<K, V> {
 }
 
 const rateLimiterCache = new LRUCache<string, RateLimitEntry>(RATE_LIMIT_CACHE_MAX_SIZE);
+const analyticsResponseCache = new ContestResponseCache(32);
 let stopAuditRetentionScheduler: (() => void) | null = null;
 let stopLogRetentionScheduler: (() => void) | null = null;
 
@@ -475,18 +481,25 @@ const apiHandlers: Record<
     }
   },
 
-  '/api/dashboard': async (_req, ctx) => {
+  '/api/dashboard': async (req, ctx) => {
     ctx.audit = { event: 'api.dashboard_read' };
     try {
-      const stats = new StatisticsEngine();
-      const statistics = stats.getDrawStatistics();
-      const recentDraws = stats.getDrawHistory(5);
+      const url = new URL(req.url);
+      const cacheKey = buildResponseCacheKey(ctx.route, url.searchParams);
+      const lastContestNumber = getLatestContestNumber();
+      const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
+        const stats = new StatisticsEngine();
+        const statistics = stats.getDrawStatistics();
+        const recentDraws = stats.getDrawHistory(5);
 
-      // Add hot streaks (trending numbers)
-      const streakEngine = new StreakAnalysisEngine(10);
-      const hotNumbers = streakEngine.getHotNumbers(10);
+        // Add hot streaks (trending numbers)
+        const streakEngine = new StreakAnalysisEngine(10);
+        const hotNumbers = streakEngine.getHotNumbers(10);
 
-      return new Response(JSON.stringify({ statistics, recentDraws, hotNumbers }), {
+        return { statistics, recentDraws, hotNumbers };
+      });
+
+      return new Response(body, {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
@@ -525,58 +538,67 @@ const apiHandlers: Record<
         },
       };
 
-      const stats = new StatisticsEngine();
-      const summary = stats.getDrawStatistics();
-      const frequencies = stats.getNumberFrequencies();
-      const patterns = stats.detectPatterns();
+      const cacheKey = buildResponseCacheKey(ctx.route, url.searchParams);
+      const lastContestNumber = getLatestContestNumber();
+      const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
+        const stats = new StatisticsEngine();
+        const summary = stats.getDrawStatistics();
+        const frequencies = stats.getNumberFrequencies();
+        const patterns = stats.detectPatterns();
 
-      const response: Record<string, unknown> = { summary, frequencies, patterns };
+        const response: Record<string, unknown> = { summary, frequencies, patterns };
 
-      if (includeDelays) {
-        const delayEngine = new DelayAnalysisEngine();
-        response['delays'] = delayEngine.getNumberDelays();
-        response['delayDistribution'] = delayEngine.getDelayDistribution();
-      }
+        if (includeDelays) {
+          const delayEngine = new DelayAnalysisEngine();
+          const delays = delayEngine.getNumberDelays();
+          response['delays'] = delays;
+          response['delayDistribution'] = delayEngine.getDelayDistribution(delays);
+        }
 
-      if (includeDecades) {
-        const decadeEngine = new DecadeAnalysisEngine();
-        response['decades'] = decadeEngine.getDecadeDistribution();
-      }
+        if (includeDecades) {
+          const decadeEngine = new DecadeAnalysisEngine();
+          response['decades'] = decadeEngine.getDecadeDistribution();
+        }
 
-      if (includePairs) {
-        const pairEngine = new PairAnalysisEngine();
-        response['pairs'] = pairEngine.getNumberPairs(5); // Min 5 occurrences
-      }
+        if (includePairs) {
+          const pairEngine = new PairAnalysisEngine();
+          response['pairs'] = pairEngine.getNumberPairs(5); // Min 5 occurrences
+        }
 
-      if (includeParity) {
-        const parityEngine = new ParityAnalysisEngine();
-        response['parity'] = parityEngine.getParityDistribution();
-        response['parityStats'] = parityEngine.getParityStats();
-      }
+        if (includeParity) {
+          const parityEngine = new ParityAnalysisEngine();
+          response['parity'] = parityEngine.getParityDistribution();
+          response['parityStats'] = parityEngine.getParityStats();
+        }
 
-      if (includePrimes) {
-        const primeEngine = new PrimeAnalysisEngine();
-        response['primes'] = primeEngine.getPrimeDistribution();
-      }
+        if (includePrimes) {
+          const primeEngine = new PrimeAnalysisEngine();
+          response['primes'] = primeEngine.getPrimeDistribution();
+        }
 
-      if (includeSum) {
-        const sumEngine = new SumAnalysisEngine();
-        response['sumStats'] = sumEngine.getSumDistribution();
-      }
+        if (includeSum) {
+          const sumEngine = new SumAnalysisEngine();
+          response['sumStats'] = sumEngine.getSumDistribution();
+        }
 
-      if (includeStreaks) {
-        const streakEngine = new StreakAnalysisEngine(10);
-        response['hotNumbers'] = streakEngine.getHotNumbers(15);
-        response['coldNumbers'] = streakEngine.getColdNumbers(15);
-      }
+        if (includeStreaks) {
+          const streakEngine = new StreakAnalysisEngine(10);
+          const streakSets = streakEngine.getStreakSets(15, 15);
+          response['hotNumbers'] = streakSets.hotNumbers;
+          response['coldNumbers'] = streakSets.coldNumbers;
+        }
 
-      if (includePrizeCorr) {
-        const prizeEngine = new PrizeCorrelationEngine();
-        response['luckyNumbers'] = prizeEngine.getLuckyNumbers(15);
-        response['unluckyNumbers'] = prizeEngine.getUnluckyNumbers(15);
-      }
+        if (includePrizeCorr) {
+          const prizeEngine = new PrizeCorrelationEngine();
+          const correlationSets = prizeEngine.getCorrelationSets(15, 15);
+          response['luckyNumbers'] = correlationSets.luckyNumbers;
+          response['unluckyNumbers'] = correlationSets.unluckyNumbers;
+        }
 
-      return new Response(JSON.stringify(response), {
+        return response;
+      });
+
+      return new Response(body, {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {

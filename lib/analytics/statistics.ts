@@ -179,7 +179,18 @@ export class StatisticsEngine {
     const consecutiveQuery = `
       SELECT 
         COUNT(*) as occurrences,
-        MAX(draw_date) as last_seen
+        (
+          SELECT draw_date
+          FROM draws AS latest
+          WHERE
+            (latest.number_2 = latest.number_1 + 1) OR
+            (latest.number_3 = latest.number_2 + 1) OR
+            (latest.number_4 = latest.number_3 + 1) OR
+            (latest.number_5 = latest.number_4 + 1) OR
+            (latest.number_6 = latest.number_5 + 1)
+          ORDER BY latest.contest_number DESC
+          LIMIT 1
+        ) as last_seen
       FROM draws
       WHERE 
         (number_2 = number_1 + 1) OR
@@ -205,7 +216,16 @@ export class StatisticsEngine {
     const evenOddQuery = `
       SELECT 
         COUNT(*) as occurrences,
-        MAX(draw_date) as last_seen
+        (
+          SELECT draw_date
+          FROM draws AS latest
+          WHERE
+            latest.number_1 % 2 = 0 AND latest.number_2 % 2 = 0 AND
+            latest.number_3 % 2 = 0 AND latest.number_4 % 2 = 0 AND
+            latest.number_5 % 2 = 0 AND latest.number_6 % 2 = 0
+          ORDER BY latest.contest_number DESC
+          LIMIT 1
+        ) as last_seen
       FROM draws
       WHERE 
         (number_1 % 2 = 0 AND number_2 % 2 = 0 AND number_3 % 2 = 0 AND 

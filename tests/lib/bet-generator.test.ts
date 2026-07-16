@@ -68,3 +68,86 @@ describe('BetGenerator', () => {
     ).toThrow('Orçamento insuficiente para aposta múltipla');
   });
 });
+
+/**
+ * Exact-plan tests for the dynamic-programming bet sizer (buildOptimizedBetSizes,
+ * exercised through OPTIMIZED mode). The DP objective, in priority order, is:
+ *   1. maximize coverage = min(60, sum of bet sizes)
+ *   2. minimize bet count
+ *   3. maximize total numbers
+ * ...while spending the most units possible (minimizing R$ waste). Because the
+ * cheapest bet is R$6 (six numbers) and every price is a whole multiple of R$6,
+ * the minimal achievable waste for any budget is exactly `budget % 6`.
+ *
+ * Expected plans below are derived by hand from BET_PRICES (6 -> R$6, 7 -> R$42):
+ *   - Only sizes 6 and 7 are affordable until the budget passes R$168 (size 8),
+ *     so plans compose from those two coins.
+ *   - A size-7 bet buys 7 numbers for R$42; six size-6 bets buy 36 numbers for
+ *     the same R$42. So a 7 is only ever chosen once coverage is already
+ *     saturated at 60, where it then lowers the bet count.
+ */
+describe('BetGenerator.buildOptimizedBetSizes (via OPTIMIZED mode)', () => {
+  function sizeCounts(bets: ReadonlyArray<{ numberCount: number }>): Record<number, number> {
+    const counts: Record<number, number> = {};
+    for (const bet of bets) {
+      counts[bet.numberCount] = (counts[bet.numberCount] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  function totalNumbers(bets: ReadonlyArray<{ numberCount: number }>): number {
+    return bets.reduce((sum, bet) => sum + bet.numberCount, 0);
+  }
+
+  const simpleCost = BET_PRICES[6] ?? 6;
+
+  it('spends the whole budget as a single simple bet at the minimum budget (R$6)', () => {
+    const generator = new BetGenerator();
+    const result = generator.generateOptimizedBets(6, BET_GENERATION_MODE.OPTIMIZED, 'balanced');
+
+    expect(sizeCounts(result.bets)).toEqual({ 6: 1 });
+    expect(result.totalCost).toBe(6);
+    expect(result.remainingBudget).toBe(0);
+  });
+
+  it('prefers seven simple bets over one 7-number bet at R$42 (coverage beats bet count)', () => {
+    const generator = new BetGenerator();
+    const result = generator.generateOptimizedBets(42, BET_GENERATION_MODE.OPTIMIZED, 'balanced');
+
+    // One 7-number bet (R$42) covers only 7 numbers; seven size-6 bets cover 42.
+    expect(sizeCounts(result.bets)).toEqual({ 6: 7 });
+    expect(result.totalCost).toBe(42);
+    expect(result.remainingBudget).toBe(0);
+    expect(totalNumbers(result.bets)).toBe(42);
+  });
+
+  it('maximizes coverage with eight simple bets at R$50, leaving only the R$2 remainder', () => {
+    const generator = new BetGenerator();
+    const budget = 50;
+    const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.OPTIMIZED, 'balanced');
+
+    expect(sizeCounts(result.bets)).toEqual({ 6: 8 });
+    expect(result.totalCost).toBe(48);
+    // Minimal possible waste: cannot afford a 9th R$6 bet with the R$2 remainder.
+    expect(result.remainingBudget).toBe(budget % simpleCost);
+    expect(result.remainingBudget).toBeLessThan(simpleCost);
+  });
+
+  it('adds one 7-number bet at R$100 to hit full coverage with the fewest bets', () => {
+    const generator = new BetGenerator();
+    const budget = 100;
+    const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.OPTIMIZED, 'balanced');
+
+    // budget/6 = 16 spendable units. The unique coverage-60 plan with the fewest
+    // bets at 16 units is nine size-6 (R$54) + one size-7 (R$42) = R$96, 10 bets,
+    // 61 numbers. All-size-6 (16 bets) also reaches coverage 60 but with more bets.
+    expect(sizeCounts(result.bets)).toEqual({ 6: 9, 7: 1 });
+    expect(result.totalCost).toBe(96);
+    expect(result.totalCost).toBeLessThanOrEqual(budget);
+    expect(result.remainingBudget).toBe(budget % simpleCost);
+    expect(result.remainingBudget).toBeLessThan(simpleCost);
+    // Coverage saturated at the 60-number cap.
+    expect(Math.min(60, totalNumbers(result.bets))).toBe(60);
+    expect(result.bets).toHaveLength(10);
+  });
+});

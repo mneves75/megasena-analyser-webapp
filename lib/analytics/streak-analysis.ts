@@ -11,6 +11,11 @@ export interface StreakStats {
   lastDrawnContest: number | null;
 }
 
+export interface StreakSets {
+  hotNumbers: StreakStats[];
+  coldNumbers: StreakStats[];
+}
+
 export class StreakAnalysisEngine {
   private db: ReturnType<typeof getDatabase>;
   private windowSize: number;
@@ -142,14 +147,20 @@ export class StreakAnalysisEngine {
     return results.sort((a, b) => b.streakIntensity - a.streakIntensity);
   }
 
+  getStreakSets(hotLimit: number = 10, coldLimit: number = 10): StreakSets {
+    const streaks = this.getHotStreaks();
+
+    return {
+      hotNumbers: streaks.filter((streak) => streak.trend === 'hot').slice(0, hotLimit),
+      coldNumbers: streaks.filter((streak) => streak.trend === 'cold').slice(0, coldLimit),
+    };
+  }
+
   getHotNumbers(limit: number = 10): StreakStats[] {
-    const allStreaks = this.getHotStreaks();
-    return allStreaks.filter((s) => s.trend === 'hot').slice(0, limit);
+    return this.getStreakSets(limit, 0).hotNumbers;
   }
 
   getColdNumbers(limit: number = 10): StreakStats[] {
-    const allStreaks = this.getHotStreaks();
-    return allStreaks.filter((s) => s.trend === 'cold').slice(0, limit);
+    return this.getStreakSets(0, limit).coldNumbers;
   }
 }
-
