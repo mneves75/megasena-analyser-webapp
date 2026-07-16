@@ -63,7 +63,8 @@ describe('Footer - Core Sections', () => {
   it('should render about section', () => {
     render(<Footer />);
 
-    expect(screen.getByRole('heading', { name: /sobre o projeto/i })).toBeInTheDocument();
+    // O wordmark da marca substitui o heading "Sobre o Projeto" na coluna institucional.
+    expect(screen.getAllByText(/mega-sena analyzer/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/ferramenta de an.lise estat.stica/i)).toBeInTheDocument();
   });
 
@@ -97,8 +98,7 @@ describe('Footer - Core Sections', () => {
   it('should render current year in copyright', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/2025/)).toBeInTheDocument();
-    expect(screen.getByText(/mega-sena analyzer/i)).toBeInTheDocument();
+    expect(screen.getByText(/© 2025 Mega-Sena Analyzer/i)).toBeInTheDocument();
   });
 });
 

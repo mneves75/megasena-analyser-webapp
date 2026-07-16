@@ -27,6 +27,10 @@
     --ring: 192 72% 38%;
     --radius: 0.5rem;
 
+    /* Height of the sticky app-shell header (components/site-header.tsx: h-16).
+       Exposed so sticky sub-navs and anchor scroll-margins can offset against it. */
+    --app-header-height: 4rem;
+
     --chart-1: 192 72% 42%;
     --chart-2: 168 58% 40%;
     --chart-3: 142 52% 42%;
@@ -109,6 +113,10 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
   .transition-smooth {

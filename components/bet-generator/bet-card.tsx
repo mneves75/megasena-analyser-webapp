@@ -52,7 +52,7 @@ export function BetCard({ bet, index, className }: BetCardProps) {
             </div>
             <p className="text-sm text-muted-foreground">
               {pt.betGenerator.betCard.costLabel}:{' '}
-              <span className="font-medium text-foreground">{formatCurrency(bet.cost)}</span>
+              <span className="font-medium tabular-nums text-foreground">{formatCurrency(bet.cost)}</span>
             </p>
           </div>
 

@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowLeft, BarChart3, Sparkles, FileText, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { FileText, AlertTriangle } from 'lucide-react';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
@@ -43,43 +40,8 @@ export default function TermsPage(): React.JSX.Element {
   return (
     <>
       <JsonLd data={generateFAQSchema(termsFaqs)} />
-      <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur" aria-label="Navegacao do dashboard">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="min-w-0 truncate text-lg font-bold font-title sm:text-2xl">
-              {pt.app.name}
-            </Link>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button asChild variant="ghost">
-                <Link href="/dashboard/statistics" aria-label={pt.nav.statistics}>
-                  <BarChart3 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{pt.nav.statistics}</span>
-                </Link>
-              </Button>
-              <Button asChild variant="default">
-                <Link href="/dashboard/generator" aria-label={pt.nav.generator}>
-                  <Sparkles className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{pt.nav.generator}</span>
-                </Link>
-              </Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="container mx-auto flex-1 px-4 py-8">
-        <div className="mb-6">
-          <Button variant="ghost" asChild>
-            <Link href="/dashboard" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              {pt.nav.backToDashboard}
-            </Link>
-          </Button>
-        </div>
-
-        <article className="mx-auto max-w-3xl space-y-6 break-words leading-7 [&_a]:text-primary [&_a]:underline-offset-2 [&_a:hover]:underline [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
+      <div className="container mx-auto px-4 py-8">
+        <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
           <div className="flex items-center gap-3 mb-6">
             <FileText className="h-8 w-8 text-primary" />
             <h1 className="mb-0">{pt.terms.title}</h1>
@@ -170,7 +132,6 @@ export default function TermsPage(): React.JSX.Element {
             </p>
           </div>
         </article>
-      </div>
       </div>
     </>
   );

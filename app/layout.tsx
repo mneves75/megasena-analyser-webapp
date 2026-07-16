@@ -7,6 +7,7 @@ import { Footer } from '@/components/footer';
 import { StorageDisclosure } from '@/components/storage-disclosure';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeScript } from '@/components/theme-script';
+import { SiteHeader } from '@/components/site-header';
 import { MultiJsonLd } from '@/components/seo/json-ld';
 import {
   generateOrganizationSchema,
@@ -136,6 +137,7 @@ export default async function RootLayout({
         </a>
         <MultiJsonLd schemas={schemas} nonce={nonce} />
         <ThemeProvider defaultTheme="system">
+          <SiteHeader />
           <main id="main-content" className="flex-1">{children}</main>
           <Footer />
           <StorageDisclosure />

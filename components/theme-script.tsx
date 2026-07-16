@@ -30,5 +30,14 @@ export function ThemeScript({ nonce }: { nonce?: string | null | undefined }): R
     `var e=document.documentElement;e.classList.remove('light','dark');e.classList.add(t);` +
     `}catch(e){}})();`;
 
-  return <script nonce={nonce ?? undefined} dangerouslySetInnerHTML={{ __html: js }} />;
+  // The browser strips the `nonce` attribute from the DOM after using it, so the
+  // client-rendered script has `nonce=""` while the server sent `nonce="..."`.
+  // That mismatch is expected and harmless; suppress the hydration warning.
+  return (
+    <script
+      nonce={nonce ?? undefined}
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{ __html: js }}
+    />
+  );
 }
