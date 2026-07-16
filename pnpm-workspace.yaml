@@ -1,0 +1,24 @@
+packages:
+  - '.'
+# Layout achatado (npm-like): necessário porque o runtime é Bun, o ESLint do Next
+# resolve peers implícitos e o Dockerfile copia node_modules entre stages.
+nodeLinker: hoisted
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+# Pins de segurança contra vulnerabilidades transitivas (ver docs/SECURITY.md,
+# "Overrides de dependências"). Migrados do package.json "overrides" (formato
+# npm/Bun), que o pnpm ignora silenciosamente.
+overrides:
+  '@babel/core': '>=7.29.1'
+  ajv: 6.14.0
+  baseline-browser-mapping: 2.10.9
+  brace-expansion: '>=1.1.13 <2'
+  caniuse-lite: 1.0.30001792
+  flatted: 3.4.2
+  js-yaml: '>=4.3.0 <5'
+  minimatch: 3.1.4
+  picomatch: '>=2.3.2'
+  postcss: '>=8.5.10'
+  rollup: 4.59.0
+  ws: '>=8.21.0'
