@@ -1,8 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowLeft, BarChart3, FileCheck, Mail, ShieldCheck, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { FileCheck, Mail, ShieldCheck } from 'lucide-react';
 import { RightsRequestTemplate } from '@/components/privacy/rights-request-template';
 import { pt } from '@/lib/i18n';
 import { BASE_URL as baseUrl } from '@/lib/constants';
@@ -25,43 +22,8 @@ const PRIVACY_CHANNEL = pt.privacyRights.channelValue;
 
 export default function PrivacyRightsPage(): React.JSX.Element {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-background via-background to-primary/5">
-      <nav className="border-b bg-card/50 backdrop-blur" aria-label="Navegação do dashboard">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="min-w-0 truncate text-lg font-bold font-title sm:text-2xl">
-              {pt.app.name}
-            </Link>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button asChild variant="ghost">
-                <Link href="/dashboard/statistics" aria-label={pt.nav.statistics}>
-                  <BarChart3 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{pt.nav.statistics}</span>
-                </Link>
-              </Button>
-              <Button asChild variant="default">
-                <Link href="/dashboard/generator" aria-label={pt.nav.generator}>
-                  <Sparkles className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{pt.nav.generator}</span>
-                </Link>
-              </Button>
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="container mx-auto flex-1 px-4 py-8">
-        <div className="mb-6">
-          <Button variant="ghost" asChild>
-            <Link href="/privacy" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              {pt.nav.backToPrivacy}
-            </Link>
-          </Button>
-        </div>
-
-        <article className="mx-auto max-w-3xl space-y-6 break-words leading-7 [&_a]:text-primary [&_a]:underline-offset-2 [&_a:hover]:underline [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
+    <div className="container mx-auto px-4 py-8">
+      <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
           <div className="mb-4 flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 text-primary" />
             <h1 className="mb-0">{pt.privacyRights.title}</h1>
@@ -150,8 +112,7 @@ export default function PrivacyRightsPage(): React.JSX.Element {
             <h2 className="mb-2 text-lg font-semibold">{pt.privacyRights.legalRefTitle}</h2>
             <p className="text-sm text-muted-foreground">{pt.privacyRights.legalRefBody}</p>
           </section>
-        </article>
-      </div>
+      </article>
     </div>
   );
 }

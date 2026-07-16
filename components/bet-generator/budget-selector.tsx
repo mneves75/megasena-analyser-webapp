@@ -64,7 +64,7 @@ export function BudgetSelector({
               pattern="[0-9]*"
               aria-invalid={hasBudgetError ? 'true' : undefined}
               aria-errormessage={hasBudgetError ? errorId : undefined}
-              className="pl-10 text-lg font-semibold"
+              className="pl-10 text-lg font-semibold tabular-nums"
               placeholder={pt.betGenerator.budget.placeholder}
             />
           </div>
@@ -86,7 +86,8 @@ export function BudgetSelector({
                 variant={value === preset ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handlePresetClick(preset)}
-                className="transition-smooth"
+                aria-pressed={value === preset}
+                className="tabular-nums transition-smooth"
               >
                 {formatCurrency(preset)}
               </Button>
@@ -101,7 +102,7 @@ export function BudgetSelector({
               <span className="text-sm text-muted-foreground">
                 {pt.betGenerator.budget.selectedBudget}
               </span>
-              <span className="text-xl font-bold text-foreground">
+              <span className="text-xl font-bold tabular-nums text-foreground">
                 {formatCurrency(value)}
               </span>
             </div>

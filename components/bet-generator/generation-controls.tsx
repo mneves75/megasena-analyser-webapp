@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentType } from 'react';
+import { useRef, type ComponentType, type KeyboardEvent } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 import {
   BarChart3,
+  Check,
   Dices,
   FileText,
   Flame,
@@ -52,6 +53,59 @@ const MODE_ICONS = {
   [BET_GENERATION_MODE.MULTIPLE_ONLY]: BarChart3,
 } satisfies Record<BetGenerationMode, IconComponent>;
 
+/**
+ * Roving-tabindex keyboard handler for an ARIA radiogroup: arrows move selection
+ * and focus, Home/End jump to the ends. Only the checked radio is tabbable.
+ */
+function rovingKeyDown<T extends string>(
+  event: KeyboardEvent<HTMLButtonElement>,
+  index: number,
+  values: readonly T[],
+  refs: React.MutableRefObject<Array<HTMLButtonElement | null>>,
+  onChange: (value: T) => void,
+): void {
+  let nextIndex: number | null = null;
+
+  switch (event.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      nextIndex = (index + 1) % values.length;
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      nextIndex = (index - 1 + values.length) % values.length;
+      break;
+    case 'Home':
+      nextIndex = 0;
+      break;
+    case 'End':
+      nextIndex = values.length - 1;
+      break;
+    default:
+      return;
+  }
+
+  const nextValue = values[nextIndex];
+  if (nextValue === undefined) return;
+
+  event.preventDefault();
+  onChange(nextValue);
+  refs.current[nextIndex]?.focus();
+}
+
+const SELECTED_TILE = 'border-primary bg-primary/10';
+const IDLE_TILE = 'border-border bg-card hover:border-primary/60 hover:bg-accent/40';
+const TILE_BASE =
+  'relative rounded-lg border-2 transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+
+function SelectedCheck() {
+  return (
+    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <Check aria-hidden className="h-3 w-3" />
+    </span>
+  );
+}
+
 export function GenerationControls({
   strategy,
   mode,
@@ -60,13 +114,19 @@ export function GenerationControls({
   onGenerate,
   isGenerating = false,
   disabled = false,
-  className
+  className,
 }: GenerationControlsProps) {
+  const strategyRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const modeRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const strategyValues = pt.betGenerator.strategies.map((s) => s.value as BetStrategy);
+  const modeValues = pt.betGenerator.modes.map((m) => m.value as BetGenerationMode);
+
   return (
     <Card className={cn('transition-smooth hover:shadow-glow', className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5" />
+          <Sparkles aria-hidden className="h-5 w-5" />
           {pt.betGenerator.controls.title}
         </CardTitle>
         <CardDescription>{pt.betGenerator.controls.description}</CardDescription>
@@ -74,105 +134,103 @@ export function GenerationControls({
       <CardContent className="space-y-6">
         {/* Strategy Selection */}
         <div className="space-y-3">
-          <Label className="text-base">{pt.betGenerator.controls.strategyLabel}</Label>
+          <Label className="text-base" id="strategy-label">
+            {pt.betGenerator.controls.strategyLabel}
+          </Label>
           <div
-            className="grid grid-cols-2 md:grid-cols-5 gap-2"
+            className="grid grid-cols-2 gap-2 md:grid-cols-5"
             role="radiogroup"
-            aria-label={pt.betGenerator.controls.strategyLabel}
+            aria-labelledby="strategy-label"
           >
-            {pt.betGenerator.strategies.map(({ value, label, description }) => {
-              const Icon = STRATEGY_ICONS[value as BetStrategy];
+            {pt.betGenerator.strategies.map(({ value, label, description }, index) => {
+              const typedValue = value as BetStrategy;
+              const Icon = STRATEGY_ICONS[typedValue];
+              const selected = strategy === typedValue;
               return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onStrategyChange(value)}
-                disabled={disabled}
-                role="radio"
-                aria-checked={strategy === value}
-                className={cn(
-                  'relative flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-smooth hover:scale-105',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                  strategy === value
-                    ? 'border-primary bg-primary/10 shadow-glow'
-                    : 'border-border bg-card hover:border-primary/50'
-                )}
-              >
-                <Icon aria-hidden className="h-6 w-6 mb-1 text-foreground" />
-                <span className="text-sm font-medium text-foreground">{label}</span>
-                <span className="text-xs text-muted-foreground text-center mt-1">
-                  {description}
-                </span>
-                {strategy === value && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </button>
-            );
+                <button
+                  key={value}
+                  ref={(el) => {
+                    strategyRefs.current[index] = el;
+                  }}
+                  type="button"
+                  onClick={() => onStrategyChange(typedValue)}
+                  onKeyDown={(e) =>
+                    rovingKeyDown(e, index, strategyValues, strategyRefs, onStrategyChange)
+                  }
+                  disabled={disabled}
+                  role="radio"
+                  aria-checked={selected}
+                  tabIndex={selected ? 0 : -1}
+                  className={cn(
+                    TILE_BASE,
+                    'flex flex-col items-center justify-center p-4 text-center',
+                    selected ? SELECTED_TILE : IDLE_TILE,
+                  )}
+                >
+                  <Icon aria-hidden className="mb-1 h-6 w-6 text-foreground" />
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <span className="mt-1 text-xs text-muted-foreground">{description}</span>
+                  {selected && <SelectedCheck />}
+                </button>
+              );
             })}
           </div>
         </div>
 
         {/* Mode Selection */}
         <div className="space-y-3">
-          <Label className="text-base">{pt.betGenerator.controls.modeLabel}</Label>
+          <Label className="text-base" id="mode-label">
+            {pt.betGenerator.controls.modeLabel}
+          </Label>
           <div
-            className="grid grid-cols-1 md:grid-cols-2 gap-3"
+            className="grid grid-cols-1 gap-3 md:grid-cols-2"
             role="radiogroup"
-            aria-label={pt.betGenerator.controls.modeLabel}
+            aria-labelledby="mode-label"
           >
-            {pt.betGenerator.modes.map(({ value, label, description }) => {
-              const Icon = MODE_ICONS[value as BetGenerationMode];
+            {pt.betGenerator.modes.map(({ value, label, description }, index) => {
+              const typedValue = value as BetGenerationMode;
+              const Icon = MODE_ICONS[typedValue];
+              const selected = mode === typedValue;
               return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onModeChange(value)}
-                disabled={disabled}
-                role="radio"
-                aria-checked={mode === value}
-                className={cn(
-                  'relative flex items-start gap-3 p-4 rounded-lg border-2 text-left transition-smooth hover:scale-105',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                  mode === value
-                    ? 'border-primary bg-primary/10 shadow-glow'
-                    : 'border-border bg-card hover:border-primary/50'
-                )}
-              >
-                <Icon aria-hidden className="h-6 w-6 mt-0.5 text-muted-foreground" />
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{label}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{description}</div>
-                </div>
-                {mode === value && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+                <button
+                  key={value}
+                  ref={(el) => {
+                    modeRefs.current[index] = el;
+                  }}
+                  type="button"
+                  onClick={() => onModeChange(typedValue)}
+                  onKeyDown={(e) => rovingKeyDown(e, index, modeValues, modeRefs, onModeChange)}
+                  disabled={disabled}
+                  role="radio"
+                  aria-checked={selected}
+                  tabIndex={selected ? 0 : -1}
+                  className={cn(
+                    TILE_BASE,
+                    'flex items-start gap-3 p-4 text-left',
+                    selected ? SELECTED_TILE : IDLE_TILE,
+                  )}
+                >
+                  <Icon aria-hidden className="mt-0.5 h-6 w-6 text-muted-foreground" />
+                  <div className="flex-1">
+                    <div className="font-medium text-foreground">{label}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{description}</div>
                   </div>
-                )}
-              </button>
-            );
+                  {selected && <SelectedCheck />}
+                </button>
+              );
             })}
           </div>
         </div>
 
         {/* Info Box */}
-        <div className="p-4 rounded-lg bg-muted/30 border border-border/50 flex gap-3">
-          <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-muted-foreground space-y-1">
+        <div className="flex gap-3 rounded-lg border border-border/50 bg-muted/30 p-4">
+          <Info aria-hidden className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+          <div className="space-y-1 text-sm text-muted-foreground">
             <p>
               <strong className="text-foreground">{pt.betGenerator.controls.infoTitle}:</strong>{' '}
               {pt.betGenerator.controls.infoOptimized}
             </p>
-            <p>
-              {pt.betGenerator.controls.infoBalanced}
-            </p>
+            <p>{pt.betGenerator.controls.infoBalanced}</p>
           </div>
         </div>
 
@@ -182,16 +240,16 @@ export function GenerationControls({
           disabled={disabled || isGenerating}
           aria-busy={isGenerating}
           size="lg"
-          className="w-full h-14 text-lg font-semibold transition-smooth hover:scale-105 hover:shadow-glow"
+          className="h-14 w-full text-lg font-semibold transition-smooth hover:shadow-glow"
         >
           {isGenerating ? (
             <>
-              <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
               {pt.betGenerator.controls.generating}
             </>
           ) : (
             <>
-              <Play className="w-5 h-5 mr-2" />
+              <Play aria-hidden className="mr-2 h-5 w-5" />
               {pt.betGenerator.controls.generate}
             </>
           )}

@@ -87,7 +87,7 @@ export function BetList({ result, className }: BetListProps) {
                 <Wallet className="w-4 h-4" />
                 <span className="text-sm">{pt.betGenerator.summary.totalCost}</span>
               </div>
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-bold tabular-nums text-foreground">
                 {formatCurrencyValue(result.totalCost)}
               </span>
             </div>
@@ -99,7 +99,7 @@ export function BetList({ result, className }: BetListProps) {
                 <span className="text-sm">{pt.betGenerator.summary.utilization}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold tabular-nums text-foreground">
                   {formatPercentageValue(result.budgetUtilization)}
                 </span>
                 {result.budgetUtilization !== null && result.budgetUtilization >= 95 && (
@@ -116,7 +116,7 @@ export function BetList({ result, className }: BetListProps) {
                 <Target className="w-4 h-4" />
                 <span className="text-sm">{pt.betGenerator.summary.uniqueNumbers}</span>
               </div>
-              <span className="text-2xl font-bold text-foreground">
+              <span className="text-2xl font-bold tabular-nums text-foreground">
                 {result.totalNumbers}
               </span>
             </div>
@@ -124,7 +124,7 @@ export function BetList({ result, className }: BetListProps) {
             {/* Remaining Budget */}
             <div className="flex flex-col gap-1">
               <span className="text-sm text-muted-foreground">{pt.betGenerator.summary.remaining}</span>
-              <span className="text-2xl font-bold text-muted-foreground">
+              <span className="text-2xl font-bold tabular-nums text-muted-foreground">
                 {formatCurrencyValue(result.remainingBudget)}
               </span>
             </div>
@@ -205,11 +205,10 @@ export function BetList({ result, className }: BetListProps) {
                   variant={currentPage === page ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => handlePageClick(page)}
+                  aria-current={currentPage === page ? 'page' : undefined}
                   className={cn(
-                    'min-w-[2.5rem] transition-smooth',
-                    currentPage === page
-                      ? 'shadow-glow'
-                      : 'hover:scale-105'
+                    'min-w-[2.5rem] tabular-nums transition-smooth',
+                    currentPage === page ? 'shadow-glow' : 'hover:scale-105'
                   )}
                 >
                   {page}
@@ -233,7 +232,7 @@ export function BetList({ result, className }: BetListProps) {
 
       {/* Page Info */}
       {totalPages > 1 && (
-        <div className="text-center text-sm text-muted-foreground">
+        <div className="text-center text-sm tabular-nums text-muted-foreground">
           {pt.betGenerator.summary.pageInfoPrefix} {startIndex + 1}{' '}
           {pt.betGenerator.summary.pageInfoMiddle}{' '}
           {Math.min(endIndex, result.bets.length)} {pt.betGenerator.summary.pageInfoSuffix}{' '}
