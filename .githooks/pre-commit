@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Versioned pre-commit hook: local secret scanning with gitleaks.
+#
+# ACTIVATION (run once per clone; this is intentionally NOT done automatically):
+#
+#   git config core.hooksPath .githooks
+#
+# The hook is a no-op fail-open when gitleaks is not installed, so contributors
+# without the tool can still commit. To get protection, install gitleaks:
+#
+#   brew install gitleaks        # macOS
+#   # or see https://github.com/gitleaks/gitleaks#installing
+#
+# Behavior:
+#   - Scans only STAGED changes (gitleaks protect --staged), no network needed.
+#   - --redact keeps any matched secret out of the terminal output.
+#   - Blocks the commit (exit 1) when a secret is detected.
+
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not installed; skipping secret scan." >&2
+  echo "pre-commit: install it to enable staged secret scanning (https://github.com/gitleaks/gitleaks)." >&2
+  exit 0
+fi
+
+if ! gitleaks protect --staged --redact; then
+  echo "pre-commit: gitleaks found potential secrets in staged changes; commit blocked." >&2
+  echo "pre-commit: remove/rotate the secret, or if it is a false positive add a gitleaks allowlist entry." >&2
+  exit 1
+fi
+
+exit 0
