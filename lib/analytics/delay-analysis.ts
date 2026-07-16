@@ -126,9 +126,9 @@ export class DelayAnalysisEngine {
     return results.sort((a, b) => b.delayDraws - a.delayDraws);
   }
 
-  getDelayDistribution(): Array<{ category: string; count: number }> {
-    const delays = this.getNumberDelays();
-    
+  getDelayDistribution(
+    delays: DelayStats[] = this.getNumberDelays()
+  ): Array<{ category: string; count: number }> {
     const distribution = {
       recent: 0,
       normal: 0,

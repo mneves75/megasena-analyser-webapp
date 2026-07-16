@@ -30,13 +30,55 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('pt-BR').format(value);
 }
 
+function parseIsoDate(date: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) {
+    throw new Error(`Invalid draw date: ${date}`);
+  }
+
+  const [, yearText, monthText, dayText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== day
+  ) {
+    throw new Error(`Invalid draw date: ${date}`);
+  }
+
+  return parsed;
+}
+
+export function toIsoDate(date: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    parseIsoDate(date);
+    return date;
+  }
+
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
+  if (!match) {
+    throw new Error(`Invalid draw date: ${date}`);
+  }
+
+  const [, day, month, year] = match;
+  const isoDate = `${year}-${month}-${day}`;
+  parseIsoDate(isoDate);
+  return isoDate;
+}
+
 export function formatDate(date: string): string {
   return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'long',
-  }).format(new Date(date));
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(parseIsoDate(date));
 }
 
 export function formatPercentage(value: number, decimals: number = 1): string {
   return `${value.toFixed(decimals)}%`;
 }
-
