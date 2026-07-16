@@ -141,12 +141,14 @@ Não execute rewrite de histórico enquanto a rotação da credencial não estiv
 
 ## Overrides de dependências
 
-Os overrides em `package.json` existem para manter `bun audit` limpo contra vulnerabilidades transitivas enquanto os pacotes ascendentes ainda não resolvem versões seguras.
+Os overrides em `pnpm-workspace.yaml` (chave `overrides`) existem para manter `pnpm audit` limpo contra vulnerabilidades transitivas enquanto os pacotes ascendentes ainda não resolvem versões seguras. O campo `overrides` top-level do `package.json` (formato npm/Bun) é ignorado silenciosamente pelo pnpm — nunca declare pins lá.
 
 Overrides atuais de segurança:
 
+- `@babel/core`
 - `brace-expansion`
 - `flatted`
+- `js-yaml`
 - `picomatch`
 - `postcss`
 - `ws`
@@ -154,6 +156,6 @@ Overrides atuais de segurança:
 Remova um override apenas quando:
 
 1. o pacote ascendente resolver versão segura sem override;
-2. `bun install` atualizar o `bun.lock` sem reintroduzir a versão vulnerável;
-3. `bun audit` continuar retornando `No vulnerabilities found`;
+2. `pnpm install` atualizar o `pnpm-lock.yaml` sem reintroduzir a versão vulnerável;
+3. `pnpm audit` continuar retornando `No known vulnerabilities found`;
 4. `bun run lint`, `bun x tsc --noEmit`, `bun run test -- --run`, `bun run build` e `bun run test:e2e` passarem.

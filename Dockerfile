@@ -11,12 +11,14 @@
 #   3. Build image:             docker build -t megasena-analyser .
 # ============================================================================
 
-FROM oven/bun:1.3.14-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /deps
 
-COPY package.json bun.lock bunfig.toml ./
-RUN bun install --production --frozen-lockfile
+# pnpm gerencia dependências (nodeLinker: hoisted gera node_modules plano,
+# copiável para a imagem de runtime Bun). corepack respeita packageManager.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 FROM oven/bun:1.3.14-alpine AS runtime
 
@@ -37,7 +39,8 @@ COPY --chown=bun:bun public ./public
 COPY --chown=bun:bun server.ts ./server.ts
 COPY --chown=bun:bun lib ./lib
 COPY --chown=bun:bun package.json ./package.json
-COPY --chown=bun:bun bun.lock ./bun.lock
+COPY --chown=bun:bun pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --chown=bun:bun pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --chown=bun:bun bunfig.toml ./bunfig.toml
 COPY --chown=bun:bun tsconfig.json ./tsconfig.json
 

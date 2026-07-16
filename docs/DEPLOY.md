@@ -45,16 +45,16 @@ Este repositório não possui workflow automático de staging nem endpoint de st
 Não reutilize o alvo de produção como staging por inferência. Se o SSH ou o alvo remoto não estiver disponível, limite a entrega a preparar e validar o artefato local:
 
 ```bash
-bun install --frozen-lockfile
+pnpm install --frozen-lockfile
 bun run lint
 bun x tsc --noEmit
 bun run test -- --run
-bun audit
+pnpm audit
 bun run build
 bun run test:e2e
 bun run dist:standalone
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-staging-deploy.tar.gz --no-mac-metadata \
-  dist/standalone/ public/ server.ts lib/ package.json bun.lock bunfig.toml tsconfig.json \
+  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
   scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
 docker build -t megasena-analyser-app:staging-local .
 ```
@@ -69,7 +69,7 @@ Antes de empacotar uma release, rode os gates locais:
 bun run lint
 bun x tsc --noEmit
 bun run test -- --run
-bun audit
+pnpm audit
 bun run build
 bun run test:e2e
 ```
@@ -77,7 +77,7 @@ bun run test:e2e
 ### 1. Build local
 
 ```bash
-bun install --frozen-lockfile
+pnpm install --frozen-lockfile
 bun run build
 ```
 
@@ -102,7 +102,7 @@ No macOS, desabilite resource forks para evitar arquivos `._*` dentro do tarball
 
 ```bash
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
-  dist/standalone/ public/ server.ts lib/ package.json bun.lock bunfig.toml tsconfig.json \
+  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
   scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
 ```
 
@@ -271,11 +271,11 @@ Quando o acesso voltar:
 
 1. Recrie o tarball a partir de um build local limpo:
    ```bash
-   bun install --frozen-lockfile
+   pnpm install --frozen-lockfile
    bun run build
    bun run dist:standalone
    COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
-     dist/standalone/ public/ server.ts lib/ package.json bun.lock bunfig.toml tsconfig.json \
+     dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
      scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
    ```
 2. Envie o tarball para o diretório de compose no servidor.
