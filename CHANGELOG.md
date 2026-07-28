@@ -7,6 +7,16 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-07-28
+
+### Fixed
+
+- Contraste WCAG AA nos tokens `--primary` e `--destructive`. O Lighthouse apontava três nós abaixo de 4,5:1 (CTA do hero, botão do aviso de privacidade e a nota do rodapé). Os dois tokens são usados tanto como **superfície** (`bg-primary`/`bg-destructive` com texto claro) quanto como **texto** (`text-primary` em cards, `text-destructive` no rodapé), exigências que puxam em direções opostas — escurecer o token corrigia os botões e quebrava o texto. Resolvido por tema: no claro `--primary` 38% → 34% (4,81 sobre texto branco); no escuro `--primary` 44% → 52% e `--destructive` 44% → 60%, ambos pareados com foreground escuro (6,42 e 5,08 como texto; 6,73 e 4,83 como superfície). Acessibilidade medida: 96 → 100, com `color-contrast` aprovado nos dois esquemas de cor.
+
+### Notes
+
+- Auditoria Lighthouse do build de produção, servido localmente sem CDN: performance 95 / acessibilidade 100 / boas práticas 100 / SEO 100 (tema claro) e 93 / 100 / 100 / 100 (escuro). Servido através da Cloudflare, o mesmo build mede 61 / 96 / 81 / 100: o script `/cdn-cgi/challenge-platform/.../main.js` (JavaScript Detections) consome ~4,3 s de execução — contra 0,2 s de todo o JavaScript da aplicação — e é a origem das três APIs depreciadas que derrubam "boas práticas". Elevar a produção acima de 95 depende de desativar esse recurso no painel da Cloudflare, não de mudanças no código.
+
 ## [1.10.0] - 2026-07-28
 
 ### Added
