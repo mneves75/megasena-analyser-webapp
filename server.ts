@@ -11,7 +11,7 @@ import './lib/log-sink.runtime';
 import { runMigrations, closeDatabase } from './lib/db';
 import { StatisticsEngine } from './lib/analytics/statistics';
 import { BetGenerator } from './lib/analytics/bet-generator';
-import { BET_GENERATION_MODE } from './lib/constants';
+import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from './lib/constants';
 import { DelayAnalysisEngine } from './lib/analytics/delay-analysis';
 import { DecadeAnalysisEngine } from './lib/analytics/decade-analysis';
 import { TimeSeriesEngine } from './lib/analytics/time-series';
@@ -703,7 +703,7 @@ const apiHandlers: Record<
       const body = trendsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
         const timeSeriesEngine = new TimeSeriesEngine();
         const data = timeSeriesEngine.getFrequencyTimeSeries(canonicalNumbers, period);
-        return JSON.stringify({ data, numbers: canonicalNumbers, period });
+        return { data, numbers: canonicalNumbers, period };
       });
 
       const payload = JSON.parse(body) as { data: unknown; numbers: number[]; period: string };
@@ -780,6 +780,29 @@ const apiHandlers: Record<
         strategy = 'balanced',
         mode = BET_GENERATION_MODE.OPTIMIZED,
       } = parseResult.data;
+
+      if (
+        mode === BET_GENERATION_MODE.OPTIMIZED &&
+        budget > BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET
+      ) {
+        ctx.audit = {
+          event: 'bets.generate_requested',
+          metadata: {
+            validationError: true,
+            reason: 'optimized_budget_too_high',
+            budget,
+            maxBudget: BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET,
+          },
+        };
+        return createErrorResponse(
+          ctx,
+          `Orçamento otimizado limitado a R$ ${BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET.toLocaleString(
+            'pt-BR'
+          )},00. Use outro modo para valores maiores.`,
+          null,
+          400
+        );
+      }
 
       ctx.audit = {
         event: 'bets.generate_requested',

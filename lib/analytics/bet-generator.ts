@@ -276,6 +276,14 @@ export class BetGenerator {
       );
     }
 
+    if (mode === BET_GENERATION_MODE.OPTIMIZED && budget > BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET) {
+      throw new Error(
+        `Orçamento otimizado limitado a R$ ${BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET.toLocaleString(
+          'pt-BR'
+        )},00. Use outro modo para valores maiores.`
+      );
+    }
+
     // Pre-fetch candidate pools once for this generation session
     const pools = this.fetchCandidatePools();
 

@@ -159,13 +159,49 @@ test('/api/trends returns 200 and canonicalizes cache keys across permuted input
   const first = await api.get('/api/trends?numbers=3,1,2&period=yearly');
   expect(first.status()).toBe(200);
   const firstBody = await first.json();
-  expect(firstBody.numbers).toEqual([1, 2, 3]);
+  expect(firstBody.numbers).toEqual([3, 1, 2]);
   expect(firstBody.period).toBe('yearly');
 
   const second = await api.get('/api/trends?numbers=2,3,1&period=yearly');
   expect(second.status()).toBe(200);
   const secondBody = await second.json();
-  expect(secondBody).toEqual(firstBody);
+  // Cache key is canonical, so the underlying data is shared; each caller still
+  // receives its own requested ordering.
+  expect(secondBody.numbers).toEqual([2, 3, 1]);
+  expect(secondBody.data).toEqual(firstBody.data);
+  expect(secondBody.period).toBe(firstBody.period);
+
+  await api.dispose();
+});
+
+test('Bun API rejects optimized bets above the DoS-safe budget cap', async () => {
+  const api = await request.newContext({
+    baseURL: `http://127.0.0.1:${process.env.API_PORT ?? '3201'}`,
+    extraHTTPHeaders: {
+      Origin: 'https://megasena-analyzer.com.br',
+    },
+  });
+
+  const response = await api.post('/api/generate-bets', {
+    data: {
+      budget: 50000,
+      mode: 'optimized',
+    },
+  });
+
+  expect(response.status()).toBe(400);
+  const body = await response.json();
+  expect(body.success).toBe(false);
+  expect(body.error).toContain('R$ 20.000,00');
+  expect(body.error).toMatch(/Use outro modo/i);
+
+  const allowed = await api.post('/api/generate-bets', {
+    data: {
+      budget: 20000,
+      mode: 'optimized',
+    },
+  });
+  expect(allowed.status()).toBe(200);
 
   await api.dispose();
 });
