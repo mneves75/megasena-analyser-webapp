@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { BetGenerator } from '@/lib/analytics/bet-generator';
 import { runMigrations } from '@/lib/db';
-import { MEGASENA_CONSTANTS, BET_GENERATION_MODE, BET_PRICES } from '@/lib/constants';
+import {
+  MEGASENA_CONSTANTS,
+  BET_GENERATION_MODE,
+  BET_GENERATION_LIMITS,
+  BET_PRICES,
+} from '@/lib/constants';
 
 describe('BetGenerator', () => {
   beforeAll(() => {
@@ -149,5 +154,43 @@ describe('BetGenerator.buildOptimizedBetSizes (via OPTIMIZED mode)', () => {
     // Coverage saturated at the 60-number cap.
     expect(Math.min(60, totalNumbers(result.bets))).toBe(60);
     expect(result.bets).toHaveLength(10);
+  });
+
+  it('stays cheap at the optimized budget cap', () => {
+    // The (betCount, coverage) -> Map<cost> formulation allocated ~106 MB and
+    // took ~75 ms here, enough for concurrent requests to OOM the 384 MB
+    // production container. The (coverage, cost) formulation with bet count as
+    // the minimized value is bounded by 61 * (budget/6 + 1) typed-array cells.
+    const generator = new BetGenerator();
+    const budget = BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET;
+
+    const startedAt = performance.now();
+    const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.OPTIMIZED, 'random');
+    const elapsedMs = performance.now() - startedAt;
+
+    // Generous bound: the measured cost is ~1 ms, so this only trips on a
+    // regression back to a formulation that scales with the bet-count dimension.
+    expect(elapsedMs).toBeLessThan(400);
+
+    // Objective unchanged: spend as close to the budget as the R$6 unit allows,
+    // saturate coverage, and stay inside the bet-count ceiling.
+    expect(result.totalCost).toBe(19998);
+    expect(result.remainingBudget).toBe(2);
+    expect(Math.min(60, totalNumbers(result.bets))).toBe(60);
+    expect(result.bets.length).toBeLessThanOrEqual(
+      BET_GENERATION_LIMITS.MAX_BETS_PER_GENERATION
+    );
+  });
+
+  it('rejects an optimized budget above the documented cap', () => {
+    const generator = new BetGenerator();
+
+    expect(() =>
+      generator.generateOptimizedBets(
+        BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET + 1,
+        BET_GENERATION_MODE.OPTIMIZED,
+        'random'
+      )
+    ).toThrow(/Orçamento otimizado limitado/);
   });
 });
