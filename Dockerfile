@@ -18,9 +18,13 @@ WORKDIR /deps
 # pnpm gerencia dependências (nodeLinker: hoisted gera node_modules plano,
 # copiável para a imagem de runtime Bun). corepack respeita packageManager.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 RUN corepack enable && pnpm install --prod --frozen-lockfile
 
-FROM oven/bun:1.3.14-alpine AS runtime
+# Canary runtime pinned by immutable image digest. The matching Bun revision lives in
+# .bun-canary-revision; update both together when intentionally bumping canary.
+# Digest verified: 2026-07-28 / 1.4.0-canary.1+6c12afd8e
+FROM oven/bun:canary-alpine@sha256:1b10d05749adb6d5835e7584c0c5099384417d4329a35f9721eaabc9d4ea6e00 AS runtime
 
 WORKDIR /app
 
@@ -41,6 +45,7 @@ COPY --chown=bun:bun lib ./lib
 COPY --chown=bun:bun package.json ./package.json
 COPY --chown=bun:bun pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --chown=bun:bun pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --chown=bun:bun patches ./patches
 COPY --chown=bun:bun bunfig.toml ./bunfig.toml
 COPY --chown=bun:bun tsconfig.json ./tsconfig.json
 
