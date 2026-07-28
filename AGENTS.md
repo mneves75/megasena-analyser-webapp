@@ -11,6 +11,30 @@ pattern statistics, and generates budget-constrained betting strategies. It make
 predictions — lottery outcomes are random and the UI must state this. Deploy target:
 self-hosted Docker (Next.js standalone + a Bun API server) behind Traefik/Cloudflare.
 
+## Model routing & review discipline
+
+This repo is public and ships production code; choose the model tier to match the
+risk and nature of the task. The global `CLAUDE.md` governs cross-project behavior;
+this section adds the project-specific default:
+
+- **Claude Opus 5** — deep reasoning, complex debugging, architecture decisions,
+  security audits, performance investigations, and multi-file refactors.
+- **Claude Fable 5** — user-facing design, copy/UX, API design, narrative docs, and
+  any review where taste and clarity matter more than raw reasoning depth.
+- **Claude Sonnet 5 / Opus 4.x** — everyday implementation and verification when
+  Opus 5 is unnecessary; never Haiku for shipped code.
+- **Codex (`gpt-5.6`)** remains the default backend/heavy executor for well-specified,
+  self-contained work (see global routing). Use it unless the task is frontend/visual
+  or requires the reasoning depth that Opus 5 provides.
+
+For code review and closeout, prefer the bundled `autoreview` skill (Codex default).
+Add an Opus 5 or Fable 5 panel only for high-stakes releases, security-sensitive
+changes, or when the diff is user-facing and taste is the primary risk.
+
+When in doubt, bias toward the smarter model for the decision at hand; cost is a
+tie-breaker, not a ceiling. Intelligence > taste > cost when they conflict for
+anything that ships.
+
 ## Runtime & package manager (non-obvious)
 
 - **Bun is the runtime** (`>=1.3.14`); scripts and servers run under `bun`. The app
