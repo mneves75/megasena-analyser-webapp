@@ -44,9 +44,10 @@
   `chown -R ubuntu:ubuntu db logs` (ubuntu is UID/GID 1000, matching the `bun` user).
 - The production `docker-compose.yml` was accidentally overwritten by the local dev
   compose during rsync; restored from the private deployment repo pattern.
-- The Cloudflare edge **replaces** the app's `Permissions-Policy` with a smaller set
-  (no `usb=()`, no `interest-cohort=()`) and is what adds HSTS to HTML responses —
-  `proxy.ts` deliberately does not emit it. `security:csp:edge` still passes because the
+- The edge **replaces** the app's `Permissions-Policy` with a smaller set (no `usb=()`,
+  no `interest-cohort=()`) and is what adds HSTS to HTML responses — `proxy.ts`
+  deliberately does not emit it. Note the HSTS is NOT from Cloudflare: the zone's
+  `security_header` setting reads `enabled: false`, so Traefik is adding it. `security:csp:edge` still passes because the
   nonce CSP survives.
 - Port 3000 is usually taken by another project on this machine. Verify the app in a
   **production** build on a free port: `PORT=3100 API_PORT=3210 bun run start`.
