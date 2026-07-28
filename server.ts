@@ -68,7 +68,7 @@ const APP_VERSION = resolveAppVersion();
 
 // Input validation schemas
 const generateBetsSchema = z.object({
-  budget: z.number().min(6).max(1000000),
+  budget: z.number().min(BET_GENERATION_LIMITS.MIN_BUDGET).max(BET_GENERATION_LIMITS.MAX_BUDGET),
   strategy: z.enum(['random', 'hot_numbers', 'cold_numbers', 'balanced', 'fibonacci', 'custom']).optional(),
   mode: z.enum(['simple_only', 'multiple_only', 'mixed', 'optimized']).optional(),
 });

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { BUDGET_PRESETS } from '@/lib/constants';
+import { BET_GENERATION_LIMITS, BUDGET_PRESETS } from '@/lib/constants';
 import { cn, formatCurrency } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 
@@ -14,20 +14,24 @@ interface BudgetSelectorProps {
   onChange: (value: number) => void;
   min?: number;
   max?: number;
+  /** Adds the optimizer-specific hint when the value exceeds that mode's cap. */
+  isOptimizedMode?: boolean;
   className?: string;
 }
 
 export function BudgetSelector({
   value,
   onChange,
-  min = 6,
-  max = 100000,
+  min = BET_GENERATION_LIMITS.MIN_BUDGET,
+  max = BET_GENERATION_LIMITS.MAX_BUDGET,
+  isOptimizedMode = false,
   className
 }: BudgetSelectorProps) {
   const [inputValue, setInputValue] = useState(value.toString());
   const numericInputValue = inputValue.length > 0 ? Number.parseInt(inputValue, 10) : 0;
-  const hasBudgetError =
-    inputValue.length > 0 && (numericInputValue < min || numericInputValue > max);
+  const isBelowMin = inputValue.length > 0 && numericInputValue < min;
+  const isAboveMax = inputValue.length > 0 && numericInputValue > max;
+  const hasBudgetError = isBelowMin || isAboveMax;
   const errorId = 'budget-input-error';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,8 +74,16 @@ export function BudgetSelector({
           </div>
           {hasBudgetError && (
             <p id={errorId} className="text-sm text-destructive">
-              {pt.betGenerator.budget.minValueLabel} {formatCurrency(min)}
-              {numericInputValue > max ? `; limite: ${formatCurrency(max)}` : ''}
+              {isAboveMax ? (
+                <>
+                  {pt.betGenerator.budget.maxValueLabel} {formatCurrency(max)}
+                  {isOptimizedMode ? ` — ${pt.betGenerator.budget.optimizedLimitHint}` : ''}
+                </>
+              ) : (
+                <>
+                  {pt.betGenerator.budget.minValueLabel} {formatCurrency(min)}
+                </>
+              )}
             </p>
           )}
         </div>

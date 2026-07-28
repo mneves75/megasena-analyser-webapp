@@ -31,6 +31,12 @@ interface GenerationControlsProps {
   onModeChange: (mode: BetGenerationMode) => void;
   onGenerate: () => void;
   isGenerating?: boolean;
+  /**
+   * Blocks generation only. The strategy and mode radiogroups stay interactive:
+   * the budget ceiling depends on the selected mode, so disabling the mode
+   * selector alongside the button would strand the user on an over-budget
+   * message that tells them to pick a different mode.
+   */
   disabled?: boolean;
   className?: string;
 }
@@ -157,7 +163,6 @@ export function GenerationControls({
                   onKeyDown={(e) =>
                     rovingKeyDown(e, index, strategyValues, strategyRefs, onStrategyChange)
                   }
-                  disabled={disabled}
                   role="radio"
                   aria-checked={selected}
                   tabIndex={selected ? 0 : -1}
@@ -200,7 +205,6 @@ export function GenerationControls({
                   type="button"
                   onClick={() => onModeChange(typedValue)}
                   onKeyDown={(e) => rovingKeyDown(e, index, modeValues, modeRefs, onModeChange)}
-                  disabled={disabled}
                   role="radio"
                   aria-checked={selected}
                   tabIndex={selected ? 0 : -1}
