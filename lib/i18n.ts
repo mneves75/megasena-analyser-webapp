@@ -212,6 +212,9 @@ export const pt = {
       quickValues: 'Valores Rápidos',
       selectedBudget: 'Orçamento selecionado:',
       minValueLabel: 'Valor mínimo:',
+      maxValueLabel: 'Valor máximo:',
+      optimizedLimitHint:
+        'No modo Otimizado o limite é de R$ 20.000. Para valores maiores, escolha outro modo de geração.',
       placeholder: '0,00',
       currencyPrefix: 'R$',
     },
@@ -305,6 +308,7 @@ export const pt = {
       copy: 'Copiar',
       copied: 'Copiado',
       strategyLabel: 'Estratégia',
+      strategyFallbackSuffix: '(complementada)',
       numbersLabel: 'números',
       typeSimple: 'Simples',
       typeMultiplePrefix: 'Múltipla',
@@ -786,12 +790,17 @@ const STRATEGY_LABELS: Record<string, string> = {
 
 export function formatStrategyLabel(strategy: string): string {
   const isMultiple = strategy.startsWith('multiple_');
+  // A bet marked `_fallback` could not be filled from the chosen strategic pool
+  // and was completed from all 60 numbers. Hiding that marker presented a random
+  // set as if it honoured the selected strategy, so it is now shown.
+  const isFallback = strategy.endsWith('_fallback');
   const sanitized = strategy
     .replace(/^multiple_/, '')
     .replace(/_fallback$/, '')
     .trim();
 
-  const label = STRATEGY_LABELS[sanitized] ?? sanitized.replace(/_/g, ' ');
+  const base = STRATEGY_LABELS[sanitized] ?? sanitized.replace(/_/g, ' ');
+  const label = isFallback ? `${base} ${pt.betGenerator.betCard.strategyFallbackSuffix}` : base;
   if (isMultiple) {
     return `${pt.betGenerator.betCard.typeMultiplePrefix} ${label}`;
   }
