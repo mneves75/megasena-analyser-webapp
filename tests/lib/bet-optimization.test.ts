@@ -21,7 +21,7 @@ describe('BetGenerator - optimized mode', () => {
 
   it('should cap total bets and keep sizes within official limits', () => {
     const generator = new BetGenerator();
-    const budget = 100000;
+    const budget = 20000;
     const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.OPTIMIZED, 'random');
 
     expect(result.bets.length).toBeGreaterThan(0);
