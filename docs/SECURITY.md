@@ -99,7 +99,14 @@ Metadados operacionais de logs e auditoria usam sanitização recursiva comparti
 
 ## Confiança em proxy
 
-`TRUST_PROXY_HEADERS=true` permite usar `CF-Connecting-IP`, `X-Real-IP` ou `X-Forwarded-For` para rate limiting/auditoria, mas somente quando o peer do socket é loopback ou está explicitamente listado em `TRUSTED_PROXY_IPS`, e o valor encaminhado é um IP válido. A precedência privilegia headers normalmente sobrescritos pelo edge (`CF-Connecting-IP`, depois `X-Real-IP`) antes de cair para `X-Forwarded-For`. O proxy reverso deve remover ou sobrescrever headers de IP recebidos do cliente; não preserve cadeias arbitrárias de `X-Forwarded-For`. Na API Bun, `X-Forwarded-Proto` segue o mesmo limite para cálculo de requisição segura/HSTS. No `proxy.ts` do Next, HSTS e `upgrade-insecure-requests` não são emitidos porque o middleware não valida o peer de socket e o standalone pode derivar `request.url` de headers encaminhados. HSTS para TLS terminado deve ser aplicado no reverse proxy. Se a API Bun for exposta diretamente à internet, headers de proxy enviados pelo cliente são ignorados.
+`TRUST_PROXY_HEADERS=true` permite usar `CF-Connecting-IP`, `X-Real-IP` ou `X-Forwarded-For` para rate limiting/auditoria, mas somente quando o peer do socket é loopback ou está explicitamente listado em `TRUSTED_PROXY_IPS`, e o valor encaminhado é um IP válido. A precedência privilegia headers normalmente sobrescritos pelo edge (`CF-Connecting-IP`, depois `X-Real-IP`) antes de cair para `X-Forwarded-For`. O proxy reverso deve remover ou sobrescrever headers de IP recebidos do cliente; não preserve cadeias arbitrárias de `X-Forwarded-For`.
+
+**Invariante operacional (obrigatória).** Todo header dessa lista precisa ser reescrito pelo edge público a cada requisição. Um header apenas repassado é controlado pelo cliente — e como ele vira a chave do rate limit e o hash de cliente auditado, quem alcançar a origem diretamente ganha um bucket novo por requisição e passa dos 100 req/min. `CF-Connecting-IP` é definido pela Cloudflare e não é reescrito por um Traefik/Nginx intermediário. Portanto, escolha uma das duas garantias:
+
+1. a origem só é alcançável através da Cloudflare (firewall restrito às faixas Cloudflare ou Cloudflare Tunnel); **ou**
+2. defina `TRUSTED_CLIENT_IP_HEADER` com o **único** header que o seu próprio proxy reescreve (por exemplo `x-real-ip`). Com essa variável definida, a aplicação ignora os demais headers de IP.
+
+Sem uma das duas, o rate limit é contornável por quem descobrir o endereço da origem. O impacto é de disponibilidade — os dados servidos são públicos e não há autenticação —, mas a mitigação é barata e deve ser aplicada. Na API Bun, `X-Forwarded-Proto` segue o mesmo limite para cálculo de requisição segura/HSTS. No `proxy.ts` do Next, HSTS e `upgrade-insecure-requests` não são emitidos porque o middleware não valida o peer de socket e o standalone pode derivar `request.url` de headers encaminhados. HSTS para TLS terminado deve ser aplicado no reverse proxy. Se a API Bun for exposta diretamente à internet, headers de proxy enviados pelo cliente são ignorados.
 
 Chamadas server-side internas podem definir `INTERNAL_API_SECRET` (mínimo de 32 caracteres) para não consumir a cota pública de `/api/*`. O bypass só é aceito quando o peer é loopback e o segredo compartilhado bate em comparação constante; headers enviados por clientes públicos não são suficientes.
 
@@ -138,6 +145,13 @@ Use este fluxo antes de qualquer rewrite de histórico:
 11. Publique aviso de manutenção para consumidores do repositório pedindo re-clone ou rebase a partir do novo histórico. Não preserve refs antigas no remoto.
 
 Não execute rewrite de histórico enquanto a rotação da credencial não estiver concluída. Rewrite reduz exposição futura, mas não revoga uma credencial já publicada.
+
+## Fixação de dependências de build
+
+As GitHub Actions externas são fixadas pelo SHA completo do commit, com a versão original preservada em comentário.
+As imagens base do Docker são fixadas pelo digest multiarch `sha256`.
+Para atualizar uma Action, escolha e audite a versão, resolva sua tag com `gh api`, e altere o SHA e o comentário juntos.
+Para atualizar uma imagem, use `docker buildx imagetools inspect`, fixe o digest do índice multiarch e valide o build antes da revisão.
 
 ## Overrides de dependências
 

@@ -4,23 +4,30 @@ description: Project structure and where things live
 ---
 ## Project Structure Guide
 
-- `app/`: Next.js App Router routes (start with `app/dashboard/page.tsx`).
-- `components/`: Reusable UI using Tailwind tokens and shadcn variants.
+- `app/`: Next.js App Router **pages only** — `app/dashboard/page.tsx` plus nested
+  `app/dashboard/statistics/` and `app/dashboard/generator/`, and `about/`,
+  `privacy/`, `terms/`. There is no `app/api/`.
+- `server.ts`: standalone Bun server owning every `/api/*` endpoint (port 3201).
+  `next.config.js` `rewrites()` forwards `/api/:path*` to it. New endpoints go here.
+- `proxy.ts`: the Next.js 16 middleware (Next renamed `middleware` → `proxy`); mints
+  the per-request CSP nonce and sets page security headers.
+- `components/`: reusable UI using Tailwind semantic tokens and shadcn variants.
 - `lib/`:
-  - `lib/analytics/`: Analytics logic
-  - `lib/api/`: Caixa API helpers
-  - `lib/constants.ts`: Shared constants and design tokens
-- `sqlite/`: SQL migrations (`sqlite/migrations`) and generated types (`sqlite/types`).
-- `scripts/`: Bun CLIs like `scripts/pull-draws.ts` for ingest/seeding.
-- `tests/`: Vitest (`tests/lib`) and Playwright (`tests/app`) with MSW mocks in `tests/mocks`.
-- `docs/`: Product prompts. Update when feature scope shifts:
-  - [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md)
-  - [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md)
-  - [docs/SYSTEM_PROMPT.md](mdc:docs/SYSTEM_PROMPT.md)
+  - `lib/analytics/`: statistics engines and `bet-generator.ts`
+  - `lib/api/`: CAIXA API client and response cache
+  - `lib/security/`: CSP, HTTP guards, IP pseudonymization
+  - `lib/db.ts`: `bun:sqlite` layer; `lib/constants.ts`: shared config (incl. `BASE_URL`)
+- `db/`: SQLite database plus `db/migrations/*.sql`.
+- `scripts/`: Bun CLIs such as `scripts/pull-draws.ts` for ingest/seeding.
+- `tests/`: Vitest (`tests/lib`, `tests/components`, `tests/scripts`) and Playwright
+  (`tests/app`).
+- `docs/`: DEPLOY, SECURITY, PRIVACY, LGPD-COMPLIANCE, TERMS, INCIDENT-RESPONSE.
+  Update `docs/PRIVACY.md` and `docs/LGPD-COMPLIANCE.md` whenever data collection,
+  retention, or purpose changes.
 
 Constraints:
-- Keep changes minimal and targeted to explicitly requested areas.
-- Place new Cursor rules under `.cursor/rules` with `.mdc` extension.
-- Prefer absolute paths rooted at the workspace when invoking tools.
-- Always attach @docs/SYSTEM_PROMPT.md to every chat.
 
+- Read `AGENTS.md` first; it is the canonical agent contract for this repo.
+- Keep changes minimal and targeted to explicitly requested areas.
+- Place new Cursor rules under `.cursor/rules` with the `.mdc` extension.
+- User-facing copy is pt-BR.

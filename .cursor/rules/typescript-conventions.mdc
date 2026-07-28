@@ -15,5 +15,7 @@ description: TypeScript coding conventions for this repo
 - Match existing formatting; prefer multi-line for readability over dense one-liners.
 - Avoid unsafe casts and `any`. Prefer precise types.
 
-Related: [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md)
+- Avoid `any`; prefer `unknown` plus a type guard. Validate external input with Zod.
+
+Related: `AGENTS.md` (canonical agent contract).
 

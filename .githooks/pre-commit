@@ -1,34 +1,83 @@
 #!/bin/sh
 #
-# Versioned pre-commit hook: local secret scanning with gitleaks.
+# Versioned pre-commit hook: staged secret scan (gitleaks) + React Doctor.
 #
 # ACTIVATION (run once per clone; this is intentionally NOT done automatically):
 #
 #   git config core.hooksPath .githooks
 #
-# The hook is a no-op fail-open when gitleaks is not installed, so contributors
-# without the tool can still commit. To get protection, install gitleaks:
-#
-#   brew install gitleaks        # macOS
-#   # or see https://github.com/gitleaks/gitleaks#installing
+# This is the single hook path for the repo. Do not point core.hooksPath at a
+# second directory: Git honours only one, so a competing hook dir silently
+# disables everything here.
 #
 # Behavior:
-#   - Scans only STAGED changes (gitleaks protect --staged), no network needed.
-#   - --redact keeps any matched secret out of the terminal output.
-#   - Blocks the commit (exit 1) when a secret is detected.
+#   - gitleaks: scans only STAGED changes (gitleaks protect --staged), no network
+#     needed; --redact keeps any matched secret out of the terminal output.
+#     Blocks the commit (exit 1) when a secret is detected. Fail-open no-op when
+#     gitleaks is not installed, so contributors without the tool can still commit:
+#       brew install gitleaks        # macOS
+#       # or see https://github.com/gitleaks/gitleaks#installing
+#   - react-doctor: scans staged files and blocks on `error` findings only
+#     (warnings never block). Fail-open no-op when no runner is available.
 
 set -eu
 
-if ! command -v gitleaks >/dev/null 2>&1; then
-  echo "pre-commit: gitleaks not installed; skipping secret scan." >&2
-  echo "pre-commit: install it to enable staged secret scanning (https://github.com/gitleaks/gitleaks)." >&2
-  exit 0
-fi
+run_gitleaks() {
+  if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "pre-commit: gitleaks not installed; skipping secret scan." >&2
+    echo "pre-commit: install it to enable staged secret scanning (https://github.com/gitleaks/gitleaks)." >&2
+    return 0
+  fi
 
-if ! gitleaks protect --staged --redact; then
-  echo "pre-commit: gitleaks found potential secrets in staged changes; commit blocked." >&2
-  echo "pre-commit: remove/rotate the secret, or if it is a false positive add a gitleaks allowlist entry." >&2
-  exit 1
-fi
+  if ! gitleaks protect --staged --redact; then
+    echo "pre-commit: gitleaks found potential secrets in staged changes; commit blocked." >&2
+    echo "pre-commit: remove/rotate the secret, or if it is a false positive add a gitleaks allowlist entry." >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# react-doctor hook start
+react_doctor_scan_staged_files() {
+  if [ -x "./node_modules/.bin/react-doctor" ]; then
+    "./node_modules/.bin/react-doctor" --staged --blocking error
+    return
+  fi
+
+  if command -v react-doctor >/dev/null 2>&1; then
+    react-doctor --staged --blocking error
+    return
+  fi
+
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm dlx react-doctor@latest --staged --blocking error
+    return
+  fi
+
+  if command -v npx >/dev/null 2>&1; then
+    npx --yes react-doctor@latest --staged --blocking error
+    return
+  fi
+
+  printf '%s\n' "react-doctor: command not found; skipping staged scan."
+}
+
+run_react_doctor() {
+  react_doctor_output=$(mktemp "${TMPDIR:-/tmp}/react-doctor-hook.XXXXXX")
+  if react_doctor_scan_staged_files > "$react_doctor_output" 2>&1; then
+    rm -f "$react_doctor_output"
+    return 0
+  fi
+
+  cat "$react_doctor_output" >&2
+  rm -f "$react_doctor_output"
+  printf '%s\n' "React Doctor found staged errors; commit blocked." "Run react-doctor --staged --blocking error to inspect and fix." >&2
+  return 1
+}
+# react-doctor hook end
+
+run_gitleaks || exit 1
+run_react_doctor || exit 1
 
 exit 0
