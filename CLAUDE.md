@@ -17,3 +17,5 @@ LGPD-COMPLIANCE) → `CHANGELOG.md` (single source for versions/history).
 - Hot-path reminder: this is Bun-runtime + `bun:sqlite` (not Node); pnpm manages deps.
   The CSP nonce path and the in-memory test DB swap are the two facts most likely to
   trip up a change — see AGENTS.md before touching security headers or `lib/db.ts`.
+- Model routing: see `AGENTS.md` § "Model routing & review discipline". Default to
+  Opus 5 for deep code/architecture/security work and Fable 5 for UI/copy/design.
