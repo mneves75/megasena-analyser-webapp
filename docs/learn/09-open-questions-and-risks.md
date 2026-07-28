@@ -18,7 +18,7 @@ ruins. Aqui está a lista do que verificar antes de confiar.
 | --- | --- | --- | --- |
 | 1 | `CLAUDE.md`: "Framer Motion para micro-interações" | Nenhum import de `framer-motion` em `app/`/`components/`/`lib/` | Remover a dependência ou usá-la; atualizar doc |
 | 2 | `package.json` lista `date-fns` | Nenhum import; datas via `Intl` em `lib/utils.ts` | Remover `date-fns` |
-| 3 | `.cursor/rules`: "Supabase keys", "Caixa tokens" | Não há Supabase nem token CAIXA no código | Atualizar/remover regra obsoleta |
+| 3 | ~~`.cursor/rules`: "Supabase keys", "Caixa tokens"~~ | Não há Supabase nem token CAIXA no código | **Resolvido em 2026-07-28**: as seis regras `.mdc` foram reescritas para o stack real (Bun + `bun:sqlite`, pnpm, Next.js 16) |
 | 4 | `migrations 004/005`: comentário "soft delete via deleted_at" | `006` removeu `deleted_at`; retenção é hard delete | Corrigir comentários das migrações |
 | 5 | `.env.example`: `AUDIT_RETENTION_DAYS=400` | `prune-audit-logs.ts` usa default 365 e não lê a env | Alinhar default do CLI à env |
 | 6 | Suposição de que `app/api/*` contém handlers | `app/api/*` são **diretórios vazios** (sem arquivos — verificado); a API real é `server.ts` via rewrite | Remover os diretórios vazios ou documentar que são placeholders |

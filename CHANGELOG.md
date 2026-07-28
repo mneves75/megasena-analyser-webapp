@@ -7,6 +7,42 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-07-28
+
+### Added
+
+- Script `scripts/backfill-prizes.ts` (`bun run db:backfill-prizes`): reidrata as colunas de premiação dos sorteios já armazenados, em lotes commitados e de forma retomável, sem reescrever as demais colunas como um `db:pull` completo faria.
+
+### Fixed
+
+- **Premiação histórica ausente no banco.** Apenas 10 dos 3.036 sorteios tinham `prize_sena` e 65 tinham `prize_quina`: a carga histórica é anterior ao tratamento atual de `listaRateioPremio`/`faixa` e nunca foi refeita. Toda a seção "Prêmios" de `/dashboard/statistics` exibia `R$ 0,00M` e correlação `0x`. Após o backfill: 657 sorteios com prêmio de sena e 3.036 com prêmio de quina.
+- `PrizeCorrelationEngine` passa a expor `prizeDrawCount` e a excluir das listas os números que nunca apareceram em um sorteio premiado — média indefinida não é média baixa e não deve ser classificada como "abaixo da média".
+- `lib/analytics/pair-analysis.ts`: a frequência esperada de um par usava probabilidades por posição (`(freq/(sorteios*6))² * sorteios * 15`) e subestimava a expectativa em ~2,03x, inflando toda correlação exibida. Agora usa as marginais por sorteio com correção de amostragem sem reposição, reduzindo-se exatamente ao valor hipergeométrico `sorteios * (6/60) * (5/59)` sob histórico uniforme.
+- `getStreakSets` ordenava os números frios pela intensidade decrescente, devolvendo os *menos* frios sob o título "Baixa Intensidade".
+- Estratégias "Quentes"/"Frias" viravam aleatórias após a primeira aposta: a seleção era determinística (`slice(0, n)`), toda tentativa seguinte colidia na deduplicação e o fallback caía nos 60 números — mantendo o rótulo original. A seleção agora varia dentro do pool escolhido e o rótulo `_fallback` deixou de ser ocultado pela UI.
+- Apostas do modo Otimizado agora preferem números ainda não usados no plano, fazendo a cobertura real coincidir com a planejada (R$100 balanceado: 40 → 60 dezenas distintas).
+- Gerador: o formulário oferecia até R$ 100.000 enquanto a API recusa o modo Otimizado acima de R$ 20.000, e `actions.ts` descartava a mensagem do servidor em favor de `response.statusText` — o usuário via "Bad Request". O teto agora acompanha o modo selecionado, a mensagem pt-BR do servidor é preservada e os seletores de estratégia/modo continuam clicáveis com orçamento inválido (antes ficavam desabilitados junto com o botão, contradizendo a instrução de trocar de modo).
+- `lib/db.ts`: uma migração registrada como `failed` era reexecutada e o `INSERT` de sucesso violava a restrição `UNIQUE(name)`, deixando o banco preso permanentemente. O sucesso agora é gravado por upsert dentro da mesma transação.
+- `lib/api/api-fetch.ts`: a checagem que deveria impedir o envio de `INTERNAL_API_SECRET` para fora da máquina comparava a origem do destino com a origem derivada do mesmo `API_HOST`, sendo sempre verdadeira. O segredo agora só acompanha destinos loopback; destinos externos geram `security.internal_secret_target_rejected`.
+- `lib/api/caixa-client.ts`: respostas da CAIXA passam por validação de schema (concurso, data, seis dezenas distintas entre 1 e 60, valores finitos não negativos) e exigem `numero === concurso solicitado`; falhas de validação não entram no retry.
+- `scripts/pull-draws.ts`: os caches derivados são reconstruídos antes do `COMMIT`, dentro da transação externa. Antes os sorteios eram commitados primeiro e uma falha na reconstrução deixava dados novos com caches antigos, com `/api/health` ainda saudável.
+- `scripts/backup-database.ts`: retenção padrão de 30 para 7 dias, alinhando o script à promessa pública de `docs/PRIVACY.md` e `docs/LGPD-COMPLIANCE.md`; variáveis validadas como inteiros positivos (`BACKUP_MAX_COUNT=-1` apagava até o backup recém-criado e ainda saía com sucesso); `DATABASE_PATH` passa a ser respeitado.
+- `components/theme-provider.tsx`: acessos ao `localStorage` protegidos por `try/catch` e valor persistido validado — em contextos que lançam `SecurityError` a exceção podia derrubar a raiz React.
+- `lib/api/caixa-client.ts`: o atraso progressivo entre requisições crescia 500ms a cada 100 sucessos sem teto, chegando a ~15s por requisição perto do concurso 3.000 e tornando uma recarga completa do histórico um trabalho de ~7 horas. Limitado por `PROGRESSIVE_DELAY_MAX`.
+
+### Security
+
+- `script-src-elem` passa a incluir `'strict-dynamic'`. Pela CSP3 a diretiva substitui `script-src` para elementos `<script>` sem fallback, então o `'self'` isolado admitia qualquer script same-origin sem nonce — estritamente mais permissivo que a política principal.
+- Nova variável `TRUSTED_CLIENT_IP_HEADER` fixa um único header de IP de cliente. Um header apenas repassado pelo edge é controlado pelo cliente e vira a chave do rate limit; com a origem alcançável fora da Cloudflare, valores forjados em `CF-Connecting-IP` criam um bucket novo por requisição. A invariante operacional está documentada em `docs/SECURITY.md`.
+- Todas as GitHub Actions externas fixadas por SHA de commit (com a tag em comentário) e o estágio `deps` do `Dockerfile` fixado pelo digest de `node:22-alpine`.
+
+### Changed
+
+- O programa dinâmico do modo Otimizado deixou de usar a quantidade de apostas como dimensão de estado, passando a minimizá-la dentro de um estado `(cobertura, custo)` em arrays tipados. No teto de R$ 20.000 o custo caiu de ~106 MB e ~75 ms para ~1 MB e ~1 ms por requisição — o limite do contêiner de produção é 384 MB, então duas requisições simultâneas podiam derrubá-lo. Os planos gerados permanecem idênticos em 3.199 dos 3.200 orçamentos testados; o único caso divergente é um empate com mesma cobertura, custo, número de apostas e total de dezenas.
+- Hook pre-commit unificado em `.githooks/pre-commit` (gitleaks + React Doctor). Havia dois diretórios de hooks concorrentes: `core.hooksPath` apontava para `.husky/_`, de modo que o scan de segredos versionado em `.githooks/` nunca rodava, e o wrapper do React Doctor engolia o código de saída. `.husky/` foi removido; ative com `git config core.hooksPath .githooks`.
+- Documentação de agentes corrigida: `AGENTS.md` descreve `app/dashboard/statistics/` e `app/dashboard/generator/` (antes listados como rotas de topo), registra que `/api/*` vive em `server.ts` (não há `app/api/`) e documenta `proxy.ts` como middleware do Next 16.
+- `.cursor/rules/*.mdc` reescritas: descreviam Supabase, `better-sqlite3`, Next.js 15, `bun install`, `sqlite/migrations` e docs `PROMPT*.md` inexistentes.
+
 ## [1.9.0-beta.1] - 2026-07-28
 
 ### Added

@@ -66,8 +66,15 @@ bun run build                # next build + assert-standalone-clean gate
 bun run start                # serve production stack locally
 bun run db:migrate           # apply SQLite migrations
 bun run db:pull              # pull historical draws from CAIXA
-bun run doctor               # React Doctor scan (error-blocking hook in .husky)
+bun run db:backfill-prizes   # re-hydrate prize columns on already-stored draws
+bun run doctor               # React Doctor scan (same check the pre-commit hook runs)
 ```
+
+**Pre-commit hook:** `.githooks/pre-commit` is the single versioned hook — staged
+gitleaks secret scan plus React Doctor (`--blocking error`; warnings never block).
+Both fail open when their tool is missing. Activate once per clone with
+`git config core.hooksPath .githooks`; never point `core.hooksPath` at a second
+directory, since Git honours only one and the other silently stops running.
 
 Security/ops helpers: `security:secrets`, `security:secrets:history` (redacted git
 history scan, fails on findings), `security:csp:edge` (verify edge did not replace app
@@ -79,13 +86,22 @@ changes.
 
 ## Architecture map
 
-- `app/` — Next.js App Router routes (`dashboard/`, `statistics/`, `generator/`).
+- `app/` — Next.js App Router pages only: `dashboard/` (with nested
+  `dashboard/statistics/` and `dashboard/generator/`), plus `about/`, `privacy/`,
+  `terms/`. There is **no** `app/api/` — see `server.ts` below.
+- `proxy.ts` — the Next.js 16 middleware (Next renamed `middleware` → `proxy`).
+  Mints the per-request CSP nonce, forwards it as the `x-nonce` request header, and
+  sets page security headers.
 - `lib/analytics/` — statistics engine + `bet-generator.ts` (DP bet-size optimizer).
 - `lib/api/caixa-client.ts` — CAIXA API client; `lib/db.ts` — SQLite layer.
 - `lib/constants.ts` — centralized config; `BASE_URL` lives here (never hardcode the
   domain in pages).
-- `server.ts` — Bun `/api/*` server; `scripts/` — Bun CLIs (pull-draws, migrate,
-  optimize-db, prune, security scans, deploy checks).
+- `server.ts` — standalone Bun server that owns **every** `/api/*` endpoint (port
+  3201). `next.config.js` `rewrites()` forwards `/api/:path*` to it, and
+  `scripts/dev.ts` boots both processes, waiting on `/api/health` before Next
+  starts. New endpoints go here, never in `app/`.
+- `scripts/` — Bun CLIs (pull-draws, migrate, optimize-db, prune, security scans,
+  deploy checks).
 - `db/` — SQLite DB + migrations. `tests/` — Vitest, mirrors source. `docs/` — specs,
   privacy/LGPD, deploy, security decision records.
 
@@ -110,7 +126,22 @@ changes.
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting
   (100 req/min/IP, incl. `/api/health`). `X-Forwarded-*` only trusted when
   `TRUST_PROXY_HEADERS=true` + loopback/`TRUSTED_PROXY_IPS`. Internal rate-limit bypass
-  needs a strong `INTERNAL_API_SECRET` + loopback peer.
+  needs a strong `INTERNAL_API_SECRET` + a **loopback** target — `API_HOST` must stay
+  loopback or the secret is withheld and SSR calls fall back to the public quota.
+- **Forwarded-IP trust is an ops contract, not just code.** The header chosen for the
+  client IP becomes the rate-limit key, so the public edge must rewrite it on every
+  request. `CF-Connecting-IP` is set by Cloudflare and is *not* rewritten by an
+  intermediate Traefik/Nginx: either restrict the origin to Cloudflare, or pin
+  `TRUSTED_CLIENT_IP_HEADER` to the single header your own proxy rewrites. See
+  `docs/SECURITY.md` → "Confiança em proxy".
+- **Prize data is a separate ingestion concern.** `db:pull` rewrites every column of
+  every contest; `db:backfill-prizes` only re-hydrates the prize columns and is the safe
+  option against a populated DB. The historical import predates the current
+  `listaRateioPremio`/`faixa` handling, so a DB restored from an old snapshot will show
+  `R$ 0,00` across the "Prêmios" section until it is backfilled.
+- **Optimized-mode budget is capped** at `BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET`
+  (R$ 20.000) and the client mirrors that ceiling per selected mode. Every other mode is
+  bounded by `MAX_BUDGET`; the API zod schema and the form read the same constants.
 - **Required prod secrets (names only):** `IP_HASH_SECRET` (≥32 chars; server exits if
   missing in production — pseudonymizes IPs via HMAC-SHA256, `lib/security/`).
   `IP_HASH_SECRET_AUTOGENERATE=true` is Playwright/E2E-only, never real deploy.

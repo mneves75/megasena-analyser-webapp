@@ -1,85 +1,110 @@
 # Mega-Sena Analyser Context
 
 ## Project Overview
-This is a professional Mega-Sena lottery analyzer built with Next.js 15, TypeScript, and SQLite. The application provides statistical analysis and intelligent bet generation based on historical data from the CAIXA API.
+
+Statistical analyzer for Brazil's Mega-Sena lottery, built with Next.js 16, React 19,
+TypeScript, and SQLite. It fetches historical draws from the official CAIXA API into a
+local database, runs frequency/pattern statistics, and generates budget-constrained
+betting strategies. It makes **no predictions** — lottery outcomes are random and the
+UI must say so. User-facing copy is pt-BR.
+
+`AGENTS.md` at the repo root is the canonical agent contract; this file is a summary.
 
 ## Architecture
-- **Framework**: Next.js 15 with App Router
-- **Database**: SQLite (better-sqlite3) with migration system
-- **Runtime**: Bun (preferred) or Node.js ≥20
-- **Styling**: Tailwind CSS with custom design system
-- **Type Safety**: Strict TypeScript throughout
+
+- **Framework**: Next.js 16 with App Router (`app/` holds pages only)
+- **API**: separate Bun server `server.ts` on port 3201 owns every `/api/*` route;
+  `next.config.js` `rewrites()` forwards to it. There is no `app/api/`.
+- **Middleware**: `proxy.ts` (Next 16 renamed `middleware` → `proxy`) mints the
+  per-request CSP nonce and sets page security headers
+- **Database**: SQLite via Bun's native `bun:sqlite` (not `better-sqlite3`), WAL mode,
+  migrations in `db/migrations/`
+- **Runtime**: Bun `>=1.3.14` only — the app will not run on Node.js
+- **Deps**: pnpm 11 (`pnpm-lock.yaml`); overrides live in `pnpm-workspace.yaml`
+- **Styling**: Tailwind CSS with a semantic-token design system
+- **Type Safety**: strict TypeScript throughout
 
 ## Key Modules
 
 ### Database (`lib/db.ts`)
-- Connection management with WAL mode
-- Migration runner
-- Thread-safe operations
+
+- Connection management with WAL mode, migration runner, prepared statements
+- Swaps to `InMemoryDatabase` under Vitest (`process.env.VITEST`)
 
 ### Analytics Engine (`lib/analytics/`)
-- `statistics.ts`: Frequency analysis and pattern detection
-- `bet-generator.ts`: Multiple strategy-based bet generation
+
+- `statistics.ts`: frequency analysis and pattern detection
+- `bet-generator.ts`: strategy-based bet generation + DP bet-size optimizer
+- Focused engines: delay, decade, pair, parity, prime, streak, sum, time-series,
+  prize-correlation
 
 ### API Layer (`lib/api/`)
-- `caixa-client.ts`: CAIXA API integration with retry logic
+
+- `caixa-client.ts`: CAIXA integration with retry and progressive rate limiting
+- `response-cache.ts`: contest-response cache keyed by draws version
+
+### Security (`lib/security/`)
+
+- `csp.ts` builds both the page CSP (nonce-based) and the API header set
+- `pseudonymize.ts` HMACs client IPs with `IP_HASH_SECRET`
 
 ### UI Components (`components/`)
-- shadcn/ui based components
-- Custom `LotteryBall` and `StatsCard` components
-- Design system tokens in globals.css
+
+- shadcn/ui based components plus custom `lottery-ball.tsx` and `stats-card.tsx`
+- Design tokens in `app/globals.css`
 
 ## Important Patterns
 
 ### Database Queries
-Always use prepared statements for safety:
+
+Always use prepared statements:
+
 ```typescript
 db.prepare('SELECT * FROM draws WHERE contest_number = ?').get(number)
 ```
 
+Batch large ingestions in a single transaction with rollback, and run
+`scripts/optimize-db.ts` after big pulls.
+
 ### Bet Generation Strategies
-- `random`: Pure random selection
-- `hot_numbers`: Based on frequency analysis
-- `cold_numbers`: Least frequent numbers
-- `balanced`: Mix of hot and cold
-- `fibonacci`: Mathematical sequence
+
+`BetStrategy` in `lib/analytics/bet-generator.types.ts`: `random`, `hot_numbers`,
+`cold_numbers`, `balanced`, `fibonacci`, `custom`.
 
 ### Design System
-- Use semantic tokens (e.g., `text-primary`, `bg-card`)
-- Never hardcode colors (e.g., `text-white`, `bg-blue-500`)
-- All tokens defined in `app/globals.css`
+
+- Use semantic tokens (`bg-background`, `text-foreground`, `bg-card`)
+- Never hardcode colors (`text-white`, `bg-blue-500`)
+- Edit `app/globals.css` / `tailwind.config.js` before touching components
 
 ## Common Tasks
 
 ### Add New Strategy
-1. Update `BetStrategy` type in `bet-generator.ts`
-2. Add case in `generateNumberSet` method
-3. Add to strategy list in generator page
 
-### Add Statistics
-1. Add method to `StatisticsEngine` class
-2. Update `getDrawStatistics` return type
-3. Display in dashboard or statistics page
+1. Extend `BetStrategy` in `lib/analytics/bet-generator.types.ts`
+2. Handle it in the generator in `lib/analytics/bet-generator.ts`
+3. Expose it in the generator UI and in the `server.ts` request schema
+
+### Add an API Endpoint
+
+Add it to `server.ts` with Zod validation — never to `app/`.
 
 ### Modify Schema
-1. Create new migration in `db/migrations/`
+
+1. Add a migration in `db/migrations/`
 2. Run `bun run db:migrate`
 3. Update TypeScript types as needed
 
-## Testing Guidelines
-- Unit tests in `tests/lib/`
-- Mock database for tests
-- Target ≥80% coverage
-- Run with `bun run test`
+## Testing
 
-## Performance Notes
-- Database uses WAL mode for concurrent reads
-- Number frequency cached in dedicated table
-- API calls rate-limited to 1 req/second
-- Use prepared statements for repeated queries
+- Vitest: `tests/lib/`, `tests/components/`, `tests/scripts/`; Playwright: `tests/app/`
+- 80% coverage thresholds over `components/**` and `lib/**` (`vitest.config.ts`)
+- `bun run test -- --run`
 
 ## Security Considerations
-- Never commit `.env` files
-- Database file excluded from git
-- API keys managed via environment variables
-- Input validation on all user inputs
+
+- Never commit `.env` files; the database file is git-ignored
+- `IP_HASH_SECRET` (≥32 chars) required in production — the server exits without it
+- Zod validation on every API input; rate limiting 100 req/min/IP
+- Audit/log retention hard-deletes rows by design (`audit:prune`, `log:prune`) — the
+  only sanctioned exception to soft-delete

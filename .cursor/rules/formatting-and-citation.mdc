@@ -20,5 +20,5 @@ description: Workspace formatting, markdown, and code citation rules
 - Never indent the opening/closing triple backticks.
 - Preserve existing indentation style and width in all edits; do not convert tabs/spaces.
 
-See also: [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md), [docs/PROMPT-MAIN.md](mdc:docs/PROMPT-MAIN.md), and [docs/SYSTEM_PROMPT.md](mdc:docs/SYSTEM_PROMPT.md).
+See also: `AGENTS.md` (canonical agent contract) and `CLAUDE.md`.
 
