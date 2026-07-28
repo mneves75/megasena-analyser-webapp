@@ -795,7 +795,14 @@ export function runMigrations(): void {
           
           // Record successful migration
           database
-            .prepare("INSERT INTO migrations (name, status) VALUES (?, 'success')")
+            .prepare(`
+              INSERT INTO migrations (name, status, error_message)
+              VALUES (?, 'success', NULL)
+              ON CONFLICT(name) DO UPDATE SET
+                status = 'success',
+                error_message = NULL,
+                applied_at = CURRENT_TIMESTAMP
+            `)
             .run(file);
           
           // Commit transaction
