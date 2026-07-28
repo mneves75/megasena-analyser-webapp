@@ -83,6 +83,10 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 COPY --chown=bun:bun scripts/start-docker.ts ./scripts/start-docker.ts
 COPY --chown=bun:bun scripts/check-production-freshness.ts ./scripts/check-production-freshness.ts
 COPY --chown=bun:bun scripts/check-edge-csp.ts ./scripts/check-edge-csp.ts
+# Operational data repair: re-hydrates prize columns on an already-populated
+# volume. Must run inside the container because the database lives in the volume,
+# not in the repository.
+COPY --chown=bun:bun scripts/backfill-prizes.ts ./scripts/backfill-prizes.ts
 
 USER bun
 
