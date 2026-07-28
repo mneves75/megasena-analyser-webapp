@@ -66,6 +66,17 @@
   the server; ship a prize-only SQL patch instead so server audit_logs/log_events
   survive.
 
+- **Cloudflare toggle names are a trap.** The script capping Lighthouse is
+  `cdn-cgi/challenge-platform/scripts/**jsd**/main.js` — `jsd` = **JavaScript
+  Detections**, which is a *separate* toggle from **Bot Fight Mode** under
+  Security → Bots. Turning off Bot Fight Mode alone does not remove it.
+  Verify from outside with no credentials:
+  `curl -sS "https://megasena-analyzer.com.br/?cb=$RANDOM" | grep -c challenge-platform`
+- Cloudflare API note: `/zones/{id}/settings` (56 keys) does **not** contain the bot
+  toggles; they live at `/zones/{id}/bot_management`, which needs the separate
+  `Zone → Bot Management → Edit` permission. A token with Zone:Read + Zone
+  Settings:Edit still gets 403 there.
+
 ## Next
 
 - Define a reachable staging target (the repo forbids inferring staging from the
