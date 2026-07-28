@@ -147,108 +147,107 @@ export class BetGenerator {
       )
       .sort((a, b) => a.costUnits - b.costUnits);
 
-    // Sparse DP over (betCount, coverage) keeping every reachable cost.  A
-    // single best plan per cell is insufficient: an intermediate-cost
-    // predecessor may be the only one that can afford a given next bet while
-    // still leaving enough budget to reach the same final coverage with fewer
-    // total bets.  We therefore store all non-dominated cost paths per state
-    // and prune only duplicate costs (keeping the variant with the highest
-    // raw totalNumbers in case coverage is already capped at 60).
-    type PlanNode = {
-      costUnits: number;
-      totalNumbers: number;
-      prevBetCount: number;
-      prevCoverage: number;
-      prevBetSize: number;
-      prevCost: number;
-    };
-
+    // DP over (coverage, cost) with the bet count as the MINIMIZED value rather
+    // than a third dimension. Coverage must stay in the state because capping it
+    // at 60 is what forces a plan like 3333 units to use 7 bets instead of the
+    // 6-bet plan that only reaches 54 numbers.
+    //
+    // The value stored per cell is the lexicographic pair
+    // (fewest bets, then most raw numbers), which is exactly the tie-break order
+    // the final selection applies, so a per-cell optimum stays globally optimal.
+    // Keeping bet count out of the state matters: the earlier (betCount,
+    // coverage) -> Map<cost> formulation allocated ~106 MB of plan objects at the
+    // R$20.000 cap, enough for a couple of concurrent requests to OOM the
+    // 384 MB production container.
     const MAX_COVERAGE = MEGASENA_CONSTANTS.MAX_NUMBER;
     const MAX_BETS = BetGenerator.MAX_BETS_PER_GENERATION;
+    const UNREACHABLE = -1;
 
-    const dp: Array<Array<Map<number, PlanNode>>> = Array.from(
-      { length: MAX_BETS + 1 },
-      () => Array.from({ length: MAX_COVERAGE + 1 }, () => new Map())
-    );
+    const width = budgetUnits + 1;
+    const cellCount = (MAX_COVERAGE + 1) * width;
+    const index = (coverage: number, cost: number): number => coverage * width + cost;
 
-    dp[0]![0]!.set(0, {
-      costUnits: 0,
-      totalNumbers: 0,
-      prevBetCount: -1,
-      prevCoverage: -1,
-      prevBetSize: 0,
-      prevCost: -1,
-    });
+    // minBets fits Int16 (capped at 200); totalNumbers fits Int16 (<= 200 * 20).
+    const minBets = new Int16Array(cellCount).fill(UNREACHABLE);
+    const maxTotalNumbers = new Int16Array(cellCount).fill(UNREACHABLE);
+    // Predecessor edge: the bet size chosen to enter this cell (0 = start cell).
+    const chosenSize = new Uint8Array(cellCount);
 
-    for (let betCount = 0; betCount < MAX_BETS; betCount++) {
+    minBets[index(0, 0)] = 0;
+    maxTotalNumbers[index(0, 0)] = 0;
+
+    // Cost strictly increases on every transition (every option costs >= 1 unit),
+    // so a single ascending pass over cost visits each cell after its predecessors.
+    for (let cost = 0; cost <= budgetUnits; cost++) {
       for (let coverage = 0; coverage <= MAX_COVERAGE; coverage++) {
-        const plans = dp[betCount]![coverage];
-        if (!plans || plans.size === 0) continue;
+        const from = index(coverage, cost);
+        const bets = minBets[from]!;
+        if (bets === UNREACHABLE || bets >= MAX_BETS) {
+          continue;
+        }
 
-        const sorted = Array.from(plans.entries()).sort((a, b) => a[0] - b[0]);
+        const totalNumbers = maxTotalNumbers[from]!;
 
         for (const option of options) {
-          for (const [cost, plan] of sorted) {
-            const nextCost = cost + option.costUnits;
-            if (nextCost > budgetUnits) break;
-
-            const nextTotalNumbers = plan.totalNumbers + option.numberCount;
-            const nextCoverage = Math.min(MAX_COVERAGE, nextTotalNumbers);
-            const nextMap = dp[betCount + 1]![nextCoverage]!;
-            const existing = nextMap.get(nextCost);
-            if (!existing || nextTotalNumbers > existing.totalNumbers) {
-              nextMap.set(nextCost, {
-                costUnits: nextCost,
-                totalNumbers: nextTotalNumbers,
-                prevBetCount: betCount,
-                prevCoverage: coverage,
-                prevBetSize: option.numberCount,
-                prevCost: cost,
-              });
-            }
+          const nextCost = cost + option.costUnits;
+          if (nextCost > budgetUnits) {
+            // options are sorted by ascending cost, so nothing cheaper follows.
+            break;
           }
-        }
-      }
-    }
 
-    let bestPlan: PlanNode | null = null;
-    let bestBetCount = -1;
-    let bestCoverage = -1;
+          const nextTotalNumbers = totalNumbers + option.numberCount;
+          const nextCoverage = Math.min(MAX_COVERAGE, nextTotalNumbers);
+          const to = index(nextCoverage, nextCost);
+          const nextBets = bets + 1;
+          const currentBets = minBets[to]!;
 
-    for (let betCount = 0; betCount <= MAX_BETS; betCount++) {
-      for (let coverage = 0; coverage <= MAX_COVERAGE; coverage++) {
-        const plans = dp[betCount]![coverage];
-        if (!plans) continue;
-
-        for (const plan of plans.values()) {
           if (
-            coverage > bestCoverage ||
-            (coverage === bestCoverage &&
-              (!bestPlan ||
-                plan.costUnits > bestPlan.costUnits ||
-                (plan.costUnits === bestPlan.costUnits &&
-                  (betCount < bestBetCount ||
-                    (betCount === bestBetCount &&
-                      plan.totalNumbers > bestPlan.totalNumbers)))))
+            currentBets === UNREACHABLE ||
+            nextBets < currentBets ||
+            (nextBets === currentBets && nextTotalNumbers > maxTotalNumbers[to]!)
           ) {
-            bestPlan = plan;
-            bestBetCount = betCount;
-            bestCoverage = coverage;
+            minBets[to] = nextBets;
+            maxTotalNumbers[to] = nextTotalNumbers;
+            chosenSize[to] = option.numberCount;
           }
         }
       }
     }
 
-    if (!bestPlan || bestBetCount <= 0) {
+    let bestCoverage = -1;
+    let bestCost = -1;
+
+    for (let coverage = MAX_COVERAGE; coverage >= 0; coverage--) {
+      for (let cost = budgetUnits; cost >= 0; cost--) {
+        if (minBets[index(coverage, cost)]! > 0) {
+          bestCoverage = coverage;
+          bestCost = cost;
+          break;
+        }
+      }
+      if (bestCoverage >= 0) {
+        break;
+      }
+    }
+
+    if (bestCoverage < 0 || bestCost < 0) {
       return [];
     }
 
     const sizes: number[] = [];
-    let currentPlan: PlanNode | null = bestPlan;
-    while (currentPlan && currentPlan.prevBetCount >= 0) {
-      sizes.push(currentPlan.prevBetSize);
-      const prevMap: Map<number, PlanNode> | undefined = dp[currentPlan.prevBetCount]![currentPlan.prevCoverage];
-      currentPlan = prevMap?.get(currentPlan.prevCost) ?? null;
+    let coverage = bestCoverage;
+    let cost = bestCost;
+    let totalNumbers = maxTotalNumbers[index(coverage, cost)]!;
+
+    while (cost > 0 || coverage > 0) {
+      const size = chosenSize[index(coverage, cost)]!;
+      if (size === 0) {
+        break;
+      }
+      sizes.push(size);
+      cost -= Math.round(this.toCents(this.getBetCost(size)) / costUnitCents);
+      totalNumbers -= size;
+      coverage = Math.min(MAX_COVERAGE, totalNumbers);
     }
 
     return sizes.reverse();
@@ -341,17 +340,18 @@ export class BetGenerator {
     );
     const bets: Bet[] = [];
     const seenSignatures = new Set<string>();
+    const usedNumbers = new Set<number>();
 
     for (let i = 0; i < maxBets; i++) {
-      const bet = this.generateUniqueBet(6, strategy, pools, seenSignatures);
+      const bet = this.generateUniqueBet(6, strategy, pools, seenSignatures, usedNumbers);
       if (bet) {
         bets.push({
           id: this.generateBetId(),
-          numbers: bet,
+          numbers: bet.numbers,
           cost: simpleBetCost,
           type: 'simple',
           numberCount: 6,
-          strategy,
+          strategy: this.labelFor(strategy, 6, bet.usedFallback),
         });
       }
     }
@@ -379,15 +379,22 @@ export class BetGenerator {
     }
 
     const seenSignatures = new Set<string>();
-    const numbers = this.generateUniqueBet(selectedNumberCount, strategy, pools, seenSignatures);
+    const usedNumbers = new Set<number>();
+    const bet = this.generateUniqueBet(
+      selectedNumberCount,
+      strategy,
+      pools,
+      seenSignatures,
+      usedNumbers
+    );
 
     const selectedCost = this.getBetCost(selectedNumberCount);
 
-    if (!numbers) {
+    if (!bet) {
       // Fallback to pure random if strategy failed
       return [{
         id: this.generateBetId(),
-        numbers: this.selectRandomFromPool(pools.all, selectedNumberCount),
+        numbers: this.selectRandomFromPool(pools.all, selectedNumberCount).sort((a, b) => a - b),
         cost: selectedCost,
         type: 'multiple',
         numberCount: selectedNumberCount,
@@ -397,11 +404,11 @@ export class BetGenerator {
 
     return [{
       id: this.generateBetId(),
-      numbers,
+      numbers: bet.numbers,
       cost: selectedCost,
       type: 'multiple',
       numberCount: selectedNumberCount,
-      strategy: `multiple_${strategy}`,
+      strategy: this.labelFor(strategy, selectedNumberCount, bet.usedFallback),
     }];
   }
 
@@ -412,6 +419,7 @@ export class BetGenerator {
   private generateMixedBets(budget: number, strategy: BetStrategy, pools: CandidatePool): Bet[] {
     const bets: Bet[] = [];
     const seenSignatures = new Set<string>();
+    const usedNumbers = new Set<number>();
     let remainingBudget = budget;
     const simpleBetCost = this.getBetCost(6);
     const minimumMultipleCost = this.getBetCost(7);
@@ -433,15 +441,21 @@ export class BetGenerator {
       }
 
       if (bestMultipleSize > 6) {
-        const numbers = this.generateUniqueBet(bestMultipleSize, strategy, pools, seenSignatures);
-        if (numbers) {
+        const bet = this.generateUniqueBet(
+          bestMultipleSize,
+          strategy,
+          pools,
+          seenSignatures,
+          usedNumbers
+        );
+        if (bet) {
           bets.push({
             id: this.generateBetId(),
-            numbers,
+            numbers: bet.numbers,
             cost: bestMultipleCost,
             type: 'multiple',
             numberCount: bestMultipleSize,
-            strategy: `multiple_${strategy}`,
+            strategy: this.labelFor(strategy, bestMultipleSize, bet.usedFallback),
           });
           remainingBudget -= bestMultipleCost;
         }
@@ -455,15 +469,15 @@ export class BetGenerator {
       remainingSlots
     );
     for (let i = 0; i < maxSimpleBets; i++) {
-      const numbers = this.generateUniqueBet(6, strategy, pools, seenSignatures);
-      if (numbers) {
+      const bet = this.generateUniqueBet(6, strategy, pools, seenSignatures, usedNumbers);
+      if (bet) {
         bets.push({
           id: this.generateBetId(),
-          numbers,
+          numbers: bet.numbers,
           cost: simpleBetCost,
           type: 'simple',
           numberCount: 6,
-          strategy,
+          strategy: this.labelFor(strategy, 6, bet.usedFallback),
         });
       }
     }
@@ -479,21 +493,24 @@ export class BetGenerator {
   private generateOptimizedMix(budget: number, strategy: BetStrategy, pools: CandidatePool): Bet[] {
     const bets: Bet[] = [];
     const seenSignatures = new Set<string>();
+    // Shared across the plan so each bet prefers numbers the earlier ones did not
+    // take, which is what turns the DP's planned coverage into real coverage.
+    const usedNumbers = new Set<number>();
     const optimizedSizes = this.buildOptimizedBetSizes(budget);
 
     for (const numberCount of optimizedSizes) {
-      const numbers = this.generateUniqueBet(numberCount, strategy, pools, seenSignatures);
-      if (!numbers) {
+      const bet = this.generateUniqueBet(numberCount, strategy, pools, seenSignatures, usedNumbers);
+      if (!bet) {
         continue;
       }
       const cost = this.getBetCost(numberCount);
       bets.push({
         id: this.generateBetId(),
-        numbers,
+        numbers: bet.numbers,
         cost,
         type: numberCount > 6 ? 'multiple' : 'simple',
         numberCount,
-        strategy: numberCount > 6 ? `multiple_${strategy}` : strategy,
+        strategy: this.labelFor(strategy, numberCount, bet.usedFallback),
       });
     }
 
@@ -501,16 +518,42 @@ export class BetGenerator {
   }
 
   /**
-   * Generates a unique bet that hasn't been seen before
-   * Uses strategy-based selection with fallback to random
-   * Returns null if unable to generate unique bet after max attempts
+   * Splits `candidates` into numbers the session has not used yet and numbers it
+   * has, shuffles each group, and takes `count` preferring the unused ones.
+   *
+   * This is what makes the optimizer's plan real: the DP picks bet sizes so that
+   * the sizes sum past 60, but bets drawn independently repeat numbers heavily,
+   * so a plan "covering 61 spots" used to return around 40 distinct numbers.
+   */
+  private pickPreferringUnused(
+    candidates: number[],
+    count: number,
+    usedNumbers: Set<number>
+  ): number[] {
+    const unused: number[] = [];
+    const used: number[] = [];
+
+    for (const candidate of candidates) {
+      (usedNumbers.has(candidate) ? used : unused).push(candidate);
+    }
+
+    return [...this.shuffle(unused), ...this.shuffle(used)].slice(0, count);
+  }
+
+  /**
+   * Generates a unique bet that hasn't been seen before.
+   *
+   * Returns the numbers plus whether the strategic pool had to be abandoned, so
+   * the caller can label the bet honestly instead of presenting a purely random
+   * set as "hot numbers".
    */
   private generateUniqueBet(
     count: number,
     strategy: BetStrategy,
     pools: CandidatePool,
-    seenSignatures: Set<string>
-  ): number[] | null {
+    seenSignatures: Set<string>,
+    usedNumbers: Set<number>
+  ): { numbers: number[]; usedFallback: boolean } | null {
     let attempts = 0;
     let useFallback = false;
 
@@ -521,14 +564,15 @@ export class BetGenerator {
       }
 
       const numbers = useFallback
-        ? this.selectRandomFromPool(pools.all, count)
-        : this.generateNumberSetFromPools(count, strategy, pools);
+        ? this.pickPreferringUnused(pools.all, count, usedNumbers)
+        : this.generateNumberSetFromPools(count, strategy, pools, usedNumbers);
 
       const signature = this.getBetSignature(numbers);
 
       if (!seenSignatures.has(signature)) {
         seenSignatures.add(signature);
-        return numbers.sort((a, b) => a - b);
+        numbers.forEach((number) => usedNumbers.add(number));
+        return { numbers: numbers.sort((a, b) => a - b), usedFallback: useFallback };
       }
 
       attempts++;
@@ -536,64 +580,80 @@ export class BetGenerator {
 
     // Last resort: pure random with guaranteed uniqueness attempt
     for (let i = 0; i < 10; i++) {
-      const numbers = this.selectRandomFromPool(pools.all, count);
+      const numbers = this.pickPreferringUnused(pools.all, count, usedNumbers);
       const signature = this.getBetSignature(numbers);
       if (!seenSignatures.has(signature)) {
         seenSignatures.add(signature);
-        return numbers.sort((a, b) => a - b);
+        numbers.forEach((number) => usedNumbers.add(number));
+        return { numbers: numbers.sort((a, b) => a - b), usedFallback: true };
       }
     }
 
     return null; // Could not generate unique bet
   }
 
+  /** Appends `strategy` with the fallback marker the UI renders explicitly. */
+  private labelFor(strategy: BetStrategy, numberCount: number, usedFallback: boolean): string {
+    const base = numberCount > 6 ? `multiple_${strategy}` : `${strategy}`;
+    return usedFallback ? `${base}_fallback` : base;
+  }
+
   /**
    * Generates numbers from pre-fetched pools based on strategy
    * No database queries - uses cached pools
    */
-  private generateNumberSetFromPools(count: number, strategy: BetStrategy, pools: CandidatePool): number[] {
+  private generateNumberSetFromPools(
+    count: number,
+    strategy: BetStrategy,
+    pools: CandidatePool,
+    usedNumbers: Set<number>
+  ): number[] {
     switch (strategy) {
       case 'hot_numbers':
-        return this.selectFromHotPool(count, pools);
+        return this.selectFromRankedPool(count, pools.hot, pools.all, usedNumbers);
       case 'cold_numbers':
-        return this.selectFromColdPool(count, pools);
+        return this.selectFromRankedPool(count, pools.cold, pools.all, usedNumbers);
       case 'balanced':
-        return this.selectBalancedFromPools(count, pools);
+        return this.selectBalancedFromPools(count, pools, usedNumbers);
       case 'fibonacci':
-        return this.generateFibonacciNumbers(count);
+        return this.generateFibonacciNumbers(count, usedNumbers);
       default:
-        return this.selectRandomFromPool(pools.all, count);
+        return this.pickPreferringUnused(pools.all, count, usedNumbers);
     }
   }
 
   /**
-   * Selects numbers from hot pool (deterministic - top N hottest)
+   * Selects `count` numbers from a frequency-ranked pool (hot or cold).
+   *
+   * The FIRST bet of a session takes the top N deterministically, which is the
+   * most faithful answer to "the hottest numbers" for a single bet. Every later
+   * bet samples from the same pool preferring numbers not yet used, because the
+   * deterministic slice returns an identical set every time: the dedup loop then
+   * burned its ten attempts and silently fell back to picking from all 60
+   * numbers while the bet was still labelled hot or cold.
    */
-  private selectFromHotPool(count: number, pools: CandidatePool): number[] {
-    // Take top N hot numbers deterministically (already sorted by frequency DESC)
-    const selected = pools.hot.slice(0, Math.min(count, pools.hot.length));
-
-    // If hot pool doesn't have enough, fill with random
-    if (selected.length < count) {
-      const remaining = pools.all.filter(n => !selected.includes(n));
-      const shuffledRemaining = this.shuffle(remaining);
-      selected.push(...shuffledRemaining.slice(0, count - selected.length));
+  private selectFromRankedPool(
+    count: number,
+    rankedPool: number[],
+    allNumbers: number[],
+    usedNumbers: Set<number>
+  ): number[] {
+    if (usedNumbers.size === 0) {
+      const selected = rankedPool.slice(0, Math.min(count, rankedPool.length));
+      if (selected.length < count) {
+        const remaining = allNumbers.filter((number) => !selected.includes(number));
+        selected.push(...this.shuffle(remaining).slice(0, count - selected.length));
+      }
+      return selected;
     }
 
-    return selected;
-  }
-
-  /**
-   * Selects numbers from cold pool (deterministic - top N coldest)
-   */
-  private selectFromColdPool(count: number, pools: CandidatePool): number[] {
-    // Take top N cold numbers deterministically (already sorted by frequency ASC)
-    const selected = pools.cold.slice(0, Math.min(count, pools.cold.length));
-
+    const selected = this.pickPreferringUnused(rankedPool, count, usedNumbers);
     if (selected.length < count) {
-      const remaining = pools.all.filter(n => !selected.includes(n));
-      const shuffledRemaining = this.shuffle(remaining);
-      selected.push(...shuffledRemaining.slice(0, count - selected.length));
+      const chosen = new Set(selected);
+      const remaining = allNumbers.filter((number) => !chosen.has(number));
+      selected.push(
+        ...this.pickPreferringUnused(remaining, count - selected.length, usedNumbers)
+      );
     }
 
     return selected;
@@ -602,33 +662,24 @@ export class BetGenerator {
   /**
    * Selects balanced mix of hot and cold numbers
    */
-  private selectBalancedFromPools(count: number, pools: CandidatePool): number[] {
+  private selectBalancedFromPools(
+    count: number,
+    pools: CandidatePool,
+    usedNumbers: Set<number>
+  ): number[] {
     const hotCount = Math.ceil(count * BET_ALLOCATION.BALANCED_HOT_PERCENTAGE);
 
-    const shuffledHot = this.shuffle(pools.hot);
-    const shuffledCold = this.shuffle(pools.cold);
+    const selected = new Set<number>(this.pickPreferringUnused(pools.hot, hotCount, usedNumbers));
 
-    const selected = new Set<number>();
-
-    // Add hot numbers
-    for (const num of shuffledHot) {
-      if (selected.size >= hotCount) break;
+    for (const num of this.pickPreferringUnused(pools.cold, count, usedNumbers)) {
+      if (selected.size >= count) break;
       selected.add(num);
     }
 
-    // Add cold numbers (avoiding duplicates)
-    for (const num of shuffledCold) {
-      if (selected.size >= count) break;
-      if (!selected.has(num)) {
-        selected.add(num);
-      }
-    }
-
-    // Fill remaining with random if needed
+    // Fill remaining with numbers from anywhere, still preferring unused ones.
     if (selected.size < count) {
-      const remaining = pools.all.filter(n => !selected.has(n));
-      const shuffledRemaining = this.shuffle(remaining);
-      for (const num of shuffledRemaining) {
+      const remaining = pools.all.filter((number) => !selected.has(number));
+      for (const num of this.pickPreferringUnused(remaining, count - selected.size, usedNumbers)) {
         if (selected.size >= count) break;
         selected.add(num);
       }
@@ -665,7 +716,7 @@ export class BetGenerator {
     return this.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, strategy);
   }
 
-  private generateFibonacciNumbers(count: number): number[] {
+  private generateFibonacciNumbers(count: number, usedNumbers: Set<number> = new Set()): number[] {
     // Generate Fibonacci sequence up to 60
     const fibonacci: number[] = [1, 2];
 
@@ -690,12 +741,14 @@ export class BetGenerator {
     const shuffled = this.shuffle(fibonacci);
     const selected = shuffled.slice(0, Math.min(count, fibonacci.length));
 
-    // Fill remaining with random numbers if needed
+    // Fill remaining with numbers outside the sequence, preferring unused ones so
+    // successive bets in one plan keep widening the covered set.
     if (selected.length < count) {
       const remaining = Array.from({ length: MEGASENA_CONSTANTS.MAX_NUMBER }, (_, i) => i + 1)
         .filter(n => !selected.includes(n));
-      const shuffledRemaining = this.shuffle(remaining);
-      selected.push(...shuffledRemaining.slice(0, count - selected.length));
+      selected.push(
+        ...this.pickPreferringUnused(remaining, count - selected.length, usedNumbers)
+      );
     }
 
     return selected;
