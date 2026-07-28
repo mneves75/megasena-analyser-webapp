@@ -19,6 +19,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Fixed
 
+- `server.ts` (`/api/trends`): o callback do cache não faz mais `JSON.stringify` duplo, corrigindo erro 500 em toda requisição; teste E2E ajustado para refletir a ordem solicitada pelo chamador.
+- `lib/analytics/bet-generator.ts`: orçamento do modo `optimized` limitado a R$ 20.000 (`BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET`) para evitar vetor de negação de serviço pela DP de custos alcançáveis; `server.ts` retorna 400 com mensagem pt-BR para valores maiores.
 - `buildOptimizedBetSizes` reescrito com programação dinâmica de custos alcançáveis (sparse reachable-cost DP), corrigindo planos subótimos em orçamentos como R$ 672 (agora retorna 10 apostas: 8×7 + 2×8).
 - `PrizeCorrelationEngine` usa `COALESCE(AVG(...), 0)` para médias condicionais, evitando NULL quando um número só aparece em sorteios sem premiação.
 - `components/statistics/section-nav.tsx`: cleanup explícito do `IntersectionObserver` sem retornos antecipados no `useEffect`, eliminando o falso-positivo do React Doctor.
