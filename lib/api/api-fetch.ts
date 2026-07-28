@@ -53,8 +53,26 @@ export async function fetchApi(
   const url = buildApiUrl(path, runtime);
   const controller = new AbortController();
   const headers = new Headers(init.headers);
-  const internalApiSecret = process.env['INTERNAL_API_SECRET']?.trim();
-  if (isServer && internalApiSecret && internalApiSecret.length >= 32) {
+  const internalApiSecret = (process.env['INTERNAL_API_SECRET'] ?? '').trim();
+  // Only attach the secret when the request targets the configured API origin.
+  // A misconfigured API_HOST pointing off-box (or a parse failure) must not leak
+  // the secret in cleartext over HTTP.
+  const expectedBase = resolveApiBaseUrl(runtime);
+  let shouldAttachSecret = false;
+  if (isServer && internalApiSecret.length >= 32 && expectedBase) {
+    if (url.startsWith('/')) {
+      shouldAttachSecret = true;
+    } else {
+      try {
+        const target = new URL(url);
+        const expected = new URL(expectedBase);
+        shouldAttachSecret = target.origin === expected.origin;
+      } catch {
+        shouldAttachSecret = false;
+      }
+    }
+  }
+  if (shouldAttachSecret) {
     headers.set('X-Megasena-Internal-Request', '1');
     headers.set('X-Megasena-Internal-Request-Secret', internalApiSecret);
   }

@@ -64,6 +64,55 @@ describe('analytics dates (sqlite file)', () => {
     ]);
   });
 
+  it('buckets multi-number frequencies by quarter (Q1/Q2/Q3/Q4)', () => {
+    const result = runWithFileDatabase(
+      [
+        "const { runMigrations, getDatabase, closeDatabase } = await import('./lib/db.ts');",
+        "const { TimeSeriesEngine } = await import('./lib/analytics/time-series.ts');",
+        'runMigrations();',
+        'const db = getDatabase();',
+        "const insert = db.prepare(\"INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)\");",
+        "insert.run(1, '2026-01-05', 1, 2, 3, 4, 5, 6);",
+        "insert.run(2, '2026-04-19', 1, 7, 8, 9, 10, 11);",
+        "insert.run(3, '2026-08-02', 12, 13, 14, 15, 16, 17);",
+        "insert.run(4, '2026-11-25', 1, 12, 18, 19, 20, 21);",
+        'const engine = new TimeSeriesEngine();',
+        "console.log('RESULT:' + JSON.stringify(engine.getFrequencyTimeSeries([1, 12], 'quarterly')));",
+        'closeDatabase();',
+      ].join(' ')
+    ) as Array<{ period: string; num_1: number; num_12: number }>;
+
+    expect(result).toEqual([
+      { period: '2026-Q1', num_1: 1, num_12: 0 },
+      { period: '2026-Q2', num_1: 1, num_12: 0 },
+      { period: '2026-Q3', num_1: 0, num_12: 1 },
+      { period: '2026-Q4', num_1: 1, num_12: 1 },
+    ]);
+  });
+
+  it('aggregates multi-number frequencies with zero-filled periods (GROUP BY rewrite)', () => {
+    const result = runWithFileDatabase(
+      [
+        "const { runMigrations, getDatabase, closeDatabase } = await import('./lib/db.ts');",
+        "const { TimeSeriesEngine } = await import('./lib/analytics/time-series.ts');",
+        'runMigrations();',
+        'const db = getDatabase();',
+        "const insert = db.prepare(\"INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)\");",
+        "insert.run(1, '2026-01-05', 1, 2, 3, 4, 5, 6);",
+        "insert.run(2, '2026-01-19', 1, 7, 8, 9, 10, 11);",
+        "insert.run(3, '2026-02-02', 12, 13, 14, 15, 16, 17);",
+        'const engine = new TimeSeriesEngine();',
+        "console.log('RESULT:' + JSON.stringify(engine.getFrequencyTimeSeries([1, 12, 60], 'monthly')));",
+        'closeDatabase();',
+      ].join(' ')
+    ) as Array<{ period: string; num_1: number; num_12: number; num_60: number }>;
+
+    expect(result).toEqual([
+      { period: '2026-01', num_1: 2, num_12: 0, num_60: 0 },
+      { period: '2026-02', num_1: 0, num_12: 1, num_60: 0 },
+    ]);
+  });
+
   it('uses contest order for the last matching draw instead of lexical date order', () => {
     const result = runWithFileDatabase(
       [

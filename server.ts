@@ -40,7 +40,7 @@ import { isInternalApiRequest } from './lib/security/internal-api';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
-  getLatestContestNumber,
+  getDrawsVersion,
 } from './lib/api/response-cache';
 
 function resolveAppVersion(): string {
@@ -191,6 +191,9 @@ class LRUCache<K, V> {
 
 const rateLimiterCache = new LRUCache<string, RateLimitEntry>(RATE_LIMIT_CACHE_MAX_SIZE);
 const analyticsResponseCache = new ContestResponseCache(32);
+// Trends keys derive from user-chosen number sets (high cardinality); a separate
+// instance keeps that traffic from evicting the shared analytics entries above.
+const trendsResponseCache = new ContestResponseCache(64);
 let stopAuditRetentionScheduler: (() => void) | null = null;
 let stopLogRetentionScheduler: (() => void) | null = null;
 
@@ -485,8 +488,8 @@ const apiHandlers: Record<
     ctx.audit = { event: 'api.dashboard_read' };
     try {
       const cacheKey = buildResponseCacheKey(ctx.route);
-      const lastContestNumber = getLatestContestNumber();
-      const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
+      const drawsVersion = getDrawsVersion();
+      const body = analyticsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
         const stats = new StatisticsEngine();
         const statistics = stats.getDrawStatistics();
         const recentDraws = stats.getDrawHistory(5);
@@ -547,8 +550,8 @@ const apiHandlers: Record<
         streaks: includeStreaks,
         prize: includePrizeCorr,
       });
-      const lastContestNumber = getLatestContestNumber();
-      const body = analyticsResponseCache.getOrCompute(cacheKey, lastContestNumber, () => {
+      const drawsVersion = getDrawsVersion();
+      const body = analyticsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
         const stats = new StatisticsEngine();
         const summary = stats.getDrawStatistics();
         const frequencies = stats.getNumberFrequencies();
@@ -687,10 +690,26 @@ const apiHandlers: Record<
         },
       };
 
-      const timeSeriesEngine = new TimeSeriesEngine();
-      const data = timeSeriesEngine.getFrequencyTimeSeries(numbers, period);
+      // Preserve the caller-requested order in the response while keying the cache
+      // on the canonical sorted set. Data values are per-number, so permuted
+      // requests can safely share a cache entry and still get their own ordering.
+      const requestedNumbers = [...numbers];
+      const canonicalNumbers = [...numbers].sort((a, b) => a - b);
+      const cacheKey = buildResponseCacheKey(ctx.route, {
+        period,
+        numbers: canonicalNumbers.join(','),
+      });
+      const drawsVersion = getDrawsVersion();
+      const body = trendsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
+        const timeSeriesEngine = new TimeSeriesEngine();
+        const data = timeSeriesEngine.getFrequencyTimeSeries(canonicalNumbers, period);
+        return JSON.stringify({ data, numbers: canonicalNumbers, period });
+      });
 
-      return new Response(JSON.stringify({ data, numbers, period }), {
+      const payload = JSON.parse(body) as { data: unknown; numbers: number[]; period: string };
+      payload.numbers = requestedNumbers;
+
+      return new Response(JSON.stringify(payload), {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
