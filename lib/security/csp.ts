@@ -18,7 +18,12 @@ export function buildCsp({ isDev, nonce, isSecure = true }: CspOptions): string 
     // Fetch directives - control where resources can be loaded from
     "default-src 'self'",
     scriptSrc,
-    !isDev && nonce ? `script-src-elem 'self' 'nonce-${nonce}'` : null,
+    // CSP3: when script-src-elem is present it fully replaces script-src for
+    // <script> elements, with no fallback. Without 'strict-dynamic' here the
+    // bare 'self' would be honoured, letting any same-origin script element load
+    // with no nonce — strictly weaker than the script-src above. Repeating
+    // 'strict-dynamic' makes 'self' inert and keeps one effective policy.
+    !isDev && nonce ? `script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic'` : null,
     styleSrc,
     !isDev ? "style-src-attr 'unsafe-inline'" : null,
     "img-src 'self' data: blob:",

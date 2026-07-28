@@ -13,12 +13,18 @@ export type ApiFetchOptions = RequestInit & {
 };
 
 function normalizeBaseUrl(value: string, port: string): string {
-  const hasScheme = /^https?:\/\//i.test(value);
-  const url = new URL(hasScheme ? value : `http://${value}`);
+  const normalizedValue = value.trim() === '::1' ? '[::1]' : value.trim();
+  const hasScheme = /^https?:\/\//i.test(normalizedValue);
+  const url = new URL(hasScheme ? normalizedValue : `http://${normalizedValue}`);
   if (!url.port) {
     url.port = port;
   }
   return url.toString().replace(/\/$/, '');
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
 }
 
 export function resolveApiBaseUrl(runtime?: RuntimeTarget): string {
@@ -27,7 +33,12 @@ export function resolveApiBaseUrl(runtime?: RuntimeTarget): string {
     return '';
   }
 
-  const host = process.env['API_HOST'] ?? 'localhost';
+  const configuredHost = process.env['API_HOST'];
+  if (typeof configuredHost === 'string' && configuredHost.trim() === '') {
+    return '';
+  }
+
+  const host = configuredHost ?? 'localhost';
   const port = process.env['API_PORT'] ?? '3201';
 
   return normalizeBaseUrl(host, port);
@@ -54,19 +65,19 @@ export async function fetchApi(
   const controller = new AbortController();
   const headers = new Headers(init.headers);
   const internalApiSecret = (process.env['INTERNAL_API_SECRET'] ?? '').trim();
-  // Only attach the secret when the request targets the configured API origin.
-  // A misconfigured API_HOST pointing off-box (or a parse failure) must not leak
-  // the secret in cleartext over HTTP.
-  const expectedBase = resolveApiBaseUrl(runtime);
   let shouldAttachSecret = false;
-  if (isServer && internalApiSecret.length >= 32 && expectedBase) {
-    if (url.startsWith('/')) {
+  if (isServer && internalApiSecret.length >= 32) {
+    if (url.startsWith('/') && !url.startsWith('//')) {
       shouldAttachSecret = true;
     } else {
       try {
         const target = new URL(url);
-        const expected = new URL(expectedBase);
-        shouldAttachSecret = target.origin === expected.origin;
+        shouldAttachSecret = isLoopbackHostname(target.hostname);
+        if (!shouldAttachSecret) {
+          logger.warn('security.internal_secret_target_rejected', {
+            targetOrigin: target.origin,
+          });
+        }
       } catch {
         shouldAttachSecret = false;
       }
