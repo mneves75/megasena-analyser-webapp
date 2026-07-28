@@ -110,6 +110,9 @@ export const BET_ALLOCATION = {
 
 export const BET_GENERATION_LIMITS = {
   MAX_BETS_PER_GENERATION: 200,
+  // Optimized-mode DP complexity scales with budget; cap it to keep the
+  // single-threaded Bun API responsive and avoid OOM under load.
+  OPTIMIZED_MAX_BUDGET: 20000,
 } as const;
 
 // Statistics Display Constants
