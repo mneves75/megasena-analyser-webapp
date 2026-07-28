@@ -10,8 +10,11 @@
     --card-foreground: 210 16% 12%;
     --popover: 0 0% 100%;
     --popover-foreground: 210 16% 12%;
-    /* Deep, desaturated teal: white text now passes WCAG AA (was 95% sat cyan, failed) */
-    --primary: 192 72% 38%;
+    /* Deep, desaturated teal. White text on this needs 4.5:1 for WCAG AA:
+       L=38% measured 3.98 and Lighthouse flagged the CTA and the privacy-banner
+       button. L=34% gives 4.81 against white text and 4.71 against the page
+       background, so both the label and the button edge stay compliant. */
+    --primary: 192 72% 34%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 192 64% 47%;
     --secondary: 200 14% 95.5%;
@@ -59,17 +62,29 @@
     --card-foreground: 200 12% 96%;
     --popover: 210 14% 9%;
     --popover-foreground: 200 12% 96%;
-    --primary: 192 58% 44%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 192 54% 54%;
+    /* Like --destructive below, this is both a surface (`bg-primary`) and a text
+       colour (`text-primary` on cards). Darkening it to satisfy white-on-primary
+       broke the text usage instead (3.42 on #162126). On a dark theme the
+       resolution is to go LIGHTER and pair it with a dark foreground:
+       L=52% reads 6.42 as text on the lightest card and 6.73 as a surface under
+       the dark foreground below. */
+    --primary: 192 58% 52%;
+    --primary-foreground: 200 40% 10%;
+    --primary-glow: 192 54% 60%;
     --secondary: 210 12% 16%;
     --secondary-foreground: 200 12% 96%;
     --muted: 210 12% 16%;
     --muted-foreground: 200 8% 64%;
     --accent: 210 12% 16%;
     --accent-foreground: 200 12% 96%;
-    --destructive: 0 58% 44%;
-    --destructive-foreground: 0 0% 98%;
+    /* This token is used BOTH as text (`text-destructive`, e.g. the footer
+       notice) and as a surface (`bg-destructive` on badges), which pull in
+       opposite directions on a dark background. At L=44% the text failed at
+       2.88. Raising it to L=60% gives 5.08 as text, and the surface stays
+       compliant by pairing it with a DARK foreground (4.83) instead of the
+       near-white one, which would have dropped the badge to 3.62. */
+    --destructive: 0 58% 60%;
+    --destructive-foreground: 0 40% 10%;
     --border: 210 12% 17%;
     --input: 210 12% 17%;
     --ring: 192 58% 44%;
