@@ -12,6 +12,10 @@ dist/
 # Exclude other dist files but keep dist/standalone/
 !dist/standalone/
 !dist/standalone/**
+# The re-include above wins over the root .env rules below; re-exclude any env
+# file the Next output tracing may have dragged into the standalone tree.
+dist/standalone/**/.env*
+dist/standalone/.env*
 
 # Testing
 coverage/

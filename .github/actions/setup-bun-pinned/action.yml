@@ -1,0 +1,34 @@
+name: 'Setup pinned Bun'
+description: 'Installs the exact Bun version recorded in .bun-ci-version and verifies it'
+
+inputs:
+  bun-version-file:
+    description: 'File containing the exact Bun version to install'
+    required: false
+    default: '.bun-ci-version'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Read pinned Bun version
+      id: pin
+      shell: bash
+      run: |
+        version=$(cat ${{ inputs.bun-version-file }} | tr -d '[:space:]')
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: ${{ steps.pin.outputs.version }}
+
+    - name: Verify pinned Bun version
+      shell: bash
+      run: |
+        expected=$(cat ${{ inputs.bun-version-file }} | tr -d '[:space:]')
+        actual=$(bun --version)
+        if [ "$actual" != "$expected" ]; then
+          echo "::error::Bun version mismatch: expected '$expected', got '$actual'"
+          exit 1
+        fi
+        echo "Bun version pinned: $actual"

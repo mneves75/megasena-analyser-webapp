@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.8.0",
+  "version": "1.9.0-beta.1",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -22,13 +22,14 @@
     "db:pull": "bun run scripts/pull-draws.ts",
     "db:export-draws": "bun run scripts/export-draws.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts",
-    "log:prune": "bun run scripts/prune-log-events.ts"
+    "log:prune": "bun run scripts/prune-log-events.ts",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.462.0",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "recharts": "^3.8.1",
@@ -50,13 +51,15 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "6.0.1",
     "@vitest/coverage-v8": "4.1.5",
+    "ajv": "8.20.0",
     "baseline-browser-mapping": "^2.10.9",
     "caniuse-lite": "^1.0.30001792",
     "eslint": "9.36.0",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "16.2.11",
     "jsdom": "^27.4.0",
-    "postcss": "8.5.14",
+    "postcss": "8.5.18",
     "prettier": "^3.8.3",
+    "react-doctor": "^0.9.2",
     "rollup": "4.59.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
@@ -68,22 +71,8 @@
     "node": ">=22.0.0"
   },
   "runtime": "bun",
-  "packageManager": "pnpm@11.13.0",
+  "packageManager": "pnpm@11.13.0+sha512.88d94724d8f2e6c186744a5584c6e59ecac869ec7ba15e9cb4cd628e8dc7066820b2481d8ee3b51ea8da323a7378068aa58c556a3720d32b7c20a051d088363a",
   "workspaces": [
     "."
-  ],
-  "overrides": {
-    "@babel/core": ">=7.29.1",
-    "ajv": "6.14.0",
-    "baseline-browser-mapping": "2.10.9",
-    "brace-expansion": ">=1.1.13 <2",
-    "caniuse-lite": "1.0.30001792",
-    "flatted": "3.4.2",
-    "js-yaml": ">=4.3.0 <5",
-    "minimatch": "3.1.4",
-    "picomatch": ">=2.3.2",
-    "postcss": ">=8.5.10",
-    "rollup": "4.59.0",
-    "ws": ">=8.21.0"
-  }
+  ]
 }

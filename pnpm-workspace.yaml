@@ -3,6 +3,23 @@ packages:
 # Layout achatado (npm-like): necessário porque o runtime é Bun, o ESLint do Next
 # resolve peers implícitos e o Dockerfile copia node_modules entre stages.
 nodeLinker: hoisted
+# Atrasar instalação de versões recém-publicadas e rejeitar downgrades de
+# confiança (provenance/assinatura) na árvore de dependências. 1440 min = 1 dia
+# (pragmático para dependências atuais; elevar para 10080 quando o ecossistema
+# estiver maduro o suficiente para o cutoff de 7 dias).
+minimumReleaseAge: 1440
+trustPolicy: no-downgrade
+# Exceções para downgrades de confiança: o lockfile atual contém entradas cuja
+# provenance/attestation mudou no registry; são pacotes amplamente auditados e
+# mantidos. Reavalie a cada atualização major de dependências.
+trustPolicyExclude:
+  - '@reduxjs/toolkit@2.9.0'
+  - 'eslint-import-resolver-typescript@3.10.1'
+  - 'react-redux@9.2.0'
+  - 'reselect@5.1.1'
+  - 'semver@6.3.1'
+  - 'tailwind-merge@2.6.1'
+  - 'undici-types@6.21.0'
 allowBuilds:
   sharp: true
   unrs-resolver: true
@@ -10,16 +27,26 @@ allowBuilds:
 # "Overrides de dependências"). Migrados do package.json "overrides" (formato
 # npm/Bun), que o pnpm ignora silenciosamente.
 overrides:
+  # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj); next ainda pede 0.34.x.
+  sharp: '>=0.35.0'
   # <8: Babel 8 e um major breaking/ESM-only; consumidores transitivos pedem 7.x.
   '@babel/core': '>=7.29.1 <8'
+  # react-doctor/conf precisa de ajv 8; ESLint precisa de ajv 6. Usamos override
+  # específico para conf e mantemos o pin geral para o restante da árvore.
   ajv: 6.14.0
+  'conf>ajv': '>=8.17.1'
   baseline-browser-mapping: 2.10.9
-  brace-expansion: '>=1.1.13 <2'
+  # GHSA-mh99-v99m-4gvg: DoS via unbounded brace expansion. O range antigo
+  # '>=1.1.16 <2' ainda resolvia 1.1.16, que o advisory marca como
+  # vulnerável (<=5.0.7). Forçamos a linha 5.x corrigida.
+  brace-expansion: '>=5.0.8'
   caniuse-lite: 1.0.30001792
   flatted: 3.4.2
   js-yaml: '>=4.3.0 <5'
   minimatch: 3.1.4
   picomatch: '>=2.3.2'
-  postcss: '>=8.5.10'
+  postcss: '>=8.5.18'
   rollup: 4.59.0
   ws: '>=8.21.0'
+patchedDependencies:
+  minimatch@3.1.4: patches/minimatch@3.1.4.patch

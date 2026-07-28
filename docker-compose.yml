@@ -37,6 +37,9 @@ services:
       # Persist SQLite database across container restarts
       - ./db:/app/db
     restart: unless-stopped
+    # The app never needs privilege escalation (setuid binaries etc.).
+    security_opt:
+      - no-new-privileges:true
 
     # Health check using Bun (distroless-compatible, no shell)
     healthcheck:
