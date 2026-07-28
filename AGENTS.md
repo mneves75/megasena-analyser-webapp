@@ -151,6 +151,17 @@ changes.
 - Use semantic design tokens only (`bg-background`, `text-foreground`) — no hardcoded
   color classes. Edit the design system (`app/globals.css`, `tailwind.config.js`)
   before components. `lang="pt-BR"` in `app/layout.tsx`.
+- **`--primary` and `--destructive` are dual-purpose tokens**: each is used as a
+  surface (`bg-*` with its `-foreground`) *and* as text (`text-primary` on cards,
+  `text-destructive` in the footer). Those two uses pull contrast in opposite
+  directions, so changing lightness to fix one silently breaks the other. Check both
+  against 4.5:1 before touching them, and prefer adjusting the paired `-foreground`
+  over flattening the hue.
+- **Lighthouse:** the production build scores 95/100/100/100 served directly. Through
+  Cloudflare the same build measures 61/96/81/100 because JavaScript Detections
+  injects `/cdn-cgi/challenge-platform/.../main.js` (~4.3s of scripting versus 0.2s
+  for all app JavaScript, plus three deprecated APIs). Measure against a local
+  production server before concluding the app regressed.
 
 ## Deployment
 

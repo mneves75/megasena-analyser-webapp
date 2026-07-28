@@ -53,6 +53,18 @@
 - `PRAGMA application_id` runs on every DB open, so `getDatabase()` throws
   `SQLITE_BUSY` while a long writer (backfill/pull) holds the lock.
 
+- **Lighthouse is gated by Cloudflare, not by the app.** Production build served
+  directly: 95/100/100/100. The same build through Cloudflare: 61/96/81/100.
+  JavaScript Detections injects `/cdn-cgi/challenge-platform/.../main.js`, which
+  costs ~4.3s of scripting (all app JS is 0.2s) and raises the three deprecated-API
+  warnings that sink "best practices". Always measure locally before believing a
+  regression.
+- **The VPS cannot reach the CAIXA API** — it answers 403 with a bot-challenge page
+  to the datacenter IP regardless of headers. That is why `sync-database.ts` exists:
+  data is refreshed locally and pushed. `db:backfill-prizes` therefore cannot run on
+  the server; ship a prize-only SQL patch instead so server audit_logs/log_events
+  survive.
+
 ## Next
 
 - Define a reachable staging target (the repo forbids inferring staging from the
