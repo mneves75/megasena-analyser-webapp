@@ -173,10 +173,18 @@ async function main() {
       }
     }
 
-    // Commit transaction
+    console.log('\nUpdating statistics...');
+
+    const stats = new StatisticsEngine();
+    stats.updateNumberFrequencies();
+    const pairAnalysis = new PairAnalysisEngine();
+    pairAnalysis.updatePairFrequencies();
+
+    // Commit draws and their derived caches atomically.
     db.exec('COMMIT');
 
     console.log('\n[OK] Data ingestion completed');
+    console.log('[OK] Statistics updated');
 
     // Show ingestion statistics
     console.log(`\nIngestion Statistics:`);
@@ -187,15 +195,6 @@ async function main() {
       console.log(`  Updated draws: ${skippedDraws}`);
     }
     console.log(`  Total processed: ${newDraws + skippedDraws}`);
-
-    console.log('\nUpdating statistics...');
-
-    const stats = new StatisticsEngine();
-    stats.updateNumberFrequencies();
-    const pairAnalysis = new PairAnalysisEngine();
-    pairAnalysis.updatePairFrequencies();
-
-    console.log('[OK] Statistics updated');
 
     const summary = stats.getDrawStatistics();
     console.log(`\nDatabase Summary:`);

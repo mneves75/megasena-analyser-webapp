@@ -38,6 +38,113 @@ interface CaixaRawDrawData {
   tipoJogo?: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function validateNonNegativeNumber(value: unknown, field: string): void {
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value < 0
+  ) {
+    throw new Error(
+      `Resposta da CAIXA inválida: ${field} deve ser um número finito maior ou igual a zero.`
+    );
+  }
+}
+
+function validatePrizeTiers(value: unknown, field: string): void {
+  if (typeof value === 'undefined') {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    throw new Error(`Resposta da CAIXA inválida: ${field} deve ser uma lista.`);
+  }
+
+  value.forEach((tier, index) => {
+    if (!isRecord(tier)) {
+      throw new Error(
+        `Resposta da CAIXA inválida: ${field}[${index}] deve ser um objeto.`
+      );
+    }
+    if (typeof tier['valorPremio'] !== 'undefined') {
+      validateNonNegativeNumber(tier['valorPremio'], `${field}[${index}].valorPremio`);
+    }
+    if (typeof tier['numeroDeGanhadores'] !== 'undefined') {
+      validateNonNegativeNumber(
+        tier['numeroDeGanhadores'],
+        `${field}[${index}].numeroDeGanhadores`
+      );
+    }
+  });
+}
+
+function validateMegaSenaDrawData(
+  value: unknown,
+  requestedContest?: number
+): CaixaRawDrawData {
+  if (!isRecord(value)) {
+    throw new Error('Resposta da CAIXA inválida: o payload deve ser um objeto.');
+  }
+
+  const numero = value['numero'];
+  if (typeof numero !== 'number' || !Number.isInteger(numero) || numero < 1) {
+    throw new Error(
+      'Resposta da CAIXA inválida: numero deve ser um número inteiro positivo.'
+    );
+  }
+  if (typeof requestedContest === 'number' && numero !== requestedContest) {
+    throw new Error(
+      `Resposta da CAIXA inválida: concurso solicitado ${requestedContest}, recebido ${numero}.`
+    );
+  }
+
+  const dataApuracao = value['dataApuracao'];
+  if (typeof dataApuracao !== 'string' || dataApuracao.trim().length === 0) {
+    throw new Error(
+      'Resposta da CAIXA inválida: dataApuracao deve ser uma string não vazia.'
+    );
+  }
+
+  const rawDezenas = value['listaDezenas'];
+  if (!Array.isArray(rawDezenas) || rawDezenas.length !== 6) {
+    throw new Error(
+      'Resposta da CAIXA inválida: listaDezenas deve conter exatamente 6 dezenas.'
+    );
+  }
+
+  const parsedDezenas = rawDezenas.map((entry, index) => {
+    if (typeof entry !== 'string' && typeof entry !== 'number') {
+      throw new Error(
+        `Resposta da CAIXA inválida: listaDezenas[${index}] deve representar um número inteiro.`
+      );
+    }
+    const parsed = Number(entry);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 60) {
+      throw new Error(
+        `Resposta da CAIXA inválida: listaDezenas[${index}] deve estar entre 1 e 60.`
+      );
+    }
+    return parsed;
+  });
+  if (new Set(parsedDezenas).size !== parsedDezenas.length) {
+    throw new Error(
+      'Resposta da CAIXA inválida: listaDezenas deve conter dezenas distintas.'
+    );
+  }
+
+  validatePrizeTiers(value['rateioProcessamento'], 'rateioProcessamento');
+  validatePrizeTiers(value['listaRateioPremio'], 'listaRateioPremio');
+
+  return {
+    ...value,
+    numero,
+    dataApuracao,
+    listaDezenas: rawDezenas.map(String),
+  };
+}
+
 export function normalizePrizeDescription(
   description: string | undefined,
   faixa: number | undefined
@@ -124,7 +231,7 @@ export class CaixaAPIClient {
     try {
       const response = await this.fetchWithRetry(url);
 
-      const rawData = (await response.json()) as CaixaRawDrawData;
+      const rawData = validateMegaSenaDrawData(await response.json(), contestNumber);
       const data = normalizeMegaSenaDrawData(rawData);
 
       // Cache the result
@@ -286,13 +393,17 @@ export class CaixaAPIClient {
           });
         }
 
-        // Progressive rate limiting - increase delay as we fetch more
-        let delay = API_CONFIG.RATE_LIMIT_DELAY;
+        // Progressive rate limiting - increase delay as we fetch more, bounded
+        // so a full-history pull stays a matter of minutes rather than hours.
+        let delay: number = API_CONFIG.RATE_LIMIT_DELAY;
         if (successCount > API_CONFIG.PROGRESSIVE_DELAY_THRESHOLD) {
           const progressiveBatches = Math.floor(
             (successCount - API_CONFIG.PROGRESSIVE_DELAY_THRESHOLD) / 100
           );
-          delay += progressiveBatches * API_CONFIG.PROGRESSIVE_DELAY_INCREMENT;
+          delay = Math.min(
+            delay + progressiveBatches * API_CONFIG.PROGRESSIVE_DELAY_INCREMENT,
+            API_CONFIG.PROGRESSIVE_DELAY_MAX
+          );
         }
 
         await this.delay(delay);
