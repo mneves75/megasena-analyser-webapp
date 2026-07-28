@@ -50,6 +50,10 @@ export const API_CONFIG = {
   BACKOFF_MULTIPLIER: 2, // Exponential backoff multiplier
   PROGRESSIVE_DELAY_THRESHOLD: 50, // Start progressive delays after N requests
   PROGRESSIVE_DELAY_INCREMENT: 500, // Add 500ms every N requests
+  // Ceiling for the progressive delay. Without it the delay grew by 500ms per
+  // 100 successes forever, reaching ~15s per request near contest 3000 and
+  // turning a full historical re-pull into a ~7 hour job.
+  PROGRESSIVE_DELAY_MAX: 3000,
 } as const;
 
 // Prize Tiers
@@ -113,6 +117,10 @@ export const BET_GENERATION_LIMITS = {
   // Optimized-mode DP complexity scales with budget; cap it to keep the
   // single-threaded Bun API responsive and avoid OOM under load.
   OPTIMIZED_MAX_BUDGET: 20000,
+  // Ceiling for every other mode. Shared by the client form and the API schema
+  // so the UI never offers a budget the server will reject.
+  MAX_BUDGET: 100000,
+  MIN_BUDGET: 6,
 } as const;
 
 // Statistics Display Constants

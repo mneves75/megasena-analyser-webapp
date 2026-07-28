@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BudgetSelector, GenerationControls, BetList } from '@/components/bet-generator';
 import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator.types';
-import { BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
+import { BET_GENERATION_LIMITS, BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
 import { generateBets } from './actions';
 import { pt } from '@/lib/i18n';
 
@@ -29,6 +29,15 @@ export function GeneratorForm() {
       activeRequestIdRef.current += 1;
     };
   }, []);
+
+  // The optimizer's dynamic program is bounded by a lower budget than the other
+  // modes, and the API rejects anything above it. Mirror that ceiling in the
+  // form so the limit is visible before submitting rather than as a 400.
+  const maxBudget =
+    mode === BET_GENERATION_MODE.OPTIMIZED
+      ? BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET
+      : BET_GENERATION_LIMITS.MAX_BUDGET;
+  const isBudgetValid = budget >= BET_GENERATION_LIMITS.MIN_BUDGET && budget <= maxBudget;
 
   async function handleGenerate(): Promise<void> {
     activeRequestIdRef.current += 1;
@@ -81,8 +90,9 @@ export function GeneratorForm() {
           <BudgetSelector
             value={budget}
             onChange={setBudget}
-            min={6}
-            max={100000}
+            min={BET_GENERATION_LIMITS.MIN_BUDGET}
+            max={maxBudget}
+            isOptimizedMode={mode === BET_GENERATION_MODE.OPTIMIZED}
             className="h-full"
           />
         </div>
@@ -96,7 +106,7 @@ export function GeneratorForm() {
             onModeChange={setMode}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
-            disabled={budget < 6 || budget > 100000}
+            disabled={!isBudgetValid}
           />
         </div>
       </div>
