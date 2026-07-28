@@ -89,12 +89,21 @@ describe('grouped analytics (sqlite file)', () => {
         { primeCount: 4, occurrences: 1, percentage: 33.33 },
       ]);
       expect(result.primes.primeFrequencies[0]).toMatchObject({ number: 2, frequency: 2 });
+      // Number 1 appears in 3 of the 3 draws, number 2 in 2 of them, so the
+      // per-draw marginals are 3/3 and 2/3. Drawing is without replacement:
+      //   3 * (3/3) * (2/3) * (5/6) * (60/59) = 1.6949 -> 1.69
+      //   correlation = 2 / 1.6949 = 1.18
+      // The previous expectation of 0.83 / 2.4 came from squaring per-slot
+      // probabilities and multiplying by the 15 pairs in a draw, which
+      // understates the expectation by ~2,03x. Sanity check: under a uniform
+      // history this formula reduces to totalDraws * (6/60) * (5/59), the exact
+      // hypergeometric value.
       expect(result.pairs).toEqual([
         {
           pair: [1, 2],
           frequency: 2,
-          expectedFrequency: 0.83,
-          correlation: 2.4,
+          expectedFrequency: 1.69,
+          correlation: 1.18,
           lastSeenContest: 2,
           lastSeenDate: '2026-01-08',
         },

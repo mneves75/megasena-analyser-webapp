@@ -151,8 +151,14 @@ export class StreakAnalysisEngine {
     const streaks = this.getHotStreaks();
 
     return {
+      // `streaks` is sorted by intensity descending, which is the right order for
+      // hot numbers but the exact inverse for cold ones: slicing it directly
+      // returns the *least* cold entries under a "lowest intensity" heading.
       hotNumbers: streaks.filter((streak) => streak.trend === 'hot').slice(0, hotLimit),
-      coldNumbers: streaks.filter((streak) => streak.trend === 'cold').slice(0, coldLimit),
+      coldNumbers: streaks
+        .filter((streak) => streak.trend === 'cold')
+        .sort((a, b) => a.streakIntensity - b.streakIntensity || a.number - b.number)
+        .slice(0, coldLimit),
     };
   }
 

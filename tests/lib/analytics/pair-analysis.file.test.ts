@@ -55,3 +55,31 @@ describe('PairAnalysisEngine (sqlite file)', () => {
     }
   });
 });
+
+describe('expectedPairFrequency', () => {
+  it('reduces to the exact hypergeometric expectation for a uniform history', async () => {
+    const { expectedPairFrequency } = await import('@/lib/analytics/pair-analysis');
+
+    const totalDraws = 3036;
+    // Uniform history: every number appears in totalDraws * 6 / 60 draws.
+    const uniformFrequency = (totalDraws * 6) / 60;
+
+    // P(two specific numbers share a draw) = (6/60) * (5/59).
+    const exact = totalDraws * (6 / 60) * (5 / 59);
+
+    expect(expectedPairFrequency(uniformFrequency, uniformFrequency, totalDraws)).toBeCloseTo(
+      exact,
+      6
+    );
+    // Guards the regression: the previous formula returned 12.65 here.
+    expect(expectedPairFrequency(uniformFrequency, uniformFrequency, totalDraws)).toBeCloseTo(
+      25.7288,
+      3
+    );
+  });
+
+  it('returns zero when there are no draws', async () => {
+    const { expectedPairFrequency } = await import('@/lib/analytics/pair-analysis');
+    expect(expectedPairFrequency(10, 10, 0)).toBe(0);
+  });
+});
