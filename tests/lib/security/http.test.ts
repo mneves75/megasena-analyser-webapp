@@ -11,6 +11,7 @@ import {
 describe('resolveClientIp', () => {
   afterEach(() => {
     delete process.env.TRUSTED_PROXY_IPS;
+    delete process.env.TRUSTED_CLIENT_IP_HEADER;
   });
 
   function serverWithAddress(address: string): RequestIpResolver {
@@ -50,6 +51,35 @@ describe('resolveClientIp', () => {
     });
 
     expect(resolveClientIp(req, serverWithAddress('172.18.0.10'), true)).toBe('198.51.100.30');
+  });
+
+  it('consults only TRUSTED_CLIENT_IP_HEADER when it pins a single header', () => {
+    // An origin reachable outside Cloudflare must be able to ignore the
+    // client-settable cf-connecting-ip and trust only the header its own proxy
+    // rewrites, otherwise each forged value mints a fresh rate-limit bucket.
+    process.env.TRUSTED_PROXY_IPS = '172.18.0.10';
+    process.env.TRUSTED_CLIENT_IP_HEADER = 'x-real-ip';
+
+    const req = new Request('http://localhost/api', {
+      headers: {
+        'cf-connecting-ip': '198.51.100.99',
+        'x-real-ip': '198.51.100.30',
+        'x-forwarded-for': '198.51.100.200, 203.0.113.5',
+      },
+    });
+
+    expect(resolveClientIp(req, serverWithAddress('172.18.0.10'), true)).toBe('198.51.100.30');
+  });
+
+  it('falls back to the socket peer when the pinned header is absent', () => {
+    process.env.TRUSTED_PROXY_IPS = '172.18.0.10';
+    process.env.TRUSTED_CLIENT_IP_HEADER = 'x-real-ip';
+
+    const req = new Request('http://localhost/api', {
+      headers: { 'cf-connecting-ip': '198.51.100.99' },
+    });
+
+    expect(resolveClientIp(req, serverWithAddress('172.18.0.10'), true)).toBe('172.18.0.10');
   });
 
   it('prefers cf-connecting-ip over x-forwarded-for when both are present from a trusted peer', () => {

@@ -9,7 +9,13 @@ describe('buildCsp', () => {
     expect(scriptSrc).toBe("script-src 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(scriptSrc).not.toContain("'unsafe-inline'");
     expect(scriptSrc).not.toContain("'unsafe-eval'");
-    expect(csp).toContain("script-src-elem 'self' 'nonce-abc123'");
+    // script-src-elem replaces script-src for <script> elements with no
+    // fallback, so it must carry 'strict-dynamic' too. Without it the bare
+    // 'self' would admit any same-origin script element with no nonce.
+    const scriptSrcElem = csp
+      .split('; ')
+      .find((directive) => directive.startsWith('script-src-elem'));
+    expect(scriptSrcElem).toBe("script-src-elem 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain('upgrade-insecure-requests');
     expect(csp).toMatch(/connect-src[^;]*servicebus2\.caixa\.gov\.br/);

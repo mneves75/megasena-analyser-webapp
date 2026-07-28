@@ -11,7 +11,7 @@
 #   3. Build image:             docker build -t megasena-analyser .
 # ============================================================================
 
-FROM node:22-alpine AS deps
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS deps  # node 22.x on alpine
 
 WORKDIR /deps
 
