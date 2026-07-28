@@ -148,6 +148,28 @@ test('Bun API rejects oversized or out-of-domain trend inputs', async () => {
   await api.dispose();
 });
 
+test('/api/trends returns 200 and canonicalizes cache keys across permuted inputs', async () => {
+  const api = await request.newContext({
+    baseURL: `http://127.0.0.1:${process.env.API_PORT ?? '3201'}`,
+    extraHTTPHeaders: {
+      Origin: 'https://megasena-analyzer.com.br',
+    },
+  });
+
+  const first = await api.get('/api/trends?numbers=3,1,2&period=yearly');
+  expect(first.status()).toBe(200);
+  const firstBody = await first.json();
+  expect(firstBody.numbers).toEqual([1, 2, 3]);
+  expect(firstBody.period).toBe('yearly');
+
+  const second = await api.get('/api/trends?numbers=2,3,1&period=yearly');
+  expect(second.status()).toBe(200);
+  const secondBody = await second.json();
+  expect(secondBody).toEqual(firstBody);
+
+  await api.dispose();
+});
+
 test('Bun API rate limits CORS preflight requests', async () => {
   const api = await request.newContext({
     baseURL: `http://127.0.0.1:${process.env.API_PORT ?? '3201'}`,

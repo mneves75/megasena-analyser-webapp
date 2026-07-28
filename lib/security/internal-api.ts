@@ -4,6 +4,10 @@ const INTERNAL_REQUEST_HEADER = 'x-megasena-internal-request';
 const INTERNAL_REQUEST_SECRET_HEADER = 'x-megasena-internal-request-secret';
 const MIN_INTERNAL_SECRET_LENGTH = 32;
 
+// Defense-in-depth only: behind a same-host reverse proxy every proxied request
+// arrives with a loopback peer, so this check contributes nothing there. The
+// real gate is the >=32-char secret compared in constant time below — treat the
+// loopback requirement as a bonus for direct-exposure setups, never as the auth.
 function isLoopbackPeer(address: string | null): boolean {
   if (!address) {
     return false;

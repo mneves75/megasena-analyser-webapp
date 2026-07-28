@@ -1,3 +1,4 @@
+import { normalizePrizeDescription } from '@/lib/api/caixa-client';
 import { Database } from 'bun:sqlite';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
@@ -7,15 +8,40 @@ const db = new Database('db/mega-sena.db');
 const lastContest = db.query('SELECT MAX(contest_number) as max FROM draws').get() as { max: number };
 console.log('Last contest in DB:', lastContest.max);
 
+interface PrizeTier {
+  faixa?: number;
+  descricaoFaixa?: string;
+  valorPremio: number;
+  numeroDeGanhadores: number;
+}
+
 interface Draw {
   numero: number;
   dataApuracao: string;
   listaDezenas: string[];
-  listaRateioPremio?: { faixa: number; valorPremio: number; numeroDeGanhadores: number }[];
+  listaRateioPremio?: PrizeTier[];
+  rateioProcessamento?: PrizeTier[];
   valorArrecadado?: number;
   acumulado: boolean;
   valorAcumuladoProximoConcurso?: number;
   valorEstimadoProximoConcurso?: number;
+}
+
+// A CAIXA alterna entre rateioProcessamento e listaRateioPremio conforme a
+// época/endpoint; espelha o fallback duplo de lib/api/caixa-client.ts para os
+// dois campos e para faixa numérica vs descricaoFaixa.
+function findPrizeTier(data: Draw, faixa: number, descricao: string): PrizeTier | undefined {
+  const tiers =
+    Array.isArray(data.rateioProcessamento) && data.rateioProcessamento.length > 0
+      ? data.rateioProcessamento
+      : Array.isArray(data.listaRateioPremio)
+        ? data.listaRateioPremio
+        : [];
+  return tiers.find((tier) => {
+    if (tier.faixa === faixa) return true;
+    const normalized = normalizePrizeDescription(tier.descricaoFaixa, tier.faixa);
+    return normalized === descricao;
+  });
 }
 
 async function fetchAndInsert(n: number): Promise<number | null> {
@@ -38,9 +64,9 @@ async function fetchAndInsert(n: number): Promise<number | null> {
     number,
     number
   ];
-  const sena = data.listaRateioPremio?.find(p => p.faixa === 1);
-  const quina = data.listaRateioPremio?.find(p => p.faixa === 2);
-  const quadra = data.listaRateioPremio?.find(p => p.faixa === 3);
+  const sena = findPrizeTier(data, 1, 'Sena');
+  const quina = findPrizeTier(data, 2, 'Quina');
+  const quadra = findPrizeTier(data, 3, 'Quadra');
 
   db.run(`
     INSERT OR IGNORE INTO draws

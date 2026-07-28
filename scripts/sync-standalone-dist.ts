@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { cp, readFile, rm, stat } from 'node:fs/promises';
+import { cp, readdir, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 const standaloneSource = path.join(process.cwd(), '.next', 'standalone');
@@ -42,5 +42,23 @@ await rm(distRoot, { recursive: true, force: true });
 await cp(standaloneSource, distRoot, { recursive: true });
 await cp(staticSource, distStatic, { recursive: true });
 await rm(tracedDbDir, { recursive: true, force: true });
+await stripTracedEnvFiles(distRoot);
 
-console.log(`dist/standalone pronto em ${distRoot} (sem banco/backups locais traçados pelo build)`);
+// O output tracing do Next pode arrastar .env locais para o standalone; como o
+// Bun auto-carrega /app/.env no runtime, um .env dentro do dist vazaria segredos
+// locais direto para a imagem publicada.
+async function stripTracedEnvFiles(dir: string): Promise<void> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules') continue;
+      await stripTracedEnvFiles(entryPath);
+    } else if (/^\.env(\..+)?$/.test(entry.name)) {
+      await rm(entryPath, { force: true });
+      console.log(`Removido do dist: ${path.relative(distRoot, entryPath)}`);
+    }
+  }
+}
+
+console.log(`dist/standalone pronto em ${distRoot} (sem banco/backups/.env locais traçados pelo build)`);

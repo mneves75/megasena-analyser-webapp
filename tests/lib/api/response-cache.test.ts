@@ -3,7 +3,7 @@ import { getDatabase, runMigrations } from '@/lib/db';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
-  getLatestContestNumber,
+  getDrawsVersion,
 } from '@/lib/api/response-cache';
 
 describe('ContestResponseCache', () => {
@@ -77,7 +77,7 @@ describe('ContestResponseCache', () => {
     );
   });
 
-  it('reads the latest contest number from draws', () => {
+  it('reads a composite draws version that includes count, max rowid and last update', () => {
     const db = getDatabase();
     const insert = db.prepare(`
       INSERT INTO draws (
@@ -89,6 +89,27 @@ describe('ContestResponseCache', () => {
     insert.run(3030, '2026-07-11', 6, 11, 25, 45, 48, 58);
     insert.run(3031, '2026-07-14', 20, 28, 32, 35, 40, 54);
 
-    expect(getLatestContestNumber()).toBe(3031);
+    const version = getDrawsVersion();
+    expect(typeof version).toBe('string');
+    expect(version).toMatch(/^2:\d+:\d+$/);
+  });
+
+  it('changes the draws version on historical backfills, not only on the latest contest', () => {
+    const db = getDatabase();
+    const insert = db.prepare(`
+      INSERT INTO draws (
+        contest_number, draw_date,
+        number_1, number_2, number_3, number_4, number_5, number_6,
+        prize_sena, winners_sena
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+    `);
+    insert.run(3031, '2026-07-14', 20, 28, 32, 35, 40, 54);
+    const versionBefore = getDrawsVersion();
+    expect(versionBefore).toMatch(/^1:\d+:\d+$/);
+
+    insert.run(3030, '2026-07-11', 6, 11, 25, 45, 48, 58);
+    const versionAfter = getDrawsVersion();
+    expect(versionAfter).toMatch(/^2:\d+:\d+$/);
+    expect(versionAfter).not.toBe(versionBefore);
   });
 });

@@ -38,7 +38,7 @@ interface CaixaRawDrawData {
   tipoJogo?: string;
 }
 
-function normalizePrizeDescription(
+export function normalizePrizeDescription(
   description: string | undefined,
   faixa: number | undefined
 ): string {
