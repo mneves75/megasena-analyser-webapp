@@ -9,6 +9,11 @@ export interface PrizeCorrelation {
   totalWinsSena: number;
   totalWinsQuina: number;
   correlationScore: number;
+  /**
+   * Draws with a paid sena prize in which this number appeared. Zero means the
+   * average below is undefined, not low — see `getCorrelationSets`.
+   */
+  prizeDrawCount: number;
 }
 
 export interface PrizeCorrelationSets {
@@ -75,6 +80,7 @@ export class PrizeCorrelationEngine {
         COUNT(*) as frequency,
         COALESCE(AVG(CASE WHEN prize_sena > 0 THEN prize_sena END), 0) as avg_sena,
         COALESCE(AVG(CASE WHEN prize_quina > 0 THEN prize_quina END), 0) as avg_quina,
+        SUM(CASE WHEN prize_sena > 0 THEN 1 ELSE 0 END) as prize_draw_count,
         SUM(has_winner_sena) as total_wins_sena,
         SUM(has_winner_quina) as total_wins_quina
       FROM number_prizes
@@ -87,6 +93,7 @@ export class PrizeCorrelationEngine {
       frequency: number;
       avg_sena: number;
       avg_quina: number;
+      prize_draw_count: number;
       total_wins_sena: number;
       total_wins_quina: number;
     }>;
@@ -102,6 +109,7 @@ export class PrizeCorrelationEngine {
         totalWinsSena: row.total_wins_sena,
         totalWinsQuina: row.total_wins_quina,
         correlationScore: roundTo(correlationScore),
+        prizeDrawCount: row.prize_draw_count ?? 0,
       };
     });
 
@@ -115,11 +123,17 @@ export class PrizeCorrelationEngine {
   ): PrizeCorrelationSets {
     const correlations = this.getPrizeCorrelation();
 
+    // A number that never appeared in a draw that paid a sena prize has an
+    // undefined average, not a low one. Ranking it as the "worst" would render
+    // "R$ 0,00 / 0x" under a heading that claims below-average prizes, which is
+    // exactly what a database missing its historical prize breakdown produces.
+    const observed = correlations.filter((correlation) => correlation.prizeDrawCount > 0);
+
     return {
-      luckyNumbers: correlations
+      luckyNumbers: observed
         .filter((correlation) => correlation.correlationScore > 1)
         .slice(0, luckyLimit),
-      unluckyNumbers: correlations
+      unluckyNumbers: observed
         .filter((correlation) => correlation.correlationScore < 1)
         .sort((a, b) => a.correlationScore - b.correlationScore)
         .slice(0, unluckyLimit),
