@@ -11,6 +11,25 @@ interface GenerateBetsApiResponse {
   error?: string;
 }
 
+const GENERIC_ERROR = 'Não foi possível gerar as apostas.';
+
+/**
+ * Extracts the API's pt-BR `error` field from an error response body, falling
+ * back to a generic message when the body is missing, not JSON, or shaped
+ * differently. Never surfaces raw response text, which could echo internals.
+ */
+function readApiErrorMessage(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { error?: unknown };
+    if (typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+      return parsed.error.trim();
+    }
+  } catch {
+    // Non-JSON body: fall through to the generic message.
+  }
+  return GENERIC_ERROR;
+}
+
 export async function generateBets(
   budget: number,
   strategy: BetStrategy,
@@ -37,7 +56,11 @@ export async function generateBets(
       responseBodyLength: text.length,
       responseBodySnippet: text.slice(0, 120),
     });
-    throw new Error(`Não foi possível gerar as apostas: ${response.statusText}`);
+
+    // The API answers validation failures with an actionable pt-BR message
+    // (budget above the optimized cap, for example). Surfacing the HTTP reason
+    // phrase instead would show the user an untranslated "Bad Request".
+    throw new Error(readApiErrorMessage(text));
   }
 
   const json = (await response.json()) as GenerateBetsApiResponse;
@@ -48,7 +71,7 @@ export async function generateBets(
       hasData: Boolean(json.data),
       success: json.success,
     });
-    throw new Error(json.error ?? 'Não foi possível gerar as apostas.');
+    throw new Error(json.error ?? GENERIC_ERROR);
   }
 
   return json.data;
