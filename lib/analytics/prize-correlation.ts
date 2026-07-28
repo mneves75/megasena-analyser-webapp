@@ -67,11 +67,14 @@ export class PrizeCorrelationEngine {
           CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
         FROM draws
       )
-      SELECT 
+      -- Per-number averages must share the overallAvg* basis (prize > 0 only):
+      -- including zero-prize accumulated draws in the numerator but not the
+      -- denominator dragged every correlationScore below 1, emptying luckyNumbers.
+      SELECT
         num as number,
         COUNT(*) as frequency,
-        AVG(prize_sena) as avg_sena,
-        AVG(prize_quina) as avg_quina,
+        COALESCE(AVG(CASE WHEN prize_sena > 0 THEN prize_sena END), 0) as avg_sena,
+        COALESCE(AVG(CASE WHEN prize_quina > 0 THEN prize_quina END), 0) as avg_quina,
         SUM(has_winner_sena) as total_wins_sena,
         SUM(has_winner_quina) as total_wins_quina
       FROM number_prizes

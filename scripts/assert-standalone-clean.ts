@@ -5,6 +5,9 @@ import path from 'node:path';
 
 const standaloneRoot = path.join(process.cwd(), '.next', 'standalone');
 const forbiddenDbPattern = /\.(db|sqlite)(?:-(?:shm|wal))?$|\.db(?:-(?:shm|wal))?$|\.bak$|\.backup$/i;
+// Bun auto-loads /app/.env at runtime, so a traced local .env inside the
+// standalone tree ships developer secrets into the published image.
+const forbiddenEnvPattern = /^\.env(\..+)?$/i;
 // node_modules may legitimately ship sample SQLite fixtures and is huge; the
 // contract targets the app's own local database state, never vendored files.
 const SKIPPED_DIRS = new Set(['node_modules']);
@@ -36,7 +39,7 @@ async function collectForbiddenFiles(dir: string, root = dir): Promise<string[]>
       continue;
     }
 
-    if (forbiddenDbPattern.test(entry.name)) {
+    if (forbiddenDbPattern.test(entry.name) || forbiddenEnvPattern.test(entry.name)) {
       files.push(path.relative(root, entryPath));
     }
   }

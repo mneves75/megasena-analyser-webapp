@@ -1,7 +1,7 @@
 import { getDatabase } from '@/lib/db';
 
 interface ResponseCacheEntry {
-  contest: number | null;
+  contest: string | number | null;
   body: string;
   expiresAt: number;
 }
@@ -27,6 +27,30 @@ export function buildResponseCacheKey(
   return `${route}?${canonical}`;
 }
 
+export function getDrawsVersion(): string | null {
+  const row = getDatabase()
+    .prepare(
+      `SELECT
+        COUNT(*) AS count,
+        COALESCE(MAX(rowid), 0) AS maxRowId,
+        COALESCE(MAX(strftime('%s', updated_at)), 0) AS maxUpdatedAt
+      FROM draws`
+    )
+    .get() as { count: number; maxRowId: number; maxUpdatedAt: number } | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  // Composite version: count catches inserts/deletes, maxRowId catches re-inserts,
+  // and maxUpdatedAt catches in-place corrections (backfills/prize fixes).
+  return `${row.count}:${row.maxRowId}:${row.maxUpdatedAt}`;
+}
+
+/**
+ * @deprecated Use getDrawsVersion for cache invalidation; kept for callers that
+ * genuinely need the largest contest number.
+ */
 export function getLatestContestNumber(): number | null {
   const row = getDatabase()
     .prepare('SELECT MAX(contest_number) AS lastContestNumber FROM draws')
@@ -55,10 +79,11 @@ export class ContestResponseCache {
     return this.entries.size;
   }
 
-  getOrCompute(key: string, contest: number | null, computePayload: () => unknown): string {
+  getOrCompute(key: string, contest: string | number | null, computePayload: () => unknown): string {
     const cached = this.entries.get(key);
-    // TTL bounds staleness from data changes that do not move MAX(contest_number):
-    // backfills (fetch-missing), cache-table rebuilds, or requests racing an ingestion.
+    // TTL bounds staleness from data changes that do not move the version:
+    // for example, manual updates that do not change the draws count, or requests
+    // racing an ingestion while the count has not yet incremented.
     if (cached && cached.contest === contest && cached.expiresAt > this.now()) {
       return cached.body;
     }

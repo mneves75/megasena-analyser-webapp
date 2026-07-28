@@ -21,29 +21,33 @@ export function SectionNav({ sections }: SectionNavProps): React.ReactNode {
   const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? '');
 
   useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') return;
+    let observer: IntersectionObserver | undefined;
 
-    const elements = sections
-      .map((section) => document.getElementById(section.id))
-      .filter((element): element is HTMLElement => element !== null);
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((entry) => entry.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          if (visible[0]?.target.id) {
+            setActiveId(visible[0].target.id);
+          }
+        },
+        // Bias the active line toward the section crossing the upper third.
+        { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+      );
 
-    if (elements.length === 0) return;
+      sections
+        .map((section) => document.getElementById(section.id))
+        .filter((element): element is HTMLElement => element !== null)
+        .forEach((element) => observer!.observe(element));
+    }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]?.target.id) {
-          setActiveId(visible[0].target.id);
-        }
-      },
-      // Bias the active line toward the section crossing the upper third.
-      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
-    );
-
-    elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
+    };
   }, [sections]);
 
   if (sections.length === 0) return null;

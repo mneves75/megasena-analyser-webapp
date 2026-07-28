@@ -4,6 +4,19 @@ import path from 'path';
 import { spawnSync } from 'node:child_process';
 import { describe, it, expect } from 'vitest';
 
+function symlinkProjectWithBadMigration(tempDir: string): void {
+  const repoRoot = process.cwd();
+
+  fs.symlinkSync(path.join(repoRoot, 'package.json'), path.join(tempDir, 'package.json'));
+  fs.symlinkSync(path.join(repoRoot, 'tsconfig.json'), path.join(tempDir, 'tsconfig.json'));
+  fs.symlinkSync(path.join(repoRoot, 'lib'), path.join(tempDir, 'lib'));
+  fs.symlinkSync(path.join(repoRoot, 'scripts'), path.join(tempDir, 'scripts'));
+
+  const migrationsDir = path.join(tempDir, 'db', 'migrations');
+  fs.mkdirSync(migrationsDir, { recursive: true });
+  fs.writeFileSync(path.join(migrationsDir, '001_bad.sql'), 'THIS IS NOT VALID SQL;');
+}
+
 describe('runMigrations (sqlite file)', () => {
   it('creates audit_logs/log_events and records migrations 004/005/006', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mega-sena-db-'));
@@ -54,6 +67,32 @@ describe('runMigrations (sqlite file)', () => {
       );
 
       expect(verify.status).toBe(0);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('exits with code 1 and reports failure when a migration is invalid', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mega-sena-migration-fail-'));
+    const dbPath = path.join(tempDir, 'test.db');
+
+    try {
+      symlinkProjectWithBadMigration(tempDir);
+
+      const migrate = spawnSync('bun', ['run', 'scripts/migrate.ts'], {
+        cwd: tempDir,
+        env: {
+          ...process.env,
+          DATABASE_PATH: dbPath,
+          VITEST: '',
+          VITEST_FORCE_FILE_DB: '1',
+        },
+        encoding: 'utf8',
+      });
+
+      expect(migrate.status).toBe(1);
+      expect(migrate.stdout + migrate.stderr).toContain('[ERROR] Migration failed');
+      expect(migrate.stdout + migrate.stderr).toContain('001_bad.sql');
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }

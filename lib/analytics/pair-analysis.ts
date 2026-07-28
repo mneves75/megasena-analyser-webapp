@@ -19,7 +19,11 @@ export class PairAnalysisEngine {
   }
 
   updatePairFrequencies(): void {
+    const savepointName = 'update_pair_frequencies';
     try {
+      // Atomic rebuild using a savepoint so we do not destroy an outer transaction
+      // if this function is called inside one.
+      this.db.exec(`SAVEPOINT ${savepointName}`);
       // Clear existing cache
       this.db.prepare('DELETE FROM number_pair_frequency').run();
 
@@ -117,7 +121,15 @@ export class PairAnalysisEngine {
         
         insertStmt.run(num1, num2, data.frequency, correlation, data.lastContest, data.lastDate);
       }
+
+      this.db.exec(`RELEASE ${savepointName}`);
     } catch (error) {
+      try {
+        this.db.exec(`ROLLBACK TO ${savepointName}`);
+        this.db.exec(`RELEASE ${savepointName}`);
+      } catch {
+        // Ignore rollback errors when no savepoint was started.
+      }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to update pair frequencies: ${errorMessage}`);
     }

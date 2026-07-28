@@ -382,6 +382,20 @@ class InMemoryDatabase implements BunDatabase {
       return ({ contest_number: latest.contest_number, draw_date: latest.draw_date } satisfies LastDrawResult);
     }
 
+    if (
+      sql.startsWith(
+        'select count(*) as count, coalesce(max(rowid), 0) as maxrowid, coalesce(max(strftime(\'%s\', updated_at)), 0) as maxupdatedat from draws'
+      )
+    ) {
+      // In-memory DB has no rowid/updated_at columns; count is enough for tests.
+      const count = this.draws.length;
+      return ({ count, maxRowId: count, maxUpdatedAt: 0 } as {
+        count: number;
+        maxRowId: number;
+        maxUpdatedAt: number;
+      });
+    }
+
     if (sql.startsWith('select count(*) as count from draws')) {
       if (sql.includes('where accumulated = 1')) {
         const count = this.draws.filter((draw) => draw.accumulated === 1).length;

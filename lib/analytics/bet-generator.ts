@@ -147,95 +147,108 @@ export class BetGenerator {
       )
       .sort((a, b) => a.costUnits - b.costUnits);
 
+    // Sparse DP over (betCount, coverage) keeping every reachable cost.  A
+    // single best plan per cell is insufficient: an intermediate-cost
+    // predecessor may be the only one that can afford a given next bet while
+    // still leaving enough budget to reach the same final coverage with fewer
+    // total bets.  We therefore store all non-dominated cost paths per state
+    // and prune only duplicate costs (keeping the variant with the highest
+    // raw totalNumbers in case coverage is already capped at 60).
     type PlanNode = {
+      costUnits: number;
       totalNumbers: number;
-      betCount: number;
-      prevIndex: number;
+      prevBetCount: number;
+      prevCoverage: number;
       prevBetSize: number;
+      prevCost: number;
     };
 
-    const bestPlans: Array<PlanNode | null> = Array.from({ length: budgetUnits + 1 }, () => null);
-    bestPlans[0] = { totalNumbers: 0, betCount: 0, prevIndex: -1, prevBetSize: 0 };
+    const MAX_COVERAGE = MEGASENA_CONSTANTS.MAX_NUMBER;
+    const MAX_BETS = BetGenerator.MAX_BETS_PER_GENERATION;
 
-    const coverageScore = (totalNumbers: number): number =>
-      Math.min(MEGASENA_CONSTANTS.MAX_NUMBER, totalNumbers);
+    const dp: Array<Array<Map<number, PlanNode>>> = Array.from(
+      { length: MAX_BETS + 1 },
+      () => Array.from({ length: MAX_COVERAGE + 1 }, () => new Map())
+    );
 
-    const isBetterPlan = (candidate: PlanNode, current: PlanNode | null): boolean => {
-      if (!current) {
-        return true;
-      }
-      const candidateCoverage = coverageScore(candidate.totalNumbers);
-      const currentCoverage = coverageScore(current.totalNumbers);
-      if (candidateCoverage !== currentCoverage) {
-        return candidateCoverage > currentCoverage;
-      }
-      if (candidate.betCount !== current.betCount) {
-        return candidate.betCount < current.betCount;
-      }
-      return candidate.totalNumbers > current.totalNumbers;
-    };
+    dp[0]![0]!.set(0, {
+      costUnits: 0,
+      totalNumbers: 0,
+      prevBetCount: -1,
+      prevCoverage: -1,
+      prevBetSize: 0,
+      prevCost: -1,
+    });
 
-    for (let units = 0; units <= budgetUnits; units++) {
-      const plan = bestPlans[units];
-      if (!plan) continue;
+    for (let betCount = 0; betCount < MAX_BETS; betCount++) {
+      for (let coverage = 0; coverage <= MAX_COVERAGE; coverage++) {
+        const plans = dp[betCount]![coverage];
+        if (!plans || plans.size === 0) continue;
 
-      for (const option of options) {
-        const nextUnits = units + option.costUnits;
-        if (nextUnits > budgetUnits) {
-          continue;
-        }
-        const nextBetCount = plan.betCount + 1;
-        if (nextBetCount > BetGenerator.MAX_BETS_PER_GENERATION) {
-          continue;
-        }
+        const sorted = Array.from(plans.entries()).sort((a, b) => a[0] - b[0]);
 
-        const candidate: PlanNode = {
-          totalNumbers: plan.totalNumbers + option.numberCount,
-          betCount: nextBetCount,
-          prevIndex: units,
-          prevBetSize: option.numberCount,
-        };
+        for (const option of options) {
+          for (const [cost, plan] of sorted) {
+            const nextCost = cost + option.costUnits;
+            if (nextCost > budgetUnits) break;
 
-        const currentPlan = bestPlans[nextUnits] ?? null;
-        if (isBetterPlan(candidate, currentPlan)) {
-          bestPlans[nextUnits] = candidate;
+            const nextTotalNumbers = plan.totalNumbers + option.numberCount;
+            const nextCoverage = Math.min(MAX_COVERAGE, nextTotalNumbers);
+            const nextMap = dp[betCount + 1]![nextCoverage]!;
+            const existing = nextMap.get(nextCost);
+            if (!existing || nextTotalNumbers > existing.totalNumbers) {
+              nextMap.set(nextCost, {
+                costUnits: nextCost,
+                totalNumbers: nextTotalNumbers,
+                prevBetCount: betCount,
+                prevCoverage: coverage,
+                prevBetSize: option.numberCount,
+                prevCost: cost,
+              });
+            }
+          }
         }
       }
     }
 
-    let bestUnits = -1;
     let bestPlan: PlanNode | null = null;
-    for (let units = budgetUnits; units >= 0; units--) {
-      const plan = bestPlans[units];
-      if (!plan) {
-        continue;
-      }
-      if (bestUnits === -1) {
-        bestUnits = units;
-        bestPlan = plan;
-        continue;
-      }
+    let bestBetCount = -1;
+    let bestCoverage = -1;
 
-      if (units > bestUnits) {
-        bestUnits = units;
-        bestPlan = plan;
-        continue;
-      }
+    for (let betCount = 0; betCount <= MAX_BETS; betCount++) {
+      for (let coverage = 0; coverage <= MAX_COVERAGE; coverage++) {
+        const plans = dp[betCount]![coverage];
+        if (!plans) continue;
 
-      if (units === bestUnits && isBetterPlan(plan, bestPlan)) {
-        bestPlan = plan;
+        for (const plan of plans.values()) {
+          if (
+            coverage > bestCoverage ||
+            (coverage === bestCoverage &&
+              (!bestPlan ||
+                plan.costUnits > bestPlan.costUnits ||
+                (plan.costUnits === bestPlan.costUnits &&
+                  (betCount < bestBetCount ||
+                    (betCount === bestBetCount &&
+                      plan.totalNumbers > bestPlan.totalNumbers)))))
+          ) {
+            bestPlan = plan;
+            bestBetCount = betCount;
+            bestCoverage = coverage;
+          }
+        }
       }
     }
 
-    if (!bestPlan || bestUnits <= 0) {
+    if (!bestPlan || bestBetCount <= 0) {
       return [];
     }
 
     const sizes: number[] = [];
     let currentPlan: PlanNode | null = bestPlan;
-    while (currentPlan && currentPlan.prevIndex >= 0) {
+    while (currentPlan && currentPlan.prevBetCount >= 0) {
       sizes.push(currentPlan.prevBetSize);
-      currentPlan = bestPlans[currentPlan.prevIndex] ?? null;
+      const prevMap: Map<number, PlanNode> | undefined = dp[currentPlan.prevBetCount]![currentPlan.prevCoverage];
+      currentPlan = prevMap?.get(currentPlan.prevCost) ?? null;
     }
 
     return sizes.reverse();

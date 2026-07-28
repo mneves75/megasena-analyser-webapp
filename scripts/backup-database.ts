@@ -167,11 +167,19 @@ async function createBackup(): Promise<string | null> {
     const backupFilename = `mega-sena-backup-${timestamp}.db`;
     const backupPath = path.join(BACKUP_DIR, backupFilename);
 
-    // Step 4: Copy database file (atomic operation)
+    // Step 4: Snapshot via SQLite's online backup. A plain byte copy of a live
+    // WAL database can be torn mid-write and silently drops everything still in
+    // the -wal file; VACUUM INTO produces an atomic, checkpointed snapshot.
     logger.info(`Creating backup: ${backupFilename}`);
 
     const startTime = Date.now();
-    await Bun.write(backupPath, Bun.file(DB_PATH));
+    const { Database } = await import('bun:sqlite');
+    const sourceDb = new Database(DB_PATH, { readonly: true });
+    try {
+      sourceDb.exec(`VACUUM INTO '${backupPath.replaceAll("'", "''")}'`);
+    } finally {
+      sourceDb.close();
+    }
     const duration = Date.now() - startTime;
 
     // Step 5: Verify backup was created successfully
@@ -179,16 +187,21 @@ async function createBackup(): Promise<string | null> {
       throw new Error('Backup file was not created');
     }
 
-    // Step 6: Get backup file stats
-    const backupStats = fs.statSync(backupPath);
-    const originalStats = fs.statSync(DB_PATH);
-
-    // Verify sizes match
-    if (backupStats.size !== originalStats.size) {
-      throw new Error(
-        `Backup size mismatch: expected ${originalStats.size}, got ${backupStats.size}`
-      );
+    // Step 6: Verify the snapshot is a healthy database. VACUUM INTO compacts,
+    // so sizes legitimately differ from the live file — integrity_check is the
+    // meaningful proof, not a size compare.
+    const backupDb = new Database(backupPath, { readonly: true });
+    try {
+      const integrity = backupDb.prepare('PRAGMA integrity_check').get() as {
+        integrity_check: string;
+      };
+      if (integrity.integrity_check !== 'ok') {
+        throw new Error(`Backup failed integrity check: ${integrity.integrity_check}`);
+      }
+    } finally {
+      backupDb.close();
     }
+    const backupStats = fs.statSync(backupPath);
 
     logger.info('[OK] Backup created successfully');
     logger.info(`   Size: ${formatBytes(backupStats.size)}`);
