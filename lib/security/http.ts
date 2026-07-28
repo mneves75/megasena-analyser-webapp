@@ -3,6 +3,28 @@ import { isIP } from 'node:net';
 
 const TRUST_PROXY_HEADERS_ENV = 'TRUST_PROXY_HEADERS';
 const TRUSTED_PROXY_IPS_ENV = 'TRUSTED_PROXY_IPS';
+const TRUSTED_CLIENT_IP_HEADER_ENV = 'TRUSTED_CLIENT_IP_HEADER';
+
+/**
+ * Headers consulted, in order, for the real client address once the socket peer
+ * is a trusted proxy.
+ *
+ * SECURITY CONTRACT: every header in this list must be REWRITTEN by the public
+ * edge on each request. A header the edge merely forwards is client-controlled,
+ * and since it becomes the rate-limit key and the audited client hash, a client
+ * that can reach the origin directly would get a fresh bucket per request. The
+ * edge in front of this deployment rewrites the `x-*` pair but not
+ * `cf-connecting-ip`, which Cloudflare sets and only Cloudflare should set — so
+ * a deployment whose origin is reachable outside Cloudflare MUST pin a single
+ * header with `TRUSTED_CLIENT_IP_HEADER` (or firewall the origin). See
+ * docs/SECURITY.md.
+ */
+const DEFAULT_CLIENT_IP_HEADERS = ['cf-connecting-ip', 'x-real-ip', 'x-forwarded-for'] as const;
+
+function configuredClientIpHeaders(): readonly string[] {
+  const configured = (process.env[TRUSTED_CLIENT_IP_HEADER_ENV] ?? '').trim().toLowerCase();
+  return configured.length > 0 ? [configured] : DEFAULT_CLIENT_IP_HEADERS;
+}
 
 export class RequestBodyTooLargeError extends Error {
   readonly maxBytes: number;
@@ -57,17 +79,26 @@ function normalizeForwardedIp(value: string | null): string | null {
   return candidate;
 }
 
-function firstForwardedForIp(req: Request): string | null {
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  return normalizeForwardedIp(forwardedFor?.split(',')[0] ?? null);
+function readClientIpHeader(req: Request, header: string): string | null {
+  const raw = req.headers.get(header);
+  if (raw === null) {
+    return null;
+  }
+
+  // x-forwarded-for is a list; the left-most entry is the original client.
+  const candidate = header === 'x-forwarded-for' ? (raw.split(',')[0] ?? null) : raw;
+  return normalizeForwardedIp(candidate);
 }
 
 function trustedForwardedIp(req: Request): string | null {
-  return (
-    normalizeForwardedIp(req.headers.get('cf-connecting-ip')) ??
-    normalizeForwardedIp(req.headers.get('x-real-ip')) ??
-    firstForwardedForIp(req)
-  );
+  for (const header of configuredClientIpHeaders()) {
+    const address = readClientIpHeader(req, header);
+    if (address !== null) {
+      return address;
+    }
+  }
+
+  return null;
 }
 
 export function resolveClientIp(
