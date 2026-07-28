@@ -88,6 +88,7 @@ O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no base
 - `bun run security:secrets:history` - Escanear o histórico Git com relatório redigido em `.tmp/` e resumo de alcance por branch/tag
 - `bun run db:migrate` - Executar migrações do banco de dados
 - `bun run db:pull` - Baixar dados de sorteios da API CAIXA
+- `bun run db:backfill-prizes` - Reidratar apenas as colunas de premiação dos sorteios já armazenados
 - `bun run audit:prune` - Hard delete de logs de auditoria antigos (retenção)
 - `bun run log:prune` - Hard delete de eventos de log antigos (retenção)
 - `bun scripts/optimize-db.ts` - Otimizar banco de dados (checkpoint WAL + VACUUM + ANALYZE)
@@ -114,6 +115,25 @@ bun run db:pull -- --incremental
 
 # Aceitar explicitamente lacunas da CAIXA quando uma faixa parcial for aceitável
 bun run db:pull -- --incremental --allow-partial
+```
+
+### Reidratação de premiação
+
+`db:pull` reescreve todas as colunas de todos os concursos em uma transação única e
+longa. Quando faltam apenas os dados de premiação — o caso de um banco carregado antes
+do tratamento atual de `listaRateioPremio`/`faixa`, que faz a seção "Prêmios" exibir
+`R$ 0,00` — use o backfill dedicado, que altera só as colunas de prêmio, commita em
+lotes e é retomável:
+
+```bash
+# Somente concursos sem dados de premiação
+bun run db:backfill-prizes
+
+# Refazer todos os concursos armazenados
+bun run db:backfill-prizes -- --all
+
+# Limitar a quantidade e ajustar o espaçamento entre requisições
+bun run db:backfill-prizes -- --limit 100 --delay 500
 ```
 
 **Modos:**

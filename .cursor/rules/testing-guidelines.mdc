@@ -4,14 +4,22 @@ description: Testing layout, tools, and coverage expectations
 ---
 ## Testing Guidelines
 
-- Unit tests: `tests/lib/**/{file}.test.ts` (Vitest). Mock HTTP via MSW in `tests/mocks`.
-- UI flows: `tests/app/**/{route}.spec.ts` (Playwright).
-- Seed a Supabase snapshot before integration runs with `scripts/pull-draws.ts --limit 5`.
-- Coverage: target ≥80% lines. Enforce with `bunx vitest --coverage`.
+- Unit tests: `tests/lib/**/*.test.ts` and `tests/components/**/*.test.tsx` (Vitest,
+  jsdom). CLI coverage lives in `tests/scripts/`.
+- UI flows: `tests/app/**/*.spec.ts` (Playwright). `vitest.config.ts` excludes
+  `tests/app/**`, so Vitest and Playwright cover disjoint sets.
+- The DB is swapped for `InMemoryDatabase` under Vitest (`lib/db.ts` checks
+  `process.env.VITEST`). Force the real file DB with `VITEST_FORCE_FILE_DB=1`.
+- Coverage: 80% thresholds (lines/functions/branches/statements) over
+  `components/**` and `lib/**`. A new `lib/` file falls inside the gate unless it is
+  added to the exclusion list in `vitest.config.ts`.
+- Bug fixes start with a failing regression test, then the fix.
 
 Commands:
-- `bun run test` to execute Vitest suites (add `--run` in CI to disable watch).
-- `bun run lint` with `--max-warnings=0`; use `bun run lint --fix` for autofix.
 
-See: [docs/PROMPT_UI.md](mdc:docs/PROMPT_UI.md)
+- `bun run test -- --run` for one Vitest pass (omit `-- --run` for watch).
+- Single file: `bun x vitest tests/lib/bet-generator.test.ts --run`.
+- `bun run test:e2e` for Playwright.
+- `bun run lint` with `--max-warnings=0`; `bun run lint:fix` for autofix.
 
+See: `AGENTS.md` → "Done-when" for the full gate list.
