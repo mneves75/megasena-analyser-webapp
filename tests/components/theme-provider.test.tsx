@@ -47,7 +47,7 @@ describe('ThemeProvider - localStorage Persistence', () => {
       }),
       length: 0,
       key: vi.fn(),
-    } as any;
+    } as Storage;
 
     // Mock window.matchMedia
     global.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -109,6 +109,18 @@ describe('ThemeProvider - localStorage Persistence', () => {
     expect(screen.getByTestId('current-theme')).toHaveTextContent('light');
   });
 
+  it('should ignore an invalid theme stored in localStorage', () => {
+    mockLocalStorage['megasena-theme'] = 'sepia';
+
+    render(
+      <ThemeProvider defaultTheme="light">
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('light');
+  });
+
   it('should respect custom storageKey prop', () => {
     mockLocalStorage['custom-key'] = 'dark';
 
@@ -153,7 +165,7 @@ describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as any;
+    } as Storage;
   });
 
   it('should add media query listener when theme is system', () => {
@@ -247,7 +259,7 @@ describe('ThemeProvider - DOM Manipulation', () => {
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as any;
+    } as Storage;
   });
 
   it('should apply theme class to document root', () => {
@@ -331,7 +343,7 @@ describe('ThemeProvider - Regression Prevention', () => {
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as any;
+    } as Storage;
   });
 
   it('should not throw errors when unmounting', () => {
@@ -376,5 +388,30 @@ describe('ThemeProvider - Regression Prevention', () => {
 
     // Should handle without errors
     expect(screen.getByTestId('current-theme')).toHaveTextContent('dark');
+  });
+
+  it('should keep rendering and apply the default theme when storage is blocked', () => {
+    const blockedStorage: Storage = {
+      getItem: vi.fn(() => {
+        throw new DOMException('Acesso bloqueado', 'SecurityError');
+      }),
+      setItem: vi.fn(() => {
+        throw new DOMException('Acesso bloqueado', 'SecurityError');
+      }),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(() => null),
+      length: 0,
+    };
+    global.localStorage = blockedStorage;
+
+    render(
+      <ThemeProvider defaultTheme="light">
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('current-theme')).toHaveTextContent('light');
+    expect(document.documentElement.classList.contains('light')).toBe(true);
   });
 });

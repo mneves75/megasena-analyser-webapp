@@ -18,6 +18,10 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+function isTheme(value: string | null): value is Theme {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
@@ -38,9 +42,13 @@ export function ThemeProvider({
   useEffect(() => {
     setMounted(true);
     // Load theme from localStorage
-    const stored = localStorage.getItem(storageKey) as Theme | null;
-    if (stored) {
-      setTheme(stored);
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (isTheme(stored)) {
+        setTheme(stored);
+      }
+    } catch {
+      // Storage can be unavailable in privacy-restricted contexts.
     }
     /**
      * DEPENDENCY ARRAY DECISION:
@@ -69,7 +77,11 @@ export function ThemeProvider({
     root.classList.add(resolvedTheme);
 
     // Save to localStorage
-    localStorage.setItem(storageKey, theme);
+    try {
+      localStorage.setItem(storageKey, theme);
+    } catch {
+      // Keep the in-memory theme when persistence is unavailable.
+    }
     /**
      * DEPENDENCY ARRAY DECISION:
      * storageKey is omitted despite being used in this effect.
@@ -111,4 +123,3 @@ export function useTheme(): ThemeContextValue {
   }
   return context;
 }
-
