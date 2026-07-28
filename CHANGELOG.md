@@ -7,6 +7,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.9.0-beta.1] - 2026-07-28
+
+### Added
+
+- Runtime Bun canary para imagem Docker de produção, pinado por digest imutável (`oven/bun:canary-alpine@sha256:...`) e acompanhado do arquivo `.bun-canary-revision`.
+- Action composta `.github/actions/setup-bun-pinned/action.yml` e arquivo `.bun-ci-version` para pinar a versão estável do Bun no CI (1.3.14); workflows `ci-cd.yml` e `cli-smoke.yml` atualizados para usá-la.
+- Integração com React Doctor (`react-doctor@0.9.2`): script `bun run doctor`, workflow `.github/workflows/react-doctor.yml` pinado por SHA e versão, e hook pre-commit bloqueando apenas erros (não warnings).
+- Hardening do pnpm: `pnpm-workspace.yaml` agora define `minimumReleaseAge: 1440` e `trustPolicy: no-downgrade`, com exceções documentadas para pacotes cujos metadados de confiança mudaram no registry.
+- Variável de ambiente `DATABASE_PATH` nos workflows de CI para isolar o banco de testes.
+
+### Fixed
+
+- `buildOptimizedBetSizes` reescrito com programação dinâmica de custos alcançáveis (sparse reachable-cost DP), corrigindo planos subótimos em orçamentos como R$ 672 (agora retorna 10 apostas: 8×7 + 2×8).
+- `PrizeCorrelationEngine` usa `COALESCE(AVG(...), 0)` para médias condicionais, evitando NULL quando um número só aparece em sorteios sem premiação.
+- `components/statistics/section-nav.tsx`: cleanup explícito do `IntersectionObserver` sem retornos antecipados no `useEffect`, eliminando o falso-positivo do React Doctor.
+- Adicionada dependência `ajv@^8.17.1` e override específico `conf>ajv` para compatibilidade com `react-doctor/conf`, mantendo `ajv@6.14.0` para ESLint via override geral.
+
+### Changed
+
+- Workflows de CI passam a usar a action composta de setup do Bun em vez de `oven-sh/setup-bun@v2` diretamente.
+- Hook pre-commit do React Doctor usa `--blocking error`, permitindo que warnings sejam tratados de forma advisory.
+
 ## [1.8.0] - 2026-07-16
 
 ### Added

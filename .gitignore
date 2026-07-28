@@ -30,6 +30,10 @@ db/backups/*.sql
 # Editor
 .vscode/
 .idea/
+.agents/
+.claude/skills/
+.commandcode/
+.factory/
 *.swp
 *.swo
 *~
