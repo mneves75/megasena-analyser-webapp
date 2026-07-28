@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { MEGASENA_CONSTANTS } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 import { roundTo } from '@/lib/utils';
 
@@ -9,6 +10,39 @@ export interface PairStats {
   correlation: number;
   lastSeenContest: number | null;
   lastSeenDate: string | null;
+}
+
+/**
+ * Expected number of draws in which two specific numbers co-occur.
+ *
+ * `freq1`/`freq2` are how many draws each number appeared in, so
+ * `freq / totalDraws` is that number's per-draw marginal probability. Drawing is
+ * WITHOUT replacement from 60 balls, which is what the two correction factors
+ * capture: once the first number occupies a slot, only 5 of the remaining slots
+ * and 59 of the remaining balls are available to the second.
+ *
+ * Under a uniform history this reduces exactly to the hypergeometric value
+ * `totalDraws * (6/60) * (5/59)` — 25.73 over 3.036 draws. The previous form,
+ * `(freq/(totalDraws*6))^2 * totalDraws * 15`, returned 12.65 for the same input
+ * and therefore inflated every displayed correlation by about 2,03x, making
+ * independent pairs look positively correlated.
+ */
+export function expectedPairFrequency(
+  freq1: number,
+  freq2: number,
+  totalDraws: number
+): number {
+  if (totalDraws <= 0) {
+    return 0;
+  }
+
+  const perDraw1 = freq1 / totalDraws;
+  const perDraw2 = freq2 / totalDraws;
+  const slotsAfterFirst =
+    (MEGASENA_CONSTANTS.NUMBERS_PER_BET - 1) / MEGASENA_CONSTANTS.NUMBERS_PER_BET;
+  const ballsAfterFirst = MEGASENA_CONSTANTS.MAX_NUMBER / (MEGASENA_CONSTANTS.MAX_NUMBER - 1);
+
+  return totalDraws * perDraw1 * perDraw2 * slotsAfterFirst * ballsAfterFirst;
 }
 
 export class PairAnalysisEngine {
@@ -114,9 +148,7 @@ export class PairAnalysisEngine {
         // Calculate correlation: actual frequency vs expected frequency
         const freq1 = frequencyByNumber.get(num1) ?? 0;
         const freq2 = frequencyByNumber.get(num2) ?? 0;
-        const prob1 = freq1 / (totalDraws * 6);
-        const prob2 = freq2 / (totalDraws * 6);
-        const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw
+        const expectedFrequency = expectedPairFrequency(freq1, freq2, totalDraws);
         const correlation = expectedFrequency > 0 ? data.frequency / expectedFrequency : 0;
         
         insertStmt.run(num1, num2, data.frequency, correlation, data.lastContest, data.lastDate);
@@ -175,18 +207,21 @@ export class PairAnalysisEngine {
     }>;
 
     return pairs.map((pair) => {
-      // Calculate expected frequency for display (correlation is already cached)
       const freq1 = frequencyByNumber.get(pair.number_1) ?? 0;
       const freq2 = frequencyByNumber.get(pair.number_2) ?? 0;
-      const prob1 = freq1 / (totalDraws * 6);
-      const prob2 = freq2 / (totalDraws * 6);
-      const expectedFrequency = prob1 * prob2 * totalDraws * 15; // 15 pairs per draw (6 choose 2)
+      const expectedFrequency = expectedPairFrequency(freq1, freq2, totalDraws);
+
+      // Derive the correlation from the expectation shown next to it instead of
+      // reading the cached column: a cache written by an older formula would
+      // otherwise be displayed beside a freshly computed expectation, and the
+      // two would not divide out to the number on screen.
+      const correlation = expectedFrequency > 0 ? pair.frequency / expectedFrequency : 0;
 
       return {
         pair: [pair.number_1, pair.number_2],
         frequency: pair.frequency,
         expectedFrequency: roundTo(expectedFrequency),
-        correlation: roundTo(pair.correlation),
+        correlation: roundTo(correlation),
         lastSeenContest: pair.last_occurred_contest,
         lastSeenDate: pair.last_occurred_date,
       };
