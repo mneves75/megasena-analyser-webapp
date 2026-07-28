@@ -127,6 +127,87 @@ describe('CaixaAPIClient', () => {
     expect(data.valorEstimadoProximoConcurso).toBe(3500000);
   });
 
+  it('rejects a response for a different contest without retrying', async () => {
+    const client = new CaixaAPIClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          numero: 1,
+          dataApuracao: '2020-01-01',
+          listaDezenas: ['01', '02', '03', '04', '05', '06'],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(client.fetchDraw(999)).rejects.toThrow(
+      /solicitado.*999.*recebido.*1/i
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a malformed listaDezenas without retrying', async () => {
+    const client = new CaixaAPIClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          numero: 1,
+          dataApuracao: '2020-01-01',
+          listaDezenas: ['01', '02', '03', '04', '05'],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(client.fetchDraw(1)).rejects.toThrow(/listaDezenas/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects duplicated dezenas without retrying', async () => {
+    const client = new CaixaAPIClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          numero: 1,
+          dataApuracao: '2020-01-01',
+          listaDezenas: ['01', '02', '03', '04', '05', '05'],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(client.fetchDraw(1)).rejects.toThrow(/distintas|duplic/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects invalid prize tier numbers without retrying', async () => {
+    const client = new CaixaAPIClient();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          numero: 1,
+          dataApuracao: '2020-01-01',
+          listaDezenas: ['01', '02', '03', '04', '05', '06'],
+          listaRateioPremio: [
+            {
+              faixa: 1,
+              numeroDeGanhadores: 1,
+              valorPremio: -1,
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(client.fetchDraw(1)).rejects.toThrow(/valorPremio/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it('fails full-range ingestion when any contest cannot be fetched', async () => {
     const client = new CaixaAPIClient();
     const delaySpy = vi.spyOn(client as unknown as { delay: (ms: number) => Promise<void> }, 'delay');
