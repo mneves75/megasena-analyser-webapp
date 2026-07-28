@@ -19,8 +19,7 @@ artifacts/
 db/*.db
 db/*.db-shm
 db/*.db-wal
-db/backups/*.db
-db/backups/*.sql
+db/backups/
 
 # Environment
 .env
