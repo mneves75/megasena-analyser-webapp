@@ -29,12 +29,15 @@ import { logger } from '../lib/logger';
 // ============================================================================
 
 const DB_DIR = path.join(process.cwd(), 'db');
-const DB_PATH = path.join(DB_DIR, 'mega-sena.db');
+// Keep this resolution aligned with lib/db.ts, the runtime source of truth.
+const DB_PATH = process.env['DATABASE_PATH']
+  ? path.resolve(process.env['DATABASE_PATH'])
+  : path.resolve(DB_DIR, 'mega-sena.db');
 const BACKUP_DIR = path.join(DB_DIR, 'backups');
 
 // Retention policy
-const RETENTION_DAYS = Number(process.env['BACKUP_RETENTION_DAYS']) || 30;
-const MAX_BACKUPS = Number(process.env['BACKUP_MAX_COUNT']) || 50;
+const DEFAULT_RETENTION_DAYS = 7;
+const DEFAULT_MAX_BACKUPS = 50;
 
 // File size limits (alert if database is too large)
 const MAX_DB_SIZE_MB = 1000; // 1GB
@@ -51,9 +54,37 @@ interface BackupMetadata {
   age: number; // days
 }
 
+interface BackupConfig {
+  retentionDays: number;
+  maxBackups: number;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+function readPositiveInteger(name: string, defaultValue: number): number {
+  const rawValue = process.env[name];
+  if (typeof rawValue === 'undefined') {
+    return defaultValue;
+  }
+
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} deve ser um número inteiro positivo.`);
+  }
+  return value;
+}
+
+function getBackupConfig(): BackupConfig {
+  return {
+    retentionDays: readPositiveInteger(
+      'BACKUP_RETENTION_DAYS',
+      DEFAULT_RETENTION_DAYS
+    ),
+    maxBackups: readPositiveInteger('BACKUP_MAX_COUNT', DEFAULT_MAX_BACKUPS),
+  };
+}
 
 /**
  * Format bytes to human-readable size
@@ -218,7 +249,10 @@ async function createBackup(): Promise<string | null> {
 /**
  * Clean up old backups based on retention policy
  */
-async function cleanupOldBackups(): Promise<void> {
+async function cleanupOldBackups(
+  retentionDays: number,
+  maxBackups: number
+): Promise<void> {
   try {
     logger.info('Cleaning up old backups...');
 
@@ -232,7 +266,7 @@ async function cleanupOldBackups(): Promise<void> {
     logger.info(`Found ${backups.length} total backup(s)`);
 
     // Calculate cutoff date for age-based retention
-    const cutoffDate = Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    const cutoffDate = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
     let removedCount = 0;
     let freedSpace = 0;
@@ -240,12 +274,12 @@ async function cleanupOldBackups(): Promise<void> {
     for (const [index, backup] of backups.entries()) {
       // Determine if backup should be removed
       const tooOld = backup.created.getTime() < cutoffDate;
-      const exceedsCount = index >= MAX_BACKUPS;
+      const exceedsCount = index >= maxBackups;
 
       if (tooOld || exceedsCount) {
         const reason = tooOld
-          ? `older than ${RETENTION_DAYS} days (${backup.age}d)`
-          : `exceeds max count (${MAX_BACKUPS})`;
+          ? `older than ${retentionDays} days (${backup.age}d)`
+          : `exceeds max count (${maxBackups})`;
 
         logger.info(`Removing backup: ${backup.filename} (${reason})`);
 
@@ -307,11 +341,21 @@ function displayStats(): void {
 // ============================================================================
 
 (async () => {
+  let config: BackupConfig;
+  try {
+    config = getBackupConfig();
+  } catch (error) {
+    logger.error('Configuração de backup inválida', error);
+    process.exit(1);
+  }
+
   logger.info('═'.repeat(60));
   logger.info('Database Backup Utility');
   logger.info('═'.repeat(60));
   logger.info(`Configuration:`);
-  logger.info(`  Retention: ${RETENTION_DAYS} days or ${MAX_BACKUPS} backups`);
+  logger.info(
+    `  Retention: ${config.retentionDays} days or ${config.maxBackups} backups`
+  );
   logger.info(`  Database: ${DB_PATH}`);
   logger.info(`  Backup directory: ${BACKUP_DIR}`);
   logger.info('═'.repeat(60));
@@ -325,7 +369,12 @@ function displayStats(): void {
   }
 
   // Clean up old backups
-  await cleanupOldBackups();
+  await cleanupOldBackups(config.retentionDays, config.maxBackups);
+
+  if (!fs.existsSync(backupPath)) {
+    logger.error('O backup recém-criado não existe após a limpeza de retenção.');
+    process.exit(1);
+  }
 
   // Display statistics
   displayStats();
