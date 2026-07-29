@@ -4,7 +4,7 @@ import { copyFile, mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-const GITLEAKS_IMAGE = 'ghcr.io/gitleaks/gitleaks:v8.30.1';
+import { GITLEAKS_IMAGE } from './security-tool-images';
 
 function run(command: string[], cwd: string): { exitCode: number; stdout: string; stderr: string } {
   const result = Bun.spawnSync(command, { cwd, stdout: 'pipe', stderr: 'pipe' });
@@ -53,6 +53,7 @@ try {
       'docker',
       'run',
       '--rm',
+      '--network=none',
       '-v',
       `${tempRoot}:/repo:ro`,
       GITLEAKS_IMAGE,

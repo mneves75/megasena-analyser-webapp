@@ -71,8 +71,9 @@ bun run start            # stack de produção local
 - `sync-standalone-dist.ts` copia `.next/standalone` → `dist/standalone`, traz
   `.next/static`, remove `db/` e checa que `server.js` não tem rewrite para porta de
   API errada.
-- **Docker:** imagem runtime-only (`oven/bun:1.3.14-alpine`), copia `dist/standalone`
-  pré-construído, monta `./db:/app/db` por volume, healthcheck em `/api/health`,
+- **Docker:** imagem runtime-only baseada no Bun canary fixado por digest
+  (`.bun-canary-revision`), copia `dist/standalone` pré-construído, monta
+  `./db:/app/db` por volume, healthcheck em `/api/health`,
   `CMD ["bun","scripts/start-docker.ts"]`.
 - **Deploy é manual** (Coolify não auto-deploy do GitHub). Reverse proxy Traefik +
   Cloudflare. HSTS no proxy, não no app.
@@ -88,9 +89,11 @@ bun run start            # stack de produção local
 
 ### CI (`.github/workflows`)
 
-- `ci-cd.yml`: `secrets` (Gitleaks) → `lint` (`bun audit`, ESLint zero-warning,
-  `tsc --noEmit`) + `test` → `e2e` (Playwright) → `build` (+`dist`, push GHCR) → `sbom`
-  (CycloneDX) → `security` (Trivy CRITICAL/HIGH, só em push). Bun fixado em 1.3.14.
+- `ci-cd.yml`: `secrets` (Gitleaks imutável) → `lint` (`pnpm audit`, ESLint,
+  ast-grep e TypeScript) + `test` → `e2e` (Playwright) → `build` (+`dist`, envio ao
+  GHCR somente pelo digest canônico) → `sbom` (CycloneDX) → `security` (Trivy
+  bloqueante no mesmo digest, só em push) → `publish` (promoção do digest aprovado
+  para tags). Bun fixado em 1.3.14.
 - `cli-smoke.yml`: roda `db:migrate` e os prunes em `--dry-run` para garantir que as
   CLIs não quebraram.
 
@@ -98,7 +101,7 @@ bun run start            # stack de produção local
 
 - Validação Zod em toda entrada; SQL parametrizado; rate limit 100/min por IP
   pseudonimizado; CORS estrito; CSP por nonce; sanitização de metadados; segredos fora
-  do repo; `overrides` no `package.json` são pins de segurança temporários.
+  do repo; `overrides` no `pnpm-workspace.yaml` são pins de segurança temporários.
 - Histórico de segredos: `bun run security:secrets:history` (falha se houver achados
   alcançáveis por branch/tag).
 

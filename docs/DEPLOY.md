@@ -47,11 +47,11 @@ Não reutilize o alvo de produção como staging por inferência. Se o SSH ou o 
 ```bash
 pnpm install --frozen-lockfile
 bun run lint
-bun x tsc --noEmit
+bun run lint:ast
+bun run typecheck
 bun run test -- --run
-pnpm audit
+pnpm audit --prod
 bun run build
-bun run test:e2e
 bun run dist:standalone
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-staging-deploy.tar.gz --no-mac-metadata \
   dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
@@ -67,12 +67,15 @@ Antes de empacotar uma release, rode os gates locais:
 
 ```bash
 bun run lint
-bun x tsc --noEmit
+bun run lint:ast
+bun run typecheck
 bun run test -- --run
-pnpm audit
+pnpm audit --prod
 bun run build
-bun run test:e2e
 ```
+
+Execute também `bun run test:e2e` quando a release alterar UI, navegação ou
+comportamento visível.
 
 ### 1. Build local
 

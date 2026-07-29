@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -9,6 +9,7 @@
     "dist:standalone": "bun run scripts/sync-standalone-dist.ts",
     "start": "bun run scripts/start-prod.ts",
     "lint": "eslint . --max-warnings=0",
+    "lint:ast": "ast-grep scan --config sgconfig.yml",
     "typecheck": "tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
@@ -24,7 +25,7 @@
     "db:backfill-prizes": "bun run scripts/backfill-prizes.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts",
     "log:prune": "bun run scripts/prune-log-events.ts",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "./node_modules/.bin/react-doctor"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -40,6 +41,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@ast-grep/cli": "0.45.0",
     "@eslint/eslintrc": "3.3.5",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.18",

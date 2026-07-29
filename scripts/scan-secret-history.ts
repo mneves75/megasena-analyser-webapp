@@ -3,7 +3,7 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const GITLEAKS_IMAGE = 'ghcr.io/gitleaks/gitleaks:v8.30.1';
+import { GITLEAKS_IMAGE } from './security-tool-images';
 const REPORT_DIR = '.tmp';
 const REPORT_FILE = 'gitleaks-history-redacted.json';
 
@@ -130,6 +130,7 @@ async function main(): Promise<void> {
       'docker',
       'run',
       '--rm',
+      '--network=none',
       '-v',
       `${repoRoot}:/repo:ro`,
       '-v',

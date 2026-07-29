@@ -2,8 +2,9 @@
 
 ## Active work
 
-- `v1.10.0` prepared locally (full source review + fixes). Awaiting an explicit staging
-  target and confirmation for production.
+- `v1.11.1` release candidate prepared locally with the Codex Security supply-chain
+  findings remediated. The explicit staging target and deployment path were validated;
+  production remains behind the post-staging confirmation gate.
 - Previous production deploy: `v1.9.0-beta.1`, 2026-07-28, host `conhecendotudo`.
   - Image: `megasena-analyser-app:v1.9.0-beta.1`
   - DB: 3,036 draws
@@ -12,6 +13,13 @@
 
 ## Key decisions & why
 
+- **Container release identity is digest-bound end to end.** BuildKit stages the
+  image in GHCR only by canonical digest; Trivy scans that digest with a blocking
+  HIGH/CRITICAL exit code; only then does `publish` attach release tags. This keeps
+  the scanned and published artifact identical and preserves BuildKit provenance.
+- **Security tools execute immutable artifacts.** React Doctor comes only from the
+  frozen pnpm install. Both Gitleaks scanners share the multiarch digest pin from
+  `scripts/security-tool-images.ts` and run with container networking disabled.
 - **Missing historical prize data is a data problem, not a code problem.** The CAIXA API
   returns the full prize breakdown for every contest (verified against #100/#1500/#2500),
   but the historical bulk import predates the current `listaRateioPremio`/`faixa`

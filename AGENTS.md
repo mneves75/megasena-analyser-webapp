@@ -58,6 +58,7 @@ anything that ships.
 pnpm install                 # install deps (corepack enable; pnpm@11)
 bun run dev                  # dev server on localhost:3000
 bun run lint                 # eslint --max-warnings=0
+bun run lint:ast             # ast-grep structural supply-chain rules
 bun run typecheck            # tsc --noEmit
 bun run test -- --run        # vitest once (omit -- --run for watch)
 bun x vitest tests/lib/bet-generator.test.ts --run   # single test file
@@ -71,18 +72,20 @@ bun run doctor               # React Doctor scan (same check the pre-commit hook
 ```
 
 **Pre-commit hook:** `.githooks/pre-commit` is the single versioned hook — staged
-gitleaks secret scan plus React Doctor (`--blocking error`; warnings never block).
-Both fail open when their tool is missing. Activate once per clone with
-`git config core.hooksPath .githooks`; never point `core.hooksPath` at a second
-directory, since Git honours only one and the other silently stops running.
+gitleaks secret scan, blocking ast-grep rules, and the lockfile-installed React Doctor
+(`--blocking error`; warnings never block). Gitleaks remains fail-open when its binary
+is missing; ast-grep and React Doctor fail closed with installation guidance. Activate
+once per clone with `git config core.hooksPath .githooks`; never point
+`core.hooksPath` at a second directory, since Git honours only one and the other
+silently stops running.
 
 Security/ops helpers: `security:secrets`, `security:secrets:history` (redacted git
 history scan, fails on findings), `security:csp:edge` (verify edge did not replace app
 CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`.
 
-**Done-when:** `bun run lint`, `bun run typecheck`, `bun run test -- --run`,
-`pnpm audit --prod`, and `bun run build` all pass; `bun run test:e2e` for UI-affecting
-changes.
+**Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
+`bun run test -- --run`, `pnpm audit --prod`, and `bun run build` all pass;
+`bun run test:e2e` for UI-affecting changes.
 
 ## Architecture map
 

@@ -21,6 +21,7 @@ trustPolicyExclude:
   - 'tailwind-merge@2.6.1'
   - 'undici-types@6.21.0'
 allowBuilds:
+  '@ast-grep/cli': true
   sharp: true
   unrs-resolver: true
 # Pins de segurança contra vulnerabilidades transitivas (ver docs/SECURITY.md,

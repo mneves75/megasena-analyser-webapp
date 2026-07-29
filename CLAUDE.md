@@ -27,9 +27,10 @@ LGPD-COMPLIANCE) → `CHANGELOG.md` (single source for versions/history).
   `vitest.config.ts` — a new `lib/` file lands inside the 80% gate unless added
   there. `tests/scripts/` covers the Bun CLIs.
 - **Git hooks:** one path only — `core.hooksPath` must be `.githooks`, whose
-  `pre-commit` runs the gitleaks staged secret scan *and* React Doctor
-  (`--blocking error`). Git honours a single hooks directory, so adding a second one
-  (a `.husky/` reinstall, for example) silently disables this hook.
+  `pre-commit` runs the gitleaks staged secret scan, ast-grep rules, and the
+  lockfile-installed React Doctor (`--blocking error`). ast-grep and React Doctor
+  fail closed when unavailable. Git honours a single hooks directory, so adding a
+  second one (a `.husky/` reinstall, for example) silently disables this hook.
 - **Duplicated agent guidance:** `.cursor/rules/*.mdc` restate the stack for Cursor
   and drift easily — they were rewritten on 2026-07-28 after describing a Supabase /
   `better-sqlite3` / Next.js 15 project that never existed here. When architecture
