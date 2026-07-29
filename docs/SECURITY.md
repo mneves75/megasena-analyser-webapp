@@ -112,7 +112,10 @@ Chamadas server-side internas podem definir `INTERNAL_API_SECRET` (mínimo de 32
 
 ## Secret scanning
 
-O repositório não mantém baseline de segredos rastreado em Git. O CI executa `bun run security:secrets`, que copia apenas arquivos fonte rastreados/não ignorados para um diretório temporário e roda `gitleaks dir` com a imagem `ghcr.io/gitleaks/gitleaks:v8.30.1`.
+O repositório não mantém baseline de segredos rastreado em Git. O CI executa `bun run security:secrets`, que copia apenas arquivos fonte rastreados/não ignorados para um diretório temporário e roda `gitleaks dir` com a imagem `ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f`.
+Os scanners da árvore e do histórico compartilham esse pin do índice multiarch e executam o contêiner com `--network=none`; atualize o pin central em `scripts/security-tool-images.ts`, nunca os consumidores separadamente.
+O pre-commit usa a interface atual do Gitleaks 8, `gitleaks git --staged --redact`;
+`protect --staged` pertence à CLI antiga e não deve reaparecer.
 
 Para validar o histórico Git completo, rode `bun run security:secrets:history`. Esse comando usa `gitleaks detect --redact`, grava o relatório redigido em `.tmp/gitleaks-history-redacted.json`, resume regras/arquivos afetados e classifica quais branches/tags ainda alcançam cada commit com achados. O comando falha quando encontra achados. Não publique o relatório bruto em issues, PRs ou documentação.
 
@@ -152,6 +155,18 @@ As GitHub Actions externas são fixadas pelo SHA completo do commit, com a vers�
 As imagens base do Docker são fixadas pelo digest multiarch `sha256`.
 Para atualizar uma Action, escolha e audite a versão, resolva sua tag com `gh api`, e altere o SHA e o comentário juntos.
 Para atualizar uma imagem, use `docker buildx imagetools inspect`, fixe o digest do índice multiarch e valide o build antes da revisão.
+
+O workflow de release constrói a imagem no GHCR sem tags finais, usando apenas seu
+digest canônico como área de staging. Trivy examina esse mesmo digest com
+`exit-code: 1`; somente depois do scan o job `publish` aplica as tags de branch,
+versão, SHA e `latest`. A promoção usa `imagetools create --prefer-index=false` e
+falha se o digest promovido divergir do digest escaneado. Nunca volte a escanear uma
+tag mutável nem reconstrua a imagem entre scan e publicação.
+
+React Doctor é uma dependência de desenvolvimento resolvida pelo `pnpm-lock.yaml`.
+`bun run doctor` e o pre-commit executam somente o binário em `node_modules`; não use
+`npx`, `pnpm dlx`, instalação global nem `@latest` como fallback. Se as dependências
+não estiverem instaladas, rode `pnpm install --frozen-lockfile`.
 
 ## Overrides de dependências
 

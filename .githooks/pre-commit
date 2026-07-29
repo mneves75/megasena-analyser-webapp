@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Versioned pre-commit hook: staged secret scan (gitleaks) + React Doctor.
+# Versioned pre-commit hook: staged secret scan + ast-grep + React Doctor.
 #
 # ACTIVATION (run once per clone; this is intentionally NOT done automatically):
 #
@@ -11,14 +11,16 @@
 # disables everything here.
 #
 # Behavior:
-#   - gitleaks: scans only STAGED changes (gitleaks protect --staged), no network
+#   - gitleaks: scans only STAGED changes (gitleaks git --staged), no network
 #     needed; --redact keeps any matched secret out of the terminal output.
 #     Blocks the commit (exit 1) when a secret is detected. Fail-open no-op when
 #     gitleaks is not installed, so contributors without the tool can still commit:
 #       brew install gitleaks        # macOS
 #       # or see https://github.com/gitleaks/gitleaks#installing
 #   - react-doctor: scans staged files and blocks on `error` findings only
-#     (warnings never block). Fail-open no-op when no runner is available.
+#     (warnings never block). Executes only the lockfile-installed binary and
+#     fails with an install instruction when dependencies are missing.
+#   - ast-grep: applies repository structural rules and blocks on any error.
 
 set -eu
 
@@ -29,7 +31,7 @@ run_gitleaks() {
     return 0
   fi
 
-  if ! gitleaks protect --staged --redact; then
+  if ! gitleaks git --staged --redact; then
     echo "pre-commit: gitleaks found potential secrets in staged changes; commit blocked." >&2
     echo "pre-commit: remove/rotate the secret, or if it is a false positive add a gitleaks allowlist entry." >&2
     return 1
@@ -38,29 +40,26 @@ run_gitleaks() {
   return 0
 }
 
+run_ast_grep() {
+  if [ ! -x "./node_modules/.bin/ast-grep" ]; then
+    echo "pre-commit: lockfile-installed ast-grep not found; commit blocked." >&2
+    echo "pre-commit: run pnpm install --frozen-lockfile and retry." >&2
+    return 1
+  fi
+
+  "./node_modules/.bin/ast-grep" scan --config sgconfig.yml
+}
+
 # react-doctor hook start
 react_doctor_scan_staged_files() {
-  if [ -x "./node_modules/.bin/react-doctor" ]; then
-    "./node_modules/.bin/react-doctor" --staged --blocking error
-    return
+  if [ ! -x "./node_modules/.bin/react-doctor" ]; then
+    printf '%s\n' \
+      "react-doctor: lockfile-installed binary not found; commit blocked." \
+      "Run pnpm install --frozen-lockfile and retry." >&2
+    return 1
   fi
 
-  if command -v react-doctor >/dev/null 2>&1; then
-    react-doctor --staged --blocking error
-    return
-  fi
-
-  if command -v pnpm >/dev/null 2>&1; then
-    pnpm dlx react-doctor@latest --staged --blocking error
-    return
-  fi
-
-  if command -v npx >/dev/null 2>&1; then
-    npx --yes react-doctor@latest --staged --blocking error
-    return
-  fi
-
-  printf '%s\n' "react-doctor: command not found; skipping staged scan."
+  "./node_modules/.bin/react-doctor" --staged --blocking error
 }
 
 run_react_doctor() {
@@ -72,12 +71,15 @@ run_react_doctor() {
 
   cat "$react_doctor_output" >&2
   rm -f "$react_doctor_output"
-  printf '%s\n' "React Doctor found staged errors; commit blocked." "Run react-doctor --staged --blocking error to inspect and fix." >&2
+  printf '%s\n' \
+    "React Doctor failed or found staged errors; commit blocked." \
+    "Run bun run doctor --staged --blocking error to inspect and fix." >&2
   return 1
 }
 # react-doctor hook end
 
 run_gitleaks || exit 1
+run_ast_grep || exit 1
 run_react_doctor || exit 1
 
 exit 0

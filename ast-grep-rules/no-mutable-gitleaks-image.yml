@@ -1,0 +1,7 @@
+id: no-mutable-gitleaks-image
+language: TypeScript
+severity: error
+message: Gitleaks container images must include an immutable sha256 digest.
+rule:
+  kind: string
+  regex: "^['\"]ghcr\\.io/gitleaks/gitleaks:[^@'\"]+['\"]$"

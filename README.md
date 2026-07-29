@@ -81,9 +81,12 @@ O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no base
 - `bun run security:csp:edge` - Validar que a borda pública não substitui a CSP nonce-based da aplicação e classificar o dono provável da sobrescrita; quando a CSP é compartilhada por home/API, imprime fingerprint curto, resumo de fontes e ações de remediação públicas; com `ORIGIN_BASE_URL`, compara uma origem direta sem imprimir a URL privada; com token read-only, diferencia zona inacessível de zona acessível sem regra candidata e pode executar Cloudflare Trace com simulação opt-in
 - `bun run start` - Iniciar a stack de produção local (API Bun + Next standalone já buildado)
 - `bun run lint` - Executar ESLint (falha em warnings)
+- `bun run lint:ast` - Executar regras estruturais de supply chain com ast-grep
+- `bun run typecheck` - Verificar os tipos TypeScript sem emitir arquivos
 - `bun run lint:fix` - Corrigir problemas de lint automaticamente
 - `bun run format` - Formatar código com Prettier
 - `bun run test` - Executar testes com Vitest (usa fallback de banco em memória)
+- `bun run doctor` - Executar o React Doctor instalado pelo lockfile
 - `bun run security:secrets` - Escanear a árvore fonte limpa com Gitleaks via Docker
 - `bun run security:secrets:history` - Escanear o histórico Git com relatório redigido em `.tmp/` e resumo de alcance por branch/tag
 - `bun run db:migrate` - Executar migrações do banco de dados
@@ -395,8 +398,9 @@ Esta aplicação implementa medidas de segurança seguindo OWASP e melhores prá
 ### Infraestrutura
 
 - **Docker**: Imagem runtime-only executada com usuário não-root `bun` (UID/GID 1000)
+- **Publicação por digest**: o CI escaneia com Trivy o mesmo digest canônico construído e só aplica tags após o gate `HIGH`/`CRITICAL` passar
 - **Shutdown supervisionado**: scripts Bun de produção aguardam saída real dos filhos e fazem fallback para `SIGKILL` quando `SIGTERM` não encerra dentro do prazo
-- **Segredos**: arquivos de ambiente fora do VCS e secret scanning da árvore atual no CI
+- **Segredos**: arquivos de ambiente fora do VCS; Gitleaks fixado por digest imutável escaneia a árvore atual no CI e o histórico sob demanda
 
 ### Telemetria Operacional
 
@@ -424,7 +428,7 @@ O `docker-compose.yml` local publica as portas apenas em `127.0.0.1`. Em produç
 3. Garanta que todos os testes passam com `bun run test -- --run`
 4. Atualize a documentação para novas funcionalidades
 
-Antes de publicar release, execute também `bun audit`, `bun x tsc --noEmit`, `bun run build` e `bun run test:e2e`. Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação permite apenas a exceção estreita `style-src-attr 'unsafe-inline'` para atributos de estilo. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
+Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run`, `pnpm audit --prod` e `bun run build`; acrescente `bun run test:e2e` quando houver mudança de UI. Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação permite apenas a exceção estreita `style-src-attr 'unsafe-inline'` para atributos de estilo. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
 
 ## Licença
 

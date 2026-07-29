@@ -7,6 +7,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-07-28
+
+### Security
+
+- O pipeline de imagens agora constrói e envia ao GHCR apenas o digest canônico, faz o Trivy escanear esse mesmo artefato com falha bloqueante para vulnerabilidades `HIGH`/`CRITICAL` e só então promove o digest aprovado para as tags finais. Isso elimina a janela em que uma imagem era publicada antes do scan e evita analisar um `:latest` antigo.
+- React Doctor passa a executar exclusivamente a versão resolvida pelo `pnpm-lock.yaml`. Os scanners Gitleaks compartilham um único pin OCI imutável e rodam sem rede; ast-grep bloqueia a reintrodução de uma imagem Gitleaks baseada somente em tag no CI e no pre-commit.
+
+### Added
+
+- Cinco testes de contrato cobrem a identidade da imagem entre build, scan e publicação, o comportamento bloqueante do Trivy e os pins imutáveis das ferramentas de segurança.
+
 ## [1.11.0] - 2026-07-28
 
 ### Fixed
