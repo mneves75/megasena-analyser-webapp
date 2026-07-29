@@ -32,3 +32,8 @@ Após o conjunto: `bun run build` e `bun run db:migrate` + verificações SQL de
 - **TESTS-02/04** (coverage de app/ e charts): coberto por E2E por decisão documentada em vitest.config.ts.
 - **TESTS-05/06/07** (quick-wins: isActivePath, asserts do DP, fake timers) e **DX-02** (hook pre-commit gitleaks versionado): executados por subagent separado nesta sessão (não são planos — mudanças pequenas e independentes de testes/tooling).
 - **DIRECTION-01..04**: roadmap de produto, não defeitos — registrados no relatório da auditoria, decisão do mantenedor.
+
+## Remediações de segurança posteriores
+
+- [006 — Supply chain do CI e ferramentas de segurança](006-security-supply-chain-remediation.md):
+  corrige o scan Codex Security validado no HEAD `0e425305` (1 Medium e 3 Low).
