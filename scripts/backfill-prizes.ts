@@ -21,88 +21,20 @@
  *   bun run db:backfill-prizes -- --delay 500  # ms between CAIXA requests
  */
 
-import { normalizePrizeDescription } from '@/lib/api/caixa-client';
-import { API_CONFIG } from '@/lib/constants';
+import { caixaClient, type MegaSenaDrawData } from '@/lib/api/caixa-client';
 import { getDatabase, closeDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { logger } from '@/lib/logger';
 
+import { parsePositiveIntegerArg } from '@/scripts/cli-args';
+
 const DEFAULT_DELAY_MS = 350;
 const COMMIT_BATCH_SIZE = 100;
-const REQUEST_TIMEOUT_MS = 20000;
 const MAX_CONSECUTIVE_FAILURES = 25;
 
-interface PrizeTier {
-  faixa?: number;
-  descricaoFaixa?: string;
-  valorPremio?: number;
-  numeroDeGanhadores?: number;
-}
-
-interface CaixaDraw {
-  numero: number;
-  listaRateioPremio?: PrizeTier[];
-  rateioProcessamento?: PrizeTier[];
-  valorArrecadado?: number;
-  acumulado?: boolean;
-  valorAcumuladoConcurso?: number;
-  valorAcumuladoProximoConcurso?: number;
-  valorEstimadoProximoConcurso?: number;
-}
-
-/**
- * CAIXA alternates between `rateioProcessamento` and `listaRateioPremio`, and
- * between a numeric `faixa` and a `descricaoFaixa` string that reads either
- * "Sena" or "6 acertos" depending on the contest era. Match on both.
- */
-function findPrizeTier(draw: CaixaDraw, faixa: number, descricao: string): PrizeTier | undefined {
-  const tiers =
-    Array.isArray(draw.rateioProcessamento) && draw.rateioProcessamento.length > 0
-      ? draw.rateioProcessamento
-      : Array.isArray(draw.listaRateioPremio)
-        ? draw.listaRateioPremio
-        : [];
-
-  return tiers.find((tier) => {
-    if (tier.faixa === faixa) {
-      return true;
-    }
-    return normalizePrizeDescription(tier.descricaoFaixa, tier.faixa) === descricao;
-  });
-}
-
-function parseIntArg(args: string[], flag: string): number | undefined {
-  const index = args.indexOf(flag);
-  if (index === -1) {
-    return undefined;
-  }
-  const raw = args[index + 1];
-  if (typeof raw !== 'string') {
-    return undefined;
-  }
-  const value = Number.parseInt(raw, 10);
-  return Number.isFinite(value) && value > 0 ? value : undefined;
-}
-
-async function fetchDraw(contest: number): Promise<CaixaDraw | null> {
-  const response = await fetch(`${API_CONFIG.CAIXA_BASE_URL}/megasena/${contest}`, {
-    headers: {
-      Accept: 'application/json, text/plain, */*',
-      'Accept-Language': 'pt-BR,pt;q=0.9',
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      Referer: 'https://loterias.caixa.gov.br/',
-    },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const draw = (await response.json()) as CaixaDraw;
-  return typeof draw?.numero === 'number' ? draw : null;
+function findPrizeTier(draw: MegaSenaDrawData, description: string) {
+  return draw.rateioProcessamento?.find((tier) => tier.descricaoFaixa === description);
 }
 
 function delay(ms: number): Promise<void> {
@@ -112,8 +44,8 @@ function delay(ms: number): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const refetchAll = args.includes('--all');
-  const limit = parseIntArg(args, '--limit');
-  const delayMs = parseIntArg(args, '--delay') ?? DEFAULT_DELAY_MS;
+  const limit = parsePositiveIntegerArg(args, '--limit');
+  const delayMs = parsePositiveIntegerArg(args, '--delay') ?? DEFAULT_DELAY_MS;
 
   const db = getDatabase();
 
@@ -176,9 +108,9 @@ async function main(): Promise<void> {
     beginBatch();
 
     for (const [index, contest] of contests.entries()) {
-      let draw: CaixaDraw | null = null;
+      let draw: MegaSenaDrawData | null = null;
       try {
-        draw = await fetchDraw(contest);
+        draw = await caixaClient.fetchDraw(contest);
       } catch (error) {
         logger.warn('backfill.fetch_failed', {
           contest,
@@ -200,9 +132,9 @@ async function main(): Promise<void> {
       }
 
       consecutiveFailures = 0;
-      const sena = findPrizeTier(draw, 1, 'Sena');
-      const quina = findPrizeTier(draw, 2, 'Quina');
-      const quadra = findPrizeTier(draw, 3, 'Quadra');
+      const sena = findPrizeTier(draw, 'Sena');
+      const quina = findPrizeTier(draw, 'Quina');
+      const quadra = findPrizeTier(draw, 'Quadra');
 
       update.run(
         sena?.valorPremio ?? 0,
@@ -213,7 +145,7 @@ async function main(): Promise<void> {
         quadra?.numeroDeGanhadores ?? 0,
         draw.valorArrecadado ?? 0,
         draw.acumulado ? 1 : 0,
-        draw.valorAcumuladoConcurso ?? draw.valorAcumuladoProximoConcurso ?? 0,
+        draw.valorAcumuladoConcurso ?? 0,
         draw.valorEstimadoProximoConcurso ?? 0,
         contest
       );

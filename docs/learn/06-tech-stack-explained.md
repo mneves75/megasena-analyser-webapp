@@ -44,11 +44,11 @@ Pense em três camadas:
     with Bun, not Node.js").
   - `bunfig.toml` → `run.noOrphans` (mencionado em `AGENTS.md`) evita processos Bun
     órfãos quando o pai morre.
-- **Júnior precisa saber:** use sempre `bun ...`, nunca `npm`/`node`. `bun install`,
-  `bun run dev`, `bun x vitest`.
+- **Júnior precisa saber:** pnpm gerencia dependências e Bun executa a aplicação.
+  Use `pnpm install`, `bun run dev` e `bun x vitest`.
 - Docs: https://bun.sh/docs
 
-### Next.js (`16.2.6`) — framework web (App Router)
+### Next.js (`16.3.0`) — framework web (App Router)
 
 - **O que é:** framework React full-stack. Aqui usado em modo **App Router** com
   `output: standalone`.

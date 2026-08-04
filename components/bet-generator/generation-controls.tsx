@@ -49,7 +49,6 @@ const STRATEGY_ICONS = {
   cold_numbers: Snowflake,
   random: Dices,
   fibonacci: Ruler,
-  custom: Sparkles,
 } satisfies Record<BetStrategy, IconComponent>;
 
 const MODE_ICONS = {

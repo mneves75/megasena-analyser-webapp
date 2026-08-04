@@ -18,7 +18,6 @@ export function LotteryBall({ number, size = 'md', className }: LotteryBallProps
 
   return (
     <div
-      aria-label={`Número ${number}`}
       className={cn(
         'flex items-center justify-center rounded-full bg-gradient-to-b from-primary-glow to-primary font-semibold text-primary-foreground tabular-nums shadow-ball transition-transform duration-200 ease-out-quint hover:scale-105',
         sizeClasses[size],

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import { renderToString } from 'react-dom/server';
 import { ThemeProvider, useTheme } from '@/components/theme-provider';
 import { ReactNode } from 'react';
 
@@ -121,18 +122,18 @@ describe('ThemeProvider - localStorage Persistence', () => {
     expect(screen.getByTestId('current-theme')).toHaveTextContent('light');
   });
 
-  it('should respect custom storageKey prop', () => {
-    mockLocalStorage['custom-key'] = 'dark';
+  it('uses the server default snapshot even when browser storage differs', () => {
+    mockLocalStorage['megasena-theme'] = 'dark';
 
-    render(
-      <ThemeProvider storageKey="custom-key">
+    const html = renderToString(
+      <ThemeProvider defaultTheme="light">
         <TestConsumer />
       </ThemeProvider>
     );
 
-    // Should load from custom key
-    expect(localStorage.getItem).toHaveBeenCalledWith('custom-key');
+    expect(html).toContain('data-testid="current-theme">light<');
   });
+
 });
 
 describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
@@ -177,6 +178,25 @@ describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
 
     // Should add listener for system theme
     expect(addEventListenerSpy).toHaveBeenCalledWith('change', expect.any(Function));
+  });
+
+  it('should update the resolved theme when the system preference changes', () => {
+    let handleChange: ((event: MediaQueryListEvent) => void) | undefined;
+    addEventListenerSpy.mockImplementation((event, listener) => {
+      if (event === 'change') {
+        handleChange = listener as (event: MediaQueryListEvent) => void;
+      }
+    });
+
+    render(
+      <ThemeProvider defaultTheme="system">
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('resolved-theme')).toHaveTextContent('light');
+    act(() => handleChange?.({ matches: true } as MediaQueryListEvent));
+    expect(screen.getByTestId('resolved-theme')).toHaveTextContent('dark');
   });
 
   it('should remove media query listener on unmount', () => {
@@ -226,6 +246,32 @@ describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
     // Should remove listener when no longer in system mode
     // (effect re-runs with new theme, early return prevents re-adding)
     expect(removeEventListenerSpy).toHaveBeenCalled();
+  });
+
+  it('refreshes the system preference when switching back to system', () => {
+    let prefersDark = false;
+    global.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: prefersDark,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: addEventListenerSpy,
+      removeEventListener: removeEventListenerSpy,
+      dispatchEvent: vi.fn(),
+    }));
+
+    render(
+      <ThemeProvider defaultTheme="system">
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    act(() => screen.getByText('Set Light').click());
+    prefersDark = true;
+    act(() => screen.getByText('Set System').click());
+
+    expect(screen.getByTestId('resolved-theme')).toHaveTextContent('dark');
   });
 });
 

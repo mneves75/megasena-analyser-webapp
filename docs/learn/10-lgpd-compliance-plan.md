@@ -50,7 +50,7 @@ banner as nomeia explicitamente.
 - **Minimização:** IP pseudonimizado, UA truncado, sem identificadores diretos.
 - **Pseudonimização forte com fail-closed:** em `NODE_ENV=production`, sem
   `IP_HASH_SECRET` (≥32 chars) o servidor faz `process.exit(1)` antes das migrations
-  (`server.ts`). O único opt-in é `IP_HASH_SECRET_AUTOGENERATE=true`, restrito a E2E.
+  (`server.ts`). O E2E injeta um valor público de teste; produção não possui opt-in.
 - **Salt rotativo de 30 dias:** janela em `pseudonymize.ts` reduz vínculo de longo prazo
   entre registros do mesmo IP.
 - **Sanitização recursiva de metadados:** `sanitize-metadata.ts` (profundidade 4, array

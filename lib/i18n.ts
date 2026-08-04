@@ -785,7 +785,6 @@ const STRATEGY_LABELS: Record<string, string> = {
   cold_numbers: 'Frios',
   random: 'Aleatória',
   fibonacci: 'Fibonacci',
-  custom: 'Personalizada',
 };
 
 export function formatStrategyLabel(strategy: string): string {

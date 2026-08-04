@@ -1,13 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
-  storageKey?: string;
 }
 
 interface ThemeContextValue {
@@ -17,101 +16,121 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+const THEME_STORAGE_KEY = 'megasena-theme';
 
 function isTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'dark' || value === 'system';
 }
 
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function createThemeStore(defaultTheme: Theme) {
+  let theme = defaultTheme;
+  let systemTheme: 'light' | 'dark' = 'light';
+  let initialized = false;
+  const themeListeners = new Set<() => void>();
+
+  const readStoredTheme = (): Theme => {
+    try {
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
+      return isTheme(stored) ? stored : defaultTheme;
+    } catch {
+      return theme;
+    }
+  };
+
+  const initialize = (): void => {
+    if (initialized) return;
+    initialized = true;
+    theme = readStoredTheme();
+    systemTheme = getSystemTheme();
+  };
+
+  const notifyTheme = (): void => themeListeners.forEach((listener) => listener());
+
+  return {
+    getTheme: (): Theme => theme,
+    getServerTheme: (): Theme => defaultTheme,
+    subscribeTheme(callback: () => void): () => void {
+      const previousTheme = theme;
+      initialize();
+      themeListeners.add(callback);
+      const handleStorage = (): void => {
+        const nextTheme = readStoredTheme();
+        if (nextTheme !== theme) {
+          theme = nextTheme;
+          notifyTheme();
+        }
+      };
+      window.addEventListener('storage', handleStorage);
+      if (theme !== previousTheme) callback();
+      return () => {
+        themeListeners.delete(callback);
+        window.removeEventListener('storage', handleStorage);
+      };
+    },
+    setTheme(nextTheme: Theme): void {
+      initialize();
+      theme = nextTheme;
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      } catch {
+        // Keep the provider-local theme when persistence is unavailable.
+      }
+      notifyTheme();
+    },
+    getSystemTheme: (): 'light' | 'dark' => systemTheme,
+    getServerSystemTheme: (): 'light' | 'dark' => 'light',
+    subscribeSystemTheme(callback: () => void): () => void {
+      const previousSystemTheme = systemTheme;
+      initialize();
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      systemTheme = mediaQuery.matches ? 'dark' : 'light';
+      const handleChange = (event: MediaQueryListEvent): void => {
+        systemTheme = event.matches ? 'dark' : 'light';
+        callback();
+      };
+      mediaQuery.addEventListener('change', handleChange);
+      if (systemTheme !== previousSystemTheme) callback();
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    },
+  };
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-  storageKey = 'megasena-theme',
 }: ThemeProviderProps): React.ReactElement {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
-  const [mounted, setMounted] = useState(false);
-
-  // Get system preference
-  const getSystemTheme = (): 'light' | 'dark' => {
-    if (typeof window === 'undefined') return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  };
+  const store = useMemo(() => createThemeStore(defaultTheme), [defaultTheme]);
+  const theme = useSyncExternalStore(store.subscribeTheme, store.getTheme, store.getServerTheme);
+  const subscribeToSystemTheme = useCallback(
+    (callback: () => void) => theme === 'system' ? store.subscribeSystemTheme(callback) : () => {},
+    [store, theme]
+  );
+  const systemTheme = useSyncExternalStore(
+    subscribeToSystemTheme,
+    store.getSystemTheme,
+    store.getServerSystemTheme
+  );
 
   // Calculate resolved theme
-  const resolvedTheme = theme === 'system' ? getSystemTheme() : theme;
+  const resolvedTheme = theme === 'system' ? systemTheme : theme;
 
   useEffect(() => {
-    setMounted(true);
-    // Load theme from localStorage
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (isTheme(stored)) {
-        setTheme(stored);
-      }
-    } catch {
-      // Storage can be unavailable in privacy-restricted contexts.
-    }
-    /**
-     * DEPENDENCY ARRAY DECISION:
-     * storageKey is omitted despite being used in this effect.
-     *
-     * RATIONALE:
-     * - storageKey is always the default value 'megasena-theme' (never passed as prop)
-     * - Including it causes unnecessary re-runs with no benefit
-     * - Trade-off: If storageKey becomes dynamic, this effect won't re-run
-     *
-     * FUTURE CONSIDERATION:
-     * If storageKey needs to be dynamic, either:
-     * 1. Add it back to dependency array
-     * 2. Extract as module-level const (preferred if truly static)
-     *
-     * Per code review: "storageKey is constant, use empty array"
-     */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(resolvedTheme);
+  }, [theme, resolvedTheme]);
 
-    // Save to localStorage
-    try {
-      localStorage.setItem(storageKey, theme);
-    } catch {
-      // Keep the in-memory theme when persistence is unavailable.
-    }
-    /**
-     * DEPENDENCY ARRAY DECISION:
-     * storageKey is omitted despite being used in this effect.
-     *
-     * See comment in first useEffect for full rationale.
-     * Same reasoning applies: storageKey is effectively constant.
-     */
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme, resolvedTheme, mounted]);
+  const setTheme = store.setTheme;
 
-  // Listen to system theme changes
-  useEffect(() => {
-    if (theme !== 'system') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (): void => {
-      const root = window.document.documentElement;
-      root.classList.remove('light', 'dark');
-      root.classList.add(getSystemTheme());
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
-
-  const value: ThemeContextValue = {
-    theme,
-    setTheme,
-    resolvedTheme,
-  };
+  const value = useMemo<ThemeContextValue>(
+    () => ({ theme, setTheme, resolvedTheme }),
+    [theme, setTheme, resolvedTheme]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

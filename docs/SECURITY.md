@@ -112,12 +112,12 @@ Chamadas server-side internas podem definir `INTERNAL_API_SECRET` (mínimo de 32
 
 ## Secret scanning
 
-O repositório não mantém baseline de segredos rastreado em Git. O CI executa `bun run security:secrets`, que copia apenas arquivos fonte rastreados/não ignorados para um diretório temporário e roda `gitleaks dir` com a imagem `ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f`.
+O repositório não mantém baseline de segredos rastreado em Git. O CI faz checkout completo e executa `bun run security:secrets` na árvore fonte e `bun run security:secrets:history` em todo o histórico alcançável. O primeiro copia apenas arquivos rastreados/não ignorados para um diretório temporário e roda `gitleaks dir`; o segundo usa `gitleaks detect --redact` e falha quando encontra um achado.
 Os scanners da árvore e do histórico compartilham esse pin do índice multiarch e executam o contêiner com `--network=none`; atualize o pin central em `scripts/security-tool-images.ts`, nunca os consumidores separadamente.
 O pre-commit usa a interface atual do Gitleaks 8, `gitleaks git --staged --redact`;
 `protect --staged` pertence à CLI antiga e não deve reaparecer.
 
-Para validar o histórico Git completo, rode `bun run security:secrets:history`. Esse comando usa `gitleaks detect --redact`, grava o relatório redigido em `.tmp/gitleaks-history-redacted.json`, resume regras/arquivos afetados e classifica quais branches/tags ainda alcançam cada commit com achados. O comando falha quando encontra achados. Não publique o relatório bruto em issues, PRs ou documentação.
+Para repetir localmente a validação do histórico Git completo, rode `bun run security:secrets:history`. O comando grava o relatório redigido em `.tmp/gitleaks-history-redacted.json`, resume regras/arquivos afetados e classifica quais branches/tags ainda alcançam cada commit com achados. Não publique o relatório bruto em issues, PRs ou documentação.
 
 Varreduras de histórico com `gitleaks detect` podem apontar commits antigos. Se um achado histórico for confirmado como segredo real, faça rotação da credencial antes de qualquer limpeza de histórico.
 

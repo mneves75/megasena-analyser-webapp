@@ -29,7 +29,7 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
   `LOG_RETENTION_DAYS` (30).
 - Setup local:
   ```bash
-  bun install
+  pnpm install
   bun run db:migrate
   bun run db:pull -- --limit 100   # opcional: amostra
   bun run dev                      # http://localhost:3000
@@ -42,8 +42,8 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 - **Banco em memória:** em Vitest, `lib/db.ts` usa `InMemoryDatabase` (sem I/O). Force
   banco real com `VITEST_FORCE_FILE_DB=1`.
 - **E2E (Playwright):** `bun run test:e2e`. `playwright.config.ts` sobe a stack real via
-  `prepare-e2e-db.ts && build && start`, injetando `IP_HASH_SECRET_AUTOGENERATE=true` e
-  `TRUST_PROXY_HEADERS=true` (apenas teste). Specs em `tests/app/*.spec.ts`.
+  `prepare-e2e-db.ts && build && start`, injetando um `IP_HASH_SECRET` público de teste e
+  `TRUST_PROXY_HEADERS=true`. Specs em `tests/app/*.spec.ts`.
 - Rode um arquivo só: `bun x vitest tests/lib/bet-generator.test.ts --run`.
 
 ### Logs e observabilidade
