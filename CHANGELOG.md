@@ -28,7 +28,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Produção passa a falhar fechada quando `IP_HASH_SECRET` está ausente ou curto; o caminho de geração efêmera foi removido e o E2E injeta somente um valor público de teste.
 - Código e dependências da imagem Docker ficam root-owned; somente estado persistente e cache do Next.js permanecem graváveis pelo usuário não-root, e o compose remove todas as capabilities Linux.
 - O CI passa a escanear também todo o histórico Git alcançável com Gitleaks, além da árvore fonte; ambos usam a mesma imagem imutável e sem rede.
-- Overrides transitivos fixam `fast-uri` 3.1.5+ e `brace-expansion` 5.0.9+, eliminando dois advisories de severidade alta também no audit completo de dependências de desenvolvimento.
+- Overrides transitivos fixam `fast-uri` 3.1.5+, `brace-expansion` 5.0.9+ e `postcss` 8.5.23+, eliminando os advisories abertos também no audit completo de dependências de desenvolvimento.
 
 ### Changed
 
