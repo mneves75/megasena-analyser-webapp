@@ -176,6 +176,7 @@ Overrides atuais de segurança:
 
 - `@babel/core`
 - `brace-expansion`
+- `fast-uri`
 - `flatted`
 - `js-yaml`
 - `picomatch`
