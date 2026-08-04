@@ -1,6 +1,6 @@
 # ============================================================================
 # Development Docker Compose Configuration
-# Uses Bun runtime throughout with distroless production image
+# Uses the pinned Bun Alpine runtime from Dockerfile
 # Usage: docker compose up
 # ============================================================================
 
@@ -40,8 +40,10 @@ services:
     # The app never needs privilege escalation (setuid binaries etc.).
     security_opt:
       - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-    # Health check using Bun (distroless-compatible, no shell)
+    # Health check using Bun without a shell
     healthcheck:
       test: ["CMD", "bun", "-e", "fetch('http://localhost:3201/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
       interval: 30s

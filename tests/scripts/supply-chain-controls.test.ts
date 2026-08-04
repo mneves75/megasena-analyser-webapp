@@ -103,4 +103,41 @@ describe('controles de supply chain', () => {
     expect(hook).toContain('gitleaks git --staged --redact');
     expect(hook).not.toContain('gitleaks protect');
   });
+
+  it('bloqueia segredos na árvore e em todo o histórico alcançável', async () => {
+    const workflow = await read('.github/workflows/ci-cd.yml');
+    const secretsJob = jobBlock(workflow, 'secrets');
+
+    expect(secretsJob).toContain('fetch-depth: 0');
+    expect(secretsJob).toContain('bun run security:secrets');
+    expect(secretsJob).toContain('bun run security:secrets:history');
+  });
+
+  it('mantém código do runtime Docker somente leitura para o usuário bun', async () => {
+    const dockerfile = await read('Dockerfile');
+    const compose = await read('docker-compose.yml');
+
+    expect(dockerfile).toContain('chown bun:bun /app/db /app/logs');
+    expect(dockerfile).toContain('chown bun:bun /app/.next/cache');
+    expect(dockerfile).not.toContain('COPY --chown=bun:bun');
+    expect(compose).toContain('cap_drop:');
+    expect(compose).toContain('- ALL');
+  });
+
+  it('empacota as dependências do CLI de backfill no Docker e nos tarballs', async () => {
+    const dockerfile = await read('Dockerfile');
+    const deploy = await read('docs/DEPLOY.md');
+
+    expect(dockerfile).toContain('COPY scripts/cli-args.ts ./scripts/cli-args.ts');
+    expect(deploy.match(/scripts\/cli-args\.ts/g)).toHaveLength(2);
+  });
+
+  it('não permite segredo HMAC efêmero no runtime de produção', async () => {
+    const server = await read('server.ts');
+    const playwright = await read('playwright.config.ts');
+
+    expect(server).not.toContain('IP_HASH_SECRET_AUTOGENERATE');
+    expect(playwright).toContain("IP_HASH_SECRET: 'very-long-browser-token-0123456789'");
+    expect(playwright).not.toContain('IP_HASH_SECRET_AUTOGENERATE');
+  });
 });

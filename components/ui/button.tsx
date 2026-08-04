@@ -37,7 +37,7 @@ export interface ButtonProps
 
 function renderButtonAsChild(
   child: React.ReactNode,
-  props: Omit<ButtonProps, 'asChild' | 'children'>
+  props: React.HTMLAttributes<HTMLElement>
 ): React.ReactElement | null {
   const element = React.Children.toArray(child).find(React.isValidElement) as
     | React.ReactElement<{ className?: string }>
@@ -47,14 +47,10 @@ function renderButtonAsChild(
     return null;
   }
 
-  const ChildComponent = element.type as React.ElementType;
-  return (
-    <ChildComponent
-      {...element.props}
-      {...props}
-      className={cn(buttonVariants(props), element.props.className)}
-    />
-  );
+  return React.cloneElement(element, {
+    ...props,
+    className: cn(props.className, element.props.className),
+  });
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -62,10 +58,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (asChild) {
       return renderButtonAsChild(children, {
         ...props,
-        className,
-        size,
-        type,
-        variant,
+        className: cn(buttonVariants({ variant, size, className })),
       });
     }
 

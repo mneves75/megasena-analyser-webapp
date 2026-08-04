@@ -1,7 +1,7 @@
 import { getDatabase } from '@/lib/db';
 
 interface ResponseCacheEntry {
-  contest: string | number | null;
+  version: string | number | null;
   body: string;
   expiresAt: number;
 }
@@ -29,34 +29,14 @@ export function buildResponseCacheKey(
 
 export function getDrawsVersion(): string | null {
   const row = getDatabase()
-    .prepare(
-      `SELECT
-        COUNT(*) AS count,
-        COALESCE(MAX(rowid), 0) AS maxRowId,
-        COALESCE(MAX(strftime('%s', updated_at)), 0) AS maxUpdatedAt
-      FROM draws`
-    )
-    .get() as { count: number; maxRowId: number; maxUpdatedAt: number } | undefined;
+    .prepare("SELECT revision FROM cache_revisions WHERE name = 'draws'")
+    .get() as { revision: number } | undefined;
 
   if (!row) {
     return null;
   }
 
-  // Composite version: count catches inserts/deletes, maxRowId catches re-inserts,
-  // and maxUpdatedAt catches in-place corrections (backfills/prize fixes).
-  return `${row.count}:${row.maxRowId}:${row.maxUpdatedAt}`;
-}
-
-/**
- * @deprecated Use getDrawsVersion for cache invalidation; kept for callers that
- * genuinely need the largest contest number.
- */
-export function getLatestContestNumber(): number | null {
-  const row = getDatabase()
-    .prepare('SELECT MAX(contest_number) AS lastContestNumber FROM draws')
-    .get() as { lastContestNumber: number | null } | undefined;
-
-  return row?.lastContestNumber ?? null;
+  return String(row.revision);
 }
 
 export class ContestResponseCache {
@@ -79,12 +59,9 @@ export class ContestResponseCache {
     return this.entries.size;
   }
 
-  getOrCompute(key: string, contest: string | number | null, computePayload: () => unknown): string {
+  getOrCompute(key: string, version: string | number | null, computePayload: () => unknown): string {
     const cached = this.entries.get(key);
-    // TTL bounds staleness from data changes that do not move the version:
-    // for example, manual updates that do not change the draws count, or requests
-    // racing an ingestion while the count has not yet incremented.
-    if (cached && cached.contest === contest && cached.expiresAt > this.now()) {
+    if (cached && cached.version === version && cached.expiresAt > this.now()) {
       return cached.body;
     }
 
@@ -100,7 +77,7 @@ export class ContestResponseCache {
         this.entries.delete(oldestKey);
       }
     }
-    this.entries.set(key, { contest, body, expiresAt: this.now() + this.ttlMs });
+    this.entries.set(key, { version, body, expiresAt: this.now() + this.ttlMs });
     return body;
   }
 }

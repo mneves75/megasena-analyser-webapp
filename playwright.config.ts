@@ -27,10 +27,8 @@ export default defineConfig({
       DATABASE_PATH: databasePath,
       NEXT_TELEMETRY_DISABLED: '1',
       TRUST_PROXY_HEADERS: 'true',
-      // E2E runs `bun run start` in NODE_ENV=production. server.ts is fail-closed
-      // without IP_HASH_SECRET; this opt-in lets it generate an ephemeral secret
-      // per process. Never enable this in real deployments.
-      IP_HASH_SECRET_AUTOGENERATE: 'true',
+      // Public test value: E2E runs the server with NODE_ENV=production.
+      IP_HASH_SECRET: 'very-long-browser-token-0123456789',
     },
   },
 });

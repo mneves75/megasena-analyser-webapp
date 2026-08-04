@@ -10,7 +10,7 @@ objetivo, arquivos iniciais, aprendizado esperado, dificuldade e gabarito.
 Você só entende um sistema quando consegue alterá-lo com segurança. Estes exercícios
 forçam leitura ativa e mudanças pequenas e verificáveis.
 
-> Antes de qualquer mudança: `bun install`, `bun run db:migrate`,
+> Antes de qualquer mudança: `pnpm install`, `bun run db:migrate`,
 > `bun run db:pull -- --limit 100`. Valide com `bun run lint`, `bun x tsc --noEmit`,
 > `bun run test -- --run`.
 

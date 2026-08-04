@@ -1,7 +1,5 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
-
 export const alt = 'Mega-Sena Analyzer - Análise Estatística';
 export const size = {
   width: 1200,

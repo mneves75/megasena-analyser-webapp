@@ -71,4 +71,57 @@ describe('runMigrations retry (sqlite file)', () => {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('uses the complete image migration set when the mounted set is stale', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mega-sena-stale-migrations-'));
+    const dbPath = path.join(tempDir, 'test.db');
+    const mountedMigrations = path.join(tempDir, 'db', 'migrations');
+    const imageMigrations = path.join(tempDir, 'migrations-source');
+    const baseMigration = [
+      'CREATE TABLE audit_logs (id TEXT PRIMARY KEY);',
+      'CREATE TABLE log_events (id TEXT PRIMARY KEY);',
+    ].join('\n');
+
+    try {
+      fs.symlinkSync(path.join(process.cwd(), 'lib'), path.join(tempDir, 'lib'), 'dir');
+      fs.mkdirSync(mountedMigrations, { recursive: true });
+      fs.mkdirSync(imageMigrations, { recursive: true });
+      fs.writeFileSync(path.join(mountedMigrations, '001_base.sql'), baseMigration);
+      fs.writeFileSync(path.join(imageMigrations, '001_base.sql'), baseMigration);
+      fs.writeFileSync(
+        path.join(imageMigrations, '010_cache_revision.sql'),
+        'CREATE TABLE cache_revisions (revision INTEGER NOT NULL); INSERT INTO cache_revisions VALUES (0);'
+      );
+
+      const run = spawnSync(
+        'bun',
+        [
+          '-e',
+          [
+            "const { runMigrations, getDatabase, closeDatabase } = await import('./lib/db.ts');",
+            'runMigrations();',
+            'const db = getDatabase();',
+            "const row = db.prepare('SELECT revision FROM cache_revisions').get();",
+            "console.log('RESULT:' + JSON.stringify(row));",
+            'closeDatabase();',
+          ].join(' '),
+        ],
+        {
+          cwd: tempDir,
+          env: {
+            ...process.env,
+            DATABASE_PATH: dbPath,
+            VITEST: '',
+            VITEST_FORCE_FILE_DB: '1',
+          },
+          encoding: 'utf8',
+        }
+      );
+
+      expect(run.status, run.stdout + run.stderr).toBe(0);
+      expect(run.stdout).toContain('RESULT:{"revision":0}');
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });

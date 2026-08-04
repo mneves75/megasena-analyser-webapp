@@ -21,7 +21,7 @@ describe('ContestResponseCache', () => {
     expect(buildResponseCacheKey('/api/dashboard')).toBe('/api/dashboard');
   });
 
-  it('expires entries after the TTL even when the contest is unchanged', () => {
+  it('expires entries after the TTL even when the data version is unchanged', () => {
     let clock = 0;
     const cache = new ContestResponseCache(32, 1000, () => clock);
     let computations = 0;
@@ -35,7 +35,7 @@ describe('ContestResponseCache', () => {
     expect(computations).toBe(2);
   });
 
-  it('hits once per contest and invalidates when the contest changes', () => {
+  it('hits once per data version and invalidates when the version changes', () => {
     const cache = new ContestResponseCache();
     let computations = 0;
     const compute = (): { value: number } => ({ value: ++computations });
@@ -77,7 +77,7 @@ describe('ContestResponseCache', () => {
     );
   });
 
-  it('reads a composite draws version that includes count, max rowid and last update', () => {
+  it('reads a monotonic draws revision', () => {
     const db = getDatabase();
     const insert = db.prepare(`
       INSERT INTO draws (
@@ -90,8 +90,7 @@ describe('ContestResponseCache', () => {
     insert.run(3031, '2026-07-14', 20, 28, 32, 35, 40, 54);
 
     const version = getDrawsVersion();
-    expect(typeof version).toBe('string');
-    expect(version).toMatch(/^2:\d+:\d+$/);
+    expect(version).toBe('2');
   });
 
   it('changes the draws version on historical backfills, not only on the latest contest', () => {
@@ -105,11 +104,30 @@ describe('ContestResponseCache', () => {
     `);
     insert.run(3031, '2026-07-14', 20, 28, 32, 35, 40, 54);
     const versionBefore = getDrawsVersion();
-    expect(versionBefore).toMatch(/^1:\d+:\d+$/);
+    expect(versionBefore).toBe('1');
 
     insert.run(3030, '2026-07-11', 6, 11, 25, 45, 48, 58);
     const versionAfter = getDrawsVersion();
-    expect(versionAfter).toMatch(/^2:\d+:\d+$/);
+    expect(versionAfter).toBe('2');
     expect(versionAfter).not.toBe(versionBefore);
+  });
+
+  it('changes the draws revision for multiple updates in the same second', () => {
+    const db = getDatabase();
+    db.prepare(`
+      INSERT INTO draws (
+        contest_number, draw_date,
+        number_1, number_2, number_3, number_4, number_5, number_6,
+        prize_sena, winners_sena
+      ) VALUES (3031, '2026-07-14', 20, 28, 32, 35, 40, 54, 0, 0)
+    `).run();
+    const inserted = getDrawsVersion();
+    db.prepare('UPDATE draws SET prize_sena = 1 WHERE contest_number = 3031').run();
+    const firstUpdate = getDrawsVersion();
+    db.prepare('UPDATE draws SET prize_sena = 2 WHERE contest_number = 3031').run();
+    const secondUpdate = getDrawsVersion();
+
+    expect(firstUpdate).not.toBe(inserted);
+    expect(secondUpdate).not.toBe(firstUpdate);
   });
 });

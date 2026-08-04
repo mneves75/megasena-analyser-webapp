@@ -2,10 +2,11 @@
 
 ## Active work
 
-- `v1.11.1` release candidate prepared locally with the Codex Security supply-chain
-  findings remediated. The explicit staging target and deployment path were validated;
-  production remains behind the post-staging confirmation gate.
-- Previous production deploy: `v1.9.0-beta.1`, 2026-07-28, host `conhecendotudo`.
+- `v1.12.0` release candidate prepared locally with Next.js 16.3.0, cache/migration,
+  ingestion, theme, Docker and supply-chain fixes. Autoreview is clean; staging and
+  production remain behind their separate confirmation gates.
+- Local CAIXA database is verified through contest 3039, dated 2026-08-02.
+- Previous production deploy: `v1.9.0-beta.1`, 2026-07-28, via the private deployment repository.
   - Image: `megasena-analyser-app:v1.9.0-beta.1`
   - DB: 3,036 draws
   - Public health: `https://megasena-analyzer.com.br/api/health`
@@ -37,8 +38,8 @@
   (firewall/tunnel) and is written down in `docs/SECURITY.md`.
 - `INTERNAL_API_SECRET` is now attached only to loopback targets, so `API_HOST` must stay
   loopback; pointing it at a container name silently drops SSR calls to the public quota.
-- Trusted proxy headers enabled in production (`TRUST_PROXY_HEADERS=true`,
-  `TRUSTED_PROXY_IPS=10.0.1.1`) so the app recognises HTTPS through Cloudflare/Traefik.
+- Trusted proxy headers are enabled in production with an explicitly configured trusted
+  peer so the app recognises HTTPS through Cloudflare/Traefik.
 - Production compose loads secrets via `env_file: .env`; `IP_HASH_SECRET` stays out of
   the committed compose.
 
@@ -87,5 +88,5 @@
 
 ## Next
 
-- Define a reachable staging target (the repo forbids inferring staging from the
-  production alias), then tag and deploy.
+- Finish local gates, commit, then request confirmation before push + `v1.12.0-beta1`
+  staging deploy. Request a separate confirmation before `v1.12.0` production deploy.

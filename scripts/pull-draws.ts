@@ -6,6 +6,7 @@ import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
 import { toIsoDate } from '@/lib/utils';
+import { parsePositiveIntegerArg } from '@/scripts/cli-args';
 
 interface SaveDrawOptions {
   draw: MegaSenaDrawData;
@@ -81,7 +82,7 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
     draw.acumulado ? 1 : 0,
     draw.valorAcumuladoConcurso || 0,
     draw.valorEstimadoProximoConcurso || 0,
-    draw.tipoJogo === 'MEGA_SENA' ? 0 : 1
+    !draw.tipoJogo || draw.tipoJogo === 'MEGA_SENA' ? 0 : 1
   ) as { changes: number; lastInsertRowid: number };
 
   // Return true only if a new row was inserted.
@@ -90,31 +91,17 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
 
 async function main() {
   const args = process.argv.slice(2);
-  const limitFlag = args.indexOf('--limit');
-  const startFlag = args.indexOf('--start');
-  const endFlag = args.indexOf('--end');
   const incrementalFlag = args.indexOf('--incremental');
   const allowPartialFlag = args.indexOf('--allow-partial');
 
-  let limit: number | undefined;
-  let start = 1;
-  let end: number | undefined;
+  const limit = parsePositiveIntegerArg(args, '--limit');
+  const start = parsePositiveIntegerArg(args, '--start') ?? 1;
+  const end = parsePositiveIntegerArg(args, '--end');
   const incremental = incrementalFlag !== -1;
   const allowPartial = allowPartialFlag !== -1;
 
-  const limitValue = args[limitFlag + 1];
-  if (limitFlag !== -1 && typeof limitValue === 'string') {
-    limit = parseInt(limitValue, 10);
-  }
-
-  const startValue = args[startFlag + 1];
-  if (startFlag !== -1 && typeof startValue === 'string') {
-    start = parseInt(startValue, 10);
-  }
-
-  const endValue = args[endFlag + 1];
-  if (endFlag !== -1 && typeof endValue === 'string') {
-    end = parseInt(endValue, 10);
+  if (end !== undefined && start > end) {
+    throw new Error('--start deve ser menor ou igual a --end.');
   }
 
   console.log('Starting Mega-Sena data ingestion...');

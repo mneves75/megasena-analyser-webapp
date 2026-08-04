@@ -64,8 +64,7 @@ export type BetStrategy =
   | 'hot_numbers'
   | 'cold_numbers'
   | 'balanced'
-  | 'fibonacci'
-  | 'custom';
+  | 'fibonacci';
 ```
 
 ---
