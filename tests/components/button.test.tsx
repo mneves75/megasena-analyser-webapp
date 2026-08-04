@@ -22,5 +22,8 @@ describe('Button', () => {
     const link = screen.getByRole('link', { name: 'Ir para dashboard' });
     expect(link.tagName).toBe('A');
     expect(link.querySelector('button')).toBeNull();
+    expect(link).not.toHaveAttribute('variant');
+    expect(link).not.toHaveAttribute('size');
+    expect(link).not.toHaveAttribute('type');
   });
 });

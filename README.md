@@ -15,7 +15,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Stack Tecnológica
 
-- **Frontend**: Next.js 16 + React 19
+- **Frontend**: Next.js 16.3.0 + React 19
 - **Runtime**: Bun >=1.3.14 (local/CI baseline); imagem Docker de produção usa Bun canary com digest imutável (ver `.bun-canary-revision`)
 - **Banco de Dados**: SQLite (bun:sqlite - nativo)
 - **Estilização**: Tailwind CSS + componentes shadcn/ui
@@ -280,8 +280,8 @@ TRUST_PROXY_HEADERS=false
 # Obrigatório em produção (NODE_ENV=production). Gere com: openssl rand -hex 32
 IP_HASH_SECRET=
 
-# Opt-in para gerar segredo efêmero em E2E/local-prod (NÃO usar em deploy real).
-# IP_HASH_SECRET_AUTOGENERATE=true
+# O E2E injeta um valor público de teste no próprio playwright.config.ts.
+# Produção nunca gera esse segredo automaticamente.
 ```
 
 > Os testes executados via `bun run test` simulam o banco de dados usando um driver em memória quando a variável `VITEST` está definida, permitindo rodar a suite sem o `bun:sqlite` real.

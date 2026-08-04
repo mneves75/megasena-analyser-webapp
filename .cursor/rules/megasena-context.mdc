@@ -69,7 +69,7 @@ Batch large ingestions in a single transaction with rollback, and run
 ### Bet Generation Strategies
 
 `BetStrategy` in `lib/analytics/bet-generator.types.ts`: `random`, `hot_numbers`,
-`cold_numbers`, `balanced`, `fibonacci`, `custom`.
+`cold_numbers`, `balanced`, `fibonacci`.
 
 ### Design System
 

@@ -34,32 +34,33 @@ WORKDIR /app
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
-# Runtime state must be writable by the non-root Bun user.
-RUN mkdir -p /app/db /app/logs && chown -R bun:bun /app
+# Runtime state must be writable by the non-root Bun user; application code stays
+# root-owned so a compromised process cannot persist by rewriting it.
+RUN mkdir -p /app/db /app/logs && chown bun:bun /app/db /app/logs
 
 # Copy pre-built Next.js standalone output
 # NOTE: Gere `dist/standalone/` com `bun run dist:standalone` antes do build da imagem
-COPY --chown=bun:bun dist/standalone ./
-COPY --chown=bun:bun public ./public
+COPY dist/standalone ./
+COPY public ./public
 
 # Copy API server source and dependencies (runs with Bun at runtime)
-COPY --chown=bun:bun server.ts ./server.ts
-COPY --chown=bun:bun lib ./lib
-COPY --chown=bun:bun package.json ./package.json
-COPY --chown=bun:bun pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --chown=bun:bun pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --chown=bun:bun patches ./patches
-COPY --chown=bun:bun bunfig.toml ./bunfig.toml
-COPY --chown=bun:bun tsconfig.json ./tsconfig.json
+COPY server.ts ./server.ts
+COPY lib ./lib
+COPY package.json ./package.json
+COPY pnpm-lock.yaml ./pnpm-lock.yaml
+COPY pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY patches ./patches
+COPY bunfig.toml ./bunfig.toml
+COPY tsconfig.json ./tsconfig.json
 
 # Copy production dependencies installed inside the Linux image build.
-COPY --from=deps --chown=bun:bun /deps/node_modules ./node_modules
+COPY --from=deps /deps/node_modules ./node_modules
 
 # Copy database migrations to BOTH locations:
 # 1. /app/db/migrations - will be overwritten by volume mount (for fallback)
 # 2. /app/migrations-source - backup that won't be overwritten
-COPY --chown=bun:bun db/migrations ./db/migrations
-COPY --chown=bun:bun db/migrations ./migrations-source
+COPY db/migrations ./db/migrations
+COPY db/migrations ./migrations-source
 
 # Environment variables with defaults
 ENV NODE_ENV=production \
@@ -80,13 +81,17 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:3201/api/health || exit 1
 
 # Copy startup script
-COPY --chown=bun:bun scripts/start-docker.ts ./scripts/start-docker.ts
-COPY --chown=bun:bun scripts/check-production-freshness.ts ./scripts/check-production-freshness.ts
-COPY --chown=bun:bun scripts/check-edge-csp.ts ./scripts/check-edge-csp.ts
+COPY scripts/start-docker.ts ./scripts/start-docker.ts
+COPY scripts/check-production-freshness.ts ./scripts/check-production-freshness.ts
+COPY scripts/check-edge-csp.ts ./scripts/check-edge-csp.ts
 # Operational data repair: re-hydrates prize columns on an already-populated
 # volume. Must run inside the container because the database lives in the volume,
 # not in the repository.
-COPY --chown=bun:bun scripts/backfill-prizes.ts ./scripts/backfill-prizes.ts
+COPY scripts/backfill-prizes.ts ./scripts/backfill-prizes.ts
+COPY scripts/cli-args.ts ./scripts/cli-args.ts
+
+# Next.js writes optimized images and fetch-cache entries here at runtime.
+RUN mkdir -p /app/.next/cache && chown bun:bun /app/.next/cache
 
 USER bun
 

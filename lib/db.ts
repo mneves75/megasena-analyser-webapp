@@ -14,17 +14,21 @@ const PRIMARY_MIGRATIONS_DIR = path.join(REPO_DB_DIR, 'migrations');
 // Backup migrations location (in Docker, survives volume mount)
 const BACKUP_MIGRATIONS_DIR = path.join(process.cwd(), 'migrations-source');
 
-// Use backup if primary is empty (handles Docker volume mount edge case)
+// In Docker the image-owned backup is canonical because /app/db may be a stale
+// persistent volume containing an older migration set.
 function resolveMigrationsDir(): string {
+  if (fs.existsSync(BACKUP_MIGRATIONS_DIR)) {
+    const files = fs.readdirSync(BACKUP_MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
+    if (files.length > 0) {
+      logger.info('db.using_backup_migrations', { path: BACKUP_MIGRATIONS_DIR });
+      return BACKUP_MIGRATIONS_DIR;
+    }
+  }
   if (fs.existsSync(PRIMARY_MIGRATIONS_DIR)) {
     const files = fs.readdirSync(PRIMARY_MIGRATIONS_DIR).filter(f => f.endsWith('.sql'));
     if (files.length > 0) {
       return PRIMARY_MIGRATIONS_DIR;
     }
-  }
-  if (fs.existsSync(BACKUP_MIGRATIONS_DIR)) {
-    logger.info('db.using_backup_migrations', { path: BACKUP_MIGRATIONS_DIR });
-    return BACKUP_MIGRATIONS_DIR;
   }
   return PRIMARY_MIGRATIONS_DIR; // Fallback for error handling
 }
@@ -132,6 +136,7 @@ class InMemoryStatement implements PreparedStatement {
 class InMemoryDatabase implements BunDatabase {
   numberFrequency: Map<number, NumberFrequencyRow> = new Map();
   draws: DrawRow[] = [];
+  drawRevision = 0;
   auditLogs: AuditLogRow[] = [];
   logEvents: LogEventRow[] = [];
   closed = false;
@@ -158,6 +163,7 @@ class InMemoryDatabase implements BunDatabase {
     this.closed = false;
     this.numberFrequency.clear();
     this.draws = [];
+    this.drawRevision = 0;
     this.auditLogs = [];
     this.logEvents = [];
   }
@@ -166,6 +172,9 @@ class InMemoryDatabase implements BunDatabase {
     const sql = normalizeSql(rawSql);
 
     if (sql.startsWith('delete from draws')) {
+      if (this.draws.length > 0) {
+        this.drawRevision++;
+      }
       this.draws = [];
       return null;
     }
@@ -256,7 +265,22 @@ class InMemoryDatabase implements BunDatabase {
         winners_sena: toNumberValue(getValue('winners_sena')),
         accumulated: toNumberValue(getValue('accumulated')),
       });
+      this.drawRevision++;
       return null;
+    }
+    if (sql.startsWith('update draws set')) {
+      const literalContest = sql.match(/where contest_number = ([0-9]+)/)?.[1];
+      const contestNumber = literalContest ? Number(literalContest) : Number(params.at(-1));
+      const draw = this.draws.find((row) => row.contest_number === contestNumber);
+      if (!draw) {
+        return { changes: 0 };
+      }
+      const literalPrize = sql.match(/set prize_sena = ([0-9]+(?:\.[0-9]+)?)/)?.[1];
+      if (literalPrize) {
+        draw.prize_sena = Number(literalPrize);
+      }
+      this.drawRevision++;
+      return { changes: 1 };
     }
 
     if (sql.startsWith('update number_frequency set frequency = ?')) {
@@ -362,6 +386,9 @@ class InMemoryDatabase implements BunDatabase {
       );
       return { lastContestNumber };
     }
+    if (sql === "select revision from cache_revisions where name = 'draws'") {
+      return { revision: this.drawRevision };
+    }
 
     if (sql.startsWith('select count(*) as count from draws where number_')) {
       const column = getNumberColumn(sql);
@@ -380,20 +407,6 @@ class InMemoryDatabase implements BunDatabase {
         return undefined;
       }
       return ({ contest_number: latest.contest_number, draw_date: latest.draw_date } satisfies LastDrawResult);
-    }
-
-    if (
-      sql.startsWith(
-        'select count(*) as count, coalesce(max(rowid), 0) as maxrowid, coalesce(max(strftime(\'%s\', updated_at)), 0) as maxupdatedat from draws'
-      )
-    ) {
-      // In-memory DB has no rowid/updated_at columns; count is enough for tests.
-      const count = this.draws.length;
-      return ({ count, maxRowId: count, maxUpdatedAt: 0 } as {
-        count: number;
-        maxRowId: number;
-        maxUpdatedAt: number;
-      });
     }
 
     if (sql.startsWith('select count(*) as count from draws')) {

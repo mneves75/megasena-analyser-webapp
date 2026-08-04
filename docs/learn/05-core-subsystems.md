@@ -152,7 +152,7 @@ grep -n "generateWebApplicationSchema\|generateFAQSchema" lib/seo/schemas.ts
 ## Exercícios
 
 1. **(Fácil)** Liste as 5 estratégias aceitas pelo gerador. **Gabarito:** `random`,
-   `hot_numbers`, `cold_numbers`, `balanced`, `fibonacci` (+ `custom` no enum).
+   `hot_numbers`, `cold_numbers`, `balanced`, `fibonacci`.
 2. **(Médio)** Em `buildOptimizedBetSizes`, explique o papel de `resolveCostUnitCents`.
    **Gabarito:** acha o GCD dos preços em centavos para discretizar o orçamento e
    tornar a DP exata sem ponto flutuante.

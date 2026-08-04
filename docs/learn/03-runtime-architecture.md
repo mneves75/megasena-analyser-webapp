@@ -59,9 +59,9 @@ graph LR
 ### Inicialização da API (`server.ts`) — ordem importa
 
 1. **Antes das migrations**, valida o segredo de produção: se `NODE_ENV=production` e
-   `IP_HASH_SECRET` ausente/curto, faz `process.exit(1)` (fail-closed), salvo o opt-in
-   `IP_HASH_SECRET_AUTOGENERATE=true` (apenas para E2E). Isso impede mutar o banco num
-   deploy mal configurado.
+   `IP_HASH_SECRET` ausente/curto, faz `process.exit(1)` (fail-closed). O E2E injeta seu
+   próprio valor público de teste; produção não tem opt-in. Isso impede mutar o banco
+   num deploy mal configurado.
 2. `runMigrations()` (`lib/db.ts`) aplica migrações pendentes em transação e verifica o
    schema (`verifyAuditSchema`, `verifyLogSchema` rejeitam `deleted_at`).
 3. Inicia os escritores assíncronos: `startAuditWriter()`, schedulers de retenção de

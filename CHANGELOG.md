@@ -7,6 +7,32 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-04
+
+### Added
+
+- Migração `010_draws_cache_revision.sql`: uma revisão monotônica, atualizada por triggers, invalida os caches analíticos em qualquer `INSERT`, `UPDATE` ou `DELETE` de sorteios.
+- Validação compartilhada dos argumentos inteiros positivos dos CLIs de ingestão e backfill, incluindo rejeição de valores ausentes, fracionários, negativos e fora do intervalo seguro.
+
+### Fixed
+
+- O cache de dashboard, estatísticas e tendências não depende mais de contagem, `rowid` ou timestamp com resolução de um segundo; correções de dados no mesmo segundo agora invalidam as respostas. Em Docker, a cópia de migrations pertencente à imagem é a fonte canônica, evitando que um volume antigo oculte a migration nova.
+- A análise de sequências trata banco vazio, usa o tamanho real da janela disponível e reporta o último concurso global de cada número, mesmo quando ele ficou fora da janela recente.
+- O `ThemeProvider` preserva o snapshot SSR, lê a preferência persistida após a hidratação, reage a mudanças de storage e atualiza imediatamente a preferência do sistema ao voltar ao modo `system`.
+- Botões com `asChild` deixam de repassar propriedades internas como `variant`, `size` e `type` ao elemento filho.
+- O gerador mantém a hierarquia sequencial de headings e as bolas deixam de aplicar `aria-label` a elementos sem papel semântico.
+- O backfill de prêmios reutiliza o cliente CAIXA validado e os CLIs rejeitam faixas invertidas; a estratégia inexistente `custom` foi removida do contrato, da UI e da documentação.
+
+### Security
+
+- Produção passa a falhar fechada quando `IP_HASH_SECRET` está ausente ou curto; o caminho de geração efêmera foi removido e o E2E injeta somente um valor público de teste.
+- Código e dependências da imagem Docker ficam root-owned; somente estado persistente e cache do Next.js permanecem graváveis pelo usuário não-root, e o compose remove todas as capabilities Linux.
+- O CI passa a escanear também todo o histórico Git alcançável com Gitleaks, além da árvore fonte; ambos usam a mesma imagem imutável e sem rede.
+
+### Changed
+
+- Next.js e `eslint-config-next` atualizados de 16.2.11 para 16.3.0, mantendo `minimumReleaseAge` e `trustPolicy` do pnpm.
+
 ## [1.11.1] - 2026-07-28
 
 ### Security

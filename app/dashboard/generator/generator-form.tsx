@@ -69,7 +69,10 @@ export function GeneratorForm() {
   }
 
   return (
-    <>
+    <section aria-labelledby="generator-form-title">
+      <h2 id="generator-form-title" className="sr-only">
+        Configurar e gerar apostas
+      </h2>
       {/* Error Display */}
       {error && (
         <div
@@ -178,6 +181,6 @@ export function GeneratorForm() {
           </div>
         </div>
       </div>
-    </>
+    </section>
   );
 }

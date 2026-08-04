@@ -55,7 +55,7 @@ bun run build
 bun run dist:standalone
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-staging-deploy.tar.gz --no-mac-metadata \
   dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
-  scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
+  scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts scripts/backfill-prizes.ts scripts/cli-args.ts db/migrations/ Dockerfile
 docker build -t megasena-analyser-app:staging-local .
 ```
 
@@ -106,7 +106,7 @@ No macOS, desabilite resource forks para evitar arquivos `._*` dentro do tarball
 ```bash
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
   dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
-  scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
+  scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts scripts/backfill-prizes.ts scripts/cli-args.ts db/migrations/ Dockerfile
 ```
 
 ### 4. Enviar para o servidor
@@ -155,7 +155,8 @@ O `Dockerfile` atual:
 - sobe `scripts/start-docker.ts`, que inicia o `server.ts` em Bun e o `server.js` standalone do Next
 - encerra filhos com `SIGTERM`, aguarda `process.exited` e escala para `SIGKILL` após o período de graça; `proc.killed` não deve ser usado como prova de que o processo saiu
 - usa health check em `http://localhost:3201/api/health`
-- executa o runtime como usuário não-root `bun` (UID/GID 1000); volumes bind-mounted de `db/` e `logs/` precisam permitir escrita por esse UID/GID
+- executa o runtime como usuário não-root `bun` (UID/GID 1000), sem capabilities Linux; código e dependências ficam root-owned, enquanto `db/`, `logs/` e `.next/cache/` permanecem graváveis por esse UID/GID
+- usa `/app/migrations-source` como conjunto canônico de migrations da imagem, porque um volume persistente em `/app/db` pode conter arquivos antigos
 
 ### Por que o build é local
 
@@ -172,7 +173,7 @@ Pontos relevantes:
 - no arquivo local, publica as portas somente em `127.0.0.1`
 - em produção, exponha publicamente apenas o proxy reverso; a API Bun deve permanecer restrita à rede interna do Docker/proxy
 - mantém volume `./db:/app/db` para persistir o SQLite
-- mantém volume `./logs:/app/logs`
+- remove todas as capabilities Linux do processo; ambientes que precisem persistir logs devem montar `/app/logs` explicitamente
 - injeta `NEXT_PUBLIC_BASE_URL=https://megasena-analyzer.com.br`
 
 ## Traefik

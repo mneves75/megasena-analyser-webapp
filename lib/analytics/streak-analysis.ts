@@ -50,6 +50,10 @@ export class StreakAnalysisEngine {
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
 
+    if (totalDraws === 0) {
+      return [];
+    }
+
     // Build frequency map in single pass through recent draws (optimized)
     const recentFrequency = new Map<
       number,
@@ -82,19 +86,19 @@ export class StreakAnalysisEngine {
     // Get overall frequencies in single optimized query
     const overallQuery = `
       WITH all_occurrences AS (
-        SELECT number_1 as num FROM draws
+        SELECT number_1 as num, contest_number FROM draws
         UNION ALL
-        SELECT number_2 FROM draws
+        SELECT number_2, contest_number FROM draws
         UNION ALL
-        SELECT number_3 FROM draws
+        SELECT number_3, contest_number FROM draws
         UNION ALL
-        SELECT number_4 FROM draws
+        SELECT number_4, contest_number FROM draws
         UNION ALL
-        SELECT number_5 FROM draws
+        SELECT number_5, contest_number FROM draws
         UNION ALL
-        SELECT number_6 FROM draws
+        SELECT number_6, contest_number FROM draws
       )
-      SELECT num, COUNT(*) as frequency
+      SELECT num, COUNT(*) as frequency, MAX(contest_number) as lastContest
       FROM all_occurrences
       GROUP BY num
     `;
@@ -102,10 +106,11 @@ export class StreakAnalysisEngine {
     const overallFrequencies = this.db.prepare(overallQuery).all() as Array<{
       num: number;
       frequency: number;
+      lastContest: number;
     }>;
 
-    const overallMap = new Map<number, number>();
-    overallFrequencies.forEach((row) => overallMap.set(row.num, row.frequency));
+    const overallMap = new Map<number, { frequency: number; lastContest: number }>();
+    overallFrequencies.forEach((row) => overallMap.set(row.num, row));
 
     const results: StreakStats[] = [];
 
@@ -113,12 +118,13 @@ export class StreakAnalysisEngine {
     for (let num = 1; num <= 60; num++) {
       const recent = recentFrequency.get(num);
       const recentOccurrences = recent?.count || 0;
-      const lastDrawnContest = recent?.lastContest || null;
-      const overallFrequency = overallMap.get(num) || 0;
+      const overall = overallMap.get(num);
+      const lastDrawnContest = overall?.lastContest ?? null;
+      const overallFrequency = overall?.frequency ?? 0;
 
       // Calculate expected occurrences in recent window
       const overallRate = overallFrequency / totalDraws;
-      const expectedRecent = overallRate * this.windowSize;
+      const expectedRecent = overallRate * recentDraws.length;
 
       // Calculate streak intensity (actual / expected)
       const streakIntensity = expectedRecent > 0 ? recentOccurrences / expectedRecent : 0;

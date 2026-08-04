@@ -119,7 +119,8 @@ CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:pru
 - **DB writes:** batch large ingestions in a single transaction with rollback; use
   prepared statements; run `scripts/optimize-db.ts` after big pulls; keep ~15-20% disk
   free (WAL requirement). `bun run build` fails if `.next/standalone` contains DB/WAL/
-  SHM/backup artifacts.
+  SHM/backup artifacts. In Docker, `/app/migrations-source` is the image-owned
+  canonical migration set; a persisted `/app/db/migrations` may be stale.
 - **CSP:** production uses per-request nonces for `script-src` and `style-src`. Do not
   switch to a static/SRI CSP (breaks App Router streaming hydration) without E2E proof.
   Only the narrow `style-src-attr 'unsafe-inline'` exception is allowed (chart style
@@ -147,7 +148,7 @@ CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:pru
   bounded by `MAX_BUDGET`; the API zod schema and the form read the same constants.
 - **Required prod secrets (names only):** `IP_HASH_SECRET` (≥32 chars; server exits if
   missing in production — pseudonymizes IPs via HMAC-SHA256, `lib/security/`).
-  `IP_HASH_SECRET_AUTOGENERATE=true` is Playwright/E2E-only, never real deploy.
+  Playwright/E2E injects an explicit public test-only `IP_HASH_SECRET`; production never autogenerates it.
 - **LGPD:** changes to collection/retention/purpose must sync `docs/PRIVACY.md`,
   `docs/LGPD-COMPLIANCE.md`, `lib/i18n.ts`, and the storage-disclosure banner
   (`components/storage-disclosure.tsx` must list every `localStorage` key).

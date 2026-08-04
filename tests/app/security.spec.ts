@@ -126,6 +126,23 @@ test('Bun API rejects non-JSON simple requests on JSON endpoints', async () => {
   await api.dispose();
 });
 
+test('Bun API rejects the unimplemented custom betting strategy', async () => {
+  const api = await request.newContext({
+    baseURL: `http://127.0.0.1:${process.env.API_PORT ?? '3201'}`,
+  });
+
+  const response = await api.post('/api/generate-bets', {
+    data: { budget: 6, strategy: 'custom' },
+  });
+  expect(response.status()).toBe(400);
+  await expect(response.json()).resolves.toMatchObject({
+    success: false,
+    error: 'Dados inválidos.',
+  });
+
+  await api.dispose();
+});
+
 test('Bun API rejects oversized or out-of-domain trend inputs', async () => {
   const api = await request.newContext({
     baseURL: `http://127.0.0.1:${process.env.API_PORT ?? '3201'}`,
