@@ -27,6 +27,7 @@ Os redirects ficam no arquivo dinâmico do Traefik (`megasena-analyzer.yaml`) no
 
 ## Pré-requisitos
 
+- Node.js `>= 22.0.0` na máquina que compila o Next.js (CI fixa `22.23.2`)
 - Bun `>= 1.3.14` na máquina que gera o build (CI usa a versão exata em `.bun-ci-version`)
 - Docker no servidor; a imagem de runtime usa Bun canary com digest imutável (`.bun-canary-revision`)
 - Acesso SSH gerenciado fora do repositório

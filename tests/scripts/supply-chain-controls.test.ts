@@ -124,6 +124,29 @@ describe('controles de supply chain', () => {
     expect(compose).toContain('- ALL');
   });
 
+  it('compila o Next.js com Node pinado sem executar o build no Bun estável', async () => {
+    const packageJson = JSON.parse(await read('package.json')) as {
+      scripts: Record<string, string>;
+    };
+    const workflow = await read('.github/workflows/ci-cd.yml');
+    const deploy = await read('docs/DEPLOY.md');
+    const e2eJob = jobBlock(workflow, 'e2e');
+    const buildJob = jobBlock(workflow, 'build');
+    const setupNode =
+      'actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0';
+
+    expect(packageJson.scripts['build']).toBe(
+      'node node_modules/next/dist/bin/next build && bun run scripts/assert-standalone-clean.ts'
+    );
+    expect(packageJson.scripts['build']).not.toContain('bun --bun next build');
+
+    for (const job of [e2eJob, buildJob]) {
+      expect(job).toContain(setupNode);
+      expect(job).toContain('node-version: 22.23.2');
+    }
+    expect(deploy).toContain('Node.js `>= 22.0.0` na máquina que compila o Next.js');
+  });
+
   it('empacota as dependências do CLI de backfill no Docker e nos tarballs', async () => {
     const dockerfile = await read('Dockerfile');
     const deploy = await read('docs/DEPLOY.md');

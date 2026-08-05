@@ -44,7 +44,9 @@ anything that ships.
   together when intentionally bumping canary.
 - **CI uses a stable pinned Bun version** recorded in `.bun-ci-version` and
   installed via `.github/actions/setup-bun-pinned/action.yml` (the `setup-bun`
-  action cannot immutably pin canary builds).
+  action cannot immutably pin canary builds). Next.js production builds use Node
+  22.23.2 because Bun 1.3.14 segfaults while compiling Next.js 16.3.0 on Linux;
+  scripts, SQLite, the API server and production runtime remain on Bun.
 - **pnpm is the dependency manager** (`pnpm@11`, `pnpm-lock.yaml`). Security overrides
   live in `pnpm-workspace.yaml` (pnpm ignores `package.json` `overrides`).
   `pnpm-workspace.yaml` also sets `minimumReleaseAge` and `trustPolicy: no-downgrade`
