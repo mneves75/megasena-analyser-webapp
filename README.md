@@ -70,7 +70,7 @@ bun run build
 bun run start
 ```
 
-O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no baseline Bun 1.3.14, para encerrar processos Bun filhos quando o processo pai morre. Os scripts de supervisão também esperam `process.exited` após `SIGTERM` e escalam para `SIGKILL` depois do período de graça; não use `proc.killed` como prova de encerramento.
+O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no baseline Bun 1.3.14, para encerrar processos Bun filhos quando o processo pai morre. `bun run build` delega somente a compilação do Next.js ao Node 22+, evitando um crash conhecido do Bun 1.3.14 no Linux; scripts, SQLite, API e runtime de produção continuam no Bun. Os scripts de supervisão também esperam `process.exited` após `SIGTERM` e escalam para `SIGKILL` depois do período de graça; não use `proc.killed` como prova de encerramento.
 
 ## Comandos Disponíveis
 

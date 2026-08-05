@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun run scripts/dev.ts",
     "dev:next-only": "bun --bun next dev",
-    "build": "bun --bun next build && bun run scripts/assert-standalone-clean.ts",
+    "build": "node node_modules/next/dist/bin/next build && bun run scripts/assert-standalone-clean.ts",
     "dist:standalone": "bun run scripts/sync-standalone-dist.ts",
     "start": "bun run scripts/start-prod.ts",
     "lint": "eslint . --max-warnings=0",

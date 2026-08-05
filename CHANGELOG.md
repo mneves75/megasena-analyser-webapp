@@ -22,6 +22,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Botões com `asChild` deixam de repassar propriedades internas como `variant`, `size` e `type` ao elemento filho.
 - O gerador mantém a hierarquia sequencial de headings e as bolas deixam de aplicar `aria-label` a elementos sem papel semântico.
 - O backfill de prêmios reutiliza o cliente CAIXA validado e os CLIs rejeitam faixas invertidas; a estratégia inexistente `custom` foi removida do contrato, da UI e da documentação.
+- O build do Next.js passa a usar Node 22 pinado no CI, evitando o `SIGSEGV` reproduzível do Bun 1.3.14 no Linux sem alterar o runtime Bun da aplicação.
 
 ### Security
 
