@@ -26,8 +26,8 @@ RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 # Canary runtime pinned by immutable image digest. The matching Bun revision lives in
 # .bun-canary-revision; update both together when intentionally bumping canary.
-# Digest verified: 2026-07-28 / 1.4.0-canary.1+6c12afd8e
-FROM oven/bun:canary-alpine@sha256:1b10d05749adb6d5835e7584c0c5099384417d4329a35f9721eaabc9d4ea6e00 AS runtime
+# Digest verified: 2026-08-17 / 1.4.0-canary.1+1dd66afde
+FROM oven/bun:canary-alpine@sha256:518322ba628411ac59387684613158ea2d43fa42d519e0e2a40b7bbfd45514b4 AS runtime
 
 WORKDIR /app
 

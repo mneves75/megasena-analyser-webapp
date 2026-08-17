@@ -7,6 +7,10 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Changed
+
+- Bump do Bun canary de runtime em Docker para `1.4.0-canary.1+1dd66afde` (digest `518322ba…`), verificado em 2026-08-17; `.bun-canary-revision` atualizado junto.
+
 ## [1.12.0] - 2026-08-04
 
 ### Added
