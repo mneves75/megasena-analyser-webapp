@@ -24,10 +24,9 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 RUN corepack enable && pnpm install --prod --frozen-lockfile
 
-# Canary runtime pinned by immutable image digest. The matching Bun revision lives in
-# .bun-canary-revision; update both together when intentionally bumping canary.
-# Digest verified: 2026-08-17 / 1.4.0-canary.1+1dd66afde
-FROM oven/bun:canary-alpine@sha256:518322ba628411ac59387684613158ea2d43fa42d519e0e2a40b7bbfd45514b4 AS runtime
+# Stable Bun runtime pinned by immutable image digest.
+# Digest verified: 2026-08-21 / 1.4.0 via `docker buildx imagetools inspect oven/bun:1.4.0-alpine`
+FROM oven/bun:1.4.0-alpine@sha256:07235578f79ef8c6f97d94aee7938e76f5cdba5f21ae5dbfdd3d3d38058437eb AS runtime
 
 WORKDIR /app
 

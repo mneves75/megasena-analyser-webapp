@@ -37,16 +37,19 @@ anything that ships.
 
 ## Runtime & package manager (non-obvious)
 
-- **Bun is the runtime** (`>=1.3.14`); scripts and servers run under `bun`. The app
+- **Bun is the runtime** (`>=1.4.0`); scripts and servers run under `bun`. The app
   uses Bun's native `bun:sqlite` and **will not run on Node.js**.
-- **Production Docker image uses Bun canary** pinned by immutable digest. The
-  matching canary revision is recorded in `.bun-canary-revision`; update both
-  together when intentionally bumping canary.
-- **CI uses a stable pinned Bun version** recorded in `.bun-ci-version` and
-  installed via `.github/actions/setup-bun-pinned/action.yml` (the `setup-bun`
-  action cannot immutably pin canary builds). Next.js production builds use Node
-  22.23.2 because Bun 1.3.14 segfaults while compiling Next.js 16.3.0 on Linux;
-  scripts, SQLite, the API server and production runtime remain on Bun.
+- **Production Docker image uses Bun stable** (`oven/bun:1.4.0-alpine`) pinned by
+  immutable digest; re-verify with `docker buildx imagetools inspect` whenever you
+  move the pin.
+- **CI uses a pinned Bun version** recorded in `.bun-ci-version` and installed via
+  `.github/actions/setup-bun-pinned/action.yml`. Next.js production builds still
+  compile under Node 22.23.2 (CI pin): the old Bun 1.3.14 Linux SIGSEGV building
+  Next.js 16.3.0 was a napi thread-safe-function use-after-free, fixed in
+  Bun 1.4.0 (oven-sh/bun#36866), but the builder stays Node until `next build`
+  under Bun is re-validated in CI. The Next.js standalone server itself already
+  runs under Bun at runtime (`bun --bun ./server.js`); scripts, SQLite and the
+  API server remain on Bun.
 - **pnpm is the dependency manager** (`pnpm@11`, `pnpm-lock.yaml`). Security overrides
   live in `pnpm-workspace.yaml` (pnpm ignores `package.json` `overrides`).
   `pnpm-workspace.yaml` also sets `minimumReleaseAge` and `trustPolicy: no-downgrade`
@@ -179,3 +182,12 @@ against public `/api/health` (stale version = not deployed). Staging requires an
 explicit reachable target — never inferred from the prod alias. Full workflow in
 `docs/DEPLOY.md`. Deployment scripts + server access live in the separate private
 repo `megasena-deployment-private`, not here.
+
+## Package management
+
+- **Use pnpm exclusively.** Never use `npm install`, `yarn`, or `bun install` — they ignore `pnpm-lock.yaml` and create duplicate physical copies of every dependency.
+- Setup / CI: `pnpm install --frozen-lockfile`
+- Add dependency: `pnpm add <pkg>` · dev: `pnpm add -D <pkg>` · workspace pkg: `pnpm --filter <name> add <pkg>`
+- Run scripts: `pnpm <script>`
+- `node_modules/` is disposable: hardlinked views into the shared pnpm store. Deleting it is always safe; reinstall is fast and offline. Never commit or edit it.
+- `pnpm-lock.yaml` is the source of truth: commit it, never hand-edit.

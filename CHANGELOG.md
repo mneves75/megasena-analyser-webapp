@@ -5,11 +5,15 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
-## [Unreleased]
+## [1.13.0] - 2026-08-22
 
 ### Changed
 
 - Bump do Bun canary de runtime em Docker para `1.4.0-canary.1+1dd66afde` (digest `518322ba…`), verificado em 2026-08-17; `.bun-canary-revision` atualizado junto.
+- Runtime Docker migra do canary para o Bun **1.4.0 estável**, pinado por digest imutável (`oven/bun:1.4.0-alpine@sha256:0723557…`, verificado em 2026-08-21); `.bun-canary-revision` removido por redundante.
+- CI: `.bun-ci-version` e `engines.bun` sobem para `1.4.0` (baseline testado com SQLite nativo).
+- Next.js `16.3.0` → `16.3.2` (última estável).
+- Fato-checagem do crash de build: o SIGSEGV do Bun 1.3.14 ao compilar Next.js 16.3.0 no Linux era um use-after-free de napi thread-safe function (`next-swc`), corrigido no Bun 1.4.0 via oven-sh/bun#34067 (issue #36866, fechada em 2026-08-13). O build continua no Node 22.23.2 até `next build` sob Bun ser revalidado no CI; o servidor standalone Next.js já roda sob Bun em produção (`bun --bun ./server.js`).
 
 ## [1.12.0] - 2026-08-04
 
