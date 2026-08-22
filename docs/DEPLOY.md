@@ -64,6 +64,8 @@ Depois de subir em um staging real, valide com o domínio de staging usando `PRO
 
 ## Fluxo de Deploy
 
+> **Script canônico:** `megasena-deployment-private/megasena-analyser/deploy.sh` — empacota os artefatos, constrói a imagem na VPS (sem downtime), faz cutover com health gate (`compose up --wait`), troca o banco com `--with-db` (snapshot online via `VACUUM INTO`) e verifica `/api/health` público. Os passos manuais abaixo permanecem como referência do que o script automatiza.
+
 Antes de empacotar uma release, rode os gates locais:
 
 ```bash
@@ -212,6 +214,8 @@ Se a resposta pública exibir `unsafe-inline` em `script-src`/`style-src`, `unsa
 - `X-XSS-Protection` não é usado, porque é obsoleto em navegadores modernos.
 
 ## Atualização de Banco
+
+> O caminho operacional é `./deploy.sh --with-db` no repositório privado; ele executa exatamente este fluxo (snapshot consistente via `VACUUM INTO` dentro do contêiner em execução — nunca copie o arquivo SQLite ao vivo com `scp`, pois transações confirmadas podem estar no `-wal`).
 
 Fluxo geral:
 

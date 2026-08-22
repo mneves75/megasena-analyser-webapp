@@ -5,6 +5,17 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.1] - 2026-08-22
+
+### Changed
+
+- Deploy convergido em um script canônico com health gate (`megasena-deployment-private/megasena-analyser/deploy.sh`); `deploy-docker.sh` e `sync-database.ts` removidos do repositório privado por estarem absorvidos. Atualização de banco usa snapshot consistente via `VACUUM INTO` dentro do contêiner em execução (cópia `scp` de SQLite vivo pode perder transações do `-wal`).
+- `docs/DEPLOY.md` aponta o script canônico; passos manuais mantidos como referência.
+
+### Security
+
+- Revisão de segurança completa pré-produção sem achados acionáveis no código: CSP nonce + strict-dynamic, HSTS preload, headers da API deny-by-default, rate limit e validação zod confirmados contra produção; `gitleaks` (incl. histórico) limpo; queries parametrizadas; `dangerouslySetInnerHTML` apenas com JSON-LD escapado (`<` → `u003c`) e script de tema estático.
+
 ## [1.13.0] - 2026-08-22
 
 ### Changed

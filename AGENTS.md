@@ -181,7 +181,9 @@ run `bun run dist:standalone`, ship `dist/standalone/`. Reverse proxy Traefik v3
 against public `/api/health` (stale version = not deployed). Staging requires an
 explicit reachable target — never inferred from the prod alias. Full workflow in
 `docs/DEPLOY.md`. Deployment scripts + server access live in the separate private
-repo `megasena-deployment-private`, not here.
+repo `megasena-deployment-private`, not here — its `megasena-analyser/deploy.sh` is the
+canonical health-gated deploy path (`--with-db` covers the DB refresh via online
+`VACUUM INTO` snapshots; never scp a live SQLite file).
 
 ## Package management
 
