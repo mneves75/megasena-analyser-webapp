@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { proxy } from '@/proxy';
+import { unstable_doesMiddlewareMatch } from 'next/experimental/testing/server';
+import { config, proxy } from '@/proxy';
 
 describe('proxy', () => {
   it('aplica CSP com nonce por request sem expor x-nonce como header público', () => {
@@ -52,5 +53,21 @@ describe('proxy', () => {
 
     expect(response.headers.get('strict-transport-security')).toBeNull();
     expect(csp).not.toContain('upgrade-insecure-requests');
+  });
+
+  it('aplica o middleware (e portanto a CSP) a documentos HTML pré-carregados', () => {
+    // `Purpose: prefetch` marca um documento HTML completo que o navegador pode
+    // exibir na navegação; pular o middleware servia essa página sem CSP.
+    expect(
+      unstable_doesMiddlewareMatch({ config, url: '/about', headers: { purpose: 'prefetch' } })
+    ).toBe(true);
+    expect(unstable_doesMiddlewareMatch({ config, url: '/about' })).toBe(true);
+  });
+
+  it('continua ignorando payloads RSC de prefetch do router e rotas de API', () => {
+    expect(
+      unstable_doesMiddlewareMatch({ config, url: '/about', headers: { 'next-router-prefetch': '1' } })
+    ).toBe(false);
+    expect(unstable_doesMiddlewareMatch({ config, url: '/api/health' })).toBe(false);
   });
 });

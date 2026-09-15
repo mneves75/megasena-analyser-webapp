@@ -13,33 +13,15 @@ self-hosted Docker (Next.js standalone + a Bun API server) behind Traefik/Cloudf
 
 ## Model routing & review discipline
 
-This repo is public and ships production code; choose the model tier to match the
-risk and nature of the task. The global `CLAUDE.md` governs cross-project behavior;
-this section adds the project-specific default:
+Follow the maintainer's shared workspace agent policy (kept outside this repository) for model selection, delegation, authorization, and proportionate verification.
 
-- **Claude Opus 5** — deep reasoning, complex debugging, architecture decisions,
-  security audits, performance investigations, and multi-file refactors.
-- **Claude Fable 5** — user-facing design, copy/UX, API design, narrative docs, and
-  any review where taste and clarity matter more than raw reasoning depth.
-- **Claude Sonnet 5 / Opus 4.x** — everyday implementation and verification when
-  Opus 5 is unnecessary; never Haiku for shipped code.
-- **Codex (`gpt-5.6`)** remains the default backend/heavy executor for well-specified,
-  self-contained work (see global routing). Use it unless the task is frontend/visual
-  or requires the reasoning depth that Opus 5 provides.
-
-For code review and closeout, prefer the bundled `autoreview` skill (Codex default).
-Add an Opus 5 or Fable 5 panel only for high-stakes releases, security-sensitive
-changes, or when the diff is user-facing and taste is the primary risk.
-
-When in doubt, bias toward the smarter model for the decision at hand; cost is a
-tie-breaker, not a ceiling. Intelligence > taste > cost when they conflict for
-anything that ships.
+Use independent review when the change's risk, the requested workflow, or a documented release gate warrants it. Validate findings, fix in-scope defects, and stop when the required evidence is complete. Preserve all production and security gates documented below.
 
 ## Runtime & package manager (non-obvious)
 
-- **Bun is the runtime** (`>=1.4.0`); scripts and servers run under `bun`. The app
+- **Bun is the runtime** (`>=1.4.2`); scripts and servers run under `bun`. The app
   uses Bun's native `bun:sqlite` and **will not run on Node.js**.
-- **Production Docker image uses Bun stable** (`oven/bun:1.4.0-alpine`) pinned by
+- **Production Docker image uses Bun stable** (`oven/bun:1.4.2-alpine`) pinned by
   immutable digest; re-verify with `docker buildx imagetools inspect` whenever you
   move the pin.
 - **CI uses a pinned Bun version** recorded in `.bun-ci-version` and installed via

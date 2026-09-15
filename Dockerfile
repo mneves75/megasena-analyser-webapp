@@ -25,8 +25,9 @@ COPY patches ./patches
 RUN corepack enable && pnpm install --prod --frozen-lockfile
 
 # Stable Bun runtime pinned by immutable image digest.
-# Digest verified: 2026-08-21 / 1.4.0 via `docker buildx imagetools inspect oven/bun:1.4.0-alpine`
-FROM oven/bun:1.4.0-alpine@sha256:07235578f79ef8c6f97d94aee7938e76f5cdba5f21ae5dbfdd3d3d38058437eb AS runtime
+# Digest verified: 2026-09-15 / 1.4.2 via `docker buildx imagetools inspect oven/bun:1.4.2-alpine`
+# (1.4.2 fixes a GC-thread crash/hang in Array splice/shift on musl, i.e. this image).
+FROM oven/bun:1.4.2-alpine@sha256:d888c0ae6c86d7866ff10c5aafdd9077b36aee6455b33dd270fb93c0dd5cef6f AS runtime
 
 WORKDIR /app
 

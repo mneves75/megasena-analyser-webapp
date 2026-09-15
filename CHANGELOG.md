@@ -5,6 +5,24 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.13.2] - 2026-09-15
+
+### Security
+
+- Next.js `16.3.2` → `16.3.5`, fechando GHSA-2xp9-vwfh-vxw4 (RCE no otimizador de imagens AVIF) e GHSA-p293-qw3h-jr36 (servidores Windows). Nenhum dos dois era alcançável nesta implantação — não há `next/image` com fontes remotas e a produção é Linux —, mas ambos derrubavam o gate `pnpm audit --prod`. O 16.3.5 também traz nonce CSP nos scripts de `loading`/`template`.
+- Overrides transitivos corrigidos: `sharp` ≥ 0.35.4, `baseline-browser-mapping` 2.11.23, `js-yaml` ≥ 4.3.2, `fast-uri` ≥ 3.1.7, `@humanfs/node` ≥ 0.16.8 e `vitest`/`@vitest/coverage-v8` 4.1.11. `pnpm audit --prod` e o audit completo voltam a zero. As exceções de `minimumReleaseAge` do lote `next@16.3.2` foram removidas; todas as versões novas têm mais de 24 h.
+- Rate limit por visitante também nas chamadas server-side. As páginas SSR e a server action do gerador chamavam a API Bun a partir de loopback sem o IP do visitante: sem `INTERNAL_API_SECRET` (caso da produção), todos os visitantes dividiam um único bucket de `127.0.0.1`, e um cliente recarregando `/dashboard` cerca de duas vezes por segundo esgotava a cota de todos; com o segredo, a geração de apostas via server action não tinha limite nenhum. Agora essas chamadas repassam os headers de IP de cliente da requisição da página (mesma confiança do rewrite `/api/*`) e são cobradas do bucket do visitante. O segredo interno só isenta chamadas que não trazem header de IP algum — um `CF-Connecting-IP: 127.0.0.1` forjado não compra a isenção.
+- Documentos HTML pré-carregados (`Purpose: prefetch`) deixam de ser servidos sem CSP: o matcher do `proxy.ts` pulava o middleware para esse header. Prefetches RSC do router continuam fora do middleware.
+
+### Fixed
+
+- `GET /api/trends` sem `period` respondia `400`: `URLSearchParams.get` devolve `null` para parâmetro ausente e o enum opcional do zod rejeita `null`. O parâmetro agora assume `yearly`; períodos inválidos continuam rejeitados.
+
+### Changed
+
+- Runtime Docker Bun `1.4.0` → `1.4.2` estável, pinado por digest imutável (`oven/bun:1.4.2-alpine@sha256:d888c0a…`, verificado em 2026-09-15). O 1.4.2 corrige um crash/travamento na thread de GC em `splice`/`shift` de arrays sobre musl — a libc desta imagem Alpine — e o 1.4.1 reduz a memória ociosa de SSR do Next.js. `.bun-ci-version`, `engines.bun` e `@types/bun` sobem para 1.4.2.
+- Base de dados atualizada até o concurso #3057 (2026-09-13), conferida contra a API da CAIXA.
+
 ## [1.13.1] - 2026-08-22
 
 ### Changed

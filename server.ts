@@ -34,9 +34,9 @@ import {
   readJsonBodyWithLimit,
   resolveClientIp,
 } from './lib/security/http';
-import { MAX_TREND_NUMBERS_PARAM_LENGTH, parseTrendNumbers } from './lib/security/trends-input';
+import { parseTrendNumbers, parseTrendsQuery } from './lib/security/trends-input';
 import { hashForAudit, isHmacEnabled, pseudonymizeIp } from './lib/security/pseudonymize';
-import { isInternalApiRequest } from './lib/security/internal-api';
+import { isInternalApiRequest, isRateLimitExempt } from './lib/security/internal-api';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
@@ -71,14 +71,6 @@ const generateBetsSchema = z.object({
   budget: z.number().min(BET_GENERATION_LIMITS.MIN_BUDGET).max(BET_GENERATION_LIMITS.MAX_BUDGET),
   strategy: z.enum(['random', 'hot_numbers', 'cold_numbers', 'balanced', 'fibonacci']).optional(),
   mode: z.enum(['simple_only', 'multiple_only', 'mixed', 'optimized']).optional(),
-});
-
-const trendsQuerySchema = z.object({
-  numbers: z
-    .string()
-    .max(MAX_TREND_NUMBERS_PARAM_LENGTH, 'Lista de números muito longa')
-    .regex(/^(\d+,)*\d+$/, 'Formato de números inválido'),
-  period: z.enum(['yearly', 'quarterly', 'monthly']).optional(),
 });
 
 // CORS configuration
@@ -638,10 +630,7 @@ const apiHandlers: Record<
       };
 
       // Validate query parameters
-      const parseResult = trendsQuerySchema.safeParse({
-        numbers: numbersParam,
-        period: periodParam,
-      });
+      const parseResult = parseTrendsQuery(url.searchParams);
 
       if (!parseResult.success) {
         ctx.audit = {
@@ -655,7 +644,7 @@ const apiHandlers: Record<
         return createErrorResponse(ctx, 'Parâmetros de consulta inválidos.', parseResult.error.format());
       }
 
-      const { numbers: numbersStr, period = 'yearly' } = parseResult.data;
+      const { numbers: numbersStr, period } = parseResult.data;
       const parsedNumbers = parseTrendNumbers(numbersStr);
 
       if (!parsedNumbers.success) {
@@ -884,7 +873,10 @@ serve({
     const url = new URL(req.url);
     const startTime = Date.now();
     const clientIp = resolveClientIp(req, server);
-    const internalApiRequest = isInternalApiRequest(req, server.requestIP(req)?.address ?? null);
+    const rateLimitExempt = isRateLimitExempt(
+      req,
+      isInternalApiRequest(req, server.requestIP(req)?.address ?? null)
+    );
     const ctx = createRequestContext(
       req,
       url,
@@ -922,7 +914,7 @@ serve({
 
       // Apply rate limiting to all API routes, including public health checks.
       if (url.pathname.startsWith('/api/')) {
-        const rateLimit = internalApiRequest
+        const rateLimit = rateLimitExempt
           ? {
               allowed: true,
               remaining: RATE_LIMIT_MAX_REQUESTS,

@@ -6,6 +6,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { Button } from '@/components/ui/button';
 import { LotteryBall } from '@/components/lottery-ball';
 import { fetchApi } from '@/lib/api/api-fetch';
+import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { logger } from '@/lib/logger';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { BASE_URL as baseUrl } from '@/lib/constants';
@@ -80,6 +81,7 @@ const secondaryFeatures: readonly { icon: ElementType; title: string; descriptio
 async function getHomeSnapshot(): Promise<HomeSnapshot> {
   try {
     const response = await fetchApi('/api/dashboard', {
+      headers: await forwardedClientIpHeaders(),
       cache: 'no-store',
       next: { revalidate: 0 },
       timeoutMs: 8000,

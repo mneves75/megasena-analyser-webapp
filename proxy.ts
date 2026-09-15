@@ -37,14 +37,13 @@ export function proxy(request: NextRequest): NextResponse {
 export const config = {
   matcher: [
     {
-      // Skip static assets, API routes, and well-known files
-      // Prefetch requests are also excluded to avoid duplicate nonce generation.
+      // Skip static assets, API routes, and well-known files.
+      // Router prefetches are RSC payloads, not documents, so they need no CSP.
+      // Do NOT also skip `Purpose: prefetch`: that is a full HTML document the
+      // browser may display on navigation, and skipping it served it without CSP.
       source:
         '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|\\.well-known).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
+      missing: [{ type: 'header', key: 'next-router-prefetch' }],
     },
   ],
 };

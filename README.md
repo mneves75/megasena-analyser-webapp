@@ -15,8 +15,8 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Stack Tecnológica
 
-- **Frontend**: Next.js 16.3.2 + React 19
-- **Runtime**: Bun >=1.4.0 (local/CI baseline); imagem Docker de produção usa Bun 1.4.0 estável com digest imutável
+- **Frontend**: Next.js 16.3.5 + React 19
+- **Runtime**: Bun >=1.4.2 (local/CI baseline); imagem Docker de produção usa Bun 1.4.2 estável com digest imutável
 - **Banco de Dados**: SQLite (bun:sqlite - nativo)
 - **Estilização**: Tailwind CSS + componentes shadcn/ui
 - **TypeScript**: Tipagem completa

@@ -2,15 +2,14 @@
 
 ## Active work
 
-- `v1.12.0` release candidate prepared locally with Next.js 16.3.0, cache/migration,
-  ingestion, theme, Docker and supply-chain fixes. Autoreview is clean; staging and
-  production remain behind their separate confirmation gates.
-- Local CAIXA database is verified through contest 3039, dated 2026-08-02.
-- Previous production deploy: `v1.9.0-beta.1`, 2026-07-28, via the private deployment repository.
-  - Image: `megasena-analyser-app:v1.9.0-beta.1`
-  - DB: 3,036 draws
-  - Public health: `https://megasena-analyzer.com.br/api/health`
-  - `deploy:verify` and `security:csp:edge` both passed.
+- `v1.13.2` release prepared 2026-09-15: Bun 1.4.2 (Docker digest `d888c0a…`), Next.js
+  16.3.5, advisory overrides, per-visitor rate limit for SSR/server-action calls,
+  CSP on `Purpose: prefetch` documents, `/api/trends` period default. Production was
+  `v1.13.1` at #3051 before this release; local DB is at **#3057 (2026-09-13)**.
+- Public health: `https://megasena-analyzer.com.br/api/health`. `deploy:verify`,
+  `security:csp:edge`, `security:secrets` and `security:secrets:history` all pass.
+- Draw cadence is **Sun/Tue/Thu**, not the older Tue/Thu/Sat. Verified against the
+  CAIXA API's own `dataApuracao`. Do not "fix" a Sunday date as an off-by-one bug.
 
 ## Key decisions & why
 
@@ -88,5 +87,11 @@
 
 ## Next
 
-- Finish local gates, commit, then request confirmation before push + `v1.12.0-beta1`
-  staging deploy. Request a separate confirmation before `v1.12.0` production deploy.
+- Deployment repo (`megasena-deployment-private`) has an **uncommitted** `deploy.sh`
+  rework (`--db-only` mode + fixes) plus `AGENTS.md`/`README.md` doc corrections.
+  Review the diff and commit; nothing is pushed.
+- Staging DB is still at #3047 while production is at #3051. Refresh it if staging is
+  meant to mirror production for testing.
+- The staging `0.0.0.0` port binding is fixed, but whether those ports were ever
+  reachable from the public internet was **never verified** — see the note in
+  `memory/2026-08-31.md`. Verify from a network that can route to the origin.
