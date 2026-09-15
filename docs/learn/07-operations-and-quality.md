@@ -21,7 +21,7 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 
 ### Ambiente e configuração
 
-- Runtime: **Bun ≥ 1.4.0** (obrigatório; `bun:sqlite`).
+- Runtime: **Bun ≥ 1.4.2** (obrigatório; `bun:sqlite`).
 - Copie `.env.example` → `.env.local`. Variáveis principais (lista completa em
   `06`/`09`): `API_PORT` (3201), `PORT` (3000), `IP_HASH_SECRET` (≥32, obrigatório em
   produção), `ALLOWED_ORIGINS`, `INTERNAL_API_SECRET`, `TRUST_PROXY_HEADERS`,
@@ -71,7 +71,7 @@ bun run start            # stack de produção local
 - `sync-standalone-dist.ts` copia `.next/standalone` → `dist/standalone`, traz
   `.next/static`, remove `db/` e checa que `server.js` não tem rewrite para porta de
   API errada.
-- **Docker:** imagem runtime-only baseada no Bun 1.4.0 estável fixado por digest,
+- **Docker:** imagem runtime-only baseada no Bun 1.4.2 estável fixado por digest,
   copia `dist/standalone` pré-construído, monta
   `./db:/app/db` por volume, healthcheck em `/api/health`,
   `CMD ["bun","scripts/start-docker.ts"]`.
@@ -93,7 +93,7 @@ bun run start            # stack de produção local
   ast-grep e TypeScript) + `test` → `e2e` (Playwright) → `build` (+`dist`, envio ao
   GHCR somente pelo digest canônico) → `sbom` (CycloneDX) → `security` (Trivy
   bloqueante no mesmo digest, só em push) → `publish` (promoção do digest aprovado
-  para tags). Bun fixado em 1.4.0.
+  para tags). Bun fixado em 1.4.2.
 - `cli-smoke.yml`: roda `db:migrate` e os prunes em `--dry-run` para garantir que as
   CLIs não quebraram.
 

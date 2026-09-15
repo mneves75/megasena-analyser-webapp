@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const MAX_TREND_NUMBERS = 60;
 export const MAX_TREND_NUMBERS_PARAM_LENGTH = 180;
 
@@ -25,4 +27,25 @@ export function parseTrendNumbers(numbersParam: string): TrendNumbersParseResult
   }
 
   return { success: true, numbers: Array.from(new Set(numbers)) };
+}
+
+const trendsQuerySchema = z.object({
+  numbers: z
+    .string()
+    .max(MAX_TREND_NUMBERS_PARAM_LENGTH, 'Lista de números muito longa')
+    .regex(/^(\d+,)*\d+$/, 'Formato de números inválido'),
+  period: z.enum(['yearly', 'quarterly', 'monthly']).default('yearly'),
+});
+
+export type TrendsQuery = z.infer<typeof trendsQuerySchema>;
+
+// URLSearchParams.get returns null for an absent key, and zod only applies
+// `.default()` to undefined, so absent parameters must be normalized first.
+export function parseTrendsQuery(
+  searchParams: URLSearchParams
+): z.SafeParseReturnType<z.input<typeof trendsQuerySchema>, TrendsQuery> {
+  return trendsQuerySchema.safeParse({
+    numbers: searchParams.get('numbers') ?? undefined,
+    period: searchParams.get('period') ?? undefined,
+  });
 }

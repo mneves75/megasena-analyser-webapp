@@ -3,6 +3,7 @@
 import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator.types';
 import { type BetGenerationMode } from '@/lib/constants';
 import { fetchApi } from '@/lib/api/api-fetch';
+import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { logger } from '@/lib/logger';
 
 interface GenerateBetsApiResponse {
@@ -37,11 +38,11 @@ export async function generateBets(
 ): Promise<BetGenerationResult> {
   // Call the Bun API server instead of directly instantiating BetGenerator
   // Server Actions run in Node.js, but database requires Bun runtime
+  const requestHeaders = await forwardedClientIpHeaders();
+  requestHeaders.set('Content-Type', 'application/json');
   const response = await fetchApi('/api/generate-bets', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: requestHeaders,
     body: JSON.stringify({ budget, strategy, mode }),
     cache: 'no-store',
     timeoutMs: 12000,

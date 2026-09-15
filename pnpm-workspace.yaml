@@ -8,21 +8,6 @@ nodeLinker: hoisted
 # (pragmático para dependências atuais; elevar para 10080 quando o ecossistema
 # estiver maduro o suficiente para o cutoff de 7 dias).
 minimumReleaseAge: 1440
-# Exceções de maturidade: lote next/@next 16.3.2 (publicado 2026-08-21T09:5xZ,
-# ~14h antes do cutoff de 24h na data da atualização). Podem ser removidas quando
-# o lote tiver mais de 24h; mantidas porque instalações congeladas (CI) reaplicam
-# minimumReleaseAge sobre as entradas do lockfile.
-minimumReleaseAgeExclude:
-  - 'next@16.3.2'
-  - '@next/env@16.3.2'
-  - '@next/swc-darwin-arm64@16.3.2'
-  - '@next/swc-darwin-x64@16.3.2'
-  - '@next/swc-linux-arm64-gnu@16.3.2'
-  - '@next/swc-linux-arm64-musl@16.3.2'
-  - '@next/swc-linux-x64-gnu@16.3.2'
-  - '@next/swc-linux-x64-musl@16.3.2'
-  - '@next/swc-win32-arm64-msvc@16.3.2'
-  - '@next/swc-win32-x64-msvc@16.3.2'
 trustPolicy: no-downgrade
 # Exceções para downgrades de confiança: o lockfile atual contém entradas cuja
 # provenance/attestation mudou no registry; são pacotes amplamente auditados e
@@ -43,23 +28,28 @@ allowBuilds:
 # "Overrides de dependências"). Migrados do package.json "overrides" (formato
 # npm/Bun), que o pnpm ignora silenciosamente.
 overrides:
-  # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj); next ainda pede 0.34.x.
-  sharp: '>=0.35.0'
+  # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj) e GHSA-rgj7-g3m4-5g8c (<0.35.4).
+  sharp: '>=0.35.4'
   # <8: Babel 8 e um major breaking/ESM-only; consumidores transitivos pedem 7.x.
   '@babel/core': '>=7.29.1 <8'
   # react-doctor/conf precisa de ajv 8; ESLint precisa de ajv 6. Usamos override
   # específico para conf e mantemos o pin geral para o restante da árvore.
   ajv: 6.14.0
   'conf>ajv': '>=8.17.1'
-  baseline-browser-mapping: 2.10.9
+  # GHSA-w5vr-8v7q-w6rv: <2.11.0.
+  baseline-browser-mapping: 2.11.23
   # GHSA-rgw5-rvv9-x895: DoS via unbounded brace expansion. O range antigo
   # '>=1.1.16 <2' ainda resolvia 1.1.16, que o advisory marca como
   # vulnerável. Forçamos a linha 5.x corrigida.
   brace-expansion: '>=5.0.9'
   caniuse-lite: 1.0.30001792
-  fast-uri: '>=3.1.5 <4'
+  # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp: <3.1.6.
+  fast-uri: '>=3.1.7 <4'
   flatted: 3.4.2
-  js-yaml: '>=4.3.0 <5'
+  # GHSA-p498-v437-472g: <0.16.8 (via eslint).
+  '@humanfs/node': '>=0.16.8 <0.17'
+  # GHSA-5p4m-2wfm-xmqj (<4.3.1) e GHSA-2883-xcg3-v3hh (<4.3.2).
+  js-yaml: '>=4.3.2 <5'
   minimatch: 3.1.4
   picomatch: '>=2.3.2'
   # GHSA-2v37-7h3g-55p8: nanoid <3.3.18 entra via next>postcss. 3.3.18 é

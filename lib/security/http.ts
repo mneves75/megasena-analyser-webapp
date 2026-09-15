@@ -21,7 +21,7 @@ const TRUSTED_CLIENT_IP_HEADER_ENV = 'TRUSTED_CLIENT_IP_HEADER';
  */
 const DEFAULT_CLIENT_IP_HEADERS = ['cf-connecting-ip', 'x-real-ip', 'x-forwarded-for'] as const;
 
-function configuredClientIpHeaders(): readonly string[] {
+export function configuredClientIpHeaders(): readonly string[] {
   const configured = (process.env[TRUSTED_CLIENT_IP_HEADER_ENV] ?? '').trim().toLowerCase();
   return configured.length > 0 ? [configured] : DEFAULT_CLIENT_IP_HEADERS;
 }
@@ -38,9 +38,9 @@ export class RequestBodyTooLargeError extends Error {
   }
 }
 
-export type RequestIpResolver = Pick<Server, 'requestIP'>;
+export type RequestIpResolver = Pick<Server<unknown>, 'requestIP'>;
 
-function shouldTrustProxyHeaders(): boolean {
+export function shouldTrustProxyHeaders(): boolean {
   return process.env[TRUST_PROXY_HEADERS_ENV] === 'true';
 }
 
@@ -88,6 +88,11 @@ function readClientIpHeader(req: Request, header: string): string | null {
   // x-forwarded-for is a list; the left-most entry is the original client.
   const candidate = header === 'x-forwarded-for' ? (raw.split(',')[0] ?? null) : raw;
   return normalizeForwardedIp(candidate);
+}
+
+/** True when the request names a client through any header this API would consult. */
+export function hasClientIpHeader(req: Request): boolean {
+  return configuredClientIpHeaders().some((header) => req.headers.has(header));
 }
 
 function trustedForwardedIp(req: Request): string | null {

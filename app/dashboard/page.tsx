@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
+import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 
 import { BASE_URL } from '@/lib/constants';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -70,6 +71,7 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
 
   try {
     const response = await fetchApi('/api/dashboard', {
+      headers: await forwardedClientIpHeaders(),
       cache: 'no-store',
       next: { revalidate: 0 },
       timeoutMs: 12000,

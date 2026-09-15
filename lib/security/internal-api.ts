@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import { hasClientIpHeader, shouldTrustProxyHeaders } from './http';
 
 const INTERNAL_REQUEST_HEADER = 'x-megasena-internal-request';
 const INTERNAL_REQUEST_SECRET_HEADER = 'x-megasena-internal-request-secret';
@@ -41,4 +42,23 @@ export function isInternalApiRequest(
     isLoopbackPeer(peerAddress) &&
     hasValidInternalApiSecret(req, configuredSecret)
   );
+}
+
+/**
+ * A verified internal call is exempt from the per-IP quota only when it names no
+ * visitor. SSR pages and server actions forward the page request's client IP
+ * headers (lib/api/forwarded-client-ip.ts), so such a call is charged to that
+ * visitor and the generator server action cannot become an unmetered path.
+ *
+ * The test is header PRESENCE, not the resolved value: a forwarded
+ * `127.0.0.1`, or a non-IP value that falls back to the loopback peer, must not
+ * buy the exemption. With proxy headers untrusted no caller is identifiable on
+ * any path, so the exemption stays as it was.
+ */
+export function isRateLimitExempt(
+  req: Request,
+  internalRequest: boolean,
+  trustProxyHeaders: boolean = shouldTrustProxyHeaders()
+): boolean {
+  return internalRequest && !(trustProxyHeaders && hasClientIpHeader(req));
 }

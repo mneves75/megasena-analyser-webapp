@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_TREND_NUMBERS, MAX_TREND_NUMBERS_PARAM_LENGTH, parseTrendNumbers } from '@/lib/security/trends-input';
+import {
+  MAX_TREND_NUMBERS,
+  MAX_TREND_NUMBERS_PARAM_LENGTH,
+  parseTrendNumbers,
+  parseTrendsQuery,
+} from '@/lib/security/trends-input';
 
 describe('parseTrendNumbers', () => {
   it('accepts all Mega-Sena numbers once and keeps deterministic order', () => {
@@ -24,5 +29,29 @@ describe('parseTrendNumbers', () => {
 
   it('rejects out-of-range numbers instead of silently dropping them', () => {
     expect(parseTrendNumbers('1,2,61')).toEqual({ success: false, reason: 'number_out_of_range' });
+  });
+});
+
+describe('parseTrendsQuery', () => {
+  it('defaults period to yearly when the query omits it', () => {
+    // URLSearchParams.get returns null for an absent key, and a zod enum default
+    // applies only to undefined; the parser must normalize before validating.
+    const result = parseTrendsQuery(new URLSearchParams('numbers=1,2,3'));
+
+    expect(result).toEqual({ success: true, data: { numbers: '1,2,3', period: 'yearly' } });
+  });
+
+  it('keeps an explicit valid period and rejects an unknown one', () => {
+    expect(parseTrendsQuery(new URLSearchParams('numbers=5&period=monthly'))).toEqual({
+      success: true,
+      data: { numbers: '5', period: 'monthly' },
+    });
+    expect(parseTrendsQuery(new URLSearchParams('numbers=5&period=daily')).success).toBe(false);
+  });
+
+  it('rejects malformed or oversized number lists', () => {
+    expect(parseTrendsQuery(new URLSearchParams('numbers=1;2')).success).toBe(false);
+    const oversized = Array.from({ length: MAX_TREND_NUMBERS_PARAM_LENGTH }, () => '1').join(',');
+    expect(parseTrendsQuery(new URLSearchParams(`numbers=${oversized}`)).success).toBe(false);
   });
 });

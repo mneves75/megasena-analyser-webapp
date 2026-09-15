@@ -18,6 +18,7 @@ import { BarChart, DonutChart } from '@/components/charts';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
+import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { BASE_URL as baseUrl } from '@/lib/constants';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
@@ -82,6 +83,7 @@ async function getStatisticsData(): Promise<StatisticsApiResponse> {
 
   try {
     const response = await fetchApi(`/api/statistics?${params}`, {
+      headers: await forwardedClientIpHeaders(),
       cache: 'no-store', // Force fresh data
       timeoutMs: 15000,
     });
