@@ -2,10 +2,10 @@
 
 ## Active work
 
-- `v1.13.2` release prepared 2026-09-15: Bun 1.4.2 (Docker digest `d888c0a…`), Next.js
-  16.3.5, advisory overrides, per-visitor rate limit for SSR/server-action calls,
-  CSP on `Purpose: prefetch` documents, `/api/trends` period default. Production was
-  `v1.13.1` at #3051 before this release; local DB is at **#3057 (2026-09-13)**.
+- Production and staging run **`v1.13.2`** (2026-09-15): Bun 1.4.2 (Docker digest
+  `d888c0a…`), Next.js 16.3.5, DB at **#3057 (2026-09-13)**, 3,057 draws, integrity ok.
+  Tags `v1.13.2-beta1` (staging) and `v1.13.2` (production). Details and lessons in
+  `memory/2026-09-15.md`.
 - Public health: `https://megasena-analyzer.com.br/api/health`. `deploy:verify`,
   `security:csp:edge`, `security:secrets` and `security:secrets:history` all pass.
 - Draw cadence is **Sun/Tue/Thu**, not the older Tue/Thu/Sat. Verified against the
@@ -87,11 +87,12 @@
 
 ## Next
 
-- Deployment repo (`megasena-deployment-private`) has an **uncommitted** `deploy.sh`
-  rework (`--db-only` mode + fixes) plus `AGENTS.md`/`README.md` doc corrections.
-  Review the diff and commit; nothing is pushed.
-- Staging DB is still at #3047 while production is at #3051. Refresh it if staging is
-  meant to mirror production for testing.
-- The staging `0.0.0.0` port binding is fixed, but whether those ports were ever
-  reachable from the public internet was **never verified** — see the note in
-  `memory/2026-08-31.md`. Verify from a network that can route to the origin.
+- Pre-existing public history (`memory/2026-08-17.md` before 2026-09-15) contains the VPS
+  host name and its tailnet IP. Redacted from HEAD; rewriting published history was not
+  done. Decide whether it matters (tailnet IPs are not internet-routable).
+- The legacy build-from-source staging directory on the VPS still holds a stale
+  checkout and container config; retire it when convenient (live staging is the
+  tag-based compose project deployed with the canonical `deploy.sh`).
+- "Utilização 96.0%" in the generator summary uses a dot decimal; pt-BR expects
+  `96,0%`.
+- Dependabot PR #6 (`baseline-browser-mapping` 2.11.0) is superseded by 2.11.23.
