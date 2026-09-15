@@ -55,7 +55,7 @@ pnpm audit --prod
 bun run build
 bun run dist:standalone
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-staging-deploy.tar.gz --no-mac-metadata \
-  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
+  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json patches/ \
   scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts scripts/backfill-prizes.ts scripts/cli-args.ts db/migrations/ Dockerfile
 docker build -t megasena-analyser-app:staging-local .
 ```
@@ -108,7 +108,7 @@ No macOS, desabilite resource forks para evitar arquivos `._*` dentro do tarball
 
 ```bash
 COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
-  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
+  dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json patches/ \
   scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts scripts/backfill-prizes.ts scripts/cli-args.ts db/migrations/ Dockerfile
 ```
 
@@ -285,7 +285,7 @@ Quando o acesso voltar:
    bun run build
    bun run dist:standalone
    COPYFILE_DISABLE=1 tar czf /tmp/megasena-deploy.tar.gz --no-mac-metadata \
-     dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json \
+     dist/standalone/ public/ server.ts lib/ package.json pnpm-lock.yaml pnpm-workspace.yaml bunfig.toml tsconfig.json patches/ \
      scripts/start-docker.ts scripts/check-production-freshness.ts scripts/check-edge-csp.ts db/migrations/ Dockerfile
    ```
 2. Envie o tarball para o diretório de compose no servidor.
