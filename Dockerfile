@@ -31,6 +31,12 @@ FROM oven/bun:1.4.2-alpine@sha256:d888c0ae6c86d7866ff10c5aafdd9077b36aee6455b33d
 
 WORKDIR /app
 
+# The pinned base (re-verified 2026-09-25: upstream digest unchanged) still ships
+# OpenSSL 3.5.7, flagged HIGH by the blocking Trivy gate (CVE-2026-14456). The
+# version constraint fails the build if the fixed package is ever unavailable.
+# Drop it once the base image carries >= 3.5.8.
+RUN apk add --no-cache --upgrade 'libssl3>=3.5.8-r0' 'libcrypto3>=3.5.8-r0'
+
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
