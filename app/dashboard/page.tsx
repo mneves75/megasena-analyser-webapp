@@ -14,29 +14,23 @@ import {
   Activity,
 } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
+import { NumberBallLink } from '@/app/_components/archive-ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 
-import { BASE_URL } from '@/lib/constants';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/dashboard',
   title: pt.meta.dashboard.title,
   description: pt.meta.dashboard.description,
-  alternates: {
-    canonical: '/dashboard',
-  },
-  openGraph: {
-    title: `${pt.meta.dashboard.title} | ${pt.app.name}`,
-    description: pt.meta.dashboard.openGraphDescription,
-    url: '/dashboard',
-  },
-};
+  socialDescription: pt.meta.dashboard.openGraphDescription,
+});
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';
@@ -205,7 +199,7 @@ export default async function DashboardPage() {
               <div className="flex flex-wrap gap-3">
                 {statistics.mostFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
-                    <LotteryBall number={num.number} size="md" />
+                    <NumberBallLink number={num.number} size="md" />
                     <span className="text-xs text-muted-foreground tabular-nums">{num.frequency}x</span>
                   </div>
                 ))}
@@ -225,7 +219,7 @@ export default async function DashboardPage() {
               <div className="flex flex-wrap gap-3">
                 {statistics.leastFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
-                    <LotteryBall number={num.number} size="md" />
+                    <NumberBallLink number={num.number} size="md" />
                     <span className="text-xs text-muted-foreground tabular-nums">{num.frequency}x</span>
                   </div>
                 ))}
@@ -248,9 +242,13 @@ export default async function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="font-semibold tabular-nums">
+                      <Link
+                        href={`/concurso/${draw.contestNumber}`}
+                        prefetch={false}
+                        className="rounded-sm font-semibold tabular-nums underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      >
                         {pt.dashboard.sections.contestLabel} #{draw.contestNumber}
-                      </span>
+                      </Link>
                       <span className="text-sm text-muted-foreground tabular-nums">{formatDate(draw.drawDate)}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">

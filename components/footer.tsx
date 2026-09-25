@@ -60,6 +60,16 @@ export function Footer(): React.JSX.Element {
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
+                <Link href="/resultados" prefetch={false} className={linkClass}>
+                  Resultados
+                </Link>
+              </li>
+              <li>
+                <Link href="/numeros" prefetch={false} className={linkClass}>
+                  Números de 1 a 60
+                </Link>
+              </li>
+              <li>
                 <Link href="/dashboard" className={linkClass}>
                   {pt.nav.dashboard}
                 </Link>

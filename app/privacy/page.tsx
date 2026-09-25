@@ -5,21 +5,14 @@ import { Button } from '@/components/ui/button';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
-import { BASE_URL as baseUrl } from '@/lib/constants';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/privacy',
   title: pt.meta.privacy.title,
   description: pt.meta.privacy.description,
-  alternates: {
-    canonical: '/privacy',
-  },
-  openGraph: {
-    title: `${pt.meta.privacy.title} | ${pt.app.name}`,
-    description: pt.meta.privacy.openGraphDescription,
-    url: '/privacy',
-  },
-};
+  socialDescription: pt.meta.privacy.openGraphDescription,
+});
 
 type PrivacySection = {
   title: string;

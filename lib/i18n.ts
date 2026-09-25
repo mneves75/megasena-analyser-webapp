@@ -5,28 +5,28 @@ export const pt = {
   },
   meta: {
     home: {
-      title: 'Mega-Sena Analyzer | Estatísticas e Gerador de Apostas',
+      title: 'Mega-Sena Analyzer: resultados, estatísticas e gerador de apostas',
       description:
-        'Análise avançada de dados históricos da Mega-Sena. Estatísticas de frequência, padrões e gerador inteligente de apostas. Ferramenta gratuita e educacional.',
+        'Resultados de todos os concursos da Mega-Sena, frequência e atraso de cada número e gerador de apostas por orçamento. Grátis, com dados oficiais da CAIXA.',
       openGraphDescription:
         'Análise avançada de dados históricos da Mega-Sena com estatísticas, padrões e gerador inteligente de apostas.',
     },
     dashboard: {
-      title: 'Dashboard',
+      title: 'Painel da Mega-Sena: último sorteio e destaques',
       description:
-        'Dashboard da Mega-Sena com estatísticas em tempo real, últimos sorteios, números mais frequentes e taxa de acumulação. Dados atualizados da CAIXA.',
+        'Painel da Mega-Sena com o último sorteio do arquivo, números mais e menos frequentes, números em alta e taxa de acumulação, com dados oficiais da CAIXA.',
       openGraphDescription:
         'Visão geral das estatísticas e últimos sorteios da Mega-Sena com dados atualizados.',
     },
     generator: {
-      title: 'Gerador de Apostas',
+      title: 'Gerador de apostas da Mega-Sena por orçamento',
       description:
         'Gerador inteligente de apostas da Mega-Sena com estratégias baseadas em estatísticas. Otimize seu orçamento e crie combinações diversificadas.',
       openGraphDescription:
         'Sistema inteligente de geração de apostas que minimiza desperdício de orçamento.',
     },
     statistics: {
-      title: 'Estatísticas Detalhadas',
+      title: 'Estatísticas da Mega-Sena: frequências e atrasos',
       description:
         'Estatísticas completas da Mega-Sena: frequências, padrões, atrasos, dezenas, pares frequentes, paridade, primos, soma e correlação com prêmios.',
       openGraphDescription:
@@ -35,7 +35,7 @@ export const pt = {
     privacy: {
       title: 'Política de Privacidade',
       description:
-        'Política de privacidade do Mega-Sena Analyzer. Coletamos apenas telemetria operacional mínima para segurança e disponibilidade. Sem cookies de rastreamento. Sem analytics de marketing.',
+        'Política de privacidade do Mega-Sena Analyzer: só telemetria operacional mínima para segurança e disponibilidade, sem cookies de rastreamento nem analytics.',
       openGraphDescription:
         'Coletamos apenas o mínimo necessário para operar o serviço com segurança.',
     },

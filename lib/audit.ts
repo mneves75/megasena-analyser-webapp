@@ -7,6 +7,9 @@ export type AuditEventName =
   | 'api.dashboard_read'
   | 'api.statistics_read'
   | 'api.trends_read'
+  | 'api.draws_read'
+  | 'api.numbers_read'
+  | 'api.sitemap_read'
   | 'bets.generate_requested'
   | 'system.audit_flush_failed';
 

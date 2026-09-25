@@ -55,6 +55,10 @@ export default defineConfig({
         'lib/analytics/streak-analysis.ts',
         'lib/analytics/sum-analysis.ts',
         'lib/analytics/time-series.ts',
+        // Results archive (SQL read model + API contract) is exercised end to end,
+        // through the Bun API and the pages, by tests/app/seo.spec.ts.
+        'lib/analytics/draw-archive.ts',
+        'lib/api/archive-contract.ts',
       ],
     },
   },

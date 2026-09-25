@@ -21,6 +21,8 @@ import { PrimeAnalysisEngine } from './lib/analytics/prime-analysis';
 import { SumAnalysisEngine } from './lib/analytics/sum-analysis';
 import { StreakAnalysisEngine } from './lib/analytics/streak-analysis';
 import { PrizeCorrelationEngine } from './lib/analytics/prize-correlation';
+import { DrawArchiveEngine } from './lib/analytics/draw-archive';
+import { parseDrawsQuery, parseNumbersQuery } from './lib/api/archive-contract';
 import { logger } from './lib/logger';
 import { enqueueAuditEvent, startAuditWriter, stopAuditWriter, type AuditEventName } from './lib/audit';
 import { startAuditRetentionScheduler } from './lib/audit-retention';
@@ -186,6 +188,10 @@ const analyticsResponseCache = new ContestResponseCache(32);
 // Trends keys derive from user-chosen number sets (high cardinality); a separate
 // instance keeps that traffic from evicting the shared analytics entries above.
 const trendsResponseCache = new ContestResponseCache(64);
+// Public archive views crawled page by page. Only the costly number views are
+// cached (60 profiles + the index = 61 validated keys, below capacity); single
+// draws and year lists are indexed lookups and bypass the cache entirely.
+const archiveResponseCache = new ContestResponseCache(64);
 let stopAuditRetentionScheduler: (() => void) | null = null;
 let stopLogRetentionScheduler: (() => void) | null = null;
 
@@ -703,6 +709,90 @@ const apiHandlers: Record<
     }
   },
 
+  '/api/draws': (req, ctx) => {
+    ctx.audit = { event: 'api.draws_read' };
+    try {
+      const query = parseDrawsQuery(new URL(req.url).searchParams);
+      if (!query) {
+        ctx.audit = { event: 'api.draws_read', metadata: { validationError: true } };
+        return createErrorResponse(ctx, 'Parâmetros de consulta inválidos.');
+      }
+      ctx.audit = { event: 'api.draws_read', metadata: { view: query.kind } };
+
+      const engine = new DrawArchiveEngine();
+      const payload =
+        query.kind === 'contest'
+          ? engine.getDrawPage(query.contest)
+          : query.kind === 'year'
+            ? engine.getYearArchive(query.year)
+            : engine.getArchiveIndex();
+      if (payload === null) {
+        return createErrorResponse(ctx, 'Nenhum sorteio encontrado.', null, 404);
+      }
+
+      return new Response(JSON.stringify(payload), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      logger.error('api.draws_failed', error, {
+        requestId: ctx.requestId,
+        route: ctx.route,
+        method: ctx.method,
+      });
+      return createErrorResponse(ctx, 'Não foi possível carregar os resultados.', null, 500);
+    }
+  },
+
+  '/api/numbers': (req, ctx) => {
+    ctx.audit = { event: 'api.numbers_read' };
+    try {
+      const query = parseNumbersQuery(new URL(req.url).searchParams);
+      if (!query) {
+        ctx.audit = { event: 'api.numbers_read', metadata: { validationError: true } };
+        return createErrorResponse(ctx, 'Informe um número válido entre 1 e 60.');
+      }
+      ctx.audit = { event: 'api.numbers_read', metadata: { view: query.kind } };
+
+      const cacheKey = buildResponseCacheKey(
+        ctx.route,
+        query.kind === 'number' ? { n: query.number } : {}
+      );
+      const body = archiveResponseCache.getOrCompute(cacheKey, getDrawsVersion(), () => {
+        const engine = new DrawArchiveEngine();
+        return query.kind === 'number'
+          ? engine.getNumberProfile(query.number)
+          : engine.getNumbersIndex();
+      });
+
+      return new Response(body, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      logger.error('api.numbers_failed', error, {
+        requestId: ctx.requestId,
+        route: ctx.route,
+        method: ctx.method,
+      });
+      return createErrorResponse(ctx, 'Não foi possível carregar os números.', null, 500);
+    }
+  },
+
+  '/api/sitemap': (_req, ctx) => {
+    ctx.audit = { event: 'api.sitemap_read' };
+    try {
+      return new Response(JSON.stringify(new DrawArchiveEngine().getSitemapData()), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      logger.error('api.sitemap_failed', error, {
+        requestId: ctx.requestId,
+        route: ctx.route,
+        method: ctx.method,
+      });
+      return createErrorResponse(ctx, 'Não foi possível montar o índice do site.', null, 500);
+    }
+  },
+
   '/api/generate-bets': async (req, ctx) => {
     ctx.audit = { event: 'bets.generate_requested' };
     try {
@@ -842,6 +932,9 @@ const apiAllowedMethods: Record<string, readonly string[]> = {
   '/api/dashboard': ['GET'],
   '/api/statistics': ['GET'],
   '/api/trends': ['GET'],
+  '/api/draws': ['GET'],
+  '/api/numbers': ['GET'],
+  '/api/sitemap': ['GET'],
   '/api/generate-bets': ['POST'],
 };
 
@@ -850,6 +943,9 @@ const apiAuditEvents: Record<string, AuditEventName> = {
   '/api/dashboard': 'api.dashboard_read',
   '/api/statistics': 'api.statistics_read',
   '/api/trends': 'api.trends_read',
+  '/api/draws': 'api.draws_read',
+  '/api/numbers': 'api.numbers_read',
+  '/api/sitemap': 'api.sitemap_read',
   '/api/generate-bets': 'bets.generate_requested',
 };
 

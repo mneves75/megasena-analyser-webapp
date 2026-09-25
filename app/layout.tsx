@@ -72,30 +72,16 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  alternates: {
-    canonical: '/',
-  },
+  // No site-wide canonical or og:url: each page declares its own through
+  // buildPageMetadata (lib/seo/metadata.ts). Social images come from the
+  // opengraph-image / twitter-image file conventions, per segment.
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
-    url: baseUrl,
     siteName: 'Mega-Sena Analyzer',
-    title: pt.meta.home.title,
-    description: pt.meta.home.openGraphDescription,
-    images: [
-      {
-        url: `${baseUrl}/opengraph-image`,
-        width: 1200,
-        height: 630,
-        alt: 'Mega-Sena Analyzer - Análise Estatística',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: pt.meta.home.title,
-    description: pt.meta.home.openGraphDescription,
-    images: [`${baseUrl}/twitter-image`],
   },
   appleWebApp: {
     capable: true,

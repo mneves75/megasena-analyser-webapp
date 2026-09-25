@@ -2,23 +2,16 @@ import type { Metadata } from 'next';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { pt } from '@/lib/i18n';
-import { BASE_URL as baseUrl } from '@/lib/constants';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/dashboard/generator',
   title: pt.meta.generator.title,
   description: pt.meta.generator.description,
-  alternates: {
-    canonical: '/dashboard/generator',
-  },
-  openGraph: {
-    title: `${pt.meta.generator.title} | ${pt.app.name}`,
-    description: pt.meta.generator.openGraphDescription,
-    url: '/dashboard/generator',
-  },
-};
+  socialDescription: pt.meta.generator.openGraphDescription,
+});
 
 export default function GeneratorPage() {
   return (

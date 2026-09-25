@@ -2,21 +2,14 @@ import type { Metadata } from 'next';
 import { FileCheck, Mail, ShieldCheck } from 'lucide-react';
 import { RightsRequestTemplate } from '@/components/privacy/rights-request-template';
 import { pt } from '@/lib/i18n';
-import { BASE_URL as baseUrl } from '@/lib/constants';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/privacy/direitos',
   title: pt.meta.privacyRights.title,
   description: pt.meta.privacyRights.description,
-  alternates: {
-    canonical: '/privacy/direitos',
-  },
-  openGraph: {
-    title: `${pt.meta.privacyRights.title} | ${pt.app.name}`,
-    description: pt.meta.privacyRights.openGraphDescription,
-    url: '/privacy/direitos',
-  },
-};
+  socialDescription: pt.meta.privacyRights.openGraphDescription,
+});
 
 const PRIVACY_CHANNEL = pt.privacyRights.channelValue;
 

@@ -17,25 +17,18 @@ import type { PrizeCorrelation } from '@/lib/analytics/prize-correlation';
 import { BarChart, DonutChart } from '@/components/charts';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
-import { BASE_URL as baseUrl } from '@/lib/constants';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/dashboard/statistics',
   title: pt.meta.statistics.title,
   description: pt.meta.statistics.description,
-  alternates: {
-    canonical: '/dashboard/statistics',
-  },
-  openGraph: {
-    title: `${pt.meta.statistics.title} | ${pt.app.name}`,
-    description: pt.meta.statistics.openGraphDescription,
-    url: '/dashboard/statistics',
-  },
-};
+  socialDescription: pt.meta.statistics.openGraphDescription,
+});
 
 // Force dynamic rendering to fetch fresh data
 export const dynamic = 'force-dynamic';

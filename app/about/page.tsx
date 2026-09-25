@@ -1,24 +1,18 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { BookOpen, Database, Info, Shield } from 'lucide-react';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
-import { BASE_URL } from '@/lib/constants';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
-  title: 'Sobre o Projeto',
+export const metadata: Metadata = buildPageMetadata({
+  path: '/about',
+  title: 'Sobre o projeto e a metodologia',
   description:
     'Conheça o Mega-Sena Analyzer: ferramenta gratuita de análise estatística da Mega-Sena. Dados oficiais da CAIXA, metodologia transparente e código aberto.',
-  alternates: {
-    canonical: '/about',
-  },
-  openGraph: {
-    title: 'Sobre o Projeto | Mega-Sena Analyzer',
-    description:
-      'Ferramenta gratuita de análise estatística com dados oficiais da CAIXA Econômica Federal.',
-    url: '/about',
-  },
-};
+  socialDescription:
+    'Ferramenta gratuita de análise estatística com dados oficiais da CAIXA Econômica Federal.',
+});
 
 export default function AboutPage() {
   return (
@@ -98,6 +92,42 @@ export default function AboutPage() {
                 e múltiplas, minimizando desperdício
               </li>
             </ul>
+          </section>
+
+          <section className="space-y-3">
+            <h2>Como calculamos as páginas de concursos e números</h2>
+            <p>
+              As páginas de <Link href="/resultados" prefetch={false}>resultados</Link>, de cada concurso e de cada{' '}
+              <Link href="/numeros" prefetch={false}>número de 1 a 60</Link> são geradas a partir do mesmo banco de
+              sorteios, com estas definições:
+            </p>
+            <ul>
+              <li>
+                <strong>Frequência:</strong> quantas vezes o número foi sorteado em todos os
+                concursos do arquivo. A posição no ranking vai de 1º (o que mais saiu) a 60º;
+                números com a mesma frequência dividem a posição.
+              </li>
+              <li>
+                <strong>Atraso atual:</strong> quantos concursos aconteceram desde a última vez
+                que o número saiu. <strong>Intervalo médio</strong> é a média de concursos entre
+                duas aparições, e <strong>maior sequência sem sair</strong> é o maior número de
+                concursos seguidos em que ele não apareceu.
+              </li>
+              <li>
+                <strong>Histórico na página de um concurso:</strong> conta apenas os concursos
+                até aquele sorteio. Por isso a página de um concurso antigo mostra os números como
+                estavam naquele dia e não muda quando novos sorteios são incluídos.
+              </li>
+              <li>
+                <strong>Soma, paridade, baixas e altas, primos:</strong> características
+                descritivas das seis dezenas. A comparação da soma usa apenas os concursos
+                anteriores.
+              </li>
+            </ul>
+            <p>
+              A base não é atualizada em tempo real: cada página informa até qual concurso os
+              dados vão. Em caso de divergência, vale o resultado oficial publicado pela CAIXA.
+            </p>
           </section>
 
           <section className="space-y-3">

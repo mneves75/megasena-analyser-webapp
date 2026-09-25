@@ -4,14 +4,14 @@ import type { ElementType } from 'react';
 import { Activity, AlertTriangle, BarChart3, Flame, Sparkles } from 'lucide-react';
 import { JsonLd } from '@/components/seo/json-ld';
 import { Button } from '@/components/ui/button';
-import { LotteryBall } from '@/components/lottery-ball';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { logger } from '@/lib/logger';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { BASE_URL as baseUrl } from '@/lib/constants';
 import { pt } from '@/lib/i18n';
 import { generateFAQSchema } from '@/lib/seo/schemas';
+import { buildPageMetadata } from '@/lib/seo/metadata';
+import { NumberBallLink } from '@/app/_components/archive-ui';
 
 const homeFaqs = [
   {
@@ -30,6 +30,16 @@ const homeFaqs = [
       'Todos os dados são obtidos da API pública oficial da CAIXA Econômica Federal (servicebus2.caixa.gov.br), que é a fonte autorizada dos resultados das loterias brasileiras.',
   },
   {
+    question: 'Onde vejo o resultado de um concurso da Mega-Sena?',
+    answer:
+      'Na página Resultados, que mostra o concurso mais recente do arquivo e todos os anteriores, organizados por ano. Cada concurso tem uma página própria com as dezenas sorteadas, os ganhadores e o prêmio de cada faixa. A base é atualizada periodicamente com os dados oficiais da CAIXA.',
+  },
+  {
+    question: 'Qual número mais saiu na Mega-Sena?',
+    answer:
+      'A página Números mostra quantas vezes cada número de 1 a 60 foi sorteado, sua posição no ranking e há quantos concursos ele não sai. As diferenças de frequência são esperadas em sorteios aleatórios e não indicam que um número tem mais chance no próximo concurso.',
+  },
+  {
     question: 'O serviço é gratuito?',
     answer:
       'Sim, totalmente gratuito. Não cobramos por nenhuma funcionalidade nem exigimos cadastro.',
@@ -41,20 +51,13 @@ const homeFaqs = [
   },
 ] as const;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/',
   title: pt.meta.home.title,
   description: pt.meta.home.description,
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    type: 'website',
-    title: pt.meta.home.title,
-    description: pt.meta.home.openGraphDescription,
-    url: '/',
-  },
-};
+  socialDescription: pt.meta.home.openGraphDescription,
+  absoluteTitle: true,
+});
 
 // Fetch the latest draw at request time so the hero reflects live data.
 export const dynamic = 'force-dynamic';
@@ -294,7 +297,7 @@ function LatestDrawPanel({
 
       <div className="mt-5 flex flex-wrap gap-2">
         {draw.numbers.map((number) => (
-          <LotteryBall key={number} number={number} size="md" />
+          <NumberBallLink key={number} number={number} size="md" />
         ))}
       </div>
 
@@ -307,6 +310,13 @@ function LatestDrawPanel({
             {formatCurrency(draw.prizeSena)}
           </p>
         )}
+        <Link
+          href={`/concurso/${draw.contestNumber}`}
+          prefetch={false}
+          className="mt-4 inline-flex rounded-sm text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          Ver ganhadores e análise do concurso {draw.contestNumber}
+        </Link>
       </div>
     </aside>
   );

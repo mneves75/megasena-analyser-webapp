@@ -9,6 +9,11 @@ const RESPONSIVE_ROUTES = [
   '/privacy/direitos',
   '/terms',
   '/about',
+  '/resultados',
+  '/resultados/2026',
+  '/concurso/3005',
+  '/numeros',
+  '/numeros/18',
 ] as const;
 
 test('production standalone serves CSS and does not overflow core routes on mobile', async ({ page }) => {

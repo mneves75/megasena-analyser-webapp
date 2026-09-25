@@ -3,21 +3,14 @@ import { FileText, AlertTriangle } from 'lucide-react';
 import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
-import { BASE_URL } from '@/lib/constants';
+import { buildPageMetadata } from '@/lib/seo/metadata';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
+export const metadata: Metadata = buildPageMetadata({
+  path: '/terms',
   title: pt.meta.terms.title,
   description: pt.meta.terms.description,
-  alternates: {
-    canonical: '/terms',
-  },
-  openGraph: {
-    title: `${pt.meta.terms.title} | ${pt.app.name}`,
-    description: pt.meta.terms.openGraphDescription,
-    url: '/terms',
-  },
-};
+  socialDescription: pt.meta.terms.openGraphDescription,
+});
 
 type TermsSection = {
   title: string;

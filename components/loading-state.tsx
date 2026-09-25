@@ -27,7 +27,9 @@ export function LoadingState({
       className={cn('space-y-6', className)}
     >
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">{title}</h1>
+        {/* Not a heading: a placeholder must not become the page's h1 in the
+            streamed HTML that non-rendering crawlers read. */}
+        <p className="text-3xl font-bold">{title}</p>
         <p className="text-muted-foreground">{description}</p>
       </div>
 
