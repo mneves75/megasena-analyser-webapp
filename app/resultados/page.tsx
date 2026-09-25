@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatDate, formatNumber } from '@/lib/utils';
@@ -8,15 +9,15 @@ import {
   AnswerSummary,
   ArchiveLink,
   Breadcrumbs,
-  DezenaChips,
+  DrawsTable,
   NumberBallLink,
-  PageStructuredData,
+  PageTitle,
   RandomnessNote,
   SectionHeading,
   TableFrame,
+  cellClass,
   inlineLinkClass,
   tableClass,
-  tdClass,
   thClass,
 } from '@/app/_components/archive-ui';
 
@@ -32,29 +33,30 @@ export const metadata: Metadata = buildPageMetadata({
   path: PATH,
   title: 'Resultados da Mega-Sena: último concurso e histórico',
   description: DESCRIPTION,
+  absoluteTitle: true,
 });
 
 export default async function ResultsHubPage(): Promise<React.JSX.Element> {
-  const { totalDraws, recent, years } = await loadArchiveIndex();
+  const { archive, recent, years } = await loadArchiveIndex();
   const latest = recent[0] ?? null;
   const oldestYear = years.at(-1);
   const newestYear = years[0];
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
-      <PageStructuredData
+      <PageJsonLd
         path={PATH}
         name="Resultados da Mega-Sena"
         description={DESCRIPTION}
         breadcrumbs={BREADCRUMBS}
         type="CollectionPage"
-        {...(latest ? { dateModified: latest.drawDate } : {})}
+        {...(archive.lastModified ? { dateModified: archive.lastModified } : {})}
         extra={
           oldestYear && newestYear
             ? [
                 generateResultsDatasetSchema({
                   path: PATH,
-                  totalDraws,
+                  totalDraws: archive.totalDraws,
                   firstDrawDate: oldestYear.firstDrawDate,
                   lastDrawDate: newestYear.lastDrawDate,
                 }),
@@ -65,14 +67,12 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
 
       <header className="space-y-5">
         <Breadcrumbs items={BREADCRUMBS} />
-        <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
-          Resultados da Mega-Sena
-        </h1>
+        <PageTitle>Resultados da Mega-Sena</PageTitle>
         {latest ? (
           <AnswerSummary>
             O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado em{' '}
             {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}. {senaOutcome(latest)} O
-            arquivo reúne {countLabel(totalDraws, 'concurso', 'concursos')}
+            arquivo reúne {countLabel(archive.totalDraws, 'concurso', 'concursos')}
             {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
           </AnswerSummary>
         ) : (
@@ -103,39 +103,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       {recent.length > 1 ? (
         <section aria-labelledby="recentes" className="space-y-4">
           <SectionHeading id="recentes">Últimos concursos</SectionHeading>
-          <TableFrame>
-            <table className={tableClass}>
-              <caption className="sr-only">Últimos concursos da Mega-Sena</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className={thClass}>Concurso</th>
-                  <th scope="col" className={thClass}>Data</th>
-                  <th scope="col" className={thClass}>Dezenas</th>
-                  <th scope="col" className={thClass}>Sena</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recent.map((draw) => (
-                  <tr key={draw.contestNumber}>
-                    <th scope="row" className={tdClass}>
-                      <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
-                        {draw.contestNumber}
-                      </ArchiveLink>
-                    </th>
-                    <td className={tdClass}>{formatDate(draw.drawDate)}</td>
-                    <td className={tdClass}>
-                      <DezenaChips numbers={draw.numbers} />
-                    </td>
-                    <td className={tdClass}>
-                      {draw.sena.winners === 0
-                        ? 'Acumulou'
-                        : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+          <DrawsTable caption="Últimos concursos da Mega-Sena" draws={recent} />
         </section>
       ) : null}
 
@@ -156,14 +124,14 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
               <tbody>
                 {years.map((summary) => (
                   <tr key={summary.year}>
-                    <th scope="row" className={tdClass}>
+                    <th scope="row" className={cellClass}>
                       <ArchiveLink href={`/resultados/${summary.year}`} className={inlineLinkClass}>
                         {summary.year}
                       </ArchiveLink>
                     </th>
-                    <td className={tdClass}>{formatNumber(summary.drawCount)}</td>
-                    <td className={tdClass}>{summary.firstContest}</td>
-                    <td className={tdClass}>{summary.lastContest}</td>
+                    <td className={cellClass}>{formatNumber(summary.drawCount)}</td>
+                    <td className={cellClass}>{summary.firstContest}</td>
+                    <td className={cellClass}>{summary.lastContest}</td>
                   </tr>
                 ))}
               </tbody>

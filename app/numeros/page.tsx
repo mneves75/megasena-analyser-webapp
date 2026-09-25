@@ -1,22 +1,24 @@
 import type { Metadata } from 'next';
 import type { NumberSummary } from '@/lib/api/archive-contract';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { formatNumber } from '@/lib/utils';
 import { loadNumbersIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
 import {
   AnswerSummary,
+  ArchiveFreshness,
   ArchiveLink,
   Breadcrumbs,
   NumberBallLink,
-  PageStructuredData,
+  PageTitle,
   RandomnessNote,
   SectionHeading,
   TableFrame,
+  cellClass,
   inlineLinkClass,
   tableClass,
-  tdClass,
   thClass,
 } from '@/app/_components/archive-ui';
 
@@ -34,6 +36,7 @@ export const metadata: Metadata = buildPageMetadata({
   path: PATH,
   title: TITLE,
   description: DESCRIPTION,
+  absoluteTitle: true,
 });
 
 /** "o mais sorteado é o 10 (356 vezes)" or "os mais sorteados são 04, 10 e 53 (300 vezes cada)" */
@@ -55,33 +58,31 @@ function describeExtreme(
 }
 
 export default async function NumbersHubPage(): Promise<React.JSX.Element> {
-  const { totalDraws, lastDrawDate, numbers } = await loadNumbersIndex();
+  const { archive, numbers } = await loadNumbersIndex();
   const frequencies = numbers.map((summary) => summary.frequency);
   const maxFrequency = Math.max(...frequencies);
   const minFrequency = Math.min(...frequencies);
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
-      <PageStructuredData
+      <PageJsonLd
         path={PATH}
         name="Números da Mega-Sena de 1 a 60"
         description={DESCRIPTION}
         breadcrumbs={BREADCRUMBS}
         type="CollectionPage"
-        {...(lastDrawDate ? { dateModified: lastDrawDate } : {})}
+        {...(archive.lastModified ? { dateModified: archive.lastModified } : {})}
       />
 
       <header className="space-y-5">
         <Breadcrumbs items={BREADCRUMBS} />
-        <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
-          Números da Mega-Sena de 1 a 60
-        </h1>
+        <PageTitle>Números da Mega-Sena de 1 a 60</PageTitle>
         <AnswerSummary>
-          Em {countLabel(totalDraws, 'concurso', 'concursos')},{' '}
+          Em {countLabel(archive.totalDraws, 'concurso', 'concursos')},{' '}
           {describeExtreme(numbers, maxFrequency, 'mais')} e{' '}
           {describeExtreme(numbers, minFrequency, 'menos')}.
-          {lastDrawDate ? ` Dados até o sorteio de ${formatDate(lastDrawDate)}.` : ''}
         </AnswerSummary>
+        <ArchiveFreshness archive={archive} />
       </header>
 
       <section aria-labelledby="grade" className="space-y-4">
@@ -90,9 +91,10 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
           {numbers.map((summary) => (
             <li key={summary.number} className="flex flex-col items-center gap-1">
               <NumberBallLink number={summary.number} size="sm" />
-              <span className="text-xs tabular-nums text-muted-foreground">
+              <span aria-hidden className="text-xs tabular-nums text-muted-foreground">
                 {formatNumber(summary.frequency)}x
               </span>
+              <span className="sr-only">{countLabel(summary.frequency, 'vez', 'vezes')}</span>
             </li>
           ))}
         </ul>
@@ -116,24 +118,27 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             <tbody>
               {numbers.map((summary) => (
                 <tr key={summary.number}>
-                  <th scope="row" className={tdClass}>
+                  <th scope="row" className={cellClass}>
                     <ArchiveLink href={`/numeros/${summary.number}`} className={inlineLinkClass}>
                       {dezena(summary.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={tdClass}>{formatNumber(summary.frequency)}</td>
-                  <td className={tdClass}>{formatPercentPtBr(summary.frequency, totalDraws)}</td>
-                  <td className={tdClass}>{summary.rank}º</td>
-                  <td className={tdClass}>
-                    {summary.currentDelay === null ? '—' : formatNumber(summary.currentDelay)}
+                  <td className={cellClass}>{formatNumber(summary.frequency)}</td>
+                  <td className={cellClass}>{formatPercentPtBr(summary.frequency, archive.totalDraws)}</td>
+                  <td className={cellClass}>{summary.rank}º</td>
+                  <td className={cellClass}>
+                    {summary.lastAppearance ? formatNumber(summary.lastAppearance.drawsSince) : '—'}
                   </td>
-                  <td className={tdClass}>
-                    {summary.lastContestNumber === null ? (
-                      '—'
-                    ) : (
-                      <ArchiveLink href={`/concurso/${summary.lastContestNumber}`} className={inlineLinkClass}>
-                        {summary.lastContestNumber}
+                  <td className={cellClass}>
+                    {summary.lastAppearance ? (
+                      <ArchiveLink
+                        href={`/concurso/${summary.lastAppearance.contestNumber}`}
+                        className={inlineLinkClass}
+                      >
+                        {summary.lastAppearance.contestNumber}
                       </ArchiveLink>
+                    ) : (
+                      '—'
                     )}
                   </td>
                 </tr>

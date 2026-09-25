@@ -15,7 +15,6 @@ interface PageMetadataInput {
    * brand suffix from the root template is dropped to keep them short.
    */
   absoluteTitle?: boolean;
-  socialTitle?: string;
   socialDescription?: string;
   /**
    * Page-specific social images (site-relative paths). Needed even when the
@@ -36,12 +35,11 @@ export function buildPageMetadata({
   title,
   description,
   absoluteTitle = false,
-  socialTitle,
   socialDescription,
   socialImages,
 }: PageMetadataInput): Metadata {
   const url = absoluteUrl(path);
-  const shareTitle = socialTitle ?? (absoluteTitle ? title : `${title} | ${APP_INFO.NAME}`);
+  const shareTitle = absoluteTitle ? title : `${title} | ${APP_INFO.NAME}`;
   const shareDescription = socialDescription ?? description;
   // A page-level openGraph object replaces the parent's, and the root
   // opengraph-image file is not re-applied to it, so the card is always explicit.

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /** Plain-text site guide for AI agents, following the llmstxt.org layout. */
 export async function GET(): Promise<Response> {
-  const { totalDraws, recent, years } = await loadArchiveIndex();
+  const { archive, recent, years } = await loadArchiveIndex();
   const latest = recent[0];
   const oldestYear = years.at(-1)?.year;
   const newestYear = years[0]?.year;
@@ -21,7 +21,7 @@ export async function GET(): Promise<Response> {
       ? [
           `Dados até o concurso ${latest.contestNumber} (${formatDate(latest.drawDate)}): ${joinPtBr(
             latest.numbers.map(dezena)
-          )}. ${senaOutcome(latest)} O arquivo tem ${formatNumber(totalDraws)} concursos${
+          )}. ${senaOutcome(latest)} O arquivo tem ${formatNumber(archive.totalDraws)} concursos${
             oldestYear ? `, de ${oldestYear} a ${newestYear}` : ''
           }. A base é atualizada periodicamente, não em tempo real.`,
           '',

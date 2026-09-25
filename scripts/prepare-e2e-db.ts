@@ -28,9 +28,19 @@ const insertDraw = db.prepare(`
     contest_number, draw_date,
     number_1, number_2, number_3, number_4, number_5, number_6,
     prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
-    total_collection, accumulated, accumulated_value, next_estimated_prize
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    total_collection, accumulated, accumulated_value, next_estimated_prize,
+    created_at, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
+
+// Real ingestion lags the draw by days (the VPS cannot reach CAIXA), so each
+// seeded draw is "loaded" three days after it happened. Sitemap lastmod must
+// follow these load timestamps, not the draw dates.
+function loadedAt(drawDate: string): string {
+  const date = new Date(`${drawDate}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 3);
+  return date.toISOString().replace('T', ' ').slice(0, 19);
+}
 
 const draws = [
   { contest: 3001, date: '2026-05-02', numbers: [4, 12, 23, 31, 45, 58], accumulated: 0 },
@@ -55,7 +65,9 @@ for (const draw of draws) {
     40_000_000,
     draw.accumulated,
     draw.accumulated ? 5_000_000 : 0,
-    10_000_000
+    10_000_000,
+    loadedAt(draw.date),
+    loadedAt(draw.date)
   );
 }
 

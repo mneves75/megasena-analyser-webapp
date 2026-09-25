@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import type { ElementType } from 'react';
 import { Activity, AlertTriangle, BarChart3, Flame, Sparkles } from 'lucide-react';
-import { JsonLd } from '@/components/seo/json-ld';
 import { Button } from '@/components/ui/button';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { logger } from '@/lib/logger';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { buildPageMetadata } from '@/lib/seo/metadata';
-import { NumberBallLink } from '@/app/_components/archive-ui';
+import { ArchiveLink, NumberBallLink, inlineLinkClass } from '@/app/_components/archive-ui';
 
 const homeFaqs = [
   {
@@ -118,7 +118,12 @@ export default async function HomePage(): Promise<React.JSX.Element> {
 
   return (
     <>
-      <JsonLd data={generateFAQSchema(homeFaqs)} />
+      <PageJsonLd
+        path="/"
+        name={pt.meta.home.title}
+        description={pt.meta.home.description}
+        extra={[generateFAQSchema(homeFaqs)]}
+      />
       <div className="container mx-auto px-4 py-12 sm:py-16">
         {/* Hero */}
         <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
@@ -310,13 +315,12 @@ function LatestDrawPanel({
             {formatCurrency(draw.prizeSena)}
           </p>
         )}
-        <Link
+        <ArchiveLink
           href={`/concurso/${draw.contestNumber}`}
-          prefetch={false}
-          className="mt-4 inline-flex rounded-sm text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className={cn('mt-4 inline-flex text-sm', inlineLinkClass)}
         >
           Ver ganhadores e análise do concurso {draw.contestNumber}
-        </Link>
+        </ArchiveLink>
       </div>
     </aside>
   );

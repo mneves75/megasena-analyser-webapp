@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import { BookOpen, Database, Info, Shield } from 'lucide-react';
-import { JsonLd } from '@/components/seo/json-ld';
-import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = buildPageMetadata({
@@ -17,10 +16,15 @@ export const metadata: Metadata = buildPageMetadata({
 export default function AboutPage() {
   return (
     <>
-      <JsonLd data={generateBreadcrumbSchema([
-        { name: 'Início', url: '/' },
-        { name: 'Sobre', url: '/about' },
-      ])} />
+      <PageJsonLd
+        path="/about"
+        name="Sobre o Mega-Sena Analyzer"
+        description="Fonte dos dados, metodologia e definições usadas nas páginas de resultados e números."
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Sobre', url: '/about' },
+        ]}
+      />
       <div className="container mx-auto px-4 py-8">
         <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
           <div className="mb-6 flex items-center gap-3">
@@ -97,8 +101,8 @@ export default function AboutPage() {
           <section className="space-y-3">
             <h2>Como calculamos as páginas de concursos e números</h2>
             <p>
-              As páginas de <Link href="/resultados" prefetch={false}>resultados</Link>, de cada concurso e de cada{' '}
-              <Link href="/numeros" prefetch={false}>número de 1 a 60</Link> são geradas a partir do mesmo banco de
+              As páginas de <Link href="/resultados" prefetch={false} className="underline">resultados</Link>, de cada concurso e de cada{' '}
+              <Link href="/numeros" prefetch={false} className="underline">número de 1 a 60</Link> são geradas a partir do mesmo banco de
               sorteios, com estas definições:
             </p>
             <ul>
@@ -125,8 +129,9 @@ export default function AboutPage() {
               </li>
             </ul>
             <p>
-              A base não é atualizada em tempo real: cada página informa até qual concurso os
-              dados vão. Em caso de divergência, vale o resultado oficial publicado pela CAIXA.
+              A base não é atualizada em tempo real: as páginas de resultados e de números informam
+              até qual concurso os dados vão, e a página de cada concurso mostra apenas aquele
+              sorteio. Em caso de divergência, vale o resultado oficial publicado pela CAIXA.
             </p>
           </section>
 

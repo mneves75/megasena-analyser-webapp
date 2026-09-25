@@ -53,6 +53,9 @@ export const pt = {
     },
   },
   nav: {
+    results: 'Resultados',
+    numbers: 'Números',
+    numbersFull: 'Números de 1 a 60',
     dashboard: 'Dashboard',
     statistics: 'Estatísticas',
     generator: 'Gerar Apostas',

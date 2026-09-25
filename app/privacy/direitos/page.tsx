@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { FileCheck, Mail, ShieldCheck } from 'lucide-react';
 import { RightsRequestTemplate } from '@/components/privacy/rights-request-template';
 import { pt } from '@/lib/i18n';
@@ -16,6 +17,11 @@ const PRIVACY_CHANNEL = pt.privacyRights.channelValue;
 export default function PrivacyRightsPage(): React.JSX.Element {
   return (
     <div className="container mx-auto px-4 py-8">
+      <PageJsonLd
+        path="/privacy/direitos"
+        name={pt.meta.privacyRights.title}
+        description={pt.meta.privacyRights.description}
+      />
       <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
           <div className="mb-4 flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 text-primary" />

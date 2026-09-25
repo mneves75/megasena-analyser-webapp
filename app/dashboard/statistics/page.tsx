@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LotteryBall } from '@/components/lottery-ball';
 import { TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake, Info } from 'lucide-react';
@@ -20,8 +21,6 @@ import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
-import { JsonLd } from '@/components/seo/json-ld';
-import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard/statistics',
@@ -185,11 +184,16 @@ export default async function StatisticsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <JsonLd data={generateBreadcrumbSchema([
-        { name: 'Início', url: '/' },
-        { name: 'Dashboard', url: '/dashboard' },
-        { name: 'Estatísticas', url: '/dashboard/statistics' },
-      ])} />
+      <PageJsonLd
+        path="/dashboard/statistics"
+        name={pt.meta.statistics.title}
+        description={pt.meta.statistics.description}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Dashboard', url: '/dashboard' },
+          { name: 'Estatísticas', url: '/dashboard/statistics' },
+        ]}
+      />
 
       <header className="mb-3">
         <h1 className="mb-1.5 text-3xl font-bold tracking-tight sm:text-4xl">{pt.statistics.title}</h1>

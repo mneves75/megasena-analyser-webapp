@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { notFound } from 'next/navigation';
 import { MAX_CONTEST_NUMBER, parseCanonicalInteger } from '@/lib/api/archive-contract';
+import { BASE_URL } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { loadDrawPage } from '@/app/_lib/archive';
 import { countLabel, dezena } from '@/app/_lib/format';
@@ -9,7 +10,8 @@ export const alt = 'Dezenas sorteadas no concurso da Mega-Sena';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-// Brand tokens from app/globals.css (dark theme background, --primary / --primary-glow).
+// Satori cannot read CSS variables: these mirror app/globals.css (dark-theme
+// --background, light-theme --primary and --primary-glow for contrast on dark).
 const BACKGROUND = '#0d0f12';
 const PRIMARY = '#187c95';
 const PRIMARY_GLOW = '#2ba6c5';
@@ -89,7 +91,7 @@ export default async function Image({
         >
           <div style={{ display: 'flex', fontWeight: 600 }}>{outcome}</div>
           <div style={{ display: 'flex', color: '#7c8a91', fontSize: 26 }}>
-            megasena-analyzer.com.br
+            {new URL(BASE_URL).host}
           </div>
         </div>
       </div>

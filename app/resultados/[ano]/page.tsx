@@ -6,6 +6,7 @@ import {
   type DrawRecord,
   type YearArchive,
 } from '@/lib/api/archive-contract';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
@@ -13,18 +14,12 @@ import { loadYearArchive } from '@/app/_lib/archive';
 import { countLabel, dezena, joinPtBr, resolveIntegerParam } from '@/app/_lib/format';
 import {
   AnswerSummary,
-  ArchiveLink,
   Breadcrumbs,
-  DezenaChips,
-  PageStructuredData,
+  DrawsTable,
+  PageTitle,
   Pager,
   RandomnessNote,
   SectionHeading,
-  TableFrame,
-  inlineLinkClass,
-  tableClass,
-  tdClass,
-  thClass,
 } from '@/app/_components/archive-ui';
 
 interface YearRouteProps {
@@ -93,7 +88,7 @@ export async function generateMetadata({ params }: YearRouteProps): Promise<Meta
 }
 
 export default async function YearResultsPage({ params }: YearRouteProps): Promise<React.JSX.Element> {
-  const { year, draws, previousYear, nextYear } = await getYearArchive(params);
+  const { year, draws, previousYear, nextYear, lastModified } = await getYearArchive(params);
   const { first, last } = yearBounds(draws);
   const path = `/resultados/${year}`;
   const breadcrumbs = breadcrumbsFor(year);
@@ -108,20 +103,18 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
-      <PageStructuredData
+      <PageJsonLd
         path={path}
         name={`Resultados da Mega-Sena em ${year}`}
         description={`Todos os concursos da Mega-Sena realizados em ${year}.`}
         breadcrumbs={breadcrumbs}
         type="CollectionPage"
-        dateModified={nextYear?.firstDrawDate ?? last.drawDate}
+        dateModified={lastModified}
       />
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />
-        <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
-          Resultados da Mega-Sena em {year}
-        </h1>
+        <PageTitle>Resultados da Mega-Sena em {year}</PageTitle>
         <AnswerSummary>
           Em {year}, a Mega-Sena teve {countLabel(draws.length, 'concurso', 'concursos')}, do{' '}
           {first.contestNumber} ({formatDate(first.drawDate)}) ao {last.contestNumber} (
@@ -140,39 +133,7 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
 
       <section aria-labelledby="concursos" className="space-y-4">
         <SectionHeading id="concursos">Concursos de {year}</SectionHeading>
-        <TableFrame>
-          <table className={tableClass}>
-            <caption className="sr-only">Concursos de {year}</caption>
-            <thead>
-              <tr>
-                <th scope="col" className={thClass}>Concurso</th>
-                <th scope="col" className={thClass}>Data</th>
-                <th scope="col" className={thClass}>Dezenas</th>
-                <th scope="col" className={thClass}>Sena</th>
-              </tr>
-            </thead>
-            <tbody>
-              {draws.map((draw) => (
-                <tr key={draw.contestNumber}>
-                  <th scope="row" className={tdClass}>
-                    <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
-                      {draw.contestNumber}
-                    </ArchiveLink>
-                  </th>
-                  <td className={tdClass}>{formatDate(draw.drawDate)}</td>
-                  <td className={tdClass}>
-                    <DezenaChips numbers={draw.numbers} />
-                  </td>
-                  <td className={tdClass}>
-                    {draw.sena.winners === 0
-                      ? 'Acumulou'
-                      : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableFrame>
+        <DrawsTable caption={`Concursos de ${year}`} draws={draws} />
       </section>
 
       <Pager
@@ -184,7 +145,7 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
         }
         next={
           nextYear !== null
-            ? { href: `/resultados/${nextYear.year}`, label: 'Próximo ano', detail: String(nextYear.year) }
+            ? { href: `/resultados/${nextYear}`, label: 'Próximo ano', detail: String(nextYear) }
             : null
         }
       />

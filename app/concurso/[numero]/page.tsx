@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MAX_CONTEST_NUMBER, type DrawPage } from '@/lib/api/archive-contract';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
@@ -21,14 +22,14 @@ import {
   Breadcrumbs,
   FactList,
   NumberBallLink,
-  PageStructuredData,
+  PageTitle,
   Pager,
   RandomnessNote,
   SectionHeading,
   TableFrame,
   inlineLinkClass,
   tableClass,
-  tdClass,
+  cellClass,
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
@@ -62,19 +63,13 @@ export async function generateMetadata({ params }: DrawRouteProps): Promise<Meta
   const { draw } = page;
   const date = formatDate(draw.drawDate);
   const dezenas = draw.numbers.map(dezena);
-  const shortSena =
-    draw.sena.winners === 0
-      ? 'Acumulou: ninguém acertou as seis dezenas.'
-      : `${countLabel(draw.sena.winners, 'aposta ganhou', 'apostas ganharam')} ${formatCurrency(
-          draw.sena.prize
-        )}${draw.sena.winners > 1 ? ' cada' : ''} na sena.`;
 
   return buildPageMetadata({
     path: `/concurso/${draw.contestNumber}`,
     title: `Resultado da Mega-Sena ${draw.contestNumber} (${date}): ${dezenas.join('-')}`,
-    description: `Dezenas sorteadas no concurso ${draw.contestNumber} da Mega-Sena em ${date}: ${joinPtBr(
+    description: `Resultado do concurso ${draw.contestNumber} da Mega-Sena (${date}): ${joinPtBr(
       dezenas
-    )}. ${shortSena} Veja prêmios e análise.`,
+    )}. ${senaOutcome(draw)}`,
     absoluteTitle: true,
     socialImages: {
       openGraph: `/concurso/${draw.contestNumber}/opengraph-image`,
@@ -165,21 +160,19 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
-      <PageStructuredData
+      <PageJsonLd
         path={path}
         name={`Resultado da Mega-Sena ${contest}`}
         description={`Dezenas, ganhadores e prêmios do concurso ${contest} da Mega-Sena, sorteado em ${date}.`}
         breadcrumbs={breadcrumbs}
         datePublished={draw.drawDate}
-        dateModified={next?.drawDate ?? draw.drawDate}
+        dateModified={page.lastModified}
       />
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />
         <div className="space-y-2">
-          <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
-            Resultado da Mega-Sena {contest}
-          </h1>
+          <PageTitle>Resultado da Mega-Sena {contest}</PageTitle>
           <p className="text-muted-foreground">
             Sorteio de {weekdayPtBr(draw.drawDate)}, <span className="tabular-nums">{date}</span> ·
             resultado oficial publicado pela CAIXA
@@ -216,11 +209,11 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
             <tbody>
               {prizeRows.map(({ label, hits, tier }) => (
                 <tr key={label}>
-                  <th scope="row" className={`${tdClass} font-medium`}>
+                  <th scope="row" className={`${cellClass} font-medium`}>
                     {label} <span className="font-normal text-muted-foreground">({hits} acertos)</span>
                   </th>
-                  <td className={tdClass}>{tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}</td>
-                  <td className={tdClass}>
+                  <td className={cellClass}>{tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}</td>
+                  <td className={cellClass}>
                     {tier.winners > 0
                       ? formatCurrency(tier.prize)
                       : label === 'Sena'
@@ -260,26 +253,31 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
             <tbody>
               {numberHistory.map((entry) => (
                 <tr key={entry.number}>
-                  <th scope="row" className={tdClass}>
+                  <th scope="row" className={cellClass}>
                     <ArchiveLink href={`/numeros/${entry.number}`} className={inlineLinkClass}>
                       {dezena(entry.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={tdClass}>{formatNumber(entry.timesDrawn)}</td>
-                  <td className={tdClass}>
-                    {entry.previousContest !== null && entry.previousDrawDate !== null ? (
+                  <td className={cellClass}>{formatNumber(entry.timesDrawn)}</td>
+                  <td className={cellClass}>
+                    {entry.previous ? (
                       <>
-                        <ArchiveLink href={`/concurso/${entry.previousContest}`} className={inlineLinkClass}>
-                          {entry.previousContest}
+                        <ArchiveLink
+                          href={`/concurso/${entry.previous.contestNumber}`}
+                          className={inlineLinkClass}
+                        >
+                          {entry.previous.contestNumber}
                         </ArchiveLink>{' '}
-                        <span className="text-muted-foreground">({formatDate(entry.previousDrawDate)})</span>
+                        <span className="text-muted-foreground">
+                          ({formatDate(entry.previous.drawDate)})
+                        </span>
                       </>
                     ) : (
                       'Primeira vez'
                     )}
                   </td>
-                  <td className={tdClass}>
-                    {entry.drawsSincePrevious === null ? '—' : formatNumber(entry.drawsSincePrevious)}
+                  <td className={cellClass}>
+                    {entry.previous ? formatNumber(entry.previous.drawsBetween) : '—'}
                   </td>
                 </tr>
               ))}

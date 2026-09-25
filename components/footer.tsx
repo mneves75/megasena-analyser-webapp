@@ -61,12 +61,12 @@ export function Footer(): React.JSX.Element {
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link href="/resultados" prefetch={false} className={linkClass}>
-                  Resultados
+                  {pt.nav.results}
                 </Link>
               </li>
               <li>
                 <Link href="/numeros" prefetch={false} className={linkClass}>
-                  Números de 1 a 60
+                  {pt.nav.numbersFull}
                 </Link>
               </li>
               <li>

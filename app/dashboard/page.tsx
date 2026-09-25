@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import { StatsCard } from '@/components/stats-card';
-import { formatCurrency, formatDate, formatNumber, formatPercentage } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatNumber, formatPercentage } from '@/lib/utils';
 import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics';
 import {
   BarChart3,
@@ -14,7 +15,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
-import { NumberBallLink } from '@/app/_components/archive-ui';
+import { ArchiveLink, NumberBallLink, inlineLinkClass } from '@/app/_components/archive-ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
@@ -22,8 +23,6 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 
-import { JsonLd } from '@/components/seo/json-ld';
-import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard',
@@ -116,10 +115,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <JsonLd data={generateBreadcrumbSchema([
-        { name: 'Início', url: '/' },
-        { name: 'Dashboard', url: '/dashboard' },
-      ])} />
+      <PageJsonLd
+        path="/dashboard"
+        name={pt.meta.dashboard.title}
+        description={pt.meta.dashboard.description}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Dashboard', url: '/dashboard' },
+        ]}
+      />
 
       <div className="space-y-8">
         <header>
@@ -242,13 +246,12 @@ export default async function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Link
+                      <ArchiveLink
                         href={`/concurso/${draw.contestNumber}`}
-                        prefetch={false}
-                        className="rounded-sm font-semibold tabular-nums underline-offset-4 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className={cn('tabular-nums', inlineLinkClass)}
                       >
                         {pt.dashboard.sections.contestLabel} #{draw.contestNumber}
-                      </Link>
+                      </ArchiveLink>
                       <span className="text-sm text-muted-foreground tabular-nums">{formatDate(draw.drawDate)}</span>
                     </div>
                     <div className="flex flex-wrap gap-2">

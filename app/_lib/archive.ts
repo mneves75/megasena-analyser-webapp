@@ -10,6 +10,12 @@ import {
   numbersIndexSchema,
   sitemapDataSchema,
   yearArchiveSchema,
+  type ArchiveIndex,
+  type DrawPage,
+  type NumberProfile,
+  type NumbersIndex,
+  type SitemapData,
+  type YearArchive,
 } from '@/lib/api/archive-contract';
 import { logger } from '@/lib/logger';
 
@@ -50,43 +56,39 @@ async function loadArchiveJson<Schema extends z.ZodTypeAny>(
   return parsed.data;
 }
 
+/** Existing value or a thrown error: index views always exist, even when empty. */
+async function loadRequired<Schema extends z.ZodTypeAny>(
+  path: string,
+  schema: Schema
+): Promise<z.infer<Schema>> {
+  const value = await loadArchiveJson(path, schema);
+  if (value === null) {
+    throw new Error(`Archive request ${path} returned 404`);
+  }
+  return value;
+}
+
 // `cache` dedupes the request between generateMetadata and the page render.
-export const loadDrawPage = cache((contest: number) =>
+export const loadDrawPage: (contest: number) => Promise<DrawPage | null> = cache((contest) =>
   loadArchiveJson(`/api/draws?contest=${contest}`, drawPageSchema)
 );
 
-export const loadYearArchive = cache((year: number) =>
+export const loadYearArchive: (year: number) => Promise<YearArchive | null> = cache((year) =>
   loadArchiveJson(`/api/draws?year=${year}`, yearArchiveSchema)
 );
 
-export const loadArchiveIndex = cache(async () => {
-  const index = await loadArchiveJson('/api/draws', archiveIndexSchema);
-  if (!index) {
-    throw new Error('Archive index unavailable');
-  }
-  return index;
-});
+export const loadArchiveIndex: () => Promise<ArchiveIndex> = cache(() =>
+  loadRequired('/api/draws', archiveIndexSchema)
+);
 
-export const loadNumbersIndex = cache(async () => {
-  const index = await loadArchiveJson('/api/numbers', numbersIndexSchema);
-  if (!index) {
-    throw new Error('Numbers index unavailable');
-  }
-  return index;
-});
+export const loadNumbersIndex: () => Promise<NumbersIndex> = cache(() =>
+  loadRequired('/api/numbers', numbersIndexSchema)
+);
 
-export const loadNumberProfile = cache(async (number: number) => {
-  const profile = await loadArchiveJson(`/api/numbers?n=${number}`, numberProfileSchema);
-  if (!profile) {
-    throw new Error(`Number profile ${number} unavailable`);
-  }
-  return profile;
-});
+export const loadNumberProfile: (number: number) => Promise<NumberProfile> = cache((number) =>
+  loadRequired(`/api/numbers?n=${number}`, numberProfileSchema)
+);
 
-export const loadSitemapData = cache(async () => {
-  const data = await loadArchiveJson('/api/sitemap', sitemapDataSchema);
-  if (!data) {
-    throw new Error('Sitemap data unavailable');
-  }
-  return data;
-});
+export const loadSitemapData: () => Promise<SitemapData> = cache(() =>
+  loadRequired('/api/sitemap', sitemapDataSchema)
+);

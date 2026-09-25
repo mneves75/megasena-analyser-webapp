@@ -180,15 +180,18 @@ test.describe('crawl directives', () => {
       expect(locs, `sitemap should list ${loc}`).toContain(loc);
     }
 
-    // lastmod = last change of content or links: a draw page gains its
-    // "Próximo concurso" link on the next draw's date.
+    // lastmod = when the page's content or links last changed in the archive:
+    // a draw page changes when its own row is (re)loaded and again when the
+    // next draw is loaded and adds the "Próximo concurso" link. The seed loads
+    // each draw three days after it happened (see prepare-e2e-db.ts).
     const lastmodFor = (loc: string) => entries.find((entry) => entry.loc === loc)?.lastmod;
-    expect(lastmodFor(`${SITE}/concurso/3004`)?.slice(0, 10)).toBe('2026-05-10');
-    expect(lastmodFor(`${SITE}/concurso/3005`)?.slice(0, 10)).toBe('2026-05-12');
-    expect(lastmodFor(`${SITE}/concurso/3006`)?.slice(0, 10)).toBe('2026-05-12');
+    expect(lastmodFor(`${SITE}/concurso/3004`)).toBe('2026-05-13T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/concurso/3005`)).toBe('2026-05-15T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/concurso/3006`)).toBe('2026-05-15T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-15T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-15T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-15T12:00:00.000Z');
     expect(lastmodFor(`${SITE}/about`)).toBeNull();
-    expect(lastmodFor(`${SITE}/resultados`)?.slice(0, 10)).toBe('2026-05-12');
-    expect(lastmodFor(`${SITE}/numeros/18`)?.slice(0, 10)).toBe('2026-05-12');
   });
 
   test('llms.txt summarizes the site for AI agents', async ({ request }) => {
@@ -329,7 +332,7 @@ test('every sitemap page ships complete, unique, crawler-visible metadata', asyn
       50
     );
     expect(audit.description?.length ?? 0, `${where} description length`).toBeLessThanOrEqual(
-      180
+      160
     );
     expect(audit.canonicalInHead, `${where} canonical must be in <head>`).toBe(true);
     expect(audit.canonical, `${where} canonical`).toBe(expectedUrl);
@@ -340,6 +343,10 @@ test('every sitemap page ships complete, unique, crawler-visible metadata', asyn
     expect(audit.jsonLdErrors, `${where} JSON-LD must parse`).toEqual([]);
     expect(audit.jsonLdMissingNonce, `${where} JSON-LD must carry the CSP nonce`).toBe(0);
     expect(audit.jsonLdTypes, `${where} JSON-LD`).toContain('WebSite');
+    expect(
+      audit.jsonLdTypes.some((type) => type === 'WebPage' || type === 'CollectionPage'),
+      `${where} JSON-LD must describe the page itself`
+    ).toBe(true);
   }
 
   const titles = audits.map((audit) => audit.title);
@@ -447,6 +454,11 @@ test.describe('draw pages', () => {
       'Concurso 3005',
     ]);
     expect(items.at(-1)?.['item']).toBe(`${SITE}/concurso/3005`);
+
+    // The page's own dateModified agrees with its sitemap lastmod.
+    const webPage = nodes.find((node) => node['@type'] === 'WebPage');
+    expect(webPage?.['datePublished']).toBe('2026-05-10');
+    expect(webPage?.['dateModified']).toBe('2026-05-15T12:00:00.000Z');
   });
 });
 
@@ -461,6 +473,7 @@ test.describe('number pages', () => {
     await expect(summary).toContainText('concurso 3006');
     await expect(summary).toContainText('12/05/2026');
 
+    await expect(page.getByText('Dados até o concurso 3006 (12/05/2026)')).toBeVisible();
     await expect(definitionFor(page, 'Posição no ranking')).toHaveText('1º de 60');
     await expect(definitionFor(page, 'Atraso atual')).toHaveText('0 concursos');
 

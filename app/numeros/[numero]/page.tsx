@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { LotteryBall } from '@/components/lottery-ball';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import type { NumberProfile } from '@/lib/api/archive-contract';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
@@ -14,18 +15,19 @@ import {
 } from '@/app/_lib/format';
 import {
   AnswerSummary,
+  ArchiveFreshness,
   ArchiveLink,
   Breadcrumbs,
   FactList,
   NumberBallLink,
-  PageStructuredData,
+  PageTitle,
   Pager,
   RandomnessNote,
   SectionHeading,
   TableFrame,
+  cellClass,
   inlineLinkClass,
   tableClass,
-  tdClass,
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
@@ -48,36 +50,38 @@ function breadcrumbsFor(number: number): BreadcrumbItem[] {
   ];
 }
 
+function titleFor({ number, frequency, lastAppearance }: NumberProfile): string {
+  const prefix = `Número ${number} da Mega-Sena`;
+  if (lastAppearance === null) {
+    return `${prefix}: ainda não sorteado`;
+  }
+  const times = countLabel(frequency, 'vez', 'vezes');
+  return lastAppearance.drawsSince === 0
+    ? `${prefix}: saiu ${times}, inclusive no último concurso`
+    : `${prefix}: saiu ${times}, atraso de ${countLabel(lastAppearance.drawsSince, 'concurso', 'concursos')}`;
+}
+
+/** "passou-se 1 concurso" / "passaram-se 17 concursos" */
+function elapsedSince(draws: number): string {
+  return `${draws === 1 ? 'passou-se' : 'passaram-se'} ${countLabel(draws, 'concurso', 'concursos')}`;
+}
+
 export async function generateMetadata({ params }: NumberRouteProps): Promise<Metadata> {
   const profile = await getProfile(params);
-  const { number, frequency, totalDraws, rank, currentDelay, lastContestNumber, lastDrawDate } =
-    profile;
-  const drawn = frequency > 0 && lastContestNumber !== null && lastDrawDate !== null;
+  const { number, frequency, rank, lastAppearance, archive } = profile;
+  const totalDraws = countLabel(archive.totalDraws, 'concurso', 'concursos');
 
   return buildPageMetadata({
     path: `/numeros/${number}`,
-    title: !drawn
-      ? `Número ${number} da Mega-Sena: ainda não sorteado`
-      : currentDelay === 0
-        ? `Número ${number} da Mega-Sena: saiu ${countLabel(frequency, 'vez', 'vezes')}, inclusive no último concurso`
-        : `Número ${number} da Mega-Sena: saiu ${countLabel(frequency, 'vez', 'vezes')}, atraso de ${countLabel(
-            currentDelay ?? 0,
-            'concurso',
-            'concursos'
-          )}`,
-    description: drawn
-      ? `O número ${number} saiu ${countLabel(frequency, 'vez', 'vezes')} em ${countLabel(
-          totalDraws,
-          'concurso',
-          'concursos'
-        )} da Mega-Sena (${formatPercentPtBr(frequency, totalDraws)}), ${rank}º mais sorteado. Última vez no concurso ${lastContestNumber} (${formatDate(
-          lastDrawDate
+    title: titleFor(profile),
+    description: lastAppearance
+      ? `O número ${number} saiu ${countLabel(frequency, 'vez', 'vezes')} em ${totalDraws} da Mega-Sena (${formatPercentPtBr(
+          frequency,
+          archive.totalDraws
+        )}), ${rank}º mais sorteado. Última vez no concurso ${lastAppearance.contestNumber} (${formatDate(
+          lastAppearance.drawDate
         )}).`
-      : `O número ${number} ainda não saiu em nenhum dos ${countLabel(
-          totalDraws,
-          'concurso',
-          'concursos'
-        )} da Mega-Sena registrados. Veja a frequência de todos os números de 01 a 60.`,
+      : `O número ${number} ainda não saiu em nenhum dos ${totalDraws} da Mega-Sena registrados. Veja a frequência de todos os números de 01 a 60.`,
     absoluteTitle: true,
   });
 }
@@ -87,16 +91,13 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
   const {
     number,
     frequency,
-    totalDraws,
     rank,
-    currentDelay,
-    lastContestNumber,
-    lastDrawDate,
+    lastAppearance,
     averageInterval,
     longestGap,
     appearances,
     companions,
-    lastArchiveDrawDate,
+    archive,
   } = profile;
   const path = `/numeros/${number}`;
   const breadcrumbs = breadcrumbsFor(number);
@@ -105,7 +106,7 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
     {
       term: 'Vezes sorteado',
       value: formatNumber(frequency),
-      hint: `Se todos os números saíssem igualmente: ${formatDecimal(totalDraws / 10)} vezes.`,
+      hint: `Se todos os números saíssem igualmente: ${formatDecimal(archive.totalDraws / 10)} vezes.`,
     },
     {
       term: 'Posição no ranking',
@@ -114,7 +115,7 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
     },
     {
       term: 'Atraso atual',
-      value: currentDelay === null ? '—' : countLabel(currentDelay, 'concurso', 'concursos'),
+      value: lastAppearance ? countLabel(lastAppearance.drawsSince, 'concurso', 'concursos') : '—',
       hint: 'Concursos desde a última vez que saiu.',
     },
     {
@@ -130,40 +131,39 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
-      <PageStructuredData
+      <PageJsonLd
         path={path}
         name={`Número ${number} na Mega-Sena`}
         description={`Frequência, atraso e histórico do número ${dezena(number)} na Mega-Sena.`}
         breadcrumbs={breadcrumbs}
-        {...(lastArchiveDrawDate ? { dateModified: lastArchiveDrawDate } : {})}
+        {...(archive.lastModified ? { dateModified: archive.lastModified } : {})}
       />
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />
         <div className="flex flex-wrap items-center gap-5">
           <LotteryBall number={number} size="lg" />
-          <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
-            Número {number} na Mega-Sena
-          </h1>
+          <PageTitle>Número {number} na Mega-Sena</PageTitle>
         </div>
         <AnswerSummary>
-          {frequency > 0 && lastContestNumber !== null && lastDrawDate !== null ? (
+          {lastAppearance ? (
             <>
               O número {number} saiu {countLabel(frequency, 'vez', 'vezes')} em{' '}
-              {countLabel(totalDraws, 'concurso', 'concursos')} da Mega-Sena, ou seja, em{' '}
-              {formatPercentPtBr(frequency, totalDraws)} dos sorteios. A última vez foi no concurso{' '}
-              {lastContestNumber}, em {formatDate(lastDrawDate)}
-              {currentDelay === 0
+              {countLabel(archive.totalDraws, 'concurso', 'concursos')} da Mega-Sena, ou seja, em{' '}
+              {formatPercentPtBr(frequency, archive.totalDraws)} dos sorteios. A última vez foi no
+              concurso {lastAppearance.contestNumber}, em {formatDate(lastAppearance.drawDate)}
+              {lastAppearance.drawsSince === 0
                 ? ', o sorteio mais recente do arquivo.'
-                : `; desde então, passaram-se ${countLabel(currentDelay ?? 0, 'concurso', 'concursos')}.`}
+                : `; desde então, ${elapsedSince(lastAppearance.drawsSince)}.`}
             </>
           ) : (
             <>
               O número {number} ainda não saiu em nenhum dos{' '}
-              {countLabel(totalDraws, 'concurso', 'concursos')} registrados.
+              {countLabel(archive.totalDraws, 'concurso', 'concursos')} registrados.
             </>
           )}
         </AnswerSummary>
+        <ArchiveFreshness archive={archive} />
       </header>
 
       <section aria-labelledby="indicadores" className="space-y-4">
@@ -186,12 +186,15 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
               <tbody>
                 {appearances.map((appearance) => (
                   <tr key={appearance.contestNumber}>
-                    <td className={tdClass}>
-                      <ArchiveLink href={`/concurso/${appearance.contestNumber}`} className={inlineLinkClass}>
+                    <td className={cellClass}>
+                      <ArchiveLink
+                        href={`/concurso/${appearance.contestNumber}`}
+                        className={inlineLinkClass}
+                      >
                         {appearance.contestNumber}
                       </ArchiveLink>
                     </td>
-                    <td className={tdClass}>{formatDate(appearance.drawDate)}</td>
+                    <td className={cellClass}>{formatDate(appearance.drawDate)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -202,7 +205,9 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
 
       {companions.length > 0 ? (
         <section aria-labelledby="parceiras" className="space-y-4">
-          <SectionHeading id="parceiras">Dezenas que mais saíram junto com o {dezena(number)}</SectionHeading>
+          <SectionHeading id="parceiras">
+            Dezenas que mais saíram junto com o {dezena(number)}
+          </SectionHeading>
           <ul className="flex flex-wrap gap-4">
             {companions.map((companion) => (
               <li key={companion.number} className="flex flex-col items-center gap-1">

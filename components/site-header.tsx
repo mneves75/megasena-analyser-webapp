@@ -21,8 +21,8 @@ interface NavLink {
 }
 
 const NAV_LINKS: readonly NavLink[] = [
-  { href: '/resultados', label: 'Resultados', alsoActiveOn: ['/concurso'], prefetch: false },
-  { href: '/numeros', label: 'Números', prefetch: false },
+  { href: '/resultados', label: pt.nav.results, alsoActiveOn: ['/concurso'], prefetch: false },
+  { href: '/numeros', label: pt.nav.numbers, prefetch: false },
   { href: '/dashboard', label: pt.nav.dashboard },
   { href: '/dashboard/statistics', label: pt.nav.statistics },
   { href: '/dashboard/generator', label: pt.nav.generator },

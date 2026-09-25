@@ -1,6 +1,7 @@
 import { getDatabase } from '@/lib/db';
 import type {
   ArchiveIndex,
+  ArchiveState,
   DrawNumberHistory,
   DrawPage,
   DrawRecord,
@@ -35,21 +36,35 @@ const NUMBER_OCCURRENCES_CTE = `
     UNION ALL SELECT contest_number, draw_date, number_6 FROM draws
   )`;
 
+/**
+ * When each draw page last changed, for sitemap lastmod and JSON-LD
+ * dateModified. A draw page changes when its own row is (re)loaded
+ * (`created_at`/`updated_at`, UTC) and again when the next draw is loaded and
+ * adds the "Próximo concurso" link. Loads lag draws by days, so draw dates
+ * alone would understate changes.
+ */
+const DRAW_CHANGES_CTE = `
+  draw_changes AS (
+    SELECT contest_number, draw_date,
+           MAX(
+             COALESCE(updated_at, draw_date),
+             COALESCE(created_at, draw_date),
+             COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '')
+           ) AS last_modified
+    FROM draws
+  )`;
+
 const DRAWS_WITH_NUMBER = `?1 IN (number_1, number_2, number_3, number_4, number_5, number_6)`;
 
 const APPEARANCES_SHOWN = 12;
-const RECENT_DRAWS_SHOWN = 10;
 const COMPANIONS_SHOWN = 6;
+const RECENT_DRAWS_SHOWN = 10;
 
-interface DrawRow {
+type NumberColumns = Record<`number_${1 | 2 | 3 | 4 | 5 | 6}`, number>;
+
+interface DrawRow extends NumberColumns {
   contest_number: number;
   draw_date: string;
-  number_1: number;
-  number_2: number;
-  number_3: number;
-  number_4: number;
-  number_5: number;
-  number_6: number;
   prize_sena: number | null;
   winners_sena: number | null;
   prize_quina: number | null;
@@ -75,13 +90,35 @@ function positiveOrNull(value: number | null): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
+/** SQLite `CURRENT_TIMESTAMP` ("YYYY-MM-DD HH:MM:SS", UTC) or a bare date → ISO instant. */
+function toIsoInstant(value: string | null | undefined): string | null {
+  const match = value ? /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}:\d{2}))?/.exec(value) : null;
+  if (!match) {
+    return null;
+  }
+  const instant = new Date(`${match[1]}T${match[2] ?? '00:00:00'}Z`);
+  return Number.isNaN(instant.getTime()) ? null : instant.toISOString();
+}
+
+function requireInstant(value: string | null | undefined, context: string): string {
+  const instant = toIsoInstant(value);
+  if (instant === null) {
+    throw new Error(`Invalid archive timestamp for ${context}: ${String(value)}`);
+  }
+  return instant;
+}
+
+function sortedNumbers(row: NumberColumns): number[] {
+  return [row.number_1, row.number_2, row.number_3, row.number_4, row.number_5, row.number_6].sort(
+    (a, b) => a - b
+  );
+}
+
 function toDrawRecord(row: DrawRow): DrawRecord {
   return {
     contestNumber: row.contest_number,
     drawDate: row.draw_date,
-    numbers: [row.number_1, row.number_2, row.number_3, row.number_4, row.number_5, row.number_6]
-      .slice()
-      .sort((a, b) => a - b),
+    numbers: sortedNumbers(row),
     sena: { winners: row.winners_sena ?? 0, prize: row.prize_sena ?? 0 },
     quina: { winners: row.winners_quina ?? 0, prize: row.prize_quina ?? 0 },
     quadra: { winners: row.winners_quadra ?? 0, prize: row.prize_quadra ?? 0 },
@@ -123,32 +160,23 @@ export class DrawArchiveEngine {
         `SELECT contest_number, number_1, number_2, number_3, number_4, number_5, number_6
          FROM draws WHERE contest_number < ? ORDER BY contest_number DESC LIMIT 1`
       )
-      .get(contest) as Pick<
-      DrawRow,
-      'contest_number' | 'number_1' | 'number_2' | 'number_3' | 'number_4' | 'number_5' | 'number_6'
-    > | undefined;
+      .get(contest) as (NumberColumns & { contest_number: number }) | undefined;
     const next = this.db
       .prepare(
         `SELECT contest_number, draw_date FROM draws
          WHERE contest_number > ? ORDER BY contest_number ASC LIMIT 1`
       )
-      .get(contest) as Pick<DrawRow, 'contest_number' | 'draw_date'> | undefined;
+      .get(contest) as { contest_number: number; draw_date: string } | undefined;
+    const change = this.db
+      .prepare(`WITH ${DRAW_CHANGES_CTE} SELECT last_modified FROM draw_changes WHERE contest_number = ?`)
+      .get(contest) as { last_modified: string };
     const draw = toDrawRecord(row);
 
     return {
       draw,
+      lastModified: requireInstant(change.last_modified, `contest ${contest}`),
       previous: previous
-        ? {
-            contestNumber: previous.contest_number,
-            numbers: [
-              previous.number_1,
-              previous.number_2,
-              previous.number_3,
-              previous.number_4,
-              previous.number_5,
-              previous.number_6,
-            ].sort((a, b) => a - b),
-          }
+        ? { contestNumber: previous.contest_number, numbers: sortedNumbers(previous) }
         : null,
       next: next ? { contestNumber: next.contest_number, drawDate: next.draw_date } : null,
       numberHistory: this.getNumberHistoryAt(contest, draw.numbers),
@@ -160,53 +188,58 @@ export class DrawArchiveEngine {
   }
 
   getArchiveIndex(): ArchiveIndex {
-    const totalDraws = (
-      this.db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }
-    ).count;
     const recentRows = this.db
       .prepare(`SELECT ${DRAW_COLUMNS} FROM draws ORDER BY contest_number DESC LIMIT ?`)
       .all(RECENT_DRAWS_SHOWN) as DrawRow[];
 
     return {
-      totalDraws,
+      archive: this.getArchiveState(),
       recent: recentRows.map(toDrawRecord),
       years: this.getYearSummaries(),
     };
   }
 
   getYearArchive(year: number): YearArchive | null {
+    const range = [`${year}-01-01`, `${year + 1}-01-01`] as const;
     const rows = this.db
       .prepare(
         `SELECT ${DRAW_COLUMNS} FROM draws
          WHERE draw_date >= ? AND draw_date < ?
          ORDER BY contest_number DESC`
       )
-      .all(`${year}-01-01`, `${year + 1}-01-01`) as DrawRow[];
+      .all(...range) as DrawRow[];
     if (rows.length === 0) {
       return null;
     }
 
+    const change = this.db
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE}
+         SELECT MAX(last_modified) AS last_modified FROM draw_changes
+         WHERE draw_date >= ? AND draw_date < ?`
+      )
+      .get(...range) as { last_modified: string };
     // Summaries are ordered newest first.
-    const summaries = this.getYearSummaries();
-    const previousYear = summaries.find((summary) => summary.year < year) ?? null;
-    const nextYear = summaries.filter((summary) => summary.year > year).at(-1) ?? null;
+    const years = this.getYearSummaries().map((summary) => summary.year);
 
     return {
       year,
+      // The year's last draw already counts the load of the next year's first
+      // draw, so this also covers the "Próximo ano" link appearing.
+      lastModified: requireInstant(change.last_modified, `year ${year}`),
       draws: rows.map(toDrawRecord),
-      previousYear: previousYear?.year ?? null,
-      nextYear: nextYear ? { year: nextYear.year, firstDrawDate: nextYear.firstDrawDate } : null,
+      previousYear: years.find((candidate) => candidate < year) ?? null,
+      nextYear: years.filter((candidate) => candidate > year).at(-1) ?? null,
     };
   }
 
   getNumbersIndex(): NumbersIndex {
-    const { totalDraws, lastDrawDate, summaries } = this.computeNumberSummaries();
-    return { totalDraws, lastDrawDate, numbers: summaries };
+    const { archive, summaries } = this.computeNumberSummaries();
+    return { archive, numbers: summaries };
   }
 
   getNumberProfile(number: number): NumberProfile {
-    const { totalDraws, lastDrawDate, summaries, drawIndexByContest } =
-      this.computeNumberSummaries();
+    const { archive, summaries, drawIndexByContest } = this.computeNumberSummaries();
     const summary = summaries[number - 1];
     if (!summary) {
       throw new RangeError(`Number out of range: ${number}`);
@@ -230,14 +263,16 @@ export class DrawArchiveEngine {
     const firstPosition = positions[0];
     const lastPosition = positions.at(-1);
     if (firstPosition !== undefined && lastPosition !== undefined) {
-      const intervals = positions.slice(1).map((position, index) => position - (positions[index] ?? 0));
+      const intervals = positions
+        .slice(1)
+        .map((position, index) => position - (positions[index] ?? position));
       averageInterval =
         intervals.length > 0
           ? intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length
           : null;
       longestGap = Math.max(
         firstPosition - 1,
-        totalDraws - lastPosition,
+        archive.totalDraws - lastPosition,
         ...intervals.map((interval) => interval - 1)
       );
     }
@@ -266,8 +301,7 @@ export class DrawArchiveEngine {
 
     return {
       ...summary,
-      totalDraws,
-      lastArchiveDrawDate: lastDrawDate,
+      archive,
       averageInterval,
       longestGap,
       appearances: appearances
@@ -283,17 +317,55 @@ export class DrawArchiveEngine {
 
   getSitemapData(): SitemapData {
     const draws = this.db
-      .prepare('SELECT contest_number, draw_date FROM draws ORDER BY contest_number ASC')
-      .all() as Array<{ contest_number: number; draw_date: string }>;
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE}
+         SELECT contest_number, last_modified FROM draw_changes ORDER BY contest_number ASC`
+      )
+      .all() as Array<{ contest_number: number; last_modified: string }>;
+    const years = this.db
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE}
+         SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, MAX(last_modified) AS last_modified
+         FROM draw_changes
+         GROUP BY year
+         ORDER BY year DESC`
+      )
+      .all() as Array<{ year: number; last_modified: string }>;
 
     return {
-      lastDrawDate: draws.at(-1)?.draw_date ?? null,
-      draws: draws.map((draw) => ({ contestNumber: draw.contest_number, drawDate: draw.draw_date })),
-      years: this.getYearSummaries().map((summary) => ({
-        year: summary.year,
-        firstDrawDate: summary.firstDrawDate,
-        lastDrawDate: summary.lastDrawDate,
+      archive: this.getArchiveState(),
+      draws: draws.map((draw) => ({
+        contestNumber: draw.contest_number,
+        lastModified: requireInstant(draw.last_modified, `contest ${draw.contest_number}`),
       })),
+      years: years.map((summary) => ({
+        year: summary.year,
+        lastModified: requireInstant(summary.last_modified, `year ${summary.year}`),
+      })),
+    };
+  }
+
+  private getArchiveState(): ArchiveState {
+    const row = this.db
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE}
+         SELECT COUNT(*) AS total_draws,
+                MAX(contest_number) AS last_contest,
+                MAX(draw_date) AS last_draw_date,
+                MAX(last_modified) AS last_modified
+         FROM draw_changes`
+      )
+      .get() as {
+      total_draws: number;
+      last_contest: number | null;
+      last_draw_date: string | null;
+      last_modified: string | null;
+    };
+    return {
+      totalDraws: row.total_draws,
+      lastContestNumber: row.last_contest,
+      lastDrawDate: row.last_draw_date,
+      lastModified: toIsoInstant(row.last_modified),
     };
   }
 
@@ -318,23 +390,30 @@ export class DrawArchiveEngine {
     const previousDraw = this.db.prepare(
       `SELECT draw_date,
               (SELECT COUNT(*) FROM draws AS between_draws
-               WHERE between_draws.contest_number > ?1 AND between_draws.contest_number < ?2) AS gap
+               WHERE between_draws.contest_number > ?1 AND between_draws.contest_number < ?2) AS draws_between
        FROM draws WHERE contest_number = ?1`
     );
 
-    return numbers.map((number) => {
+    return numbers.map((number): DrawNumberHistory => {
       const row = byNumber.get(number);
       const previousContest = row?.previous_contest ?? null;
       const previous =
         previousContest === null
           ? undefined
-          : (previousDraw.get(previousContest, contest) as { draw_date: string; gap: number } | undefined);
+          : (previousDraw.get(previousContest, contest) as
+              | { draw_date: string; draws_between: number }
+              | undefined);
       return {
         number,
         timesDrawn: row?.times_drawn ?? 1,
-        previousContest,
-        previousDrawDate: previous?.draw_date ?? null,
-        drawsSincePrevious: previous?.gap ?? null,
+        previous:
+          previousContest !== null && previous
+            ? {
+                contestNumber: previousContest,
+                drawDate: previous.draw_date,
+                drawsBetween: previous.draws_between,
+              }
+            : null,
       };
     });
   }
@@ -369,14 +448,13 @@ export class DrawArchiveEngine {
   }
 
   private computeNumberSummaries(): {
-    totalDraws: number;
-    lastDrawDate: string | null;
+    archive: ArchiveState;
     summaries: NumberSummary[];
     drawIndexByContest: Map<number, number>;
   } {
     const ordered = this.db
-      .prepare('SELECT contest_number, draw_date FROM draws ORDER BY contest_number ASC')
-      .all() as Array<{ contest_number: number; draw_date: string }>;
+      .prepare('SELECT contest_number FROM draws ORDER BY contest_number ASC')
+      .all() as Array<{ contest_number: number }>;
     const drawIndexByContest = new Map(
       ordered.map((draw, index) => [draw.contest_number, index + 1] as const)
     );
@@ -394,7 +472,10 @@ export class DrawArchiveEngine {
       .all() as Array<{ number: number; frequency: number; last_contest: number; draw_date: string }>;
     const byNumber = new Map(rows.map((row) => [row.number, row] as const));
 
-    const frequencies = Array.from({ length: 60 }, (_, index) => byNumber.get(index + 1)?.frequency ?? 0);
+    const frequencies = Array.from(
+      { length: 60 },
+      (_, index) => byNumber.get(index + 1)?.frequency ?? 0
+    );
     const summaries = frequencies.map((frequency, index): NumberSummary => {
       const row = byNumber.get(index + 1);
       const lastPosition = row ? drawIndexByContest.get(row.last_contest) : undefined;
@@ -402,17 +483,17 @@ export class DrawArchiveEngine {
         number: index + 1,
         frequency,
         rank: 1 + frequencies.filter((other) => other > frequency).length,
-        lastContestNumber: row?.last_contest ?? null,
-        lastDrawDate: row?.draw_date ?? null,
-        currentDelay: lastPosition === undefined ? null : totalDraws - lastPosition,
+        lastAppearance:
+          row && lastPosition !== undefined
+            ? {
+                contestNumber: row.last_contest,
+                drawDate: row.draw_date,
+                drawsSince: totalDraws - lastPosition,
+              }
+            : null,
       };
     });
 
-    return {
-      totalDraws,
-      lastDrawDate: ordered.at(-1)?.draw_date ?? null,
-      summaries,
-      drawIndexByContest,
-    };
+    return { archive: this.getArchiveState(), summaries, drawIndexByContest };
   }
 }

@@ -50,7 +50,8 @@ export function weekdayPtBr(isoDate: string): string {
 /**
  * Resolves an integer route segment. Zero-padded aliases ("03006") redirect
  * permanently to the canonical form; anything else invalid is a hard 404.
- * Must run before any await that can suspend so the status is still settable.
+ * The status stays settable because archive routes have no Suspense boundary
+ * above them (see app/(home)/loading.tsx); keep it that way.
  */
 export function resolveIntegerParam(
   raw: string,

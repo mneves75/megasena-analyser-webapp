@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { FileText, AlertTriangle } from 'lucide-react';
-import { JsonLd } from '@/components/seo/json-ld';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -32,7 +32,12 @@ export default function TermsPage(): React.JSX.Element {
 
   return (
     <>
-      <JsonLd data={generateFAQSchema(termsFaqs)} />
+      <PageJsonLd
+        path="/terms"
+        name={pt.meta.terms.title}
+        description={pt.meta.terms.description}
+        extra={[generateFAQSchema(termsFaqs)]}
+      />
       <div className="container mx-auto px-4 py-8">
         <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
           <div className="flex items-center gap-3 mb-6">

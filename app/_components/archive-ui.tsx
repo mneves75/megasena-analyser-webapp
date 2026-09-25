@@ -2,14 +2,10 @@ import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
 import { ChevronRight, Info } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
-import { MultiJsonLd } from '@/components/seo/json-ld';
-import { cn } from '@/lib/utils';
-import {
-  generateBreadcrumbSchema,
-  generateWebPageSchema,
-  type BreadcrumbItem,
-} from '@/lib/seo/schemas';
-import { dezena } from '@/app/_lib/format';
+import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
+import type { BreadcrumbItem } from '@/lib/seo/schemas';
+import { cn, formatDate } from '@/lib/utils';
+import { countLabel, dezena } from '@/app/_lib/format';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -23,8 +19,15 @@ export function ArchiveLink(props: Omit<ComponentProps<typeof Link>, 'prefetch'>
   return <Link {...props} prefetch={false} />;
 }
 
+/** Standalone links (table cells, link rows): colour plus underline on hover. */
 export const inlineLinkClass = cn(
   'rounded-sm font-medium text-primary underline-offset-4 hover:underline',
+  focusRing
+);
+
+/** Links inside running text are always underlined (WCAG 1.4.1: not colour alone). */
+export const textLinkClass = cn(
+  'rounded-sm font-medium text-primary underline underline-offset-4',
   focusRing
 );
 
@@ -43,7 +46,10 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
                 </span>
               ) : (
                 <>
-                  <ArchiveLink href={item.url} className={cn('rounded-sm hover:text-foreground', focusRing)}>
+                  <ArchiveLink
+                    href={item.url}
+                    className={cn('rounded-sm hover:text-foreground', focusRing)}
+                  >
                     {item.name}
                   </ArchiveLink>
                   <ChevronRight aria-hidden className="h-3.5 w-3.5" />
@@ -57,42 +63,11 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
   );
 }
 
-interface PageStructuredDataProps {
-  path: string;
-  name: string;
-  description: string;
-  breadcrumbs: BreadcrumbItem[];
-  type?: 'WebPage' | 'CollectionPage';
-  datePublished?: string;
-  dateModified?: string;
-  extra?: Array<Record<string, unknown>>;
-}
-
-export function PageStructuredData({
-  path,
-  name,
-  description,
-  breadcrumbs,
-  type,
-  datePublished,
-  dateModified,
-  extra = [],
-}: PageStructuredDataProps): React.JSX.Element {
+export function PageTitle({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <MultiJsonLd
-      schemas={[
-        generateWebPageSchema({
-          path,
-          name,
-          description,
-          ...(type ? { type } : {}),
-          ...(datePublished ? { datePublished } : {}),
-          ...(dateModified ? { dateModified } : {}),
-        }),
-        generateBreadcrumbSchema(breadcrumbs, path),
-        ...extra,
-      ]}
-    />
+    <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
+      {children}
+    </h1>
   );
 }
 
@@ -106,7 +81,8 @@ export function NumberBallLink({
   return (
     <ArchiveLink
       href={`/numeros/${number}`}
-      aria-label={`Estatísticas do número ${dezena(number)}`}
+      // Unpadded so the accessible name contains the visible label (WCAG 2.5.3).
+      aria-label={`Estatísticas do número ${number}`}
       className={cn('rounded-full', focusRing)}
     >
       <LotteryBall number={number} size={size} />
@@ -117,8 +93,24 @@ export function NumberBallLink({
 /** The first paragraph answers the page's query in plain words. */
 export function AnswerSummary({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <p data-testid="answer-summary" className="max-w-[70ch] text-lg leading-relaxed text-foreground">
+    <p
+      data-testid="answer-summary"
+      className="max-w-[70ch] text-lg leading-relaxed text-foreground"
+    >
       {children}
+    </p>
+  );
+}
+
+/** "Dados até o concurso N": the archive is refreshed periodically, not live. */
+export function ArchiveFreshness({ archive }: { archive: ArchiveState }): React.JSX.Element | null {
+  if (archive.lastContestNumber === null || archive.lastDrawDate === null) {
+    return null;
+  }
+  return (
+    <p className="text-sm text-muted-foreground">
+      Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)}) ·
+      resultados oficiais da CAIXA
     </p>
   );
 }
@@ -136,7 +128,7 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
         <div key={fact.term} className="flex flex-col gap-1 bg-card p-4">
           <dt className="text-sm text-muted-foreground">{fact.term}</dt>
           <dd className="font-title text-xl font-semibold tabular-nums">{fact.value}</dd>
-          {fact.hint ? <p className="text-xs text-muted-foreground">{fact.hint}</p> : null}
+          {fact.hint ? <dd className="text-xs text-muted-foreground">{fact.hint}</dd> : null}
         </div>
       ))}
     </dl>
@@ -152,16 +144,74 @@ export function SectionHeading({ id, children }: { id: string; children: ReactNo
 }
 
 export function TableFrame({ children }: { children: ReactNode }): React.JSX.Element {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      {children}
-    </div>
-  );
+  return <div className="overflow-x-auto rounded-xl border border-border bg-card">{children}</div>;
 }
 
 export const tableClass = 'w-full min-w-[32rem] border-collapse text-left text-sm';
 export const thClass = 'px-4 py-3 font-medium text-muted-foreground';
-export const tdClass = 'border-t border-border px-4 py-3 tabular-nums';
+/** Body cells, including row headers (`<th scope="row">`). */
+export const cellClass = 'border-t border-border px-4 py-3 tabular-nums';
+
+/** Compact, non-interactive dezenas for dense tables (no client JS per ball). */
+export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.JSX.Element {
+  return (
+    <span className="flex flex-wrap gap-1">
+      {numbers.map((number) => (
+        <span
+          key={number}
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold tabular-nums text-foreground"
+        >
+          {dezena(number)}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** One row per draw, newest first, each linking to its page. */
+export function DrawsTable({
+  caption,
+  draws,
+}: {
+  caption: string;
+  draws: readonly DrawRecord[];
+}): React.JSX.Element {
+  return (
+    <TableFrame>
+      <table className={tableClass}>
+        <caption className="sr-only">{caption}</caption>
+        <thead>
+          <tr>
+            <th scope="col" className={thClass}>Concurso</th>
+            <th scope="col" className={thClass}>Data</th>
+            <th scope="col" className={thClass}>Dezenas</th>
+            <th scope="col" className={thClass}>Sena</th>
+          </tr>
+        </thead>
+        <tbody>
+          {draws.map((draw) => (
+            <tr key={draw.contestNumber}>
+              <th scope="row" className={cellClass}>
+                <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
+                  {draw.contestNumber}
+                </ArchiveLink>
+              </th>
+              <td className={cellClass}>{formatDate(draw.drawDate)}</td>
+              <td className={cellClass}>
+                <DezenaChips numbers={draw.numbers} />
+              </td>
+              <td className={cellClass}>
+                {draw.sena.winners === 0
+                  ? 'Acumulou'
+                  : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
+  );
+}
 
 export function RandomnessNote({ children }: { children?: ReactNode }): React.JSX.Element {
   return (
@@ -170,7 +220,7 @@ export function RandomnessNote({ children }: { children?: ReactNode }): React.JS
       <p>
         {children ??
           'A Mega-Sena é aleatória: cada concurso é independente e nenhum dado histórico prevê o próximo resultado.'}{' '}
-        <Link href="/about" className={inlineLinkClass}>
+        <Link href="/about" className={textLinkClass}>
           Como os dados são calculados
         </Link>
       </p>
@@ -214,21 +264,5 @@ export function Pager({
         </ArchiveLink>
       ) : null}
     </nav>
-  );
-}
-
-/** Compact, non-interactive dezenas for dense tables (no client JS per ball). */
-export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.JSX.Element {
-  return (
-    <span className="flex flex-wrap gap-1">
-      {numbers.map((number) => (
-        <span
-          key={number}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold tabular-nums text-foreground"
-        >
-          {dezena(number)}
-        </span>
-      ))}
-    </span>
   );
 }

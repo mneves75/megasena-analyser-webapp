@@ -1,10 +1,9 @@
 import type { Metadata } from 'next';
+import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { AlertTriangle, ChevronDown } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
-import { JsonLd } from '@/components/seo/json-ld';
-import { generateBreadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard/generator',
@@ -16,11 +15,16 @@ export const metadata: Metadata = buildPageMetadata({
 export default function GeneratorPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
-      <JsonLd data={generateBreadcrumbSchema([
-        { name: 'Início', url: '/' },
-        { name: 'Dashboard', url: '/dashboard' },
-        { name: 'Gerador de Apostas', url: '/dashboard/generator' },
-      ])} />
+      <PageJsonLd
+        path="/dashboard/generator"
+        name={pt.meta.generator.title}
+        description={pt.meta.generator.description}
+        breadcrumbs={[
+          { name: 'Início', url: '/' },
+          { name: 'Dashboard', url: '/dashboard' },
+          { name: 'Gerador de Apostas', url: '/dashboard/generator' },
+        ]}
+      />
 
       <header className="mb-6 max-w-2xl">
         <h1 className="text-balance font-title text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
