@@ -37,21 +37,32 @@ const NUMBER_OCCURRENCES_CTE = `
   )`;
 
 /**
- * When each draw page last changed, for sitemap lastmod and JSON-LD
- * dateModified. A draw page changes when its own row is (re)loaded
- * (`created_at`/`updated_at`, UTC) and again when the next draw is loaded and
- * adds the "Próximo concurso" link. Loads lag draws by days, so draw dates
- * alone would understate changes.
+ * When archive pages last changed, for sitemap lastmod and JSON-LD dateModified.
+ * Timestamps are the rows' load times (`created_at`/`updated_at`, UTC): loads lag
+ * draws by days, so draw dates alone would understate changes.
+ *
+ * - `page_modified` (a draw page): the page embeds history computed from every
+ *   earlier draw, so it changes whenever any row up to and including it is
+ *   loaded or corrected, and again when the next draw is loaded and adds the
+ *   "Próximo concurso" link.
+ * - `listing_modified` (a draw's row in a year list): its own row, plus the next
+ *   load, which for a year's last draw is the "Próximo ano" link appearing.
  */
 const DRAW_CHANGES_CTE = `
+  draw_touches AS (
+    SELECT contest_number, draw_date,
+           MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched,
+           COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded
+    FROM draws
+  ),
   draw_changes AS (
     SELECT contest_number, draw_date,
+           MAX(touched, next_loaded) AS listing_modified,
            MAX(
-             COALESCE(updated_at, draw_date),
-             COALESCE(created_at, draw_date),
-             COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '')
-           ) AS last_modified
-    FROM draws
+             MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+             next_loaded
+           ) AS page_modified
+    FROM draw_touches
   )`;
 
 const DRAWS_WITH_NUMBER = `?1 IN (number_1, number_2, number_3, number_4, number_5, number_6)`;
@@ -168,13 +179,15 @@ export class DrawArchiveEngine {
       )
       .get(contest) as { contest_number: number; draw_date: string } | undefined;
     const change = this.db
-      .prepare(`WITH ${DRAW_CHANGES_CTE} SELECT last_modified FROM draw_changes WHERE contest_number = ?`)
-      .get(contest) as { last_modified: string };
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE} SELECT page_modified FROM draw_changes WHERE contest_number = ?`
+      )
+      .get(contest) as { page_modified: string };
     const draw = toDrawRecord(row);
 
     return {
       draw,
-      lastModified: requireInstant(change.last_modified, `contest ${contest}`),
+      lastModified: requireInstant(change.page_modified, `contest ${contest}`),
       previous: previous
         ? { contestNumber: previous.contest_number, numbers: sortedNumbers(previous) }
         : null,
@@ -215,7 +228,7 @@ export class DrawArchiveEngine {
     const change = this.db
       .prepare(
         `WITH ${DRAW_CHANGES_CTE}
-         SELECT MAX(last_modified) AS last_modified FROM draw_changes
+         SELECT MAX(listing_modified) AS last_modified FROM draw_changes
          WHERE draw_date >= ? AND draw_date < ?`
       )
       .get(...range) as { last_modified: string };
@@ -224,8 +237,8 @@ export class DrawArchiveEngine {
 
     return {
       year,
-      // The year's last draw already counts the load of the next year's first
-      // draw, so this also covers the "Próximo ano" link appearing.
+      // The year's last listing already counts the load of the next year's
+      // first draw, so this also covers the "Próximo ano" link appearing.
       lastModified: requireInstant(change.last_modified, `year ${year}`),
       draws: rows.map(toDrawRecord),
       previousYear: years.find((candidate) => candidate < year) ?? null,
@@ -319,13 +332,14 @@ export class DrawArchiveEngine {
     const draws = this.db
       .prepare(
         `WITH ${DRAW_CHANGES_CTE}
-         SELECT contest_number, last_modified FROM draw_changes ORDER BY contest_number ASC`
+         SELECT contest_number, page_modified AS last_modified FROM draw_changes
+         ORDER BY contest_number ASC`
       )
       .all() as Array<{ contest_number: number; last_modified: string }>;
     const years = this.db
       .prepare(
         `WITH ${DRAW_CHANGES_CTE}
-         SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, MAX(last_modified) AS last_modified
+         SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, MAX(listing_modified) AS last_modified
          FROM draw_changes
          GROUP BY year
          ORDER BY year DESC`
@@ -352,7 +366,7 @@ export class DrawArchiveEngine {
          SELECT COUNT(*) AS total_draws,
                 MAX(contest_number) AS last_contest,
                 MAX(draw_date) AS last_draw_date,
-                MAX(last_modified) AS last_modified
+                MAX(page_modified) AS last_modified
          FROM draw_changes`
       )
       .get() as {

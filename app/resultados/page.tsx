@@ -59,6 +59,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
                   totalDraws: archive.totalDraws,
                   firstDrawDate: oldestYear.firstDrawDate,
                   lastDrawDate: newestYear.lastDrawDate,
+                  dateModified: archive.lastModified,
                 }),
               ]
             : []

@@ -35,7 +35,12 @@ const insertDraw = db.prepare(`
 
 // Real ingestion lags the draw by days (the VPS cannot reach CAIXA), so each
 // seeded draw is "loaded" three days after it happened. Sitemap lastmod must
-// follow these load timestamps, not the draw dates.
+// follow these load timestamps, not the draw dates. Contest 3002 is also
+// corrected later (see CORRECTED_AT), which must move the lastmod of every page
+// whose content depends on it.
+const CORRECTED_CONTEST = 3002;
+const CORRECTED_AT = '2026-05-20 12:00:00';
+
 function loadedAt(drawDate: string): string {
   const date = new Date(`${drawDate}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + 3);
@@ -67,7 +72,7 @@ for (const draw of draws) {
     draw.accumulated ? 5_000_000 : 0,
     10_000_000,
     loadedAt(draw.date),
-    loadedAt(draw.date)
+    draw.contest === CORRECTED_CONTEST ? CORRECTED_AT : loadedAt(draw.date)
   );
 }
 

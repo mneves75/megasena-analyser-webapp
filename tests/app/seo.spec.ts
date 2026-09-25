@@ -180,17 +180,21 @@ test.describe('crawl directives', () => {
       expect(locs, `sitemap should list ${loc}`).toContain(loc);
     }
 
-    // lastmod = when the page's content or links last changed in the archive:
-    // a draw page changes when its own row is (re)loaded and again when the
-    // next draw is loaded and adds the "Próximo concurso" link. The seed loads
-    // each draw three days after it happened (see prepare-e2e-db.ts).
+    // lastmod = when the page's content or links last changed in the archive.
+    // The seed (prepare-e2e-db.ts) loads each draw three days after it happened
+    // and corrects contest 3002 on 2026-05-20.
     const lastmodFor = (loc: string) => entries.find((entry) => entry.loc === loc)?.lastmod;
-    expect(lastmodFor(`${SITE}/concurso/3004`)).toBe('2026-05-13T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/concurso/3005`)).toBe('2026-05-15T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/concurso/3006`)).toBe('2026-05-15T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-15T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-15T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-15T12:00:00.000Z');
+    // 3001 predates the correction: it changed when 3002 was first loaded and
+    // added the "Próximo concurso" link (3002 drawn 05-04, loaded 05-07).
+    expect(lastmodFor(`${SITE}/concurso/3001`)).toBe('2026-05-07T12:00:00.000Z');
+    // Every later draw page embeds history that includes 3002, so the
+    // correction moves them all.
+    for (const contest of [3002, 3003, 3004, 3005, 3006]) {
+      expect(lastmodFor(`${SITE}/concurso/${contest}`)).toBe('2026-05-20T12:00:00.000Z');
+    }
+    expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-20T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-20T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-20T12:00:00.000Z');
     expect(lastmodFor(`${SITE}/about`)).toBeNull();
   });
 
@@ -458,7 +462,7 @@ test.describe('draw pages', () => {
     // The page's own dateModified agrees with its sitemap lastmod.
     const webPage = nodes.find((node) => node['@type'] === 'WebPage');
     expect(webPage?.['datePublished']).toBe('2026-05-10');
-    expect(webPage?.['dateModified']).toBe('2026-05-15T12:00:00.000Z');
+    expect(webPage?.['dateModified']).toBe('2026-05-20T12:00:00.000Z');
   });
 });
 
@@ -523,6 +527,16 @@ test.describe('results archive', () => {
     await expect(page.getByTestId('answer-summary')).toContainText('3006');
     await expect(page.locator('main a[href="/concurso/3006"]').first()).toBeVisible();
     await expect(page.locator('main a[href="/resultados/2026"]').first()).toBeVisible();
+
+    const graphs = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent ?? '{}')));
+    const dataset = graphs
+      .flatMap((graph) => (graph['@graph'] as Array<Record<string, unknown>>) ?? [graph])
+      .find((node) => node['@type'] === 'Dataset');
+    // Last modification of the data, not the date of the last draw (2026-05-12).
+    expect(dataset?.['dateModified']).toBe('2026-05-20T12:00:00.000Z');
+    expect(dataset?.['temporalCoverage']).toBe('2026-05-02/2026-05-12');
   });
 
   test('a year page lists every draw of that year', async ({ page }) => {

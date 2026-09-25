@@ -154,6 +154,8 @@ interface DatasetSchemaInput {
   totalDraws: number;
   firstDrawDate: string;
   lastDrawDate: string;
+  /** When the data last changed (load or correction), not the last draw date. */
+  dateModified: string | null;
 }
 
 /**
@@ -166,6 +168,7 @@ export function generateResultsDatasetSchema({
   totalDraws,
   firstDrawDate,
   lastDrawDate,
+  dateModified,
 }: DatasetSchemaInput): JsonLdNode {
   const url = absoluteUrl(path);
   return {
@@ -181,7 +184,7 @@ export function generateResultsDatasetSchema({
     isBasedOn: CAIXA_RESULTS_URL,
     temporalCoverage: `${firstDrawDate}/${lastDrawDate}`,
     spatialCoverage: { '@type': 'Place', name: 'Brasil' },
-    dateModified: lastDrawDate,
+    ...(dateModified ? { dateModified } : {}),
     keywords: ['Mega-Sena', 'loteria', 'resultados', 'CAIXA', 'dezenas sorteadas'],
     variableMeasured: [
       'Dezenas sorteadas',
