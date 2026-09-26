@@ -35,15 +35,31 @@ const RANKED_SHOWN = 10;
 
 interface RankedEntry {
   number: number;
+  /** Competition rank: tied values share a position, like the number pages. */
+  rank: number;
   detail: string;
 }
 
-function RankedList({ label, entries }: { label: string; entries: RankedEntry[] }): React.JSX.Element {
+/** Top entries by a score (higher first), with shared positions for ties. */
+function rankBy<T extends { number: number }>(
+  items: readonly T[],
+  score: (item: T) => number,
+  detail: (item: T) => string
+): RankedEntry[] {
+  const sorted = [...items].sort((a, b) => score(b) - score(a) || a.number - b.number);
+  return sorted.slice(0, RANKED_SHOWN).map((item) => ({
+    number: item.number,
+    rank: 1 + sorted.filter((other) => score(other) > score(item)).length,
+    detail: detail(item),
+  }));
+}
+
+function RankedList({ labelId, entries }: { labelId: string; entries: RankedEntry[] }): React.JSX.Element {
   return (
-    <ol aria-label={label} className="divide-y divide-border rounded-xl border border-border bg-card">
-      {entries.map((entry, index) => (
+    <ol aria-labelledby={labelId} className="divide-y divide-border rounded-xl border border-border bg-card">
+      {entries.map((entry) => (
         <li key={entry.number} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-          <span className="w-6 text-right tabular-nums text-muted-foreground">{index + 1}º</span>
+          <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
           <ArchiveLink href={`/numeros/${entry.number}`} className={inlineLinkClass}>
             {dezena(entry.number)}
           </ArchiveLink>
@@ -111,34 +127,33 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
         <SectionHeading id="rankings">Mais sorteados e mais atrasados</SectionHeading>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <h3 className="font-medium">Números mais sorteados</h3>
+            <h3 id="mais-sorteados" className="font-medium">
+              Números mais sorteados
+            </h3>
             <RankedList
-              label="Números mais sorteados"
-              entries={[...numbers]
-                .sort((a, b) => b.frequency - a.frequency || a.number - b.number)
-                .slice(0, RANKED_SHOWN)
-                .map((summary) => ({
-                  number: summary.number,
-                  detail: countLabel(summary.frequency, 'vez', 'vezes'),
-                }))}
+              labelId="mais-sorteados"
+              entries={rankBy(
+                numbers,
+                (summary) => summary.frequency,
+                (summary) => countLabel(summary.frequency, 'vez', 'vezes')
+              )}
             />
           </div>
           <div className="space-y-2">
-            <h3 className="font-medium">Números mais atrasados</h3>
+            <h3 id="mais-atrasados" className="font-medium">
+              Números mais atrasados
+            </h3>
             <RankedList
-              label="Números mais atrasados"
-              entries={numbers
-                .flatMap((summary) =>
+              labelId="mais-atrasados"
+              entries={rankBy(
+                numbers,
+                // A number never drawn has been absent for the whole archive.
+                (summary) => summary.lastAppearance?.drawsSince ?? archive.totalDraws + 1,
+                (summary) =>
                   summary.lastAppearance
-                    ? [{ number: summary.number, drawsSince: summary.lastAppearance.drawsSince }]
-                    : []
-                )
-                .sort((a, b) => b.drawsSince - a.drawsSince || a.number - b.number)
-                .slice(0, RANKED_SHOWN)
-                .map((entry) => ({
-                  number: entry.number,
-                  detail: countLabel(entry.drawsSince, 'concurso', 'concursos'),
-                }))}
+                    ? `sem sair há ${countLabel(summary.lastAppearance.drawsSince, 'concurso', 'concursos')}`
+                    : 'nunca sorteado'
+              )}
             />
           </div>
         </div>

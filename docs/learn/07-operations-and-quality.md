@@ -38,7 +38,7 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 ### Testes
 
 - **Unit (Vitest):** `bun run test` (watch) / `bun run test -- --run` (CI). Config em
-  `vitest.config.ts` (jsdom, setup `tests/setup.ts`, cobertura v8 com threshold 80%).
+  `vitest.config.ts` (jsdom, setup `tests/setup.ts`, cobertura v8 com thresholds que sobem do patamar medido rumo a 80%).
 - **Banco em memória:** em Vitest, `lib/db.ts` usa `InMemoryDatabase` (sem I/O). Force
   banco real com `VITEST_FORCE_FILE_DB=1`.
 - **E2E (Playwright):** `bun run test:e2e`. `playwright.config.ts` sobe a stack real via
@@ -124,7 +124,7 @@ grep -n "validateHealthPayload\|EXPECTED_VERSION" scripts/check-production-fresh
 
 - **"`bun run build` já gera o `dist`."** Não; `dist:standalone` é separado.
 - **"Push no GitHub implanta."** Não; deploy é manual.
-- **"Cobertura 80% é sugestão."** É threshold de Vitest; abaixo disso falha.
+- **"Cobertura é sugestão."** É threshold de Vitest, rodado no CI com `--coverage`; abaixo dele falha. Até 2026-09-25 o gate media 0/0 por um padrão `app/**` que casava com o nome da pasta.
 - **"E2E usa o banco de produção."** Não; usa um banco isolado em `.tmp/e2e`.
 
 ## Exercícios

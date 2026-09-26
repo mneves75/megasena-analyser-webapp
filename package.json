@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -24,6 +24,7 @@
     "db:export-draws": "bun run scripts/export-draws.ts",
     "db:backfill-prizes": "bun run scripts/backfill-prizes.ts",
     "db:import-draws": "bun run scripts/import-draws.ts",
+    "seo:indexnow": "bun run scripts/indexnow-submit.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts",
     "log:prune": "bun run scripts/prune-log-events.ts",
     "doctor": "./node_modules/.bin/react-doctor"

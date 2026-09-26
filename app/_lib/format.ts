@@ -1,5 +1,9 @@
 import { notFound, permanentRedirect } from 'next/navigation';
-import { parseCanonicalInteger, type DrawRecord } from '@/lib/api/archive-contract';
+import {
+  parseCanonicalInteger,
+  type DrawNumberHistory,
+  type DrawRecord,
+} from '@/lib/api/archive-contract';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 
 /** Mega-Sena numbers are always written with two digits ("dezenas"). */
@@ -41,6 +45,16 @@ export function senaOutcome(draw: DrawRecord): string {
   } ${formatCurrency(prize)}${winners > 1 ? ' cada' : ''}.`;
 }
 
+/** Calendar date of an instant as seen in Brasília (the archive's audience). */
+export function formatDateInBrasilia(instant: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo',
+  }).format(new Date(instant));
+}
+
 export function weekdayPtBr(isoDate: string): string {
   return new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(
     new Date(`${isoDate}T12:00:00Z`)
@@ -70,6 +84,19 @@ export function resolveIntegerParam(
     }
   }
   notFound();
+}
+
+/** The drawn number that had been absent the longest before this draw, if any returned. */
+export function longestComeback(
+  history: readonly DrawNumberHistory[]
+): { number: number; gap: number } | null {
+  let best: { number: number; gap: number } | null = null;
+  for (const entry of history) {
+    if (entry.previous && entry.previous.drawsBetween > 0 && (best === null || entry.previous.drawsBetween > best.gap)) {
+      best = { number: entry.number, gap: entry.previous.drawsBetween };
+    }
+  }
+  return best;
 }
 
 const PRIMES_UP_TO_60 = new Set([2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59]);

@@ -7,6 +7,7 @@ import { loadArchiveIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, joinPtBr, senaOutcome } from '@/app/_lib/format';
 import {
   AnswerSummary,
+  ArchiveFreshness,
   ArchiveLink,
   Breadcrumbs,
   DrawsTable,
@@ -80,6 +81,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
         ) : (
           <AnswerSummary>O arquivo de resultados está temporariamente vazio.</AnswerSummary>
         )}
+        <ArchiveFreshness archive={archive} />
       </header>
 
       {latest ? (
@@ -130,7 +132,8 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
             ]}
           />
           <p className="text-sm text-muted-foreground">
-            Os valores são a estimativa da CAIXA, não uma previsão deste site.
+            O prêmio estimado é uma estimativa da CAIXA, não uma previsão deste site. O acumulado é
+            o valor que a CAIXA informou após o concurso {latest.contestNumber}.
           </p>
         </section>
       ) : null}

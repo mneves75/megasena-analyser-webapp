@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
  * 2. --contests missing or not a list of integers → exit 1, nothing sent
  * 3. a contest that is not in the database        → exit 1, nothing sent
  * 4. the endpoint answers with an error status    → exit 1 naming the status
+ * 4b. the endpoint is unreachable                 → exit 1 with a clear message
  * 5. --dry-run                                     → prints the plan, nothing sent
  * 6. success                                       → one POST with host, key,
  *    keyLocation and exactly the pages the new contests changed
@@ -151,6 +152,15 @@ describe('indexnow-submit CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/422/);
     expect(captured).toHaveLength(1);
+  });
+
+  it('fails clearly when the endpoint is unreachable', async () => {
+    const result = await submit(['--contests', '3062'], {
+      INDEXNOW_ENDPOINT: 'http://127.0.0.1:9/indexnow',
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Falha ao contatar o IndexNow');
+    expect(result.stderr).not.toContain(KEY);
   });
 
   it('prints the plan on --dry-run without sending, never echoing the key', async () => {

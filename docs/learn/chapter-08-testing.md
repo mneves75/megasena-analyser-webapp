@@ -4,7 +4,7 @@
 
 Testes são sua rede de segurança. Eles permitem refatorar com confiança, documentam comportamento esperado, e previnem regressões. Este capítulo ensina como testar o código deste projeto usando Vitest.
 
-**Meta:** Cobertura de testes >= 80% (requisito do projeto)
+**Meta:** Cobertura de testes rumo a 80%; os thresholds atuais ficam em `vitest.config.ts`
 
 ---
 
@@ -456,11 +456,9 @@ File                | % Stmts | % Branch | % Funcs | % Lines |
 --------------------|---------|---------|---------|---------|
 ```
 
-**Thresholds configurados:**
-- Lines: 80%
-- Functions: 80%
-- Branches: 80%
-- Statements: 80%
+**Thresholds configurados:** ver `coverage.thresholds` em `vitest.config.ts`. Eles partem
+do patamar medido em 2026-09-25 e só sobem, rumo a 80% em linhas, funções, ramos e
+instruções.
 
 ---
 

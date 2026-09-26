@@ -5,7 +5,7 @@ import { LotteryBall } from '@/components/lottery-ball';
 import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
-import { countLabel, dezena } from '@/app/_lib/format';
+import { countLabel, dezena, formatDateInBrasilia } from '@/app/_lib/format';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -110,7 +110,7 @@ export function ArchiveFreshness({ archive }: { archive: ArchiveState }): React.
   return (
     <p className="text-sm text-muted-foreground">
       Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)})
-      {archive.lastModified ? `, base atualizada em ${formatDate(archive.lastModified.slice(0, 10))}` : ''}{' '}
+      {archive.lastModified ? `, base atualizada em ${formatDateInBrasilia(archive.lastModified)}` : ''}{' '}
       · resultados oficiais da CAIXA
     </p>
   );

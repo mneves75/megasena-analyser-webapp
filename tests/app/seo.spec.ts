@@ -182,7 +182,7 @@ test.describe('crawl directives', () => {
 
     // lastmod = when the page's content or links last changed in the archive.
     // The seed (prepare-e2e-db.ts) loads each draw three days after it happened
-    // and corrects contest 3002 on 2026-05-20.
+    // and corrects contest 3002 at 2026-05-21T01:30Z (22:30 on 05-20 in Brasília).
     const lastmodFor = (loc: string) => entries.find((entry) => entry.loc === loc)?.lastmod;
     // 3001 predates the correction: it changed when 3002 was first loaded and
     // added the "Próximo concurso" link (3002 drawn 05-04, loaded 05-07).
@@ -190,11 +190,11 @@ test.describe('crawl directives', () => {
     // Every later draw page embeds history that includes 3002, so the
     // correction moves them all.
     for (const contest of [3002, 3003, 3004, 3005, 3006]) {
-      expect(lastmodFor(`${SITE}/concurso/${contest}`)).toBe('2026-05-20T12:00:00.000Z');
+      expect(lastmodFor(`${SITE}/concurso/${contest}`)).toBe('2026-05-21T01:30:00.000Z');
     }
-    expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-20T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-20T12:00:00.000Z');
-    expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-20T12:00:00.000Z');
+    expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-21T01:30:00.000Z');
+    expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-21T01:30:00.000Z');
+    expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-21T01:30:00.000Z');
     expect(lastmodFor(`${SITE}/about`)).toBeNull();
   });
 
@@ -462,7 +462,7 @@ test.describe('draw pages', () => {
     // The page's own dateModified agrees with its sitemap lastmod.
     const webPage = nodes.find((node) => node['@type'] === 'WebPage');
     expect(webPage?.['datePublished']).toBe('2026-05-10');
-    expect(webPage?.['dateModified']).toBe('2026-05-20T12:00:00.000Z');
+    expect(webPage?.['dateModified']).toBe('2026-05-21T01:30:00.000Z');
   });
 });
 
@@ -535,7 +535,7 @@ test.describe('results archive', () => {
       .flatMap((graph) => (graph['@graph'] as Array<Record<string, unknown>>) ?? [graph])
       .find((node) => node['@type'] === 'Dataset');
     // Last modification of the data, not the date of the last draw (2026-05-12).
-    expect(dataset?.['dateModified']).toBe('2026-05-20T12:00:00.000Z');
+    expect(dataset?.['dateModified']).toBe('2026-05-21T01:30:00.000Z');
     expect(dataset?.['temporalCoverage']).toBe('2026-05-02/2026-05-12');
   });
 
@@ -615,6 +615,10 @@ test.describe('freshness and crawl plumbing', () => {
 test.describe('search-intent content', () => {
   test('the results hub announces the next contest with CAIXA figures', async ({ page }) => {
     await page.goto('/resultados');
+    // Freshness in Brasília time: the last load was 22:30 on 20/05 there.
+    await expect(
+      page.getByText('Dados até o concurso 3006 (12/05/2026), base atualizada em 20/05/2026')
+    ).toBeVisible();
     const next = page.getByRole('region', { name: 'Próximo concurso' });
     await expect(next).toContainText('Concurso 3007');
     await expect(next).toContainText('R$ 10.000.000,00');
@@ -625,11 +629,16 @@ test.describe('search-intent content', () => {
   test('the numbers hub ranks the most drawn and the most overdue numbers', async ({ page }) => {
     await page.goto('/numeros');
     const mostDrawn = page.getByRole('list', { name: 'Números mais sorteados' });
+    await expect(mostDrawn.getByRole('listitem').first()).toContainText('1º');
     await expect(mostDrawn.getByRole('listitem').first()).toContainText('18');
     await expect(mostDrawn.getByRole('listitem').first()).toContainText('2 vezes');
+    // Ties share a position, like the ranking on each number page.
+    await expect(mostDrawn.getByRole('listitem').nth(1)).toContainText('2º');
+    await expect(mostDrawn.getByRole('listitem').nth(2)).toContainText('2º');
+    // A number never drawn is the most overdue of all.
     const overdue = page.getByRole('list', { name: 'Números mais atrasados' });
-    await expect(overdue.getByRole('listitem').first()).toContainText('04');
-    await expect(overdue.getByRole('listitem').first()).toContainText('5 concursos');
+    await expect(overdue.getByRole('listitem').first()).toContainText('05');
+    await expect(overdue.getByRole('listitem').first()).toContainText('nunca sorteado');
     await expect(page.getByText('O atraso não muda a chance do próximo sorteio')).toBeVisible();
   });
 

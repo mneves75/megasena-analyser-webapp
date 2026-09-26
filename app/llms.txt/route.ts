@@ -62,6 +62,7 @@ export async function GET(): Promise<Response> {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'public, max-age=600',
+      'Cloudflare-CDN-Cache-Control': 'max-age=600',
     },
   });
 }

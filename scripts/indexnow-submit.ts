@@ -10,15 +10,17 @@
  * Usage:
  *   INDEXNOW_KEY=... bun run scripts/indexnow-submit.ts --contests 3061,3062 [--dry-run]
  * Env: INDEXNOW_KEY (required, same value the site serves at /indexnow-key.txt),
- *      NEXT_PUBLIC_BASE_URL, INDEXNOW_ENDPOINT, DATABASE_PATH (read-only).
+ *      NEXT_PUBLIC_BASE_URL, INDEXNOW_ENDPOINT, DATABASE_PATH (opened read-only).
  */
 
-import path from 'node:path';
 import { Database } from 'bun:sqlite';
+import { BASE_URL } from '@/lib/constants';
+import { resolveDatabasePath } from '@/lib/db-path';
+import { ARCHIVE_DRIVEN_PATHS } from '@/lib/seo/archive-paths';
+import { readIndexNowKey } from '@/lib/seo/indexnow';
 
 const DEFAULT_ENDPOINT = 'https://api.indexnow.org/indexnow';
-const DEFAULT_BASE_URL = 'https://megasena-analyzer.com.br';
-const KEY_PATTERN = /^[A-Za-z0-9-]{8,128}$/;
+const REQUEST_TIMEOUT_MS = 15_000;
 
 class SubmitError extends Error {}
 
@@ -35,23 +37,10 @@ function parseContests(args: string[]): number[] {
   return [...new Set(value.split(',').map(Number))].sort((a, b) => a - b);
 }
 
-function main(): Promise<void> | void {
-  const args = process.argv.slice(2);
-  const dryRun = args.includes('--dry-run');
-  const key = (process.env['INDEXNOW_KEY'] ?? '').trim();
-  if (!KEY_PATTERN.test(key)) {
-    fail('INDEXNOW_KEY ausente ou inválida (8 a 128 caracteres entre A-Z, a-z, 0-9 e hífen).');
-  }
-  const contests = parseContests(args);
-
-  const base = (process.env['NEXT_PUBLIC_BASE_URL'] || DEFAULT_BASE_URL).replace(/\/$/, '');
-  const url = (pagePath: string): string => (pagePath === '/' ? base : `${base}${pagePath}`);
-  const dbPath = process.env['DATABASE_PATH']
-    ? path.resolve(process.env['DATABASE_PATH'])
-    : path.join(process.cwd(), 'db', 'mega-sena.db');
-
-  const db = new Database(dbPath, { readonly: true });
-  const changed = new Set<string>(['/', '/resultados', '/numeros', '/dashboard', '/dashboard/statistics']);
+/** Paths whose content changed when these contests were loaded. */
+function changedPaths(contests: number[]): string[] {
+  const db = new Database(resolveDatabasePath(), { readonly: true });
+  const changed = new Set<string>(ARCHIVE_DRIVEN_PATHS);
   try {
     const find = db.prepare('SELECT draw_date FROM draws WHERE contest_number = ?');
     const previous = db.prepare(
@@ -76,31 +65,46 @@ function main(): Promise<void> | void {
   for (let number = 1; number <= 60; number++) {
     changed.add(`/numeros/${number}`);
   }
+  return [...changed];
+}
 
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  const key = readIndexNowKey();
+  if (key === null) {
+    fail('INDEXNOW_KEY ausente ou inválida (8 a 128 caracteres entre A-Z, a-z, 0-9 e hífen).');
+  }
+  const base = BASE_URL.replace(/\/$/, '');
+  const toUrl = (pagePath: string): string => (pagePath === '/' ? base : `${base}${pagePath}`);
   const payload = {
     host: new URL(base).host,
     key,
     keyLocation: `${base}/indexnow-key.txt`,
-    urlList: [...changed].map(url),
+    urlList: changedPaths(parseContests(args)).map(toUrl),
   };
   const endpoint = process.env['INDEXNOW_ENDPOINT'] || DEFAULT_ENDPOINT;
 
-  if (dryRun) {
+  if (args.includes('--dry-run')) {
     console.log(JSON.stringify({ dryRun: true, endpoint, ...payload, key: '<redacted>' }, null, 2));
     return;
   }
 
-  return fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(payload),
-  }).then((response) => {
-    // 200 = accepted, 202 = accepted while the key file is still being validated.
-    if (response.status !== 200 && response.status !== 202) {
-      fail(`IndexNow respondeu ${response.status} ${response.statusText}.`);
-    }
-    console.log(JSON.stringify({ submitted: payload.urlList.length, status: response.status }));
-  });
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (error) {
+    fail(`Falha ao contatar o IndexNow (${endpoint}): ${error instanceof Error ? error.message : String(error)}`);
+  }
+  // 200 = accepted, 202 = accepted while the key file is still being validated.
+  if (response.status !== 200 && response.status !== 202) {
+    fail(`IndexNow respondeu ${response.status} ${response.statusText}.`);
+  }
+  console.log(JSON.stringify({ submitted: payload.urlList.length, status: response.status }));
 }
 
 try {

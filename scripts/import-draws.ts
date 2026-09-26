@@ -25,7 +25,14 @@ const winners = z.number().int().nonnegative();
 
 const seedDrawSchema = z.object({
   contest: z.number().int().positive(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'data deve estar em YYYY-MM-DD'),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'data deve estar em YYYY-MM-DD')
+    .refine((value) => {
+      // Runs even when the regex failed, so an unparsable value must not throw.
+      const date = new Date(`${value}T00:00:00Z`);
+      return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    }, 'data inexistente no calendário'),
   numbers: z
     .array(z.number().int().min(1).max(60))
     .length(6)
@@ -55,8 +62,16 @@ interface ExistingRow {
   number_5: number;
   number_6: number;
   prize_sena: number | null;
+  winners_sena: number | null;
   prize_quina: number | null;
+  winners_quina: number | null;
   prize_quadra: number | null;
+  winners_quadra: number | null;
+  total_collection: number | null;
+  accumulated: number | null;
+  accumulated_value: number | null;
+  next_estimated_prize: number | null;
+  special_draw: number | null;
 }
 
 class ImportError extends Error {}
@@ -101,10 +116,44 @@ const sameNumbers = (row: ExistingRow, draw: SeedDraw): boolean => {
   return stored.every((number, index) => number === incoming[index]);
 };
 
-const samePrizes = (row: ExistingRow, draw: SeedDraw): boolean =>
+/** Prize and accumulation data; reported when it differs, never rewritten. */
+const samePrizeData = (row: ExistingRow, draw: SeedDraw): boolean =>
   (row.prize_sena ?? 0) === (draw.prizeSena ?? 0) &&
+  (row.winners_sena ?? 0) === draw.winnersSena &&
   (row.prize_quina ?? 0) === (draw.prizeQuina ?? 0) &&
-  (row.prize_quadra ?? 0) === (draw.prizeQuadra ?? 0);
+  (row.winners_quina ?? 0) === draw.winnersQuina &&
+  (row.prize_quadra ?? 0) === (draw.prizeQuadra ?? 0) &&
+  (row.winners_quadra ?? 0) === draw.winnersQuadra &&
+  (row.total_collection ?? 0) === (draw.totalCollection ?? 0) &&
+  Boolean(row.accumulated) === draw.accumulated &&
+  (row.accumulated_value ?? 0) === (draw.accumulatedValue ?? 0) &&
+  (row.next_estimated_prize ?? 0) === (draw.nextEstimatedPrize ?? 0) &&
+  Boolean(row.special_draw) === draw.specialDraw;
+
+/**
+ * The archive after the import must stay a gap-free contest sequence whose
+ * dates increase with the contest number. Checked before writing (so --dry-run
+ * gives the same verdict as a real run) and again inside the transaction.
+ */
+function assertSequence(existing: Map<number, ExistingRow>, toInsert: SeedDraw[]): void {
+  const merged = [
+    ...[...existing.values()].map((row) => ({ contest: row.contest_number, date: row.draw_date, isNew: false })),
+    ...toInsert.map((draw) => ({ contest: draw.contest, date: draw.date, isNew: true })),
+  ].sort((a, b) => a.contest - b.contest);
+  const first = merged[0];
+  const last = merged.at(-1);
+  if (first && last && merged.length !== last.contest - first.contest + 1) {
+    fail(`A importação deixaria lacunas: ${merged.length} concursos entre ${first.contest} e ${last.contest}.`);
+  }
+  merged.forEach((entry, index) => {
+    const previous = merged[index - 1];
+    if (previous && (entry.isNew || previous.isNew) && entry.date <= previous.date) {
+      fail(
+        `Datas fora de ordem: concurso ${entry.contest} (${entry.date}) não é posterior ao ${previous.contest} (${previous.date}).`
+      );
+    }
+  });
+}
 
 function main(): void {
   const args = process.argv.slice(2);
@@ -122,7 +171,8 @@ function main(): void {
         .prepare(
           `SELECT contest_number, draw_date,
                   number_1, number_2, number_3, number_4, number_5, number_6,
-                  prize_sena, prize_quina, prize_quadra
+                  prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
+                  total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw
            FROM draws`
         )
         .all() as ExistingRow[]
@@ -138,13 +188,15 @@ function main(): void {
       toInsert.push(draw);
     } else if (row.draw_date !== draw.date || !sameNumbers(row, draw)) {
       diverged.push(draw.contest);
-    } else if (!samePrizes(row, draw)) {
+    } else if (!samePrizeData(row, draw)) {
       prizeDifferences.push(draw.contest);
     }
   }
   if (diverged.length > 0) {
     fail(`Concursos divergentes do banco (data ou dezenas): ${diverged.join(', ')}.`);
   }
+
+  assertSequence(existing, toInsert);
 
   const plan = {
     toInsert: toInsert.map((draw) => draw.contest),
@@ -203,7 +255,12 @@ function main(): void {
       JSON.stringify({ inserted: toInsert.length, ...plan, totalDraws: range.count, lastContest: range.last })
     );
   } catch (error) {
-    db.exec('ROLLBACK');
+    try {
+      db.exec('ROLLBACK');
+    } catch (rollbackError) {
+      // Keep the original failure as the reported cause.
+      console.error('ROLLBACK falhou:', rollbackError);
+    }
     throw error;
   }
 }

@@ -8,7 +8,8 @@ description: Project structure and where things live
   loading state), `app/dashboard/page.tsx` plus nested `app/dashboard/statistics/`
   and `app/dashboard/generator/`, the results archive (`resultados/`,
   `resultados/[ano]/`, `concurso/[numero]/`, `numeros/`, `numeros/[numero]/`),
-  `about/`, `privacy/`, `terms/`, `sitemap.ts`, `robots.ts`, `llms.txt/`. Archive
+  `about/`, `privacy/`, `terms/`, `sitemap.xml/`, `robots.ts`, `llms.txt/`,
+  `indexnow-key.txt/`. Archive
   helpers live in `app/_lib/` and `app/_components/`. There is no `app/api/`.
   Never add a `loading.tsx` above archive routes (it turns 404s into soft 404s);
   links into archive routes must not prefetch (see AGENTS.md "SEO/pSEO invariants").

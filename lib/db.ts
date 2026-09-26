@@ -1,12 +1,10 @@
 import path from 'path';
 import fs from 'fs';
 import { logger } from './logger';
+import { resolveDatabasePath } from './db-path';
 
 const REPO_DB_DIR = path.join(process.cwd(), 'db');
-const DEFAULT_DB_PATH = path.join(REPO_DB_DIR, 'mega-sena.db');
-const DB_PATH = process.env['DATABASE_PATH']
-  ? path.resolve(process.env['DATABASE_PATH'])
-  : DEFAULT_DB_PATH;
+const DB_PATH = resolveDatabasePath();
 const DB_DIR = path.dirname(DB_PATH);
 
 // Primary migrations location (may be overwritten by Docker volume mount)

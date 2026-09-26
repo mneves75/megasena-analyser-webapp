@@ -14,6 +14,7 @@
 import { Database } from 'bun:sqlite';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { resolveDatabasePath } from '@/lib/db-path';
 
 interface DrawSeed {
   contest: number;
@@ -85,9 +86,7 @@ function toSeed(row: DrawRow): DrawSeed {
 }
 
 function main(): void {
-  const dbPath = process.env['DATABASE_PATH']
-    ? path.resolve(process.env['DATABASE_PATH'])
-    : path.join(process.cwd(), 'db', 'mega-sena.db');
+  const dbPath = resolveDatabasePath();
   const outPath = path.join(process.cwd(), 'db', 'seed', 'draws.json');
 
   const db = new Database(dbPath, { readonly: true });

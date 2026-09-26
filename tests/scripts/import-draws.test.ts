@@ -99,8 +99,8 @@ function seedDatabase(draws: SeedDraw[]): void {
     "const { StatisticsEngine } = await import('./lib/analytics/statistics.ts');",
     'runMigrations();',
     'const db = getDatabase();',
-    "const insert = db.prepare('INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, prize_quina, prize_quadra, winners_quina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');",
-    `for (const d of ${JSON.stringify(draws)}) insert.run(d.contest, d.date, ...d.numbers, d.prizeSena, d.prizeQuina, d.prizeQuadra, d.winnersQuina);`,
+    "const insert = db.prepare('INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');",
+    `for (const d of ${JSON.stringify(draws)}) insert.run(d.contest, d.date, ...d.numbers, d.prizeSena, d.winnersSena, d.prizeQuina, d.winnersQuina, d.prizeQuadra, d.winnersQuadra, d.totalCollection, d.accumulated ? 1 : 0, d.accumulatedValue, d.nextEstimatedPrize, d.specialDraw ? 1 : 0);`,
     'new StatisticsEngine().updateNumberFrequencies();',
     'closeDatabase();',
   ].join('\n');
@@ -161,17 +161,19 @@ describe('import-draws CLI (sqlite file)', () => {
   });
 
   it.each([
-    ['a number above 60', draw(4, '2026-05-08', [3, 11, 19, 28, 37, 61])],
-    ['a repeated number', draw(4, '2026-05-08', [3, 3, 19, 28, 37, 55])],
-    ['five numbers', draw(4, '2026-05-08', [3, 11, 19, 28, 37])],
-    ['a DD/MM/YYYY date', draw(4, '08/05/2026', [3, 11, 19, 28, 37, 55])],
-    ['negative winners', draw(4, '2026-05-08', [3, 11, 19, 28, 37, 55], { winnersQuina: -1 })],
-    ['a fractional contest', draw(4.5, '2026-05-08', [3, 11, 19, 28, 37, 55])],
-  ])('rejects the whole batch when an entry has %s', (_label, bad) => {
+    ['a number above 60', draw(4, '2026-05-08', [3, 11, 19, 28, 37, 61]), 'numbers.5'],
+    ['a repeated number', draw(4, '2026-05-08', [3, 3, 19, 28, 37, 55]), 'numbers'],
+    ['five numbers', draw(4, '2026-05-08', [3, 11, 19, 28, 37]), 'numbers'],
+    ['a DD/MM/YYYY date', draw(4, '08/05/2026', [3, 11, 19, 28, 37, 55]), 'date'],
+    ['an impossible calendar date', draw(4, '2026-02-30', [3, 11, 19, 28, 37, 55]), 'date'],
+    ['negative winners', draw(4, '2026-05-08', [3, 11, 19, 28, 37, 55], { winnersQuina: -1 }), 'winnersQuina'],
+    ['a fractional contest', draw(4.5, '2026-05-08', [3, 11, 19, 28, 37, 55]), 'contest'],
+  ])('rejects the whole batch when an entry has %s', (_label, bad, field) => {
     const before = readState();
     const result = importDraws(writePayload([...BASE, NEW[1], bad]));
     expect(result.status).toBe(1);
-    expect(result.stderr).toMatch(/Entrada inválida/);
+    expect(result.stderr).toContain('Entrada inválida');
+    expect(result.stderr).toContain(`[4.${field}]`);
     expect(readState()).toEqual(before);
   });
 
@@ -179,7 +181,7 @@ describe('import-draws CLI (sqlite file)', () => {
     const before = readState();
     const result = importDraws(writePayload([...BASE, NEW[0], NEW[0]]));
     expect(result.status).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toMatch(/duplicad/i);
+    expect(result.stderr).toContain('Concurso 4 duplicado');
     expect(readState()).toEqual(before);
   });
 
@@ -188,15 +190,28 @@ describe('import-draws CLI (sqlite file)', () => {
     const diverged = draw(2, '2026-05-04', [1, 9, 18, 27, 36, 53]);
     const result = importDraws(writePayload([BASE[0], diverged, BASE[2], ...NEW]));
     expect(result.status).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toMatch(/diverg/i);
+    expect(result.stderr).toContain('Concursos divergentes do banco (data ou dezenas): 2.');
     expect(readState()).toEqual(before);
   });
 
-  it('rolls back an import that would leave a gap in the contest sequence', () => {
+  it.each([[[]], [['--dry-run']]])(
+    'refuses an import that would leave a gap in the contest sequence (flags %j)',
+    (flags) => {
+      // The dry run must reach the same verdict as the real run.
+      const before = readState();
+      const result = importDraws(writePayload([...BASE, NEW[1]]), ...flags);
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('deixaria lacunas');
+      expect(readState()).toEqual(before);
+    }
+  );
+
+  it('refuses a new contest dated before the contest it follows', () => {
     const before = readState();
-    const result = importDraws(writePayload([...BASE, NEW[1]]));
+    const outOfOrder = draw(4, '2026-05-05', [3, 11, 19, 28, 37, 55]);
+    const result = importDraws(writePayload([...BASE, outOfOrder]));
     expect(result.status).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toMatch(/lacuna|gap/i);
+    expect(result.stderr).toContain('fora de ordem');
     expect(readState()).toEqual(before);
   });
 
@@ -210,14 +225,19 @@ describe('import-draws CLI (sqlite file)', () => {
 
   it('inserts only the missing contests, recomputes caches and is idempotent', () => {
     const before = readState();
-    // Contest 2 carries a different prize in the payload: prizes are never
+    // Contests 2 and 3 carry different prize data in the payload: it is never
     // rewritten by this append-only import, only reported.
-    const payload = [BASE[0], { ...BASE[1], prizeQuina: 99_999 }, BASE[2], ...NEW];
+    const payload = [
+      BASE[0],
+      { ...BASE[1], prizeQuina: 99_999 },
+      { ...BASE[2], winnersQuadra: 1 },
+      ...NEW,
+    ];
 
     const first = importDraws(writePayload(payload));
     expect(first.status, first.stderr).toBe(0);
     expect(first.stdout).toContain('"inserted":2');
-    expect(first.stdout).toContain('"prizeDifferences":[2]');
+    expect(first.stdout).toContain('"prizeDifferences":[2,3]');
     const after = readState();
     expect(after.count).toBe(5);
     expect(after.maxContest).toBe(5);

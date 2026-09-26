@@ -98,7 +98,7 @@ Add it to `server.ts` with Zod validation — never to `app/`.
 ## Testing
 
 - Vitest: `tests/lib/`, `tests/components/`, `tests/scripts/`; Playwright: `tests/app/`
-- 80% coverage thresholds over `components/**` and `lib/**` (`vitest.config.ts`)
+- Coverage thresholds over `components/**` and `lib/**` ratchet toward 80% (`vitest.config.ts`)
 - `bun run test -- --run`
 
 ## Security Considerations

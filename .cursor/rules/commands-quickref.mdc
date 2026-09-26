@@ -13,10 +13,13 @@ uses `bun:sqlite` and will not run on Node.js.
 - Lint: `bun run lint` (`--max-warnings=0`). Autofix: `bun run lint:fix`
 - Types: `bun run typecheck`
 - Format: `bun run format`
-- Tests: `bun run test -- --run` (Vitest once). Single file:
+- Tests: `bun run test -- --run --coverage` (Vitest once, with the coverage gate). Single file:
   `bun x vitest tests/lib/bet-generator.test.ts --run`
 - E2E: `bun run test:e2e` (Playwright)
-- DB: `bun run db:migrate`, then `bun run db:pull` to ingest draws from the CAIXA API
+- DB: `bun run db:migrate`, then `bun run db:pull` to ingest draws from the CAIXA API;
+  `bun run db:export-draws` refreshes the public seed and `bun run db:import-draws <seed>`
+  appends missing draws to a live DB (see `docs/DEPLOY.md`)
+- IndexNow: `bun run seo:indexnow -- --contests N` (needs `INDEXNOW_KEY`)
 
 Security & config:
 

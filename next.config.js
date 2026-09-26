@@ -30,14 +30,17 @@ const nextConfig = {
     ],
   },
 
-  // Cloudflare otherwise keeps these at the edge for hours, so a data refresh
-  // (new contests in the sitemap) or a robots.txt fix would stay invisible to
-  // crawlers. Cloudflare-CDN-Cache-Control sets only the edge TTL.
+  // Cloudflare otherwise keeps robots.txt at the edge for hours, so a fix would
+  // stay invisible to crawlers. Cloudflare-CDN-Cache-Control sets only the edge
+  // TTL. sitemap.xml and llms.txt send it themselves, and only on success, so an
+  // error response is never cached.
   async headers() {
-    return ['/robots.txt', '/sitemap.xml', '/llms.txt'].map((source) => ({
-      source,
-      headers: [{ key: 'Cloudflare-CDN-Cache-Control', value: 'max-age=600' }],
-    }));
+    return [
+      {
+        source: '/robots.txt',
+        headers: [{ key: 'Cloudflare-CDN-Cache-Control', value: 'max-age=600' }],
+      },
+    ];
   },
 
   async rewrites() {

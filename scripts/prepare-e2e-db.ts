@@ -39,7 +39,9 @@ const insertDraw = db.prepare(`
 // corrected later (see CORRECTED_AT), which must move the lastmod of every page
 // whose content depends on it.
 const CORRECTED_CONTEST = 3002;
-const CORRECTED_AT = '2026-05-20 12:00:00';
+// 01:30 UTC on 05-21 is still 22:30 on 05-20 in Brasília: pages must show the
+// Brazilian date.
+const CORRECTED_AT = '2026-05-21 01:30:00';
 
 function loadedAt(drawDate: string): string {
   const date = new Date(`${drawDate}T12:00:00Z`);

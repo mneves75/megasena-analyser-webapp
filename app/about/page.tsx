@@ -154,7 +154,7 @@ export default function AboutPage() {
               >
                 regras da Mega-Sena
               </a>
-              ). Na média, portanto, cada real apostado devolve menos de metade em prêmios.
+              ). Na média, portanto, cada real apostado devolve menos da metade em prêmios.
             </p>
           </section>
 
