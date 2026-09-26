@@ -23,6 +23,7 @@
     "db:pull": "bun run scripts/pull-draws.ts",
     "db:export-draws": "bun run scripts/export-draws.ts",
     "db:backfill-prizes": "bun run scripts/backfill-prizes.ts",
+    "db:import-draws": "bun run scripts/import-draws.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts",
     "log:prune": "bun run scripts/prune-log-events.ts",
     "doctor": "./node_modules/.bin/react-doctor"

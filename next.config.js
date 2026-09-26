@@ -30,6 +30,16 @@ const nextConfig = {
     ],
   },
 
+  // Cloudflare otherwise keeps these at the edge for hours, so a data refresh
+  // (new contests in the sitemap) or a robots.txt fix would stay invisible to
+  // crawlers. Cloudflare-CDN-Cache-Control sets only the edge TTL.
+  async headers() {
+    return ['/robots.txt', '/sitemap.xml', '/llms.txt'].map((source) => ({
+      source,
+      headers: [{ key: 'Cloudflare-CDN-Cache-Control', value: 'max-age=600' }],
+    }));
+  },
+
   async rewrites() {
     // Use environment variables for API host/port to support Docker and distributed deployments
     // Falls back to localhost:3201 for local development

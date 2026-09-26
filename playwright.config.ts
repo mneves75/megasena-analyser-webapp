@@ -29,6 +29,8 @@ export default defineConfig({
       TRUST_PROXY_HEADERS: 'true',
       // Public test value: E2E runs the server with NODE_ENV=production.
       IP_HASH_SECRET: 'very-long-browser-token-0123456789',
+      // Public test value: enables the IndexNow key file route under E2E.
+      INDEXNOW_KEY: 'e2e-indexnow-key-0123456789abcdef',
     },
   },
 });

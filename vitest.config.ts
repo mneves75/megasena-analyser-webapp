@@ -19,11 +19,15 @@ export default defineConfig({
         'lib/**/*.ts',
       ],
       reporter: ['text', 'json', 'html'],
+      // Ratchet at the measured baseline (2026-09-25); the target is 80%. Until
+      // then the gate had silently measured 0/0: an `app/**` exclude matched
+      // every path because the checkout folder ends in "...webapp/". `include`
+      // already limits coverage to components/ and lib/, so app/ needs no exclude.
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
+        lines: 71,
+        functions: 72,
+        branches: 67,
+        statements: 71,
       },
       exclude: [
         'node_modules/',
@@ -33,7 +37,6 @@ export default defineConfig({
         '**/*.d.ts',
         '.next/',
         'playwright.config.ts',
-        'app/**',
         'docs/**',
         'scripts/**',
         'components/charts/**',

@@ -109,8 +109,9 @@ export function ArchiveFreshness({ archive }: { archive: ArchiveState }): React.
   }
   return (
     <p className="text-sm text-muted-foreground">
-      Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)}) ·
-      resultados oficiais da CAIXA
+      Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)})
+      {archive.lastModified ? `, base atualizada em ${formatDate(archive.lastModified.slice(0, 10))}` : ''}{' '}
+      · resultados oficiais da CAIXA
     </p>
   );
 }
@@ -122,8 +123,19 @@ export interface Fact {
 }
 
 export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Element {
+  // The 1px gaps are the border colour showing through, so every row must be
+  // full: pick only column counts that divide the number of facts.
+  const columns = cn(
+    facts.length % 2 === 0 && 'sm:grid-cols-2',
+    facts.length % 3 === 0 && 'lg:grid-cols-3'
+  );
   return (
-    <dl className="grid gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+    <dl
+      className={cn(
+        'grid gap-px overflow-hidden rounded-xl border border-border bg-border',
+        columns
+      )}
+    >
       {facts.map((fact) => (
         <div key={fact.term} className="flex flex-col gap-1 bg-card p-4">
           <dt className="text-sm text-muted-foreground">{fact.term}</dt>

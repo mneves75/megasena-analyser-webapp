@@ -90,6 +90,13 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
   const insights = describeDraw(draw.numbers, previous?.numbers ?? null);
   const breadcrumbs = breadcrumbsFor(page);
   const estimateVerb = next ? 'era' : 'é';
+  // The number that had been absent the longest: what made this draw unusual.
+  const comeback = numberHistory
+    .flatMap((entry) => (entry.previous ? [{ number: entry.number, gap: entry.previous.drawsBetween }] : []))
+    .reduce<{ number: number; gap: number } | null>(
+      (best, entry) => (best === null || entry.gap > best.gap ? entry : best),
+      null
+    );
 
   const prizeFacts: Fact[] = [
     ...(draw.totalCollection !== null
@@ -186,6 +193,9 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
         <AnswerSummary>
           O concurso {contest} da Mega-Sena foi sorteado em {date}. As dezenas sorteadas foram{' '}
           {joinPtBr(dezenas)}. {senaOutcome(draw)}
+          {comeback && comeback.gap > 0
+            ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
+            : ''}
           {draw.nextEstimatedPrize !== null
             ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
                 draw.nextEstimatedPrize

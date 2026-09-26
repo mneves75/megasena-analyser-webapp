@@ -95,6 +95,9 @@ COPY scripts/check-edge-csp.ts ./scripts/check-edge-csp.ts
 # not in the repository.
 COPY scripts/backfill-prizes.ts ./scripts/backfill-prizes.ts
 COPY scripts/cli-args.ts ./scripts/cli-args.ts
+# Appends new draws from db/seed/draws.json to the live volume without a file
+# swap, so server-side audit/log rows survive (see docs/DEPLOY.md).
+COPY scripts/import-draws.ts ./scripts/import-draws.ts
 
 # Next.js writes optimized images and fetch-cache entries here at runtime.
 RUN mkdir -p /app/.next/cache && chown bun:bun /app/.next/cache

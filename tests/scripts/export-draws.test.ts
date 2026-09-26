@@ -57,8 +57,10 @@ describe('draws seed (db/seed/draws.json)', () => {
     }
   });
 
-  it('has DD/MM/YYYY dates and well-typed prize/winner fields', () => {
-    const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
+  // The database stores ISO dates since migration 008 and the exporter copies
+  // them verbatim; import-draws accepts only this format.
+  it('has ISO YYYY-MM-DD dates and well-typed prize/winner fields', () => {
+    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
     for (const draw of seed) {
       expect(draw.date).toMatch(datePattern);
 

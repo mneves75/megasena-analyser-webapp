@@ -107,6 +107,17 @@ export function Footer(): React.JSX.Element {
                     {pt.footer.helpLinkLabel}
                   </a>
                 </p>
+                <p>
+                  <a
+                    href={pt.footer.officialHelpUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`underline underline-offset-4 ${linkClass}`}
+                  >
+                    {pt.footer.officialHelpLabel}
+                  </a>
+                </p>
+                <p className="font-medium text-foreground">{pt.footer.minorsNotice}</p>
               </div>
             </div>
           </div>

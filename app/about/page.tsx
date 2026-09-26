@@ -136,6 +136,29 @@ export default function AboutPage() {
           </section>
 
           <section className="space-y-3">
+            <h2>Correções</h2>
+            <p>
+              A fonte de verdade é o resultado oficial publicado pela CAIXA. Se algum número, data ou
+              valor de prêmio deste site divergir dele, a informação da CAIXA prevalece e a correção
+              entra na próxima atualização da base. Divergências podem ser informadas pelo contato
+              no fim desta página.
+            </p>
+            <p>
+              Segundo a CAIXA, o prêmio bruto corresponde a 43,79% da arrecadação de cada concurso
+              (
+              <a
+                href="https://loterias.caixa.gov.br/Paginas/Mega-Sena.aspx"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                regras da Mega-Sena
+              </a>
+              ). Na média, portanto, cada real apostado devolve menos de metade em prêmios.
+            </p>
+          </section>
+
+          <section className="space-y-3">
             <h2 className="flex items-center gap-2">
               <Shield aria-hidden className="h-5 w-5 text-primary" />
               Aviso importante

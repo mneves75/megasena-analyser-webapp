@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadArchiveIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, joinPtBr, senaOutcome } from '@/app/_lib/format';
 import {
@@ -10,6 +10,7 @@ import {
   ArchiveLink,
   Breadcrumbs,
   DrawsTable,
+  FactList,
   NumberBallLink,
   PageTitle,
   RandomnessNote,
@@ -98,6 +99,39 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
           <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
             Ver prêmios e análise do concurso {latest.contestNumber}
           </ArchiveLink>
+        </section>
+      ) : null}
+
+      {latest && latest.nextEstimatedPrize !== null ? (
+        <section
+          aria-labelledby="proximo"
+          className="space-y-3 rounded-2xl border border-border bg-card p-6 sm:p-8"
+        >
+          <SectionHeading id="proximo">Próximo concurso</SectionHeading>
+          <p className="font-title text-2xl font-semibold tabular-nums">
+            Concurso {latest.contestNumber + 1}
+          </p>
+          <FactList
+            facts={[
+              {
+                term: 'Prêmio estimado',
+                value: formatCurrency(latest.nextEstimatedPrize),
+                hint: `Valor informado pela CAIXA após o concurso ${latest.contestNumber}; o prêmio final depende da arrecadação.`,
+              },
+              ...(latest.accumulated && latest.accumulatedValue !== null
+                ? [
+                    {
+                      term: 'Acumulado da sena',
+                      value: formatCurrency(latest.accumulatedValue),
+                      hint: `Ninguém acertou as seis dezenas no concurso ${latest.contestNumber}.`,
+                    },
+                  ]
+                : []),
+            ]}
+          />
+          <p className="text-sm text-muted-foreground">
+            Os valores são a estimativa da CAIXA, não uma previsão deste site.
+          </p>
         </section>
       ) : null}
 

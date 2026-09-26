@@ -109,6 +109,11 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
       hint: `Se todos os números saíssem igualmente: ${formatDecimal(archive.totalDraws / 10)} vezes.`,
     },
     {
+      term: 'Presença nos concursos',
+      value: formatPercentPtBr(frequency, archive.totalDraws),
+      hint: 'Esperado para qualquer dezena: 10,0% (6 de 60).',
+    },
+    {
       term: 'Posição no ranking',
       value: `${rank}º de 60`,
       hint: '1º é o número que mais saiu.',

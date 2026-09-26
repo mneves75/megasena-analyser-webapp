@@ -568,7 +568,7 @@ export const pt = {
         title: '3. Dados operacionais processados no servidor',
         paragraphs: [
           'Para operar a API com segurança, gravamos telemetria técnica mínima: pseudônimo HMAC-SHA256 do IP com salt rotativo (janela de 30 dias), user-agent truncado em 120 caracteres, rota, método HTTP, status, duração, identificador da requisição (UUID) e metadata estruturada sanitizada.',
-          'Esses dados servem para rate limiting (100 req/min), auditoria de eventos sensíveis, diagnóstico técnico e continuidade do serviço.',
+          'Esses dados servem para rate limiting (100 req/min), auditoria das chamadas à API, diagnóstico técnico e continuidade do serviço.',
           'Base legal: Art. 7º, IX da LGPD — legítimo interesse do controlador.',
         ],
       },
@@ -771,6 +771,10 @@ export const pt = {
     helpTitle: 'Precisa de ajuda?',
     helpContact: 'CVV: 188 (24h, gratuito)',
     helpLinkLabel: 'Jogadores Anônimos',
+    minorsNotice: 'Apostas em loterias são proibidas para menores de 18 anos (ECA, art. 81).',
+    officialHelpLabel: 'Jogo Responsável (governo federal)',
+    officialHelpUrl:
+      'https://www.gov.br/fazenda/pt-br/composicao/orgaos/secretaria-de-premios-e-apostas/jogo-responsavel',
     disclaimerTitle: 'AVISO IMPORTANTE',
     disclaimerBody:
       'Esta ferramenta tem finalidade educacional e recreativa. As análises estatísticas são baseadas em resultados históricos e não garantem resultados futuros. A Mega-Sena é um jogo de sorte completamente aleatório. Todas as combinações têm a mesma probabilidade matemática de serem sorteadas. O uso desta ferramenta não aumenta suas chances de ganhar.',

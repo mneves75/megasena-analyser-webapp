@@ -593,6 +593,68 @@ test('archive links are not prefetched, so a visit does not spend the API quota'
   await context.close();
 });
 
+test.describe('freshness and crawl plumbing', () => {
+  test('crawl files use a short Cloudflare edge TTL so data refreshes show up fast', async ({
+    request,
+  }) => {
+    for (const path of ['/robots.txt', '/sitemap.xml', '/llms.txt']) {
+      const response = await request.get(path);
+      expect(response.status(), path).toBe(200);
+      expect(response.headers()['cloudflare-cdn-cache-control'], path).toBe('max-age=600');
+    }
+  });
+
+  test('the IndexNow key file serves the configured key as plain text', async ({ request }) => {
+    const response = await request.get('/indexnow-key.txt');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toMatch(/^text\/plain/);
+    expect((await response.text()).trim()).toBe('e2e-indexnow-key-0123456789abcdef');
+  });
+});
+
+test.describe('search-intent content', () => {
+  test('the results hub announces the next contest with CAIXA figures', async ({ page }) => {
+    await page.goto('/resultados');
+    const next = page.getByRole('region', { name: 'Próximo concurso' });
+    await expect(next).toContainText('Concurso 3007');
+    await expect(next).toContainText('R$ 10.000.000,00');
+    await expect(next).toContainText('R$ 5.000.000,00');
+    await expect(next).toContainText('estimativa da CAIXA');
+  });
+
+  test('the numbers hub ranks the most drawn and the most overdue numbers', async ({ page }) => {
+    await page.goto('/numeros');
+    const mostDrawn = page.getByRole('list', { name: 'Números mais sorteados' });
+    await expect(mostDrawn.getByRole('listitem').first()).toContainText('18');
+    await expect(mostDrawn.getByRole('listitem').first()).toContainText('2 vezes');
+    const overdue = page.getByRole('list', { name: 'Números mais atrasados' });
+    await expect(overdue.getByRole('listitem').first()).toContainText('04');
+    await expect(overdue.getByRole('listitem').first()).toContainText('5 concursos');
+    await expect(page.getByText('O atraso não muda a chance do próximo sorteio')).toBeVisible();
+  });
+
+  test('a draw summary leads with its longest comeback', async ({ page }) => {
+    await page.goto('/concurso/3006');
+    await expect(page.getByTestId('answer-summary')).toContainText(
+      'A dezena 18 voltou depois de 3 concursos sem sair.'
+    );
+  });
+
+  test('trust signals: 18+ notice, official help, corrections policy and payout share', async ({
+    page,
+  }) => {
+    await page.goto('/about');
+    const footer = page.getByRole('contentinfo');
+    await expect(footer).toContainText('proibidas para menores de 18 anos');
+    await expect(footer.getByRole('link', { name: /Jogo Responsável/ })).toHaveAttribute(
+      'href',
+      'https://www.gov.br/fazenda/pt-br/composicao/orgaos/secretaria-de-premios-e-apostas/jogo-responsavel'
+    );
+    await expect(page.getByRole('heading', { name: 'Correções' })).toBeVisible();
+    await expect(page.getByText(/43,79% da arrecadação/)).toBeVisible();
+  });
+});
+
 test('site navigation and existing pages link into the programmatic pages', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/');

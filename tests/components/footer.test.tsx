@@ -83,7 +83,8 @@ describe('Footer - Core Sections', () => {
   it('should render responsible gaming section', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/jogo respons.vel/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /jogo respons.vel/i })).toBeInTheDocument();
+    expect(screen.getByText(/proibidas para menores de 18 anos/i)).toBeInTheDocument();
     expect(screen.getByText(/cvv: 188/i)).toBeInTheDocument();
   });
 
