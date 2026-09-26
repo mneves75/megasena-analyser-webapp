@@ -20,6 +20,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
  * 5. --dry-run                                     → prints the plan, nothing sent
  * 6. success                                       → one POST with host, key,
  *    keyLocation and exactly the pages the new contests changed
+ * 7. a new Mega da Virada edition                  → also the /mega-da-virada page
  */
 
 const REPO = process.cwd();
@@ -49,10 +50,11 @@ function seedDatabase(): void {
     "const { runMigrations, getDatabase, closeDatabase } = await import('./lib/db.ts');",
     'runMigrations();',
     'const db = getDatabase();',
-    "const insert = db.prepare('INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');",
-    "insert.run(3060, '2025-12-30', 1, 2, 3, 4, 5, 6);",
-    "insert.run(3061, '2026-01-01', 7, 8, 9, 10, 11, 12);",
-    "insert.run(3062, '2026-01-03', 13, 14, 15, 16, 17, 18);",
+    "const insert = db.prepare('INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, special_draw) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');",
+    // 3060: a special year-end contest ending in 0, i.e. a Mega da Virada edition.
+    "insert.run(3060, '2025-12-30', 1, 2, 3, 4, 5, 6, 1);",
+    "insert.run(3061, '2026-01-01', 7, 8, 9, 10, 11, 12, 0);",
+    "insert.run(3062, '2026-01-03', 13, 14, 15, 16, 17, 18, 0);",
     'closeDatabase();',
   ].join('\n');
   const result = spawnSync('bun', ['-e', script], {
@@ -199,6 +201,13 @@ describe('indexnow-submit CLI', () => {
       expect(urls, url).toContain(url);
     }
     expect(urls).not.toContain(`${SITE}/concurso/3059`);
+    expect(urls).not.toContain(`${SITE}/mega-da-virada`);
     expect(urls.filter((url) => url.startsWith(`${SITE}/numeros/`))).toHaveLength(60);
+  });
+
+  it('also submits the Mega da Virada page when a new edition arrives', async () => {
+    const result = await submit(['--contests', '3060']);
+    expect(result.status, result.stderr).toBe(0);
+    expect(captured[0]?.body.urlList).toContain(`${SITE}/mega-da-virada`);
   });
 });

@@ -4,8 +4,9 @@
  * contests were imported. Run it after `db:import-draws` has reached production.
  *
  * Pages that change when contest N arrives: its own page, the previous contest
- * (gains the "Próximo concurso" link), the year pages of both, the hubs, and all
- * 60 number pages (every current delay moves). Nothing else is submitted.
+ * (gains the "Próximo concurso" link), the year pages of both, the hubs, all 60
+ * number pages (every current delay moves), and /mega-da-virada when N is an
+ * edition. Nothing else is submitted.
  *
  * Usage:
  *   INDEXNOW_KEY=... bun run scripts/indexnow-submit.ts --contests 3061,3062 [--dry-run]
@@ -14,6 +15,7 @@
  */
 
 import { Database } from 'bun:sqlite';
+import { MEGA_DA_VIRADA_CONDITION } from '@/lib/analytics/mega-da-virada';
 import { BASE_URL } from '@/lib/constants';
 import { resolveDatabasePath } from '@/lib/db-path';
 import { ARCHIVE_DRIVEN_PATHS } from '@/lib/seo/archive-paths';
@@ -42,17 +44,22 @@ function changedPaths(contests: number[]): string[] {
   const db = new Database(resolveDatabasePath(), { readonly: true });
   const changed = new Set<string>(ARCHIVE_DRIVEN_PATHS);
   try {
-    const find = db.prepare('SELECT draw_date FROM draws WHERE contest_number = ?');
+    const find = db.prepare(
+      `SELECT draw_date, ${MEGA_DA_VIRADA_CONDITION} AS mega_da_virada FROM draws WHERE contest_number = ?`
+    );
     const previous = db.prepare(
       'SELECT contest_number, draw_date FROM draws WHERE contest_number < ? ORDER BY contest_number DESC LIMIT 1'
     );
     for (const contest of contests) {
-      const row = find.get(contest) as { draw_date: string } | null;
+      const row = find.get(contest) as { draw_date: string; mega_da_virada: number } | null;
       if (!row) {
         fail(`Concurso ${contest} não está no banco; importe-o antes de notificar.`);
       }
       changed.add(`/concurso/${contest}`);
       changed.add(`/resultados/${row.draw_date.slice(0, 4)}`);
+      if (row.mega_da_virada) {
+        changed.add('/mega-da-virada');
+      }
       const before = previous.get(contest) as { contest_number: number; draw_date: string } | null;
       if (before) {
         changed.add(`/concurso/${before.contest_number}`);

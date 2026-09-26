@@ -1,10 +1,12 @@
 import { getDatabase } from '@/lib/db';
+import { MEGA_DA_VIRADA_CONDITION, megaDaViradaEdition } from '@/lib/analytics/mega-da-virada';
 import type {
   ArchiveIndex,
   ArchiveState,
   DrawNumberHistory,
   DrawPage,
   DrawRecord,
+  MegaDaViradaArchive,
   NumberProfile,
   NumbersIndex,
   NumberSummary,
@@ -160,8 +162,11 @@ export class DrawArchiveEngine {
 
   getDrawPage(contest: number): DrawPage | null {
     const row = this.db
-      .prepare(`SELECT ${DRAW_COLUMNS} FROM draws WHERE contest_number = ?`)
-      .get(contest) as DrawRow | undefined;
+      .prepare(
+        `SELECT ${DRAW_COLUMNS}, ${MEGA_DA_VIRADA_CONDITION} AS mega_da_virada
+         FROM draws WHERE contest_number = ?`
+      )
+      .get(contest) as (DrawRow & { mega_da_virada: number }) | undefined;
     if (!row) {
       return null;
     }
@@ -192,6 +197,7 @@ export class DrawArchiveEngine {
         ? { contestNumber: previous.contest_number, numbers: sortedNumbers(previous) }
         : null,
       next: next ? { contestNumber: next.contest_number, drawDate: next.draw_date } : null,
+      megaDaViradaEdition: row.mega_da_virada ? megaDaViradaEdition(row.draw_date) : null,
       numberHistory: this.getNumberHistoryAt(contest, draw.numbers),
       sumContext: this.getSumContextAt(
         contest,
@@ -243,6 +249,24 @@ export class DrawArchiveEngine {
       draws: rows.map(toDrawRecord),
       previousYear: years.find((candidate) => candidate < year) ?? null,
       nextYear: years.filter((candidate) => candidate > year).at(-1) ?? null,
+    };
+  }
+
+  getMegaDaVirada(): MegaDaViradaArchive {
+    const rows = this.db
+      .prepare(
+        `SELECT ${DRAW_COLUMNS} FROM draws
+         WHERE ${MEGA_DA_VIRADA_CONDITION}
+         ORDER BY contest_number DESC`
+      )
+      .all() as DrawRow[];
+
+    return {
+      lastModified: this.getMegaDaViradaLastModified(),
+      editions: rows.map((row) => ({
+        edition: megaDaViradaEdition(row.draw_date),
+        draw: toDrawRecord(row),
+      })),
     };
   }
 
@@ -356,7 +380,25 @@ export class DrawArchiveEngine {
         year: summary.year,
         lastModified: requireInstant(summary.last_modified, `year ${summary.year}`),
       })),
+      megaDaViradaLastModified: this.getMegaDaViradaLastModified(),
     };
+  }
+
+  /**
+   * The Mega da Virada page lists only the editions' own rows, so it changes
+   * when one of them is loaded or corrected, not with every new draw.
+   */
+  private getMegaDaViradaLastModified(): string | null {
+    const row = this.db
+      .prepare(
+        `WITH ${DRAW_CHANGES_CTE}
+         SELECT MAX(touched) AS last_modified FROM draw_touches
+         WHERE contest_number IN (SELECT contest_number FROM draws WHERE ${MEGA_DA_VIRADA_CONDITION})`
+      )
+      .get() as { last_modified: string | null };
+    return row.last_modified === null
+      ? null
+      : requireInstant(row.last_modified, 'Mega da Virada');
   }
 
   private getArchiveState(): ArchiveState {

@@ -127,6 +127,36 @@ describe('CaixaAPIClient', () => {
     expect(data.valorEstimadoProximoConcurso).toBe(3500000);
   });
 
+  it.each([
+    [2, true],
+    [1, false],
+  ])(
+    'reads indicadorConcursoEspecial %i as concursoEspecial %s (tipoJogo is always MEGA_SENA)',
+    async (indicator, special) => {
+      const client = new CaixaAPIClient();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              numero: 2810,
+              dataApuracao: '31/12/2024',
+              listaDezenas: ['01', '17', '19', '29', '50', '57'],
+              listaRateioPremio: [],
+              tipoJogo: 'MEGA_SENA',
+              indicadorConcursoEspecial: indicator,
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        )
+      );
+
+      const data = await client.fetchDraw(2810);
+
+      expect(data.concursoEspecial).toBe(special);
+    }
+  );
+
   it('rejects a response for a different contest without retrying', async () => {
     const client = new CaixaAPIClient();
     const fetchMock = vi.fn().mockResolvedValue(

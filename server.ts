@@ -725,7 +725,9 @@ const apiHandlers: Record<
           ? engine.getDrawPage(query.contest)
           : query.kind === 'year'
             ? engine.getYearArchive(query.year)
-            : engine.getArchiveIndex();
+            : query.kind === 'megaDaVirada'
+              ? engine.getMegaDaVirada()
+              : engine.getArchiveIndex();
       if (payload === null) {
         return createErrorResponse(ctx, 'Nenhum sorteio encontrado.', null, 404);
       }

@@ -18,10 +18,11 @@ const escapeXml = (value: string): string =>
  * dateModified.
  */
 export async function GET(): Promise<Response> {
-  const { archive, draws, years } = await loadSitemapData();
+  const { archive, draws, years, megaDaViradaLastModified } = await loadSitemapData();
   const entries: Array<[path: string, lastModified: string | null]> = [
     ...ARCHIVE_DRIVEN_PATHS.map((path): [string, string | null] => [path, archive.lastModified]),
     ...EDITORIAL_PATHS.map((path): [string, string | null] => [path, null]),
+    ['/mega-da-virada', megaDaViradaLastModified],
     ...years.map((year): [string, string | null] => [`/resultados/${year.year}`, year.lastModified]),
     ...Array.from({ length: 60 }, (_, index): [string, string | null] => [
       `/numeros/${index + 1}`,

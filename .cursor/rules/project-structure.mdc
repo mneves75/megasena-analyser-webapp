@@ -7,7 +7,8 @@ description: Project structure and where things live
 - `app/`: Next.js App Router **pages only** — `app/(home)/` (the `/` route and its
   loading state), `app/dashboard/page.tsx` plus nested `app/dashboard/statistics/`
   and `app/dashboard/generator/`, the results archive (`resultados/`,
-  `resultados/[ano]/`, `concurso/[numero]/`, `numeros/`, `numeros/[numero]/`),
+  `resultados/[ano]/`, `concurso/[numero]/`, `numeros/`, `numeros/[numero]/`,
+  `mega-da-virada/`),
   `about/`, `privacy/`, `terms/`, `sitemap.xml/`, `robots.ts`, `llms.txt/`,
   `indexnow-key.txt/`. Archive
   helpers live in `app/_lib/` and `app/_components/`. There is no `app/api/`.

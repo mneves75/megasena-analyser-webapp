@@ -6,12 +6,14 @@ import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import {
   archiveIndexSchema,
   drawPageSchema,
+  megaDaViradaArchiveSchema,
   numberProfileSchema,
   numbersIndexSchema,
   sitemapDataSchema,
   yearArchiveSchema,
   type ArchiveIndex,
   type DrawPage,
+  type MegaDaViradaArchive,
   type NumberProfile,
   type NumbersIndex,
   type SitemapData,
@@ -79,6 +81,10 @@ export const loadYearArchive: (year: number) => Promise<YearArchive | null> = ca
 
 export const loadArchiveIndex: () => Promise<ArchiveIndex> = cache(() =>
   loadRequired('/api/draws', archiveIndexSchema)
+);
+
+export const loadMegaDaVirada: () => Promise<MegaDaViradaArchive> = cache(() =>
+  loadRequired('/api/draws?view=mega-da-virada', megaDaViradaArchiveSchema)
 );
 
 export const loadNumbersIndex: () => Promise<NumbersIndex> = cache(() =>

@@ -56,6 +56,7 @@ export const pt = {
     results: 'Resultados',
     numbers: 'Números',
     numbersFull: 'Números de 1 a 60',
+    megaDaVirada: 'Mega da Virada',
     dashboard: 'Dashboard',
     statistics: 'Estatísticas',
     generator: 'Gerar Apostas',

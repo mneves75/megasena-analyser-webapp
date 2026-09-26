@@ -15,6 +15,8 @@ export interface MegaSenaDrawData {
   valorEstimadoProximoConcurso?: number;
   acumulado?: boolean;
   tipoJogo?: string;
+  /** Special contest that never rolls over: the Mega da Virada or an anniversary edition. */
+  concursoEspecial?: boolean;
 }
 
 interface CaixaPrizeTier {
@@ -36,6 +38,8 @@ interface CaixaRawDrawData {
   valorEstimadoProximoConcurso?: number;
   acumulado?: boolean;
   tipoJogo?: string;
+  /** 2 marks a special contest (from 2017 on); regular contests carry 1. */
+  indicadorConcursoEspecial?: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -191,6 +195,9 @@ export function normalizeMegaSenaDrawData(raw: CaixaRawDrawData): MegaSenaDrawDa
   }
   if (typeof raw.tipoJogo === 'string' && raw.tipoJogo.length > 0) {
     normalized.tipoJogo = raw.tipoJogo;
+  }
+  if (typeof raw.indicadorConcursoEspecial === 'number') {
+    normalized.concursoEspecial = raw.indicadorConcursoEspecial === 2;
   }
 
   return normalized;

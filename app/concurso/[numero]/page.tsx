@@ -49,6 +49,13 @@ async function getDrawPage(params: DrawRouteProps['params']): Promise<DrawPage> 
   return page;
 }
 
+/** "Resultado da Mega da Virada 2024 (concurso 2810)" or "Resultado da Mega-Sena 3005". */
+function pageHeading({ draw, megaDaViradaEdition }: DrawPage): string {
+  return megaDaViradaEdition === null
+    ? `Resultado da Mega-Sena ${draw.contestNumber}`
+    : `Resultado da Mega da Virada ${megaDaViradaEdition} (concurso ${draw.contestNumber})`;
+}
+
 function breadcrumbsFor({ draw }: DrawPage): BreadcrumbItem[] {
   const year = draw.drawDate.slice(0, 4);
   return [
@@ -61,16 +68,22 @@ function breadcrumbsFor({ draw }: DrawPage): BreadcrumbItem[] {
 
 export async function generateMetadata({ params }: DrawRouteProps): Promise<Metadata> {
   const page = await getDrawPage(params);
-  const { draw } = page;
+  const { draw, megaDaViradaEdition } = page;
   const date = formatDate(draw.drawDate);
   const dezenas = draw.numbers.map(dezena);
+  const outcome = `${joinPtBr(dezenas)}. ${senaOutcome(draw)}`;
 
   return buildPageMetadata({
     path: `/concurso/${draw.contestNumber}`,
-    title: `Resultado da Mega-Sena ${draw.contestNumber} (${date}): ${dezenas.join('-')}`,
-    description: `Resultado do concurso ${draw.contestNumber} da Mega-Sena (${date}): ${joinPtBr(
-      dezenas
-    )}. ${senaOutcome(draw)}`,
+    ...(megaDaViradaEdition === null
+      ? {
+          title: `Resultado da Mega-Sena ${draw.contestNumber} (${date}): ${dezenas.join('-')}`,
+          description: `Resultado do concurso ${draw.contestNumber} da Mega-Sena (${date}): ${outcome}`,
+        }
+      : {
+          title: `${pageHeading(page)}: ${dezenas.join('-')}`,
+          description: `Mega da Virada ${megaDaViradaEdition}, concurso ${draw.contestNumber} (${date}): ${outcome}`,
+        }),
     absoluteTitle: true,
     socialImages: {
       openGraph: `/concurso/${draw.contestNumber}/opengraph-image`,
@@ -82,7 +95,7 @@ export async function generateMetadata({ params }: DrawRouteProps): Promise<Meta
 
 export default async function DrawResultPage({ params }: DrawRouteProps): Promise<React.JSX.Element> {
   const page = await getDrawPage(params);
-  const { draw, previous, next, numberHistory, sumContext } = page;
+  const { draw, previous, next, numberHistory, sumContext, megaDaViradaEdition } = page;
   const contest = draw.contestNumber;
   const path = `/concurso/${contest}`;
   const year = draw.drawDate.slice(0, 4);
@@ -92,6 +105,7 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
   const breadcrumbs = breadcrumbsFor(page);
   const estimateVerb = next ? 'era' : 'é';
   const comeback = longestComeback(numberHistory);
+  const heading = pageHeading(page);
 
   const prizeFacts: Fact[] = [
     ...(draw.totalCollection !== null
@@ -164,7 +178,7 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
       <PageJsonLd
         path={path}
-        name={`Resultado da Mega-Sena ${contest}`}
+        name={heading}
         description={`Dezenas, ganhadores e prêmios do concurso ${contest} da Mega-Sena, sorteado em ${date}.`}
         breadcrumbs={breadcrumbs}
         datePublished={draw.drawDate}
@@ -174,7 +188,7 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />
         <div className="space-y-2">
-          <PageTitle>Resultado da Mega-Sena {contest}</PageTitle>
+          <PageTitle>{heading}</PageTitle>
           <p className="text-muted-foreground">
             Sorteio de {weekdayPtBr(draw.drawDate)}, <span className="tabular-nums">{date}</span> ·
             resultado oficial publicado pela CAIXA
@@ -186,7 +200,10 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
           ))}
         </div>
         <AnswerSummary>
-          O concurso {contest} da Mega-Sena foi sorteado em {date}. As dezenas sorteadas foram{' '}
+          {megaDaViradaEdition === null
+            ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
+            : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
+          As dezenas sorteadas foram{' '}
           {joinPtBr(dezenas)}. {senaOutcome(draw)}
           {comeback
             ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
@@ -306,6 +323,11 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
       />
 
       <nav aria-label="Mais resultados" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        {megaDaViradaEdition !== null ? (
+          <ArchiveLink href="/mega-da-virada" className={inlineLinkClass}>
+            Todas as edições da Mega da Virada
+          </ArchiveLink>
+        ) : null}
         <ArchiveLink href={`/resultados/${year}`} className={inlineLinkClass}>
           Todos os concursos de {year}
         </ArchiveLink>

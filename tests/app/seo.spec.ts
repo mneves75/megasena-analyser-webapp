@@ -6,8 +6,10 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
  *
  * Facts come from the E2E seed in scripts/prepare-e2e-db.ts: contests 3001–3006,
  * drawn 2026-05-02..2026-05-12, odd contests with one sena winner, even contests
- * accumulated. Number 18 is the only number drawn twice (3002 and 3006) and
- * number 5 is never drawn.
+ * accumulated, plus two Mega da Virada editions (2810 on 2024-12-31 and 3000 on
+ * 2025-12-31). Contest 3005 carries the special flag but is drawn in May, so it is
+ * not an edition. Number 18 is the only number drawn more than once (2810, 3000,
+ * 3002 and 3006) and number 5 is never drawn.
  */
 
 const SITE = (process.env['NEXT_PUBLIC_BASE_URL'] ?? 'https://megasena-analyzer.com.br').replace(
@@ -20,6 +22,7 @@ const GPTBOT_UA =
   'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)';
 
 const SEEDED_CONTESTS = [3001, 3002, 3003, 3004, 3005, 3006] as const;
+const VIRADA_CONTESTS = [2810, 3000] as const;
 
 interface PageAudit {
   path: string;
@@ -167,13 +170,16 @@ test.describe('crawl directives', () => {
       `${SITE}/dashboard/statistics`,
       `${SITE}/dashboard/generator`,
       `${SITE}/resultados`,
+      `${SITE}/resultados/2024`,
+      `${SITE}/resultados/2025`,
       `${SITE}/resultados/2026`,
+      `${SITE}/mega-da-virada`,
       `${SITE}/numeros`,
       `${SITE}/about`,
       `${SITE}/terms`,
       `${SITE}/privacy`,
       `${SITE}/privacy/direitos`,
-      ...SEEDED_CONTESTS.map((contest) => `${SITE}/concurso/${contest}`),
+      ...[...VIRADA_CONTESTS, ...SEEDED_CONTESTS].map((contest) => `${SITE}/concurso/${contest}`),
       ...Array.from({ length: 60 }, (_, index) => `${SITE}/numeros/${index + 1}`),
     ];
     for (const loc of expected) {
@@ -195,6 +201,9 @@ test.describe('crawl directives', () => {
     expect(lastmodFor(`${SITE}/resultados/2026`)).toBe('2026-05-21T01:30:00.000Z');
     expect(lastmodFor(`${SITE}/resultados`)).toBe('2026-05-21T01:30:00.000Z');
     expect(lastmodFor(`${SITE}/numeros/18`)).toBe('2026-05-21T01:30:00.000Z');
+    // The Mega da Virada page only changes with its editions: 3000 was loaded on
+    // 2026-01-03, and later regular draws or the 3002 correction do not count.
+    expect(lastmodFor(`${SITE}/mega-da-virada`)).toBe('2026-01-03T12:00:00.000Z');
     expect(lastmodFor(`${SITE}/about`)).toBeNull();
   });
 
@@ -231,7 +240,7 @@ test.describe('HTTP semantics for programmatic routes', () => {
         '/numeros/0',
         '/numeros/61',
         '/numeros/abc',
-        '/resultados/2025',
+        '/resultados/2023',
         '/resultados/1995',
         '/resultados/abcd',
       ]) {
@@ -276,6 +285,8 @@ test.describe('archive API boundary', () => {
       '/api/draws?year=2101',
       '/api/draws?year=02026',
       '/api/draws?year=2026&contest=3005',
+      '/api/draws?view=virada',
+      '/api/draws?view=mega-da-virada&year=2025',
       '/api/numbers?n=0',
       '/api/numbers?n=61',
       '/api/numbers?n=05',
@@ -291,7 +302,7 @@ test.describe('archive API boundary', () => {
     request,
   }) => {
     expect((await request.get('/api/draws?contest=3007')).status()).toBe(404);
-    expect((await request.get('/api/draws?year=2025')).status()).toBe(404);
+    expect((await request.get('/api/draws?year=2023')).status()).toBe(404);
     expect((await request.post('/api/draws', { data: {} })).status()).toBe(405);
     expect((await request.post('/api/numbers', { data: {} })).status()).toBe(405);
     expect((await request.post('/api/sitemap', { data: {} })).status()).toBe(405);
@@ -473,7 +484,7 @@ test.describe('number pages', () => {
     await expect(page).toHaveTitle(/Número 18 da Mega-Sena/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Número 18 na Mega-Sena');
     const summary = page.getByTestId('answer-summary');
-    await expect(summary).toContainText('saiu 2 vezes em 6 concursos');
+    await expect(summary).toContainText('saiu 4 vezes em 8 concursos');
     await expect(summary).toContainText('concurso 3006');
     await expect(summary).toContainText('12/05/2026');
 
@@ -504,7 +515,7 @@ test.describe('number pages', () => {
     const response = await page.goto('/numeros/5');
     expect(response?.status()).toBe(200);
     await expect(page.getByTestId('answer-summary')).toContainText(
-      'ainda não saiu em nenhum dos 6 concursos'
+      'ainda não saiu em nenhum dos 8 concursos'
     );
   });
 
@@ -536,7 +547,7 @@ test.describe('results archive', () => {
       .find((node) => node['@type'] === 'Dataset');
     // Last modification of the data, not the date of the last draw (2026-05-12).
     expect(dataset?.['dateModified']).toBe('2026-05-21T01:30:00.000Z');
-    expect(dataset?.['temporalCoverage']).toBe('2026-05-02/2026-05-12');
+    expect(dataset?.['temporalCoverage']).toBe('2024-12-31/2026-05-12');
   });
 
   test('a year page lists every draw of that year', async ({ page }) => {
@@ -552,6 +563,108 @@ test.describe('results archive', () => {
         `/concurso/${contest}`
       );
     }
+  });
+});
+
+test.describe('Mega da Virada', () => {
+  test('the hub lists every edition, newest first, and nothing else', async ({ page }) => {
+    const response = await page.goto('/mega-da-virada');
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveTitle('Mega da Virada: resultados de todas as edições desde 2024');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Mega da Virada: todos os resultados'
+    );
+    const summary = page.getByTestId('answer-summary');
+    await expect(summary).toContainText(
+      'A Mega da Virada mais recente do arquivo é a de 2025: concurso 3000, sorteado em 31/12/2025'
+    );
+    await expect(summary).toContainText('6 apostas acertaram as seis dezenas e receberam R$ 181.892.881,09 cada');
+    await expect(summary).toContainText(
+      '2 edições, de 2024 a 2025, e todas tiveram apostas que acertaram as seis dezenas'
+    );
+
+    const table = page.getByRole('table', { name: 'Resultados de todas as edições da Mega da Virada' });
+    const rows = table.getByRole('row');
+    // Header row plus one row per edition: the flagged May contest 3005 is not one.
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(1).getByRole('rowheader')).toHaveText('2025');
+    await expect(rows.nth(1).getByRole('link', { name: '3000', exact: true })).toHaveAttribute(
+      'href',
+      '/concurso/3000'
+    );
+    await expect(rows.nth(2).getByRole('rowheader')).toHaveText('2024');
+    await expect(rows.nth(2)).toContainText('R$ 79.435.770,67');
+    await expect(table.getByRole('link', { name: '3005', exact: true })).toHaveCount(0);
+
+    await expect(page.getByText('A dezena 18 saiu 2 vezes.')).toBeVisible();
+    const counts = page.getByRole('list', { name: 'Vezes que cada dezena saiu na Mega da Virada' });
+    await expect(counts.getByRole('listitem')).toHaveCount(60);
+    await expect(
+      counts.getByRole('link', { name: 'Dezena 18: saiu 2 vezes na Mega da Virada' })
+    ).toHaveAttribute('href', '/numeros/18');
+    await expect(counts.getByRole('link', { name: 'Dezena 05: saiu 0 vezes na Mega da Virada' })).toBeVisible();
+
+    await expect(page.getByRole('link', { name: 'regras da Mega-Sena na CAIXA' })).toHaveAttribute(
+      'href',
+      'https://loterias.caixa.gov.br/Paginas/Mega-Sena.aspx'
+    );
+
+    const graphs = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((scripts) => scripts.map((script) => JSON.parse(script.textContent ?? '{}')));
+    const collection = graphs
+      .flatMap((graph) => (graph['@graph'] as Array<Record<string, unknown>>) ?? [graph])
+      .find((node) => node['@type'] === 'CollectionPage');
+    expect(collection?.['dateModified']).toBe('2026-01-03T12:00:00.000Z');
+  });
+
+  test('edition draw pages name the edition and link back to the hub', async ({ page }) => {
+    await page.goto('/concurso/2810');
+    await expect(page).toHaveTitle(
+      'Resultado da Mega da Virada 2024 (concurso 2810): 08-13-16-17-18-20'
+    );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Resultado da Mega da Virada 2024 (concurso 2810)'
+    );
+    await expect(page.getByTestId('answer-summary')).toContainText(
+      'O concurso 2810 foi a Mega da Virada 2024, sorteada em 31/12/2024.'
+    );
+    await expect(
+      page.getByRole('link', { name: 'Todas as edições da Mega da Virada' })
+    ).toHaveAttribute('href', '/mega-da-virada');
+
+    await page.goto('/concurso/3000');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Resultado da Mega da Virada 2025 (concurso 3000)'
+    );
+
+    // Flagged special, but drawn in May: a regular page.
+    await page.goto('/concurso/3005');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Resultado da Mega-Sena 3005');
+    await expect(page.locator('main a[href="/mega-da-virada"]')).toHaveCount(0);
+  });
+
+  test('the API view and the site navigation expose the hub', async ({ page, request }) => {
+    const response = await request.get('/api/draws?view=mega-da-virada');
+    expect(response.status()).toBe(200);
+    const body = (await response.json()) as {
+      lastModified: string;
+      editions: Array<{ edition: number; draw: { contestNumber: number } }>;
+    };
+    expect(body.editions.map(({ edition, draw }) => [edition, draw.contestNumber])).toEqual([
+      [2025, 3000],
+      [2024, 2810],
+    ]);
+    expect(body.lastModified).toBe('2026-01-03T12:00:00.000Z');
+
+    await page.goto('/resultados');
+    await expect(page.locator('main a[href="/mega-da-virada"]').first()).toBeVisible();
+    await expect(
+      page.getByRole('contentinfo').getByRole('link', { name: 'Mega da Virada' })
+    ).toHaveAttribute('href', '/mega-da-virada');
+
+    const llms = await (await request.get('/llms.txt')).text();
+    expect(llms).toContain(`${SITE}/mega-da-virada`);
   });
 });
 
@@ -631,7 +744,7 @@ test.describe('search-intent content', () => {
     const mostDrawn = page.getByRole('list', { name: 'Números mais sorteados' });
     await expect(mostDrawn.getByRole('listitem').first()).toContainText('1º');
     await expect(mostDrawn.getByRole('listitem').first()).toContainText('18');
-    await expect(mostDrawn.getByRole('listitem').first()).toContainText('2 vezes');
+    await expect(mostDrawn.getByRole('listitem').first()).toContainText('4 vezes');
     // Ties share a position, like the ranking on each number page.
     await expect(mostDrawn.getByRole('listitem').nth(1)).toContainText('2º');
     await expect(mostDrawn.getByRole('listitem').nth(2)).toContainText('2º');

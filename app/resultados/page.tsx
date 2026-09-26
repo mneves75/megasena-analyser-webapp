@@ -179,6 +179,9 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       ) : null}
 
       <nav aria-label="Mais estatísticas" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+        <ArchiveLink href="/mega-da-virada" className={inlineLinkClass}>
+          Todas as edições da Mega da Virada
+        </ArchiveLink>
         <ArchiveLink href="/numeros" className={inlineLinkClass}>
           Frequência de cada número
         </ArchiveLink>

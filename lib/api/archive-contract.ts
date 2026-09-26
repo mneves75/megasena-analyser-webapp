@@ -2,7 +2,8 @@ import { z } from 'zod';
 
 /**
  * Contract for the public results archive served by the Bun API (server.ts) and
- * read by the programmatic SEO pages (/resultados, /concurso, /numeros).
+ * read by the programmatic SEO pages (/resultados, /concurso, /numeros,
+ * /mega-da-virada).
  *
  * The API validates query parameters with the parsers below; the pages validate
  * the JSON responses with the schemas below before rendering them.
@@ -70,6 +71,8 @@ export const drawPageSchema = z.object({
     .object({ contestNumber: contestNumberSchema, numbers: z.array(lotteryNumberSchema) })
     .nullable(),
   next: z.object({ contestNumber: contestNumberSchema, drawDate: isoDateSchema }).nullable(),
+  /** Year of the Mega da Virada this contest was, or null for any other contest. */
+  megaDaViradaEdition: z.number().int().nullable(),
   numberHistory: z.array(drawNumberHistorySchema).length(6),
   sumContext: z.object({
     earlierDraws: z.number().int().nonnegative(),
@@ -98,6 +101,13 @@ export const yearArchiveSchema = z.object({
   draws: z.array(drawRecordSchema).min(1),
   previousYear: z.number().int().nullable(),
   nextYear: z.number().int().nullable(),
+});
+
+export const megaDaViradaArchiveSchema = z.object({
+  /** Last change to an edition's row; newer regular draws do not change this page. */
+  lastModified: isoInstantSchema.nullable(),
+  /** Newest first. */
+  editions: z.array(z.object({ edition: z.number().int(), draw: drawRecordSchema })),
 });
 
 const numberSummarySchema = z.object({
@@ -133,6 +143,7 @@ export const sitemapDataSchema = z.object({
   archive: archiveStateSchema,
   draws: z.array(z.object({ contestNumber: contestNumberSchema, lastModified: isoInstantSchema })),
   years: z.array(z.object({ year: z.number().int(), lastModified: isoInstantSchema })),
+  megaDaViradaLastModified: isoInstantSchema.nullable(),
 });
 
 export type DrawRecord = z.infer<typeof drawRecordSchema>;
@@ -142,6 +153,7 @@ export type DrawPage = z.infer<typeof drawPageSchema>;
 export type YearSummary = z.infer<typeof yearSummarySchema>;
 export type ArchiveIndex = z.infer<typeof archiveIndexSchema>;
 export type YearArchive = z.infer<typeof yearArchiveSchema>;
+export type MegaDaViradaArchive = z.infer<typeof megaDaViradaArchiveSchema>;
 export type NumberSummary = z.infer<typeof numberSummarySchema>;
 export type NumbersIndex = z.infer<typeof numbersIndexSchema>;
 export type NumberProfile = z.infer<typeof numberProfileSchema>;
@@ -164,14 +176,19 @@ export function parseCanonicalInteger(value: string, min: number, max: number): 
 
 export type DrawsQuery =
   | { kind: 'index' }
+  | { kind: 'megaDaVirada' }
   | { kind: 'year'; year: number }
   | { kind: 'contest'; contest: number };
 
 export function parseDrawsQuery(searchParams: URLSearchParams): DrawsQuery | null {
   const year = searchParams.get('year');
   const contest = searchParams.get('contest');
-  if (year !== null && contest !== null) {
+  const view = searchParams.get('view');
+  if ([year, contest, view].filter((value) => value !== null).length > 1) {
     return null;
+  }
+  if (view !== null) {
+    return view === 'mega-da-virada' ? { kind: 'megaDaVirada' } : null;
   }
   if (year !== null) {
     const parsed = parseCanonicalInteger(year, FIRST_DRAW_YEAR, LAST_ACCEPTED_YEAR);

@@ -70,6 +70,11 @@ export function Footer(): React.JSX.Element {
                 </Link>
               </li>
               <li>
+                <Link href="/mega-da-virada" prefetch={false} className={linkClass}>
+                  {pt.nav.megaDaVirada}
+                </Link>
+              </li>
+              <li>
                 <Link href="/dashboard" className={linkClass}>
                   {pt.nav.dashboard}
                 </Link>

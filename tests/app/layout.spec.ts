@@ -12,6 +12,8 @@ const RESPONSIVE_ROUTES = [
   '/resultados',
   '/resultados/2026',
   '/concurso/3005',
+  '/concurso/2810',
+  '/mega-da-virada',
   '/numeros',
   '/numeros/18',
 ] as const;

@@ -28,9 +28,9 @@ const insertDraw = db.prepare(`
     contest_number, draw_date,
     number_1, number_2, number_3, number_4, number_5, number_6,
     prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
-    total_collection, accumulated, accumulated_value, next_estimated_prize,
+    total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw,
     created_at, updated_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 // Real ingestion lags the draw by days (the VPS cannot reach CAIXA), so each
@@ -49,12 +49,41 @@ function loadedAt(drawDate: string): string {
   return date.toISOString().replace('T', ' ').slice(0, 19);
 }
 
-const draws = [
+interface SeedDraw {
+  contest: number;
+  date: string;
+  numbers: number[];
+  accumulated: 0 | 1;
+  special?: 0 | 1;
+  sena?: { winners: number; prize: number };
+}
+
+// Mega da Virada: 2810 is a listed edition stored without the special flag
+// (like every row loaded before v1.16.0); 3000 is recognised from the flag.
+// 3005 is flagged too but drawn in May, like the Mega 30 Anos, so it is not an
+// edition. Number 18 comes up in both editions and in 3002 and 3006, so it
+// stays the single most drawn number.
+const draws: SeedDraw[] = [
+  {
+    contest: 2810,
+    date: '2024-12-31',
+    numbers: [8, 13, 16, 17, 18, 20],
+    accumulated: 0,
+    sena: { winners: 8, prize: 79_435_770.67 },
+  },
+  {
+    contest: 3000,
+    date: '2025-12-31',
+    numbers: [18, 21, 25, 29, 32, 35],
+    accumulated: 0,
+    special: 1,
+    sena: { winners: 6, prize: 181_892_881.09 },
+  },
   { contest: 3001, date: '2026-05-02', numbers: [4, 12, 23, 31, 45, 58], accumulated: 0 },
   { contest: 3002, date: '2026-05-04', numbers: [1, 9, 18, 27, 36, 54], accumulated: 1 },
   { contest: 3003, date: '2026-05-06', numbers: [6, 14, 22, 30, 38, 46], accumulated: 0 },
   { contest: 3004, date: '2026-05-08', numbers: [3, 11, 19, 28, 37, 55], accumulated: 1 },
-  { contest: 3005, date: '2026-05-10', numbers: [7, 15, 24, 33, 42, 60], accumulated: 0 },
+  { contest: 3005, date: '2026-05-10', numbers: [7, 15, 24, 33, 42, 60], accumulated: 0, special: 1 },
   { contest: 3006, date: '2026-05-12', numbers: [2, 10, 18, 26, 34, 52], accumulated: 1 },
 ];
 
@@ -63,8 +92,8 @@ for (const draw of draws) {
     draw.contest,
     draw.date,
     ...draw.numbers,
-    2_000_000,
-    draw.accumulated ? 0 : 1,
+    draw.sena?.prize ?? 2_000_000,
+    draw.sena?.winners ?? (draw.accumulated ? 0 : 1),
     45_000,
     80,
     900,
@@ -73,6 +102,7 @@ for (const draw of draws) {
     draw.accumulated,
     draw.accumulated ? 5_000_000 : 0,
     10_000_000,
+    draw.special ?? 0,
     loadedAt(draw.date),
     draw.contest === CORRECTED_CONTEST ? CORRECTED_AT : loadedAt(draw.date)
   );

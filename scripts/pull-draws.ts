@@ -82,7 +82,8 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
     draw.acumulado ? 1 : 0,
     draw.valorAcumuladoConcurso || 0,
     draw.valorEstimadoProximoConcurso || 0,
-    !draw.tipoJogo || draw.tipoJogo === 'MEGA_SENA' ? 0 : 1
+    // tipoJogo is MEGA_SENA even for special contests; the indicator is what marks them.
+    draw.concursoEspecial ? 1 : 0
   ) as { changes: number; lastInsertRowid: number };
 
   // Return true only if a new row was inserted.

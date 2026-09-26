@@ -39,6 +39,7 @@ export async function GET(): Promise<Response> {
     ...(oldestYear
       ? [`- Cada ano tem uma página em ${absoluteUrl('/resultados/')}{ano}, de ${oldestYear} a ${newestYear}.`]
       : []),
+    `- [Mega da Virada](${absoluteUrl('/mega-da-virada')}): dezenas, ganhadores e prêmios de todas as edições desde 2009, e as regras oficiais do concurso especial de fim de ano.`,
     '',
     '## Números',
     '',
