@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Space_Grotesk } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
 import '@/lib/log-sink.server';
@@ -16,18 +15,7 @@ import {
 } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
 import { BASE_URL as baseUrl } from '@/lib/constants';
-
-const geist = Geist({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-geist',
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-title',
-});
+import { fontVariables } from '@/app/_lib/fonts';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -110,7 +98,7 @@ export default async function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${geist.variable} ${spaceGrotesk.variable}`}
+      className={fontVariables}
       suppressHydrationWarning
     >
       <body className="antialiased flex min-h-screen flex-col font-sans">
