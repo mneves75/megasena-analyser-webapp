@@ -177,8 +177,8 @@ Os overrides em `pnpm-workspace.yaml` (chave `overrides`) existem para manter `p
 Overrides atuais de segurança:
 
 - `@babel/core`
-- `brace-expansion`
-- `fast-uri`
+- `brace-expansion >=5.0.12` (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p)
+- `fast-uri >=3.1.8 <4` (GHSA-hrr3-gc8f-f4qj)
 - `flatted`
 - `js-yaml`
 - `picomatch`
@@ -190,4 +190,4 @@ Remova um override apenas quando:
 1. o pacote ascendente resolver versão segura sem override;
 2. `pnpm install` atualizar o `pnpm-lock.yaml` sem reintroduzir a versão vulnerável;
 3. `pnpm audit` continuar retornando `No known vulnerabilities found`;
-4. `bun run lint`, `bun x tsc --noEmit`, `bun run test -- --run`, `bun run build` e `bun run test:e2e` passarem.
+4. `bun run lint`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite` e `bun run build` passarem, com verificação de UI pelo Argent nesta revisão conforme o README.

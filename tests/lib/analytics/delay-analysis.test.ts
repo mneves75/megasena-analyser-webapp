@@ -151,12 +151,12 @@ describeWithDb('DelayAnalysisEngine', () => {
 
       expect(distribution).toHaveLength(4);
       expect(distribution.map((d) => d.category)).toEqual(
-        expect.arrayContaining([
-          'Recente (<=5)',
+        [
+          'Recente (≤5)',
           'Normal',
           'Atrasado',
-          'Critico',
-        ].map(expect.stringMatching))
+          'Crítico',
+        ]
       );
     });
 
@@ -182,16 +182,10 @@ describeWithDb('DelayAnalysisEngine', () => {
       expect(num1Delay?.delayDraws).toBe(0);
     });
 
-    it('should handle number appearing in all positions', () => {
-      // Number 5 appears multiple times per draw (edge case, shouldn't happen in real data)
-      insertTestDraw(db, 1, '2025-01-01', [5, 5, 5, 5, 5, 5]);
-
-      const delays = delayEngine.getNumberDelays();
-      const num5Delay = delays.find((d) => d.number === 5);
-
-      // Number 5 counted 6 times, but appears in 1 draw
-      // averageDelay = 1/6 (rounded)
-      expect(num5Delay?.delayDraws).toBe(0);
+    it('should reject repeated numbers without adding an invalid draw', () => {
+      expect(() => insertTestDraw(db, 1, '2025-01-01', [5, 5, 5, 5, 5, 5]))
+        .toThrow('draw numbers must be unique');
+      expect(delayEngine.getNumberDelays()).toEqual([]);
     });
   });
 });

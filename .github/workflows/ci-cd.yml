@@ -109,6 +109,9 @@ jobs:
       - name: Run tests
         run: bun run test -- --run --coverage
 
+      - name: Run real SQLite analytics tests
+        run: bun run test:sqlite
+
   # ============================================================================
   # Job 3: E2E Tests
   # ============================================================================

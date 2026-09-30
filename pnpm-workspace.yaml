@@ -41,10 +41,12 @@ overrides:
   # GHSA-rgw5-rvv9-x895: DoS via unbounded brace expansion. O range antigo
   # '>=1.1.16 <2' ainda resolvia 1.1.16, que o advisory marca como
   # vulnerável. Forçamos a linha 5.x corrigida.
-  brace-expansion: '>=5.0.9'
+  # GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7 e GHSA-6j4f-fj2g-mc7p: <5.0.12.
+  brace-expansion: '>=5.0.12'
   caniuse-lite: 1.0.30001792
   # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp: <3.1.6.
-  fast-uri: '>=3.1.7 <4'
+  # GHSA-hrr3-gc8f-f4qj: normalização de host corrigida em 3.1.8.
+  fast-uri: '>=3.1.8 <4'
   flatted: 3.4.2
   # GHSA-p498-v437-472g: <0.16.8 (via eslint).
   '@humanfs/node': '>=0.16.8 <0.17'

@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { expect, it } from 'vitest';
 
 // A fixture command must never delete an inherited real database or accept a
 // caller-selected path outside its disposable test directory, including symlinks.
 it('refuses a database path outside the disposable fixture directory', () => {
-  const directory = fs.mkdtempSync(path.join(process.cwd(), '.tmp', 'fixture-safety-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'fixture-safety-'));
   const database = path.join(directory, 'sentinel.db');
   try {
     fs.writeFileSync(database, 'DO_NOT_DELETE');

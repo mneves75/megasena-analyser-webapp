@@ -30,14 +30,14 @@ Pense em três camadas:
 
 ## Explicação detalhada (por tecnologia)
 
-### Bun (`>=1.3.14`) — runtime, gerenciador de pacotes e SQLite nativo
+### Bun (`>=1.4.2`) — runtime e SQLite nativo
 
 - **O que é:** runtime JavaScript/TypeScript (alternativa a Node.js) que executa
   `.ts` direto, traz um gerenciador de pacotes e um cliente SQLite embutido.
 - **Por que aparece:** o projeto usa `bun:sqlite`, que **só existe no Bun**. Rodar em
   Node falha de propósito com mensagem explícita.
 - **Onde:**
-  - `package.json` → `"engines": { "bun": ">=1.3.14" }` e `"runtime": "bun"`.
+  - `package.json` → `"engines": { "bun": ">=1.4.2" }` e `"runtime": "bun"`.
   - `server.ts:7` → `import { serve } from 'bun'` (servidor HTTP da API).
   - `lib/db.ts:665` → `const { Database } = require('bun:sqlite')`.
   - `lib/db.ts:679-686` → erro deliberado se `bun:sqlite` não existir ("must be run
@@ -48,7 +48,7 @@ Pense em três camadas:
   Use `pnpm install`, `bun run dev` e `bun x vitest`.
 - Docs: https://bun.sh/docs
 
-### Next.js (`16.3.0`) — framework web (App Router)
+### Next.js (`16.3.5`) — framework web (App Router)
 
 - **O que é:** framework React full-stack. Aqui usado em modo **App Router** com
   `output: standalone`.
@@ -61,12 +61,13 @@ Pense em três camadas:
     Gera o nonce CSP e injeta os headers de segurança.
   - `app/icon.tsx`, `app/opengraph-image.tsx`, `app/twitter-image.tsx`,
     `app/apple-icon.tsx` — usam `next/og` (`ImageResponse`) para gerar PNG/OG.
-  - `app/manifest.ts`, `app/robots.ts`, `app/sitemap.ts` — route handlers de metadados.
+  - `app/manifest.ts`, `app/robots.ts`, `app/sitemap.xml/route.ts` — metadados e sitemap.
   - `app/dashboard/generator/actions.ts` → `'use server'` (Server Action).
 - **Detalhe importante (verificado):** os Server Components **não** falam direto com o
   banco. Eles chamam o servidor Bun via `fetchApi(...)` (ver `app/dashboard/page.tsx`,
   `app/dashboard/statistics/page.tsx`, `app/dashboard/generator/actions.ts`). O motivo
-  está comentado em `actions.ts`: Server Actions rodam em Node, mas o banco exige Bun.
+  é manter a API como dona do acesso ao banco. O build do Next roda em Node;
+  o servidor standalone de produção, as Server Actions e a API rodam em Bun.
 - Docs: https://nextjs.org/docs
 
 ### React (`19.2.6`) — biblioteca de UI
@@ -97,7 +98,7 @@ Pense em três camadas:
 - **Onde:** `lib/db.ts:661-689` (`initializeDatabase`), incluindo os PRAGMAs:
   `journal_mode = WAL`, `synchronous = NORMAL`, `foreign_keys = ON`,
   `busy_timeout = 5000`, `cache_size = -8000`, `wal_autocheckpoint = 1000`,
-  `trusted_schema = OFF`, `application_id = 0xA17E6D42`.
+  `trusted_schema = OFF`, `application_id = 0xA17E6D42` representado como inteiro assinado de 32 bits.
 - **Detalhe de teste:** em Vitest, `lib/db.ts` substitui o SQLite por uma
   `InMemoryDatabase` (linhas 132-549) que normaliza SQL em memória. Força banco real
   com `VITEST_FORCE_FILE_DB=1`.
@@ -154,15 +155,20 @@ Pense em três camadas:
 - **Onde:** `lib/log-sink.server.ts`. Garante (em build) que o módulo nunca seja
   importado no bundle do cliente.
 
-### Vitest (`4.1.5`) + coverage v8 + Testing Library + jsdom — testes unitários
+### Vitest (`4.1.11`) + coverage v8 + Testing Library + jsdom — testes unitários
 
 - **Onde:** `vitest.config.ts`, `tests/**`, `tests/setup.ts` (cleanup + `stopLogWriter`).
-  Threshold de cobertura 80% (ver `CLAUDE.md` e `vitest.config.ts`).
+  Os limites atuais são 71% de linhas/instruções, 72% de funções e 67% de branches;
+  a meta de 80% sobe gradualmente (ver `vitest.config.ts`). `bun run test:sqlite`
+  executa os 12 casos de atraso com Bun/SQLite real, após preparar uma fixture
+  descartável com a proteção contra caminhos externos e links simbólicos.
 
 ### Playwright (`^1.57.0`) — testes E2E
 
 - **Onde:** `playwright.config.ts`, `tests/app/*.spec.ts` (dashboard, statistics,
   generator, layout, security).
+  Nesta revisão, o responsável exige Argent: use o fluxo e as verificações em
+  desktop/celular documentados no README; não execute Playwright.
 
 ### ESLint 9 + `eslint-config-next` + Prettier — qualidade de código
 
@@ -200,14 +206,12 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 ## Mal-entendidos comuns
 
 - **"É Node.js."** Não. `bun:sqlite` e `Bun.serve` quebram em Node. Use sempre `bun`.
-- **"Framer Motion anima a UI."** O `CLAUDE.md` afirma isso, mas **nenhum arquivo de
-  `app/`, `components/` ou `lib/` importa `framer-motion`** (verificado por grep).
-  Trate como dependência declarada e não usada (ver `09-open-questions-and-risks.md`).
-- **"Datas usam `date-fns`."** Também declarada e não importada; a formatação real é
+- **"Framer Motion anima a UI."** Não é uma dependência atual do projeto.
+- **"Datas usam `date-fns`."** Não é uma dependência atual; a formatação real usa
   `Intl.DateTimeFormat` em `lib/utils.ts`.
-- **"`overrides` no `package.json` são preferências."** São **gates de segurança
-  temporários** (pins de `ajv`, `minimatch`, `ws`, etc.); só removê-los quando
-  `bun audit` continuar limpo sem eles (`AGENTS.md`).
+- **"`overrides` no `package.json` são preferências."** O pnpm ignora esse campo.
+  Os **gates de segurança temporários** efetivos ficam em `pnpm-workspace.yaml`;
+  só removê-los quando `pnpm audit` continuar limpo sem eles (`AGENTS.md`).
 - **"Os gráficos são todos acessíveis igualmente."** `line-chart.tsx` não tem o
   fallback `sr-only` que `bar-chart`/`donut-chart` têm.
 
@@ -215,8 +219,8 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 
 1. **(Fácil / compreensão)** Liste, lendo `package.json`, todas as dependências de
    produção e marque cada uma como "importada no código" ou "não encontrada" usando
-   `grep -rl <pacote> app components lib`. Esperado: encontrar pelo menos duas não
-   usadas. **Gabarito:** `framer-motion` e `date-fns`.
+   `rg -l <pacote> app components lib`. Confira também usos em build e configuração;
+   não concluir que um pacote é inútil apenas por não aparecer nesses diretórios.
 2. **(Médio / rastreamento)** Partindo de `app/dashboard/statistics/page.tsx`, siga a
    cadeia até o banco: qual função busca os dados? Para qual host/porta? Qual processo
    responde? **Gabarito:** `fetchApi('/api/statistics?...')` → `lib/api/api-fetch.ts`

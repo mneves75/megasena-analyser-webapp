@@ -19,7 +19,7 @@ UI must say so. User-facing copy is pt-BR.
   per-request CSP nonce and sets page security headers
 - **Database**: SQLite via Bun's native `bun:sqlite` (not `better-sqlite3`), WAL mode,
   migrations in `db/migrations/`
-- **Runtime**: Bun `>=1.3.14` only — the app will not run on Node.js
+- **Runtime**: Bun `>=1.4.2` only — the app will not run on Node.js
 - **Deps**: pnpm 11 (`pnpm-lock.yaml`); overrides live in `pnpm-workspace.yaml`
 - **Styling**: Tailwind CSS with a semantic-token design system
 - **Type Safety**: strict TypeScript throughout
@@ -100,6 +100,8 @@ Add it to `server.ts` with Zod validation — never to `app/`.
 - Vitest: `tests/lib/`, `tests/components/`, `tests/scripts/`; Playwright: `tests/app/`
 - Coverage thresholds over `components/**` and `lib/**` ratchet toward 80% (`vitest.config.ts`)
 - `bun run test -- --run`
+- `bun run test:sqlite` verifies real SQLite delay analytics through the guarded disposable fixture reset.
+- For this review, browser/UI acceptance uses Argent; do not run Playwright.
 
 ## Security Considerations
 
