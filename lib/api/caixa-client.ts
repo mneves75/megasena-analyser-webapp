@@ -169,7 +169,9 @@ export function normalizePrizeDescription(
 }
 
 export function normalizeMegaSenaDrawData(raw: CaixaRawDrawData): MegaSenaDrawData {
-  const prizeBreakdown = raw.rateioProcessamento ?? raw.listaRateioPremio ?? [];
+  const prizeBreakdown = raw.rateioProcessamento?.length
+    ? raw.rateioProcessamento
+    : raw.listaRateioPremio ?? [];
   const normalized: MegaSenaDrawData = {
     numero: raw.numero,
     dataApuracao: raw.dataApuracao,
@@ -206,7 +208,7 @@ export function normalizeMegaSenaDrawData(raw: CaixaRawDrawData): MegaSenaDrawDa
 export class CaixaAPIClient {
   private baseURL: string;
   private timeout: number;
-  private cache: Map<string, MegaSenaDrawData>;
+  private cache: Map<string, CaixaRawDrawData>;
   private etags: Map<string, string>;
 
   constructor() {
@@ -242,7 +244,7 @@ export class CaixaAPIClient {
       const data = normalizeMegaSenaDrawData(rawData);
 
       // Cache the result
-      this.cache.set(url, data);
+      this.cache.set(url, rawData);
 
       // Store ETag for future requests
       const etag = response.headers.get('ETag');
@@ -270,9 +272,8 @@ export class CaixaAPIClient {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      const controller = new AbortController();
       try {
-        const controller = new AbortController();
-
         timeoutId = setTimeout(() => {
           controller.abort();
         }, this.timeout);
@@ -324,14 +325,16 @@ export class CaixaAPIClient {
           throw new CaixaAPIError(`HTTP ${response.status}: ${response.statusText}`, errorOptions);
         }
 
-        // Success - return response
-        return response;
+        // Consume the body before clearing the request deadline. Returning a
+        // buffered response preserves the caller's validation and ETag handling.
+        const body = await response.text();
+        return new Response(body, { status: response.status, headers: response.headers });
       } catch (error) {
         if (error instanceof CaixaAPIError && !error.retryable) {
           throw error;
         }
 
-        if (error instanceof Error && error.name === 'AbortError') {
+        if (controller.signal.aborted) {
           lastError = new Error(`Request timeout after ${this.timeout}ms`);
         } else {
           lastError = error as Error;

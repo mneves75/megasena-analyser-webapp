@@ -107,4 +107,9 @@ describe('safeStringEqual', () => {
   it('rejeita strings de mesmo tamanho com conteúdo diferente', () => {
     expect(safeStringEqual('abc123', 'abc124')).toBe(false);
   });
+
+  it('rejeita tamanhos UTF-8 diferentes sem lançar erro', () => {
+    expect(safeStringEqual('a', 'é')).toBe(false);
+    expect(safeStringEqual('é', 'é')).toBe(true);
+  });
 });

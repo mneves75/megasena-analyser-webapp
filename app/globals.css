@@ -16,7 +16,7 @@
        background, so both the label and the button edge stay compliant. */
     --primary: 192 72% 34%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 192 64% 47%;
+    --primary-glow: 192 64% 34%;
     --secondary: 200 14% 95.5%;
     --secondary-foreground: 210 12% 18%;
     --muted: 200 14% 95.5%;

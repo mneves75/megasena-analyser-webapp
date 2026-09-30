@@ -51,7 +51,7 @@ export class BetGenerator {
     const hot = this.db
       .prepare(
         `SELECT number FROM number_frequency
-         ORDER BY frequency DESC
+         ORDER BY frequency DESC, number ASC
          LIMIT ?`
       )
       .all(BetGenerator.STRATEGY_POOL_SIZE) as Array<{ number: number }>;
@@ -59,7 +59,7 @@ export class BetGenerator {
     const cold = this.db
       .prepare(
         `SELECT number FROM number_frequency
-         ORDER BY frequency ASC
+         ORDER BY frequency ASC, number DESC
          LIMIT ?`
       )
       .all(BetGenerator.STRATEGY_POOL_SIZE) as Array<{ number: number }>;

@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.16.1",
+  "version": "1.16.2",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -15,6 +15,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest",
     "test:e2e": "playwright test",
+    "test:argent": "argent flow run qa-generator-mobile-375-pagination --platform chromium",
     "security:secrets": "bun run scripts/scan-secrets.ts",
     "security:secrets:history": "bun run scripts/scan-secret-history.ts",
     "security:csp:edge": "bun run scripts/check-edge-csp.ts",

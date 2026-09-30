@@ -54,10 +54,10 @@ ruins. Aqui está a lista do que verificar antes de confiar.
   `metadata` sem chamar `sanitizeStructuredMetadata`; a sanitização ocorre antes, em
   `logger.ts`. Um chamador direto de `enqueueLogEvent` burlaria a redação. Defesa em
   profundidade recomendada (ver `10-lgpd-compliance-plan.md`, gap 1).
-- **`scripts/fetch-missing.ts` e `start-docker-distroless.ts` órfãos.** Sem script npm
-  e/ou sem Dockerfile que os use. `fetch-missing.ts` usa `bun:sqlite` cru (não passa por
-  `lib/db.ts`), então pula validações de aplicação — embora as triggers da migração
-  `007` ainda protejam a unicidade. Considere remover ou documentar como legado.
+- **Entry points legados.** `scripts/fetch-missing.ts` agora delega ao `pullDraws`
+  incremental, com `DATABASE_PATH`, validação e transação dos caches. Não mantém
+  mais uma conexão SQLite independente. `start-docker-distroless.ts` continua sem
+  Dockerfile que o use.
 
 ## Armadilhas para juniores
 

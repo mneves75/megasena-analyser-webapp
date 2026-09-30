@@ -80,5 +80,5 @@ export function formatDate(date: string): string {
 }
 
 export function formatPercentage(value: number, decimals: number = 1): string {
-  return `${value.toFixed(decimals)}%`;
+  return `${value.toFixed(decimals).replace('.', ',')}%`;
 }

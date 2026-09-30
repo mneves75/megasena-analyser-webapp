@@ -1,0 +1,71 @@
+steps:
+  - launch: { chromium: ../launch-chromium.sh }
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Gerador de Apostas Otimizado
+        role: h1
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Aviso de privacidade e armazenamento local
+        role: region
+  - tap:
+      text: Entendi
+  - tool: await-ui-element
+    args:
+      condition: hidden
+      selector:
+        text: Aviso de privacidade e armazenamento local
+        role: region
+  - tap:
+      id: budget-input
+  - tool: keyboard
+    args:
+      key: backspace
+  - tool: keyboard
+    args:
+      key: backspace
+  - tool: keyboard
+    args:
+      text: "1200"
+  - scroll-to: { target: { text: Apenas Simples } }
+  - tap:
+      text: Apenas Simples
+  - scroll-to: { target: { text: Gerar Apostas, role: button } }
+  - tap:
+      text: Gerar Apostas
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Resumo das Apostas
+        role: h3
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: 200 apostas geradas
+        role: p
+  - await: { idle: true }
+  - scroll-to: { target: { text: Próxima, role: button } }
+  - tap:
+      text: Próxima
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Exibindo 21 a 40 de 200 apostas
+        role: div
+  - tap:
+      text: Próxima
+  - tap:
+      text: Próxima
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Exibindo 61 a 80 de 200 apostas
+        role: div

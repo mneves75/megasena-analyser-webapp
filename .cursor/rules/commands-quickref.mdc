@@ -4,7 +4,7 @@ description: Build, dev, lint, and test command quick reference
 ---
 ## Commands Quick Reference
 
-Bun is the runtime (`>=1.3.14`); pnpm is the dependency manager (`pnpm@11`). The app
+Bun is the runtime (`>=1.4.2`); pnpm is the dependency manager (`pnpm@11`). The app
 uses `bun:sqlite` and will not run on Node.js.
 
 - Install deps: `pnpm install` (run `corepack enable` first) — never `bun install` or `npm install`
@@ -15,7 +15,7 @@ uses `bun:sqlite` and will not run on Node.js.
 - Format: `bun run format`
 - Tests: `bun run test -- --run --coverage` (Vitest once, with the coverage gate). Single file:
   `bun x vitest tests/lib/bet-generator.test.ts --run`
-- E2E: `bun run test:e2e` (Playwright)
+- UI: Argent Chromium; `bun run test:argent` (saved generator regression; see README)
 - DB: `bun run db:migrate`, then `bun run db:pull` to ingest draws from the CAIXA API;
   `bun run db:export-draws` refreshes the public seed and `bun run db:import-draws <seed>`
   appends missing draws to a live DB (see `docs/DEPLOY.md`)

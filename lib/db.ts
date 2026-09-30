@@ -6,6 +6,8 @@ import { resolveDatabasePath } from './db-path';
 const REPO_DB_DIR = path.join(process.cwd(), 'db');
 const DB_PATH = resolveDatabasePath();
 const DB_DIR = path.dirname(DB_PATH);
+// SQLite exposes application_id as a signed 32-bit integer.
+const APPLICATION_ID = 0xA17E6D42 | 0;
 
 // Primary migrations location (may be overwritten by Docker volume mount)
 const PRIMARY_MIGRATIONS_DIR = path.join(REPO_DB_DIR, 'migrations');
@@ -694,21 +696,28 @@ export async function getDatabaseAsync(): Promise<BunDatabase> {
 function initializeDatabase(): BunDatabase {
   // This application is designed to run with Bun runtime only
   // If not running with Bun, the bun:sqlite import will fail appropriately
+  let database: BunDatabase | undefined;
   try {
     const { Database } = require('bun:sqlite');
-    const database = new Database(DB_PATH) as BunDatabase;
+    database = new Database(DB_PATH) as BunDatabase;
+    database.exec('PRAGMA busy_timeout = 5000');
     database.exec('PRAGMA journal_mode = WAL');
     database.exec('PRAGMA synchronous = NORMAL');
     database.exec('PRAGMA foreign_keys = ON');
-    database.exec('PRAGMA busy_timeout = 5000');
     database.exec('PRAGMA temp_store = MEMORY');
     database.exec('PRAGMA cache_size = -8000');
     database.exec('PRAGMA wal_autocheckpoint = 1000');
     database.exec('PRAGMA journal_size_limit = 5242880');
     database.exec('PRAGMA trusted_schema = OFF');
-    database.exec('PRAGMA application_id = 0xA17E6D42');
+    const identity = database.prepare('PRAGMA application_id').get() as { application_id: number };
+    if (identity.application_id === 0) {
+      database.exec(`PRAGMA application_id = ${APPLICATION_ID}`);
+    } else if (identity.application_id !== APPLICATION_ID) {
+      throw new Error('Database belongs to a different application.');
+    }
     return database;
   } catch (error) {
+    database?.close();
     if (error instanceof Error && (error.message.includes('bun:sqlite') || error.message.includes('Cannot find module'))) {
       throw new Error(
         'Database requires Bun runtime. This application must be run with Bun, not Node.js.\n' +

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, toIsoDate } from '@/lib/utils';
+import { formatDate, formatPercentage, toIsoDate } from '@/lib/utils';
+
+it('formats percentage decimals in pt-BR', () => {
+  expect(formatPercentage(96)).toBe('96,0%');
+  expect(formatPercentage(78.44, 2)).toBe('78,44%');
+});
 
 describe('date utilities', () => {
   describe('toIsoDate', () => {

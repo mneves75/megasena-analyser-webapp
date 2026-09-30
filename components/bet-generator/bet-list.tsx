@@ -41,8 +41,7 @@ export function BetList({ result, className }: BetListProps) {
   };
 
   const formatPercentageValue = (val: number | null) => {
-    if (val === null) return '0.0%';
-    return formatPercentage(val, 1);
+    return formatPercentage(val ?? 0, 1);
   };
 
   // Pagination calculations
@@ -98,7 +97,7 @@ export function BetList({ result, className }: BetListProps) {
                 <TrendingUp className="w-4 h-4" />
                 <span className="text-sm">{pt.betGenerator.summary.utilization}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-2xl font-bold tabular-nums text-foreground">
                   {formatPercentageValue(result.budgetUtilization)}
                 </span>
@@ -131,7 +130,7 @@ export function BetList({ result, className }: BetListProps) {
           </div>
 
           {/* Breakdown */}
-          <div className="mt-6 pt-6 border-t border-border/50 flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="mt-6 pt-6 border-t border-border/50 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <span>
               <strong className="text-foreground">{result.summary.simpleBets}</strong>{' '}
               {pt.betGenerator.summary.simpleLabel}
@@ -163,7 +162,7 @@ export function BetList({ result, className }: BetListProps) {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
           <Button
             variant="outline"
             size="sm"
@@ -175,7 +174,7 @@ export function BetList({ result, className }: BetListProps) {
             {pt.betGenerator.summary.previous}
           </Button>
 
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center justify-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
               // Show first, last, current, and pages around current
               const showPage =

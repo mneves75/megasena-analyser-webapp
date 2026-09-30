@@ -70424,5 +70424,51 @@
     "accumulatedValue": 37003429.61,
     "nextEstimatedPrize": 45000000,
     "specialDraw": false
+  },
+  {
+    "contest": 3063,
+    "date": "2026-09-27",
+    "numbers": [
+      5,
+      35,
+      36,
+      41,
+      43,
+      48
+    ],
+    "prizeSena": 0,
+    "winnersSena": 0,
+    "prizeQuina": 73111.35,
+    "winnersQuina": 29,
+    "prizeQuadra": 1322.81,
+    "winnersQuadra": 2642,
+    "totalCollection": 53206716,
+    "accumulated": true,
+    "accumulatedValue": 43527211.47,
+    "nextEstimatedPrize": 52000000,
+    "specialDraw": false
+  },
+  {
+    "contest": 3064,
+    "date": "2026-09-29",
+    "numbers": [
+      4,
+      10,
+      20,
+      25,
+      27,
+      48
+    ],
+    "prizeSena": 0,
+    "winnersSena": 0,
+    "prizeQuina": 24039.44,
+    "winnersQuina": 82,
+    "prizeQuadra": 727.39,
+    "winnersQuadra": 4467,
+    "totalCollection": 49467708,
+    "accumulated": true,
+    "accumulatedValue": 65108665.02,
+    "nextEstimatedPrize": 75000000,
+    "specialDraw": false
   }
 ]

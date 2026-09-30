@@ -4,7 +4,7 @@ import path from 'node:path';
 const port = process.env['PORT'] ?? '3000';
 const baseURL = process.env['PLAYWRIGHT_BASE_URL'] ?? `http://localhost:${port}`;
 const databasePath =
-  process.env['DATABASE_PATH'] ?? path.join(process.cwd(), '.tmp', 'e2e', 'mega-sena.db');
+  process.env['E2E_DATABASE_PATH'] ?? path.join(process.cwd(), '.tmp', 'e2e', 'mega-sena.db');
 
 export default defineConfig({
   testDir: './tests/app',
@@ -25,6 +25,7 @@ export default defineConfig({
     env: {
       ...process.env,
       DATABASE_PATH: databasePath,
+      E2E_DATABASE_PATH: databasePath,
       NEXT_TELEMETRY_DISABLED: '1',
       TRUST_PROXY_HEADERS: 'true',
       // Public test value: E2E runs the server with NODE_ENV=production.

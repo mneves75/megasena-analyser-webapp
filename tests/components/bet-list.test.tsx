@@ -91,7 +91,7 @@ describe('BetList', () => {
 
     expect(screen.getByText(/R\$ 60,00/i)).toBeInTheDocument();
     expect(screen.getByText(/Números Únicos/i)).toBeInTheDocument();
-    expect(screen.getByText(/60\.0%/i)).toBeInTheDocument();
+    expect(screen.getByText('60,0%')).toBeInTheDocument();
   });
 
   it('omite a paginação quando todas as apostas cabem em uma página', () => {

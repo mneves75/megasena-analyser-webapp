@@ -1,10 +1,30 @@
 #!/usr/bin/env bun
 
 import path from 'node:path';
-import { mkdir, rm } from 'node:fs/promises';
+import { lstat, mkdir, realpath, rm } from 'node:fs/promises';
 
-const databasePath =
-  process.env['DATABASE_PATH'] ?? path.join(process.cwd(), '.tmp', 'e2e', 'mega-sena.db');
+const fixtureDirectory = path.resolve(process.cwd(), '.tmp', 'e2e');
+const databasePath = path.resolve(
+  process.env['E2E_DATABASE_PATH'] ?? path.join(fixtureDirectory, 'mega-sena.db')
+);
+if (path.dirname(databasePath) !== fixtureDirectory || !databasePath.endsWith('.db')) {
+  throw new Error('E2E_DATABASE_PATH deve apontar para um arquivo .db dentro de .tmp/e2e.');
+}
+
+// Reject directory aliases and file symlinks before any destructive fixture reset.
+await mkdir(fixtureDirectory, { recursive: true });
+if (await realpath(fixtureDirectory) !== fixtureDirectory) {
+  throw new Error('O diretório de fixtures E2E não pode ser um link simbólico.');
+}
+for (const suffix of ['', '-shm', '-wal']) {
+  const entry = await lstat(`${databasePath}${suffix}`).catch((error: unknown) => {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (entry && !entry.isFile()) {
+    throw new Error('O banco de fixtures E2E deve ser um arquivo regular, sem links simbólicos.');
+  }
+}
 
 process.env['DATABASE_PATH'] = databasePath;
 

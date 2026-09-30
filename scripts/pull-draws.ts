@@ -90,8 +90,7 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
   return !hadRow && result.changes > 0;
 }
 
-async function main() {
-  const args = process.argv.slice(2);
+export async function pullDraws(args: string[] = process.argv.slice(2)) {
   const incrementalFlag = args.indexOf('--incremental');
   const allowPartialFlag = args.indexOf('--allow-partial');
 
@@ -204,4 +203,6 @@ async function main() {
   }
 }
 
-main();
+if (import.meta.main) {
+  await pullDraws();
+}

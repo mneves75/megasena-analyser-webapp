@@ -19,7 +19,8 @@ Commands:
 
 - `bun run test -- --run` for one Vitest pass (omit `-- --run` for watch).
 - Single file: `bun x vitest tests/lib/bet-generator.test.ts --run`.
-- `bun run test:e2e` for Playwright.
+- `bun run test:argent` for the saved generator Chromium regression; inspect other
+  UI paths with Argent. The owner's current instruction prohibits Playwright.
 - `bun run lint` with `--max-warnings=0`; `bun run lint:fix` for autofix.
 
 See: `AGENTS.md` → "Done-when" for the full gate list.

@@ -177,7 +177,7 @@ export default async function StatisticsPage() {
     ...(parity && parity.length > 0 ? [{ id: 'paridade', label: 'Par/Ímpar' }] : []),
     ...(primes ? [{ id: 'primos', label: 'Primos' }] : []),
     ...(sumStats ? [{ id: 'soma', label: 'Soma' }] : []),
-    ...(hotNumbers && hotNumbers.length > 0 ? [{ id: 'sequencias', label: 'Sequências' }] : []),
+    ...(hotNumbers?.length || coldNumbers?.length ? [{ id: 'sequencias', label: 'Sequências' }] : []),
     ...(luckyNumbers && luckyNumbers.length > 0 ? [{ id: 'premios', label: 'Prêmios' }] : []),
     { id: 'todos', label: 'Todos' },
   ];
@@ -641,7 +641,7 @@ export default async function StatisticsPage() {
         <section className="space-y-6">
           <h2 className="text-xl font-bold sm:text-2xl">Análise Temporal</h2>
 
-        {hotNumbers && hotNumbers.length > 0 && (
+        {Boolean(hotNumbers?.length || coldNumbers?.length) && (
           <Card id="sequencias" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -662,6 +662,7 @@ export default async function StatisticsPage() {
                 </p>
               </div>
               <div className="space-y-6">
+                {hotNumbers && hotNumbers.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-primary" />
@@ -686,6 +687,7 @@ export default async function StatisticsPage() {
                     ))}
                   </div>
                 </div>
+                )}
 
                 {coldNumbers && coldNumbers.length > 0 && (
                   <div>

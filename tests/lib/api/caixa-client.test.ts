@@ -2,6 +2,55 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
 
 describe('CaixaAPIClient', () => {
+  it('keeps the request deadline active while a response body is stalled', async () => {
+    const client = new CaixaAPIClient();
+    Object.assign(client, { timeout: 25 });
+    vi.spyOn(client as unknown as { delay: (ms: number) => Promise<void> }, 'delay').mockResolvedValue();
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, options: RequestInit) => {
+      const body = new ReadableStream({
+        start(controller) {
+          options.signal?.addEventListener('abort', () =>
+            controller.error(new DOMException('Aborted', 'AbortError')), { once: true });
+        },
+      });
+      return Promise.resolve(new Response(body));
+    }));
+    const outcome = await Promise.race([
+      client.fetchDraw(1).then(() => 'unexpected success', (error: unknown) =>
+        error instanceof Error ? error.message : String(error)),
+      new Promise<string>((resolve) => setTimeout(() => resolve('deadline did not fire'), 500)),
+    ]);
+    expect(outcome).toContain('Request timeout after 25ms');
+  });
+  it('preserves the normalized special draw through an ETag 304 response', async () => {
+    const client = new CaixaAPIClient();
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        numero: 3010,
+        dataApuracao: '24/05/2026',
+        listaDezenas: ['01', '02', '03', '04', '05', '06'],
+        indicadorConcursoEspecial: 2,
+      }), { headers: { ETag: 'special-draw' } }))
+      .mockResolvedValueOnce(new Response(null, { status: 304 })));
+    const first = await client.fetchDraw(3010);
+    const second = await client.fetchDraw(3010);
+    expect(first.concursoEspecial).toBe(true);
+    expect(second).toEqual(first);
+  });
+  it('uses listaRateioPremio when the legacy prize array is empty', async () => {
+    const client = new CaixaAPIClient();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      numero: 3064,
+      dataApuracao: '29/09/2026',
+      listaDezenas: ['04', '10', '20', '25', '27', '48'],
+      rateioProcessamento: [],
+      listaRateioPremio: [{ faixa: 2, numeroDeGanhadores: 82, valorPremio: 24039.44 }],
+    }))));
+    const draw = await client.fetchDraw(3064);
+    expect(draw.rateioProcessamento).toEqual([
+      { descricaoFaixa: 'Quina', numeroDeGanhadores: 82, valorPremio: 24039.44 },
+    ]);
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();

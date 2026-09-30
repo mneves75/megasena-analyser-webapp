@@ -148,7 +148,7 @@ export function parseCsp(csp: string): Map<string, string> {
     }
 
     const [name, ...valueParts] = directive.split(/\s+/);
-    if (name) {
+    if (name && !directives.has(name.toLowerCase())) {
       directives.set(name.toLowerCase(), valueParts.join(' '));
     }
   }
@@ -196,6 +196,28 @@ export function validatePageCsp(csp: string | null): CspCheck {
   const scriptSrc = directives.get('script-src') ?? '';
   const styleSrc = directives.get('style-src') ?? '';
   const styleSrcAttr = directives.get('style-src-attr') ?? '';
+
+  const seen = new Set<string>();
+  for (const rawDirective of csp.split(';')) {
+    const name = rawDirective.trim().split(/\s+/)[0]?.toLowerCase();
+    if (!name) continue;
+    if (seen.has(name)) problems.push(`Diretiva CSP duplicada: ${name}.`);
+    seen.add(name);
+  }
+  for (const [name, base] of [['script-src-elem', scriptSrc], ['style-src-elem', styleSrc]]) {
+    if (!name || base === undefined) continue;
+    const override = directives.get(name);
+    if (override === undefined) continue;
+    const expectedSources = new Set(base.split(/\s+/));
+    if (override.split(/\s+/).some((source) => !expectedSources.has(source))) {
+      problems.push(`${name} amplia as fontes permitidas pela diretiva base.`);
+    }
+    if (!/'nonce-[^']+'/.test(override) ||
+        (name === 'script-src-elem' && !override.includes("'strict-dynamic'"))) {
+      problems.push(`${name} substitui a proteção por nonce da diretiva base.`);
+    }
+    evidence.push(`${name}=${override}`);
+  }
 
   if (!/'nonce-[^']+'/.test(scriptSrc)) {
     problems.push('script-src não contém nonce por request.');

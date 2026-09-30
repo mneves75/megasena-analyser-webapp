@@ -3,7 +3,6 @@ import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import { Shield, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { generateFAQSchema } from '@/lib/seo/schemas';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
@@ -27,7 +26,6 @@ type PrivacySection = {
 };
 
 export default function PrivacyPage(): React.JSX.Element {
-  const privacyFaqs = pt.privacy.faqs;
   const privacySections = pt.privacy.sections as ReadonlyArray<PrivacySection>;
 
   return (
@@ -36,7 +34,6 @@ export default function PrivacyPage(): React.JSX.Element {
         path="/privacy"
         name={pt.meta.privacy.title}
         description={pt.meta.privacy.description}
-        extra={[generateFAQSchema(privacyFaqs)]}
       />
       <div className="container mx-auto px-4 py-8">
         <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">

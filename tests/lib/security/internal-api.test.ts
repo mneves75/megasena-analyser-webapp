@@ -26,6 +26,11 @@ describe('isInternalApiRequest', () => {
     expect(isInternalApiRequest(requestWithHeaders('wrong'), '127.0.0.1', SECRET)).toBe(false);
     expect(isInternalApiRequest(requestWithHeaders(), '127.0.0.1', '')).toBe(false);
   });
+
+  it('rejects a multibyte header with the same character count without throwing', () => {
+    const candidate = 'é'.repeat(SECRET.length);
+    expect(isInternalApiRequest(requestWithHeaders(candidate), '127.0.0.1', SECRET)).toBe(false);
+  });
 });
 
 describe('isRateLimitExempt', () => {

@@ -281,7 +281,7 @@ export const pt = {
       {
         value: 'multiple_only',
         label: 'Apenas Múltipla',
-        description: 'Uma aposta múltipla (7-15 números)',
+        description: 'Uma aposta múltipla (7-20 números)',
       },
     ],
     summary: {

@@ -26,6 +26,18 @@ function headers(values: Record<string, string>): Headers {
 }
 
 describe('scripts/check-edge-csp.ts', () => {
+  it.each(['script-src-elem', 'style-src-elem'])(
+    'rejects a permissive %s overriding nonce-protected elements', (directive) => {
+      const safe = "script-src 'nonce-abc' 'strict-dynamic'; style-src 'nonce-abc'";
+      expect(validatePageCsp(`${safe}; ${directive} 'unsafe-inline' https:`).ok).toBe(false);
+    }
+  );
+
+  it('uses the first duplicate CSP directive, like the browser', () => {
+    const csp = "script-src 'unsafe-inline'; script-src 'nonce-abc' 'strict-dynamic'; style-src 'nonce-abc'";
+    expect(parseCsp(csp).get('script-src')).toBe("'unsafe-inline'");
+    expect(validatePageCsp(csp).ok).toBe(false);
+  });
   it('normaliza URLs públicas com cache buster', () => {
     const url = buildEdgeUrl('https://example.com/dashboard?old=1#hash', '/api/health');
     expect(url).toMatch(/^https:\/\/example\.com\/api\/health\?cb=\d+$/);

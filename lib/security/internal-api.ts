@@ -1,5 +1,5 @@
-import { timingSafeEqual } from 'node:crypto';
 import { hasClientIpHeader, shouldTrustProxyHeaders } from './http';
+import { safeStringEqual } from './pseudonymize';
 
 const INTERNAL_REQUEST_HEADER = 'x-megasena-internal-request';
 const INTERNAL_REQUEST_SECRET_HEADER = 'x-megasena-internal-request-secret';
@@ -29,7 +29,7 @@ function hasValidInternalApiSecret(req: Request, configuredSecret: string): bool
     return false;
   }
 
-  return timingSafeEqual(Buffer.from(candidate), Buffer.from(secret));
+  return safeStringEqual(candidate, secret);
 }
 
 export function isInternalApiRequest(
