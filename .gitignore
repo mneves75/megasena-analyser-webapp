@@ -99,3 +99,7 @@ traefik*.yaml
 .vinext/
 .cloudflare/
 .dev.vars*
+
+# Private operational notes and evidence
+.scratch/
+/memory/

@@ -32,7 +32,7 @@ testes de contrato.
       pre-commit versionado.
 - [x] (2026-07-29 00:36Z) Atualizar os contratos operacionais em `AGENTS.md`, `CLAUDE.md`,
       `docs/SECURITY.md` e `MEMORY.md`.
-- [x] (2026-07-29 00:44Z) Registrar o resultado e as evidências em `memory/2026-07-28.md`.
+- [x] (2026-07-29 00:44Z) Registrar o resultado e as evidências em notas operacionais privadas.
 - [x] (2026-07-29 00:44Z) Executar validação focada, lint estrutural e todos os gates aplicáveis.
 
 ## Surprises & Discoveries
@@ -243,11 +243,10 @@ local deste plano publica, faz push, cria release ou altera produção.
 ## Artifacts and Notes
 
 Os artefatos locais de origem são `findings.json`, `scan-manifest.json` e
-`coverage.json` do scan `[RESOURCE_ID]`; eles não pertencem ao
-repositório público.
+`coverage.json`; identificadores e recibos de execução ficam em armazenamento
+privado, fora do repositório público.
 
-O novo scan Codex Security não será repetido nesta execução: a ferramenta informou
-cota indisponível até 2026-08-04 18:10. O fechamento será baseado no artefato completo
+O novo scan Codex Security não foi executado. O fechamento será baseado no artefato completo
 256/256, testes de regressão e gates locais, declarando essa limitação.
 
 ## Interfaces and Dependencies
