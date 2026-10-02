@@ -181,8 +181,8 @@ export default function AboutPage() {
           <section className="space-y-3">
             <h2>Tecnologia</h2>
             <p>
-              Construído com Next.js, TypeScript e SQLite. Hospedado em servidor
-              próprio. Código focado em performance, acessibilidade e privacidade,
+              Construído com React, TypeScript e SQLite. Código focado em
+              performance, acessibilidade e privacidade,
               com coleta mínima de dados técnicos para segurança e operação.
             </p>
           </section>

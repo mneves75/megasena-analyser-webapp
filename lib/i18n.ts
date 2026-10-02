@@ -127,8 +127,8 @@ export const pt = {
         description: 'Crie apostas baseadas em estratégias avançadas',
       },
       {
-        title: 'Análise em Tempo Real',
-        description: 'Dados atualizados da API oficial da CAIXA',
+        title: 'Análise do Histórico',
+        description: 'Estatísticas dos concursos disponíveis na base',
       },
     ],
     disclaimer: {
