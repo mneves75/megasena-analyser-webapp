@@ -1,12 +1,9 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [main, develop]
-    tags:
-      - 'v*.*.*'
-  pull_request:
-    branches: [main]
+  # Legacy Docker/Playwright release path. Cloudflare Runtime owns automatic gates;
+  # visual acceptance for the Cloudflare migration is recorded with Argent.
+  workflow_dispatch:
 
 # Default every job to a read-only token; jobs that stage or publish images
 # declare their own elevated permissions explicitly.

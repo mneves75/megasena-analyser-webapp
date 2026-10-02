@@ -1,6 +1,6 @@
 # Trilha de Onboarding - Mega-Sena Analyzer
 
-Esta trilha descreve principalmente o runtime Bun/VPS. Notas nos capítulos 01–09 indicam o caminho Worker/SQLite Durable Object, ainda não publicado. Para cutover e aceite, use [DEPLOY.md](../DEPLOY.md). A versão interativa permanece como material do caminho Bun/VPS.
+Esta trilha descreve principalmente o runtime Bun/VPS. Notas nos capítulos 01–09 indicam o caminho Worker/SQLite Durable Object publicado em staging. Para cutover e aceite, use [DEPLOY.md](../DEPLOY.md). A versão interativa permanece como material do caminho Bun/VPS.
 
 Bem-vindo. Esta pasta tem **duas trilhas** complementares para quem está começando:
 

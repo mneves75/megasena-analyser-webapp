@@ -524,7 +524,7 @@ export const pt = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updatedAt: '20 de maio de 2026',
+    updatedAt: '2 de outubro de 2026',
     summaryTitle: 'Resumo: Coletamos o mínimo necessário para operar o serviço.',
     summaryBody:
       'Sem cadastro, sem autenticação, sem cookies HTTP, sem analytics de marketing. Pseudonimizamos identificadores técnicos (HMAC-SHA256) e mantemos apenas telemetria operacional mínima para segurança, auditoria e disponibilidade.',
@@ -576,19 +576,19 @@ export const pt = {
       {
         title: '4. Retenção e eliminação',
         paragraphs: [
-          'Logs estruturados: 30 dias. Auditoria: 400 dias. Backups do banco: 7 dias rolantes. A eliminação é automatizada por agendadores diários.',
+          'Logs da aplicação: 30 dias. Auditoria: 400 dias. Backups do ambiente VPS: 7 dias rolantes. Logs de observabilidade da Cloudflare: 7 dias no plano vigente. A aplicação executa a limpeza dos registros expirados diariamente.',
         ],
       },
       {
         title: '5. Compartilhamento e operadores',
         paragraphs: [
-          'Não vendemos, alugamos ou compartilhamos dados com terceiros para fins comerciais. Operamos com Cloudflare (CDN, mitigação de DDoS, terminação TLS) e um provedor de VPS para hospedagem, ambos sob cláusulas-padrão de proteção de dados.',
+          'Não vendemos, alugamos ou compartilhamos dados com terceiros para fins comerciais. A Cloudflare entrega e protege o site. Nos ambientes hospedados na Cloudflare, ela também executa a aplicação e armazena registros operacionais e de auditoria. Um provedor de VPS hospeda os ambientes que ainda utilizam essa infraestrutura.',
         ],
       },
       {
         title: '6. Transferência internacional (Art. 33 LGPD)',
         paragraphs: [
-          'O tráfego é intermediado pela edge global da Cloudflare, o que pode envolver processamento fora do Brasil. A transferência ocorre apenas para entrega do serviço e está coberta por cláusulas-padrão de proteção de dados.',
+          'A infraestrutura global da Cloudflare pode processar tráfego e armazenar registros operacionais fora do Brasil. Esses tratamentos servem à entrega, operação e segurança do serviço. Os logs do provedor têm retenção própria; os registros da aplicação seguem os prazos informados nesta política.',
         ],
       },
       {

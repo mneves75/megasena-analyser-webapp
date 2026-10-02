@@ -15,7 +15,7 @@ description: Project structure and where things live
   Never add a `loading.tsx` above archive routes (it turns 404s into soft 404s);
   links into archive routes must not prefetch (see AGENTS.md "SEO/pSEO invariants").
 - `lib/api/handler.ts`: shared API contract; `server.ts` is its local/VPS Bun adapter (port 3201).
-- `cloudflare/worker.ts`: pending vinext frontend Worker with API calls through
+- `cloudflare/worker.ts`: staging vinext frontend Worker with API calls through
   private `DATA` binding to `MegaSenaData` SQLite in `cloudflare/data-object.ts`.
   `cloudflare/ingestion.ts` owns CAIXA refresh; `vite.config.ts` selects Worker
   database/transport adapters. `cloudflare.config.ts` owns bindings and Cron.

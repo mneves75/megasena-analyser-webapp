@@ -1,8 +1,8 @@
 # 04 - Fluxo de Dados e Modelo de Dados (MER)
 
-## Migração Cloudflare em preparação
+## Cloudflare em staging
 
-A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
 
 O Cron chama `refresh()` às 06:00 UTC (03:00 Brasília). `cloudflare/ingestion.ts` consulta a CAIXA fora da transação, valida datas/dezenas/prêmios e grava concursos novos/caches atomicamente. Conflitos ou lacunas abortam o lote; repetições são idempotentes. Falhas e lotes incompletos permitem até três alarmes de retry. Seed até 3064 inicializa apenas banco vazio; não comprova frescor da CAIXA.
 

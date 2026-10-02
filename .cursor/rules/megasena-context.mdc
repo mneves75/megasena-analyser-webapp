@@ -15,12 +15,12 @@ UI must say so. User-facing copy is pt-BR.
 - **Framework**: Next.js 16 with App Router (`app/` holds pages only)
 - **API**: `lib/api/handler.ts` owns the shared contract. The local/VPS Bun adapter
   `server.ts` listens on port 3201; `next.config.js` forwards requests to it. The
-  pending Worker uses private `DATA` binding to `MegaSenaData`. No `app/api/`.
+  staging Worker uses private `DATA` binding to `MegaSenaData`. No `app/api/`.
 - **Middleware**: `proxy.ts` (Next 16 renamed `middleware` → `proxy`) mints the
   per-request CSP nonce and sets page security headers
 - **Database**: SQLite via Bun's native `bun:sqlite` (not `better-sqlite3`), WAL mode,
   migrations in `db/migrations/`
-- **Runtime**: Bun `>=1.4.2` on local/VPS; pending Cloudflare path uses Workers
+- **Runtime**: Bun `>=1.4.2` on local/VPS; staging Cloudflare path uses Workers
   with vinext/Vite and SQLite Durable Object storage.
 - **Deps**: pnpm 11 (`pnpm-lock.yaml`); overrides live in `pnpm-workspace.yaml`
 - **Styling**: Tailwind CSS with a semantic-token design system
@@ -101,7 +101,7 @@ Add it to `lib/api/handler.ts` with Zod validation — never to `app/`.
 2. Run `bun run db:migrate`
 3. Update TypeScript types as needed
 
-For the pending Worker, register the migration in `cloudflare/data-object.ts` and
+For the staging Worker, register the migration in `cloudflare/data-object.ts` and
 verify it with `bun run test:cloudflare`; the Bun CLI does not migrate remote storage.
 
 ## Testing

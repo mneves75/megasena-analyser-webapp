@@ -1,6 +1,6 @@
 # 10 - LGPD: Verificação e Plano de Conformidade (2026+)
 
-A migração Cloudflare está em preparação, sem transferência publicada. O candidato prevê armazenar logs/auditoria no SQLite Durable Object, ampliando o papel do operador. Condições, localização, logs do provedor, backup/restauração e retenção precisam de verificação antes do deploy. O estado vigente e as atualizações obrigatórias pertencem a [LGPD-COMPLIANCE.md](../LGPD-COMPLIANCE.md) e [PRIVACY.md](../PRIVACY.md).
+O staging Cloudflare já executa a aplicação e armazena seus próprios logs/auditoria no SQLite Durable Object. A produção continua no VPS; a transferência dos registros reais e a restauração verificável ainda são requisitos do cutover. O estado vigente e as atualizações obrigatórias pertencem a [LGPD-COMPLIANCE.md](../LGPD-COMPLIANCE.md) e [PRIVACY.md](../PRIVACY.md).
 
 > Aviso: este capítulo descreve o que o **código** faz e propõe ações técnicas. Não é
 > parecer jurídico. Decisões de base legal e prazos devem ser validadas pelo

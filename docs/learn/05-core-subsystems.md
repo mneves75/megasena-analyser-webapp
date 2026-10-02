@@ -1,6 +1,6 @@
 # 05 - Subsistemas Centrais
 
-O candidato Cloudflare ainda não foi publicado. Os motores estatísticos são compartilhados, mas o Worker seleciona SQLite Durable Object e transporte privado pelo binding `DATA`. O contrato da API fica em `lib/api/handler.ts`; `server.ts` é o adaptador Bun da produção atual/VPS. Contextos de banco e log isolam operações concorrentes. Veja [03](03-runtime-architecture.md) e [DEPLOY.md](../DEPLOY.md).
+O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. Os motores estatísticos são compartilhados, mas o Worker seleciona SQLite Durable Object e transporte privado pelo binding `DATA`. O contrato da API fica em `lib/api/handler.ts`; `server.ts` é o adaptador Bun da produção atual/VPS. Contextos de banco e log isolam operações concorrentes. Veja [03](03-runtime-architecture.md) e [DEPLOY.md](../DEPLOY.md).
 
 ## O que este capítulo ensina
 
