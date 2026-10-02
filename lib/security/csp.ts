@@ -1,4 +1,5 @@
 const CAIXA_API_ORIGIN = 'https://servicebus2.caixa.gov.br';
+export const HSTS_HEADER_VALUE = 'max-age=31536000; includeSubDomains; preload';
 
 export interface CspOptions {
   isDev: boolean;
@@ -64,7 +65,7 @@ export function buildSecurityHeaders(csp: string, isDev: boolean, isSecure = tru
   };
 
   if (!isDev && isSecure) {
-    headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+    headers['Strict-Transport-Security'] = HSTS_HEADER_VALUE;
   }
 
   return headers;
@@ -86,7 +87,7 @@ export function buildApiSecurityHeaders(isDev: boolean, isSecure = true): Record
   };
 
   if (!isDev && isSecure) {
-    headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload';
+    headers['Strict-Transport-Security'] = HSTS_HEADER_VALUE;
   }
 
   return headers;

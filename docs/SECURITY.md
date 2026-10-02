@@ -205,3 +205,6 @@ Remova um override apenas quando:
 2. `pnpm install` atualizar o `pnpm-lock.yaml` sem reintroduzir a versão vulnerável;
 3. `pnpm audit` continuar retornando `No known vulnerabilities found`;
 4. `bun run lint`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite` e `bun run build` passarem, com verificação de UI pelo Argent nesta revisão conforme o README.
+### HTTPS na entrada Cloudflare
+
+O Worker aplica HSTS em todas as respostas da aplicação quando `ENVIRONMENT=production` e a URL recebida usa HTTPS, incluindo staging, robots, sitemap, redirects e erros. O valor é compartilhado com os helpers existentes. Headers como `X-Forwarded-Proto` não podem ativar essa garantia; o caminho Bun mantém seu contrato de proxy. A regressão usa listeners reais HTTPS/HTTP no workerd, com controle negativo de header encaminhado.

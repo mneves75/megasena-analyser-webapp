@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import app from 'vinext/server/app-router-entry';
 import type { MegaSenaData } from './data-object';
+import { HSTS_HEADER_VALUE } from '../lib/security/csp';
 
 export { MegaSenaData } from './data-object';
 
@@ -8,6 +9,7 @@ interface WorkerEnv {
   DATA: DurableObjectNamespace<MegaSenaData>;
   ASSETS: Fetcher;
   DEPLOYMENT_STAGE?: string;
+  ENVIRONMENT?: string;
 }
 
 function database() {
@@ -20,21 +22,23 @@ const worker = {
     const url = new URL(request.url);
     // Missing or unrecognized stage must not make a candidate indexable.
     const preventIndexing = workerEnv.DEPLOYMENT_STAGE !== 'production';
-    if (preventIndexing && url.pathname === '/robots.txt') {
-      return new Response('User-agent: *\nDisallow: /\n', {
-        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow' },
-      });
-    }
-    const response = url.pathname.startsWith('/api/')
+    // The Worker receives the edge's actual URL; forwarded headers cannot assert TLS.
+    const secure = workerEnv.ENVIRONMENT === 'production' && url.protocol === 'https:';
+    const response = preventIndexing && url.pathname === '/robots.txt'
+      ? new Response('User-agent: *\nDisallow: /\n', {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      })
+      : url.pathname.startsWith('/api/')
       ? await database().handle(request, {
         internal: false,
         clientIp: request.headers.get('cf-connecting-ip'),
         secure: url.protocol === 'https:',
       })
       : await app.fetch(request, env as unknown as WorkerEnv, context);
-    if (!preventIndexing) return response;
+    if (!preventIndexing && !secure) return response;
     const headers = new Headers(response.headers);
-    headers.set('X-Robots-Tag', 'noindex, nofollow');
+    if (preventIndexing) headers.set('X-Robots-Tag', 'noindex, nofollow');
+    if (secure) headers.set('Strict-Transport-Security', HSTS_HEADER_VALUE);
     return new Response(response.body, {
       status: response.status, statusText: response.statusText, headers,
     });

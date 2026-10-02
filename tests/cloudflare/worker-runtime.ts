@@ -50,20 +50,24 @@ function assert(condition: unknown, message: string): asserts condition {
 
 try {
   for (const stage of ['staging', 'production', undefined, 'unknown']) {
-    const runtime = new Miniflare(convertV4MiniflareOptions({ workers: [{
+    const runtime = new Miniflare(convertV4MiniflareOptions({ https: true, workers: [{
       name: 'worker-boundary-test', modules: true, script: bundle.outputFiles[0]!.text,
       compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'],
       durableObjects: { DATA: { className: 'MegaSenaData', useSQLite: true } },
       bindings: { ENVIRONMENT: 'production', ...(stage ? { DEPLOYMENT_STAGE: stage } : {}) },
     }] }));
     try {
+      const fixtureUrl = await runtime.ready;
+      assert(fixtureUrl.hostname === '127.0.0.1', 'TLS fixture must remain on loopback');
       for (const route of ['/', '/api/health', '/missing', '/sitemap.xml', '/robots.txt']) {
-        const response = await runtime.dispatchFetch(`https://example.com${route}`);
+        // Trust only this process-owned loopback fixture's self-signed TLS certificate.
+        const response = await fetch(new URL(route, fixtureUrl), { tls: { rejectUnauthorized: false } });
         const body = await response.text();
         const tag = response.headers.get('X-Robots-Tag');
         const expectedStatus = route === '/missing' ? 404 : 200;
         evidence.push({ stage: stage ?? 'missing', route, status: response.status, robotsTag: tag, ...(route === '/robots.txt' ? { robots: body } : {}) });
         assert(response.status === expectedStatus, `${stage ?? 'missing'} ${route}: preserve status`);
+        assert(response.headers.get('Strict-Transport-Security') === 'max-age=31536000; includeSubDomains; preload', `${stage ?? 'missing'} ${route}: HTTPS HSTS at the Worker boundary`);
         assert(stage === 'production' ? tag === null : tag?.includes('noindex'), `${stage ?? 'missing'} ${route}: crawler indexing header`);
         if (route === '/robots.txt') {
           if (stage === 'production') {
@@ -78,6 +82,16 @@ try {
       }
     } finally { await runtime.dispose(); }
   }
+  const insecureRuntime = new Miniflare(convertV4MiniflareOptions({
+    modules: true, script: bundle.outputFiles[0]!.text, compatibilityDate: '2026-10-02',
+    compatibilityFlags: ['nodejs_compat'],
+    durableObjects: { DATA: { className: 'MegaSenaData', useSQLite: true } },
+    bindings: { ENVIRONMENT: 'production', DEPLOYMENT_STAGE: 'production' },
+  }));
+  try {
+    const insecure = await insecureRuntime.dispatchFetch('http://example.com/', { headers: { 'X-Forwarded-Proto': 'https' } });
+    assert(insecure.headers.get('Strict-Transport-Security') === null, 'an untrusted forwarded header cannot assert HTTPS');
+  } finally { await insecureRuntime.dispose(); }
   await writeFile(path.join(directory, 'runtime-result.json'), JSON.stringify({ pass: true, checks: evidence }, null, 2));
   console.log(JSON.stringify({ pass: true, requests: evidence.length, stages: ['staging', 'production', 'missing', 'unknown'] }));
 } catch (error) {
