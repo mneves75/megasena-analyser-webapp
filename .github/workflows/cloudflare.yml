@@ -44,6 +44,8 @@ jobs:
         run: bun run build
       - name: Build staging Worker without deployment credentials
         run: bun run build:cloudflare
+      - name: Build production Worker without deployment credentials
+        run: bun run build:cloudflare:production
       - name: Preserve runtime evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
