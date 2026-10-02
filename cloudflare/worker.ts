@@ -2,6 +2,8 @@ import { env } from 'cloudflare:workers';
 import app from 'vinext/server/app-router-entry';
 import type { MegaSenaData } from './data-object';
 import { HSTS_HEADER_VALUE } from '../lib/security/csp';
+import { BASE_URL } from '../lib/constants';
+import siteDomains from '../lib/site-domains.json';
 
 export { MegaSenaData } from './data-object';
 
@@ -17,6 +19,14 @@ function database() {
   return namespace.get(namespace.idFromName('megasena'));
 }
 
+function canonicalRedirect(url: URL): Response {
+  const target = new URL(BASE_URL);
+  // Assigning the path separately prevents //host paths from changing authority.
+  target.pathname = url.pathname;
+  target.search = url.search;
+  return Response.redirect(target.href, 301);
+}
+
 const worker = {
   async fetch(request: Request, workerEnv: WorkerEnv, context: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -24,7 +34,9 @@ const worker = {
     const preventIndexing = workerEnv.DEPLOYMENT_STAGE !== 'production';
     // The Worker receives the edge's actual URL; forwarded headers cannot assert TLS.
     const secure = workerEnv.ENVIRONMENT === 'production' && url.protocol === 'https:';
-    const response = preventIndexing && url.pathname === '/robots.txt'
+    const response = !preventIndexing && siteDomains.redirectDomains.includes(url.hostname)
+      ? canonicalRedirect(url)
+      : preventIndexing && url.pathname === '/robots.txt'
       ? new Response('User-agent: *\nDisallow: /\n', {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       })

@@ -14,6 +14,8 @@ storage. Current production remains VPS v1.16.3.
 - Worker: `bun run dev:vinext`, `bun run build:cloudflare` (staging),
   `bun run build:cloudflare:production`, `bun run test:cloudflare`. Use the cf-cli
   skill for authorized Cloudflare operations; deploy is never implied by a build.
+  Domain attachment additionally requires `CLOUDFLARE_BIND_CUSTOM_DOMAINS=1` at
+  build time and accepted data/rollback gates; see `docs/DEPLOY.md` before applying triggers.
 - Lint: `bun run lint` (`--max-warnings=0`). Autofix: `bun run lint:fix`
 - Types: `bun run typecheck`
 - Format: `bun run format`

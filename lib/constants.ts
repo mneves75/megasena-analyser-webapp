@@ -1,6 +1,7 @@
 import packageJson from '@/package.json';
+import siteDomains from './site-domains.json';
 
-export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://megasena-analyzer.com.br';
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || `https://${siteDomains.primaryDomain}`;
 
 // Application Information
 export const APP_INFO = {

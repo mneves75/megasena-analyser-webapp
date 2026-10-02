@@ -1,5 +1,6 @@
 import { bindings, defineConfig, defineWorker, exports, triggers } from 'cf/config';
 import pkg from './package.json' with { type: 'json' };
+import siteDomains from './lib/site-domains.json' with { type: 'json' };
 
 export default defineConfig(({ mode }) => {
   const isProduction = mode === 'production';
@@ -10,6 +11,10 @@ export default defineConfig(({ mode }) => {
   return {
   worker: defineWorker({
     name,
+    // Apply only after the retained-data and rollback acceptance gates pass.
+    ...(process.env['CLOUDFLARE_BIND_CUSTOM_DOMAINS'] === '1' ? {
+      domains: isProduction ? [siteDomains.primaryDomain, ...siteDomains.redirectDomains] : [`staging.${siteDomains.primaryDomain}`],
+    } : {}),
     entrypoint: './cloudflare/worker.ts',
     compatibilityDate: "2026-10-02",
     compatibilityFlags: ["nodejs_compat"],

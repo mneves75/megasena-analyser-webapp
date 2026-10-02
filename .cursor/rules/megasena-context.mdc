@@ -12,6 +12,9 @@ UI must say so. User-facing copy is pt-BR.
 Worker retry count and alarm scheduling share one storage transaction. Preserve
 configured audit/log retention per environment before migrating retained rows;
 defaults remain 400/30 days. See `docs/DEPLOY.md` for build inputs and acceptance.
+`lib/site-domains.json` owns canonical/alias hostnames. The Worker preserves alias
+redirects only in production; `CLOUDFLARE_BIND_CUSTOM_DOMAINS=1` explicitly enables
+domain attachment after data and rollback acceptance. Ordinary builds do not cut DNS.
 
 ## Architecture
 
