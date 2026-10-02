@@ -6,12 +6,12 @@ const nextConfig = {
   // Ensure Turbopack/Next build uses this repo as the workspace root.
   // Prevents accidental inference from unrelated lockfiles elsewhere on disk.
   turbopack: {
-    root: __dirname,
+    root: import.meta.dirname,
   },
 
   // Enable standalone output for Docker deployment
   // Creates a self-contained build with minimal dependencies
-  output: 'standalone',
+  ...(process.env.CLOUDFLARE_WORKER === '1' ? {} : { output: 'standalone' }),
 
   // Prevent Next output tracing from copying local SQLite runtime state into
   // `.next/standalone`. Docker/deploy paths copy migrations explicitly and
@@ -44,6 +44,7 @@ const nextConfig = {
   },
 
   async rewrites() {
+    if (process.env.CLOUDFLARE_WORKER === '1') return [];
     // Use environment variables for API host/port to support Docker and distributed deployments
     // Falls back to localhost:3201 for local development
     const apiHost = process.env.API_HOST || 'localhost';
@@ -68,4 +69,4 @@ function normalizeApiBaseUrl(host, port) {
   return url.origin;
 }
 
-module.exports = nextConfig;
+export default nextConfig;

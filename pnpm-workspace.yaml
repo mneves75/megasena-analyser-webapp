@@ -22,12 +22,17 @@ trustPolicyExclude:
   - 'undici-types@6.21.0'
 allowBuilds:
   '@ast-grep/cli': true
+  esbuild: true
+  workerd: true
   sharp: true
   unrs-resolver: true
 # Pins de segurança contra vulnerabilidades transitivas (ver docs/SECURITY.md,
 # "Overrides de dependências"). Migrados do package.json "overrides" (formato
 # npm/Bun), que o pnpm ignora silenciosamente.
 overrides:
+  # Cloudflare tooling: patched HTTP client and archive decoder.
+  'undici@7': '>=7.29.1 <8'
+  'fflate@0.7': '>=0.7.5 <0.8'
   # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj) e GHSA-rgj7-g3m4-5g8c (<0.35.4).
   sharp: '>=0.35.4'
   # <8: Babel 8 e um major breaking/ESM-only; consumidores transitivos pedem 7.x.
@@ -38,6 +43,8 @@ overrides:
   'conf>ajv': '>=8.17.1'
   # ajv-formats 3 também precisa da API ajv 8; não aplicar o pin ESLint 6.
   'ajv-formats>ajv': '>=8.17.1'
+  'schema-utils>ajv': '>=8.17.1'
+  'ajv-keywords@5>ajv': '>=8.17.1'
   # cssstyle/dom-selector aceitam 3.x; o patch de sintaxe exige >=3.2.1.
   css-tree: '>=3.2.1 <4'
   # GHSA-w5vr-8v7q-w6rv: <2.11.0.

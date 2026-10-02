@@ -1,5 +1,10 @@
 # 02 - Mapa do Repositório
 
+## Migração Cloudflare em preparação
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+
+
 ## O que este capítulo ensina
 
 Onde fica o quê: a função de cada pasta, as pastas críticas, os pontos de entrada e o

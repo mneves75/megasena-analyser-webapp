@@ -1,5 +1,12 @@
 # 07 - Operações e Qualidade
 
+## Migração Cloudflare em preparação
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+
+Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare` aos gates existentes; usar Argent no runtime Worker, sem Playwright nesta migração. Staging, backup/restauração e retenção precedem DNS; aceite público precede desligamento do VPS.
+
+
 ## O que este capítulo ensina
 
 Como configurar o ambiente, testar, observar, construir, implantar e manter o sistema

@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { withDatabaseTransaction } from '@/lib/db-transaction';
 import { MEGASENA_CONSTANTS } from '@/lib/constants';
 import { logger } from '@/lib/logger';
 import { roundTo } from '@/lib/utils';
@@ -53,73 +54,71 @@ export class PairAnalysisEngine {
   }
 
   updatePairFrequencies(): void {
-    const savepointName = 'update_pair_frequencies';
     try {
-      // Atomic rebuild using a savepoint so we do not destroy an outer transaction
-      // if this function is called inside one.
-      this.db.exec(`SAVEPOINT ${savepointName}`);
-      // Clear existing cache
-      this.db.prepare('DELETE FROM number_pair_frequency').run();
+      // Preserve the outer transaction while rebuilding this cache atomically.
+      withDatabaseTransaction(this.db, () => {
+        // Clear existing cache
+        this.db.prepare('DELETE FROM number_pair_frequency').run();
 
-      // Get all draws
-      const draws = this.db
-        .prepare(
-          `SELECT 
-            number_1, number_2, number_3, number_4, number_5, number_6,
-            contest_number, draw_date
-           FROM draws
-           ORDER BY contest_number DESC`
-        )
-        .all() as Array<{
-        number_1: number;
-        number_2: number;
-        number_3: number;
-        number_4: number;
-        number_5: number;
-        number_6: number;
-        contest_number: number;
-        draw_date: string;
-      }>;
+        // Get all draws
+        const draws = this.db
+          .prepare(
+            `SELECT
+              number_1, number_2, number_3, number_4, number_5, number_6,
+              contest_number, draw_date
+             FROM draws
+             ORDER BY contest_number DESC`
+          )
+          .all() as Array<{
+          number_1: number;
+          number_2: number;
+          number_3: number;
+          number_4: number;
+          number_5: number;
+          number_6: number;
+          contest_number: number;
+          draw_date: string;
+        }>;
 
-      // Map to store pair frequencies
-      const pairMap = new Map<string, { frequency: number; lastContest: number; lastDate: string }>();
+        // Map to store pair frequencies
+        const pairMap = new Map<string, { frequency: number; lastContest: number; lastDate: string }>();
 
-      // Process each draw
-      for (const draw of draws) {
-        const numbers = [
-          draw.number_1,
-          draw.number_2,
-          draw.number_3,
-          draw.number_4,
-          draw.number_5,
-          draw.number_6,
-        ];
+        // Process each draw
+        for (const draw of draws) {
+          const numbers = [
+            draw.number_1,
+            draw.number_2,
+            draw.number_3,
+            draw.number_4,
+            draw.number_5,
+            draw.number_6,
+          ];
 
-        // Generate all pairs (combinations)
-        for (let i = 0; i < numbers.length; i++) {
-          for (let j = i + 1; j < numbers.length; j++) {
-            const first = numbers[i];
-            const second = numbers[j];
-            if (first === undefined || second === undefined) {
-              continue;
-            }
-            const num1 = Math.min(first, second);
-            const num2 = Math.max(first, second);
-            const key = `${num1}-${num2}`;
-
-            const existing = pairMap.get(key);
-            if (existing) {
-              existing.frequency++;
-              // Keep the most recent occurrence
-              if (draw.contest_number > existing.lastContest) {
-                existing.lastContest = draw.contest_number;
-                existing.lastDate = draw.draw_date;
+          // Generate all pairs (combinations)
+          for (let i = 0; i < numbers.length; i++) {
+            for (let j = i + 1; j < numbers.length; j++) {
+              const first = numbers[i];
+              const second = numbers[j];
+              if (first === undefined || second === undefined) {
+                continue;
               }
-            } else {
-              pairMap.set(key, {
-                frequency: 1,
-                lastContest: draw.contest_number,
-                lastDate: draw.draw_date,
+              const num1 = Math.min(first, second);
+              const num2 = Math.max(first, second);
+              const key = `${num1}-${num2}`;
+
+              const existing = pairMap.get(key);
+              if (existing) {
+                existing.frequency++;
+                // Keep the most recent occurrence
+                if (draw.contest_number > existing.lastContest) {
+                  existing.lastContest = draw.contest_number;
+                  existing.lastDate = draw.draw_date;
+                }
+              } else {
+                pairMap.set(key, {
+                  frequency: 1,
+                  lastContest: draw.contest_number,
+                  lastDate: draw.draw_date,
               });
             }
           }
@@ -154,14 +153,8 @@ export class PairAnalysisEngine {
         insertStmt.run(num1, num2, data.frequency, correlation, data.lastContest, data.lastDate);
       }
 
-      this.db.exec(`RELEASE ${savepointName}`);
+      });
     } catch (error) {
-      try {
-        this.db.exec(`ROLLBACK TO ${savepointName}`);
-        this.db.exec(`RELEASE ${savepointName}`);
-      } catch {
-        // Ignore rollback errors when no savepoint was started.
-      }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to update pair frequencies: ${errorMessage}`);
     }
@@ -242,9 +235,11 @@ export class PairAnalysisEngine {
            UNION ALL
            SELECT number_4 FROM draws
            UNION ALL
-           SELECT number_5 FROM draws
-           UNION ALL
-           SELECT number_6 FROM draws
+           SELECT * FROM (
+             SELECT number_5 FROM draws
+             UNION ALL
+             SELECT number_6 FROM draws
+           )
          )
          SELECT number, COUNT(*) as frequency
          FROM all_occurrences

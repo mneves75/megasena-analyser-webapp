@@ -4,12 +4,16 @@ description: Build, dev, lint, and test command quick reference
 ---
 ## Commands Quick Reference
 
-Bun is the runtime (`>=1.4.2`); pnpm is the dependency manager (`pnpm@11`). The app
-uses `bun:sqlite` and will not run on Node.js.
+Bun is the local/VPS runtime (`>=1.4.2`), with `bun:sqlite`; pnpm is the dependency
+manager (`pnpm@11`). The pending Worker uses vinext/Vite and SQLite Durable Object
+storage. Current production remains VPS v1.16.3.
 
 - Install deps: `pnpm install` (run `corepack enable` first) — never `bun install` or `npm install`
 - Dev servers: `bun run dev` → Next.js on `http://localhost:3000` + Bun API on `:3201`
 - Build: `bun run build` (Next build + `assert-standalone-clean` gate)
+- Worker: `bun run dev:vinext`, `bun run build:cloudflare` (staging),
+  `bun run build:cloudflare:production`, `bun run test:cloudflare`. Use the cf-cli
+  skill for authorized Cloudflare operations; deploy is never implied by a build.
 - Lint: `bun run lint` (`--max-warnings=0`). Autofix: `bun run lint:fix`
 - Types: `bun run typecheck`
 - Format: `bun run format`
@@ -26,6 +30,7 @@ Security & config:
 - Copy `.env.example` to `.env.local`. `IP_HASH_SECRET` (≥32 chars) is required in
   production — the server exits without it.
 - Secret scans: `bun run security:secrets`, `bun run security:secrets:history`.
-- There is no Supabase here; the database is a local SQLite file under `db/`.
+- There is no Supabase here. SQLite is a local file on Bun and private Durable
+  Object storage on the pending Worker path.
 
 Full contract: `AGENTS.md` at the repo root.

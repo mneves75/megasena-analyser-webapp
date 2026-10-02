@@ -210,10 +210,18 @@ export class CaixaAPIClient {
   private timeout: number;
   private cache: Map<string, CaixaRawDrawData>;
   private etags: Map<string, string>;
+  private maxRetries: number;
+  private maxRetryDelayMs: number;
 
-  constructor() {
+  constructor(options: { timeoutMs?: number; maxRetries?: number; maxRetryDelayMs?: number } = {}) {
     this.baseURL = API_CONFIG.CAIXA_BASE_URL;
-    this.timeout = API_CONFIG.REQUEST_TIMEOUT;
+    this.timeout = options.timeoutMs ?? API_CONFIG.REQUEST_TIMEOUT;
+    this.maxRetries = options.maxRetries ?? API_CONFIG.MAX_RETRIES;
+    this.maxRetryDelayMs = options.maxRetryDelayMs ?? Number.POSITIVE_INFINITY;
+    if (!Number.isFinite(this.timeout) || this.timeout <= 0 || !Number.isInteger(this.maxRetries) || this.maxRetries < 1 ||
+        this.maxRetryDelayMs <= 0 || Number.isNaN(this.maxRetryDelayMs)) {
+      throw new Error('Invalid CAIXA request budget.');
+    }
     this.cache = new Map();
     this.etags = new Map();
   }
@@ -267,7 +275,7 @@ export class CaixaAPIClient {
   /**
    * Fetch with exponential backoff retry logic, ETag caching, and enforced timeout
    */
-  private async fetchWithRetry(url: string, maxRetries: number = API_CONFIG.MAX_RETRIES): Promise<Response> {
+  private async fetchWithRetry(url: string, maxRetries: number = this.maxRetries): Promise<Response> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -342,7 +350,7 @@ export class CaixaAPIClient {
 
         // Exponential backoff: 2s, 4s, 8s, 16s, 32s
         if (attempt < maxRetries - 1) {
-          const backoffDelay = this.getBackoffDelay(error, attempt + 1);
+          const backoffDelay = Math.min(this.getBackoffDelay(error, attempt + 1), this.maxRetryDelayMs);
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           logger.warn('caixa.fetch_retry', {
             attempt: attempt + 1,

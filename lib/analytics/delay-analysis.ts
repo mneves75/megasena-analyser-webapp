@@ -46,9 +46,11 @@ export class DelayAnalysisEngine {
         UNION ALL
         SELECT number_4, contest_number, draw_date FROM draws
         UNION ALL
-        SELECT number_5, contest_number, draw_date FROM draws
-        UNION ALL
-        SELECT number_6, contest_number, draw_date FROM draws
+        SELECT * FROM (
+          SELECT number_5, contest_number, draw_date FROM draws
+          UNION ALL
+          SELECT number_6, contest_number, draw_date FROM draws
+        )
       ),
       number_stats AS (
         SELECT 

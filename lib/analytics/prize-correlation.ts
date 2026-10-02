@@ -62,15 +62,17 @@ export class PrizeCorrelationEngine {
           CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
         FROM draws
         UNION ALL
-        SELECT number_5, prize_sena, prize_quina,
+        SELECT * FROM (
+          SELECT number_5, prize_sena, prize_quina,
           CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
           CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
-        FROM draws
-        UNION ALL
-        SELECT number_6, prize_sena, prize_quina,
+          FROM draws
+          UNION ALL
+          SELECT number_6, prize_sena, prize_quina,
           CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END,
           CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END
-        FROM draws
+          FROM draws
+        )
       )
       -- Per-number averages must share the overallAvg* basis (prize > 0 only):
       -- including zero-prize accumulated draws in the numerator but not the

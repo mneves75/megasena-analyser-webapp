@@ -1,5 +1,7 @@
 # 08 - Exercícios
 
+Os exercícios de processos/SQLite local descrevem o caminho Bun/VPS. Para o candidato Cloudflare ainda não publicado, compare `cloudflare/worker.ts`, `cloudflare/data-object.ts`, `cloudflare/ingestion.ts` e `lib/api/handler.ts`; valide o runtime com `bun run test:cloudflare`. Deploy e dados recentes não podem ser inferidos desses testes locais.
+
 ## O que este capítulo ensina
 
 Exercícios práticos por capítulo, do entendimento à mudança real. Cada um tem
@@ -81,7 +83,7 @@ forçam leitura ativa e mudanças pequenas e verificáveis.
 
 1. **Dependências não usadas** · Fácil · `package.json`.
    - Gabarito: `framer-motion`, `date-fns`.
-2. **Token de design** · Médio · `globals.css`, `tailwind.config.js`.
+2. **Token de design** · Médio · `globals.css`, `tailwind.config.cjs`.
    - Objetivo: criar `--info` e usá-lo sem cor fixa.
 3. **Por que Vite?** · Difícil · `vitest.config.ts`.
    - Gabarito: Vitest roda sobre Vite; plugin React compila JSX nos testes.

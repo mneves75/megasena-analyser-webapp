@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { getServerApiTransport } from '@/lib/api/runtime-api-transport';
 
 export const DEFAULT_API_TIMEOUT_MS = 12000;
 
@@ -62,11 +63,12 @@ export async function fetchApi(
   const { timeoutMs = DEFAULT_API_TIMEOUT_MS, ...init } = options;
   const isServer = runtime ? runtime === 'server' : typeof window === 'undefined';
   const url = buildApiUrl(path, runtime);
+  const serverTransport = isServer ? getServerApiTransport() : null;
   const controller = new AbortController();
   const headers = new Headers(init.headers);
   const internalApiSecret = (process.env['INTERNAL_API_SECRET'] ?? '').trim();
   let shouldAttachSecret = false;
-  if (isServer && internalApiSecret.length >= 32) {
+  if (isServer && !serverTransport && internalApiSecret.length >= 32) {
     if (url.startsWith('/') && !url.startsWith('//')) {
       shouldAttachSecret = true;
     } else {
@@ -92,6 +94,9 @@ export async function fetchApi(
   }, timeoutMs);
 
   try {
+    if (serverTransport) {
+      return await serverTransport(new Request(url, { ...init, headers, signal: controller.signal }));
+    }
     return await fetch(url, { ...init, headers, signal: controller.signal });
   } catch (error) {
     logger.warn('api.fetch_failed', {

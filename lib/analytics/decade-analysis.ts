@@ -12,9 +12,11 @@ const NUMBER_FREQUENCY_QUERY = `
     UNION ALL
     SELECT number_4 FROM draws
     UNION ALL
-    SELECT number_5 FROM draws
-    UNION ALL
-    SELECT number_6 FROM draws
+    SELECT * FROM (
+      SELECT number_5 FROM draws
+      UNION ALL
+      SELECT number_6 FROM draws
+    )
   )
   SELECT number, COUNT(*) as frequency
   FROM all_occurrences

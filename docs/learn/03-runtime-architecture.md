@@ -1,5 +1,12 @@
 # 03 - Arquitetura de Runtime
 
+## Migração Cloudflare em preparação
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+
+`Request → cloudflare/worker.ts → vinext` atende páginas; `/api/*` usa `DATA → MegaSenaData → lib/api/handler.ts → SQLite`. SSR e Server Actions usam `cloudflare/api-transport.ts`, sem endpoint administrativo público. `vite.config.ts` seleciona o adaptador do objeto em lugar de `lib/db.ts`; contextos de banco/log isolam operações concorrentes.
+
+
 ## O que este capítulo ensina
 
 Os processos que rodam, como sobem e descem, o ciclo de vida de uma requisição na API
@@ -70,7 +77,7 @@ graph LR
 
 ### Ciclo de vida de uma requisição na API
 
-Tudo passa pelo `fetch(req, server)` de `server.ts`. A ordem (verificada):
+No caminho Bun, `server.ts` resolve o peer e delega ao handler compartilhado em `lib/api/handler.ts`. O Worker chama o mesmo handler pelo objeto privado. A ordem do handler:
 
 ```mermaid
 graph TD
@@ -127,10 +134,10 @@ grep -n "waitForApiHealth\|Promise.race\|stopSubprocess" scripts/dev.ts scripts/
 sed -n '1,60p' lib/process-lifecycle.ts
 
 # Fail-closed do segredo e ordem de init
-sed -n '350,416p' server.ts
+rg -n 'createApiHandler|fetch\(' server.ts lib/api/handler.ts
 
 # Ciclo de requisição
-grep -n "checkRateLimit\|getCorsHeaders\|createMethodNotAllowedResponse\|withRequestIdHeader" server.ts
+rg -n 'checkRateLimit|getCorsHeaders|createMethodNotAllowedResponse|withRequestIdHeader' lib/api/handler.ts
 ```
 
 ## Mal-entendidos comuns
@@ -144,7 +151,7 @@ grep -n "checkRateLimit\|getCorsHeaders\|createMethodNotAllowedResponse\|withReq
 
 ## Exercícios
 
-1. **(Fácil)** Em `server.ts`, encontre o valor de `RATE_LIMIT_MAX_REQUESTS` e a janela.
+1. **(Fácil)** Em `lib/api/handler.ts`, encontre o valor de `RATE_LIMIT_MAX_REQUESTS` e a janela; compare com os buckets persistidos em `cloudflare/data-object.ts`.
    **Gabarito:** 100 requisições / 60.000 ms.
 2. **(Médio)** Explique por que o preflight `OPTIONS` para `/api/*` é tratado **depois**
    da checagem de rate limit. **Gabarito:** evitar que OPTIONS vire um caminho para

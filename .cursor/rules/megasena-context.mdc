@@ -13,13 +13,15 @@ UI must say so. User-facing copy is pt-BR.
 ## Architecture
 
 - **Framework**: Next.js 16 with App Router (`app/` holds pages only)
-- **API**: separate Bun server `server.ts` on port 3201 owns every `/api/*` route;
-  `next.config.js` `rewrites()` forwards to it. There is no `app/api/`.
+- **API**: `lib/api/handler.ts` owns the shared contract. The local/VPS Bun adapter
+  `server.ts` listens on port 3201; `next.config.js` forwards requests to it. The
+  pending Worker uses private `DATA` binding to `MegaSenaData`. No `app/api/`.
 - **Middleware**: `proxy.ts` (Next 16 renamed `middleware` → `proxy`) mints the
   per-request CSP nonce and sets page security headers
 - **Database**: SQLite via Bun's native `bun:sqlite` (not `better-sqlite3`), WAL mode,
   migrations in `db/migrations/`
-- **Runtime**: Bun `>=1.4.2` only — the app will not run on Node.js
+- **Runtime**: Bun `>=1.4.2` on local/VPS; pending Cloudflare path uses Workers
+  with vinext/Vite and SQLite Durable Object storage.
 - **Deps**: pnpm 11 (`pnpm-lock.yaml`); overrides live in `pnpm-workspace.yaml`
 - **Styling**: Tailwind CSS with a semantic-token design system
 - **Type Safety**: strict TypeScript throughout
@@ -75,7 +77,7 @@ Batch large ingestions in a single transaction with rollback, and run
 
 - Use semantic tokens (`bg-background`, `text-foreground`, `bg-card`)
 - Never hardcode colors (`text-white`, `bg-blue-500`)
-- Edit `app/globals.css` / `tailwind.config.js` before touching components
+- Edit `app/globals.css` / `tailwind.config.cjs` before touching components
 
 ## Common Tasks
 
@@ -87,17 +89,20 @@ preserve the absence of acquisition analytics.
 
 1. Extend `BetStrategy` in `lib/analytics/bet-generator.types.ts`
 2. Handle it in the generator in `lib/analytics/bet-generator.ts`
-3. Expose it in the generator UI and in the `server.ts` request schema
+3. Expose it in the generator UI and in the `lib/api/handler.ts` request schema
 
 ### Add an API Endpoint
 
-Add it to `server.ts` with Zod validation — never to `app/`.
+Add it to `lib/api/handler.ts` with Zod validation — never to `app/`.
 
 ### Modify Schema
 
 1. Add a migration in `db/migrations/`
 2. Run `bun run db:migrate`
 3. Update TypeScript types as needed
+
+For the pending Worker, register the migration in `cloudflare/data-object.ts` and
+verify it with `bun run test:cloudflare`; the Bun CLI does not migrate remote storage.
 
 ## Testing
 

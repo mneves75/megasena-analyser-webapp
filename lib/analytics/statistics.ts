@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { withDatabaseTransaction } from '@/lib/db-transaction';
 import { MEGASENA_CONSTANTS, STATISTICS_DISPLAY } from '@/lib/constants';
 
 // Pre-generated safe SQL queries to avoid string interpolation
@@ -61,68 +62,60 @@ export class StatisticsEngine {
   }
 
   updateNumberFrequencies(): void {
-    const savepointName = 'update_number_frequencies';
     try {
-      // Use a savepoint for atomicity so an outer transaction, if any, survives.
-      this.db.exec(`SAVEPOINT ${savepointName}`);
+      // Preserve the outer transaction while rebuilding this cache atomically.
+      withDatabaseTransaction(this.db, () => {
 
-      const resetStatement = this.db.prepare('UPDATE number_frequency SET frequency = 0');
-      const countStatements = NUMBER_COLUMN_COUNT_QUERIES.map((query) => this.db.prepare(query));
-      const lastDrawStatements = NUMBER_COLUMN_LAST_DRAWN_QUERIES.map((query) => this.db.prepare(query));
-      const updateStatement = this.db.prepare(
-        `UPDATE number_frequency
-         SET frequency = ?,
-             last_drawn_contest = ?,
-             last_drawn_date = ?,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE number = ?`
-      );
+        const resetStatement = this.db.prepare('UPDATE number_frequency SET frequency = 0');
+        const countStatements = NUMBER_COLUMN_COUNT_QUERIES.map((query) => this.db.prepare(query));
+        const lastDrawStatements = NUMBER_COLUMN_LAST_DRAWN_QUERIES.map((query) => this.db.prepare(query));
+        const updateStatement = this.db.prepare(
+          `UPDATE number_frequency
+           SET frequency = ?,
+               last_drawn_contest = ?,
+               last_drawn_date = ?,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE number = ?`
+        );
 
-      // Reset frequencies
-      resetStatement.run();
+        // Reset frequencies
+        resetStatement.run();
 
-      // Count occurrences for each number
-      for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
-        let frequency = 0;
-        let lastContest: number | null = null;
-        let lastDate: string | null = null;
+        // Count occurrences for each number
+        for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
+          let frequency = 0;
+          let lastContest: number | null = null;
+          let lastDate: string | null = null;
 
-        // Count occurrences across all number columns using pre-generated safe queries
-        for (let col = 0; col < 6; col++) {
-          // Count ALL occurrences in this column
-          const countStatement = countStatements[col];
-          const lastDrawStatement = lastDrawStatements[col];
-          if (!countStatement || !lastDrawStatement) {
-            continue;
+          // Count occurrences across all number columns using pre-generated safe queries
+          for (let col = 0; col < 6; col++) {
+            // Count ALL occurrences in this column
+            const countStatement = countStatements[col];
+            const lastDrawStatement = lastDrawStatements[col];
+            if (!countStatement || !lastDrawStatement) {
+              continue;
+            }
+            const countResult = countStatement.get(num) as { count: number } | undefined;
+
+            frequency += countResult?.count ?? 0;
+
+            // Separately get the last drawn info
+            const lastDrawn = lastDrawStatement.get(num) as
+              | { contest_number: number; draw_date: string }
+              | undefined;
+
+            if (lastDrawn && (lastContest === null || lastDrawn.contest_number > lastContest)) {
+              lastContest = lastDrawn.contest_number;
+              lastDate = lastDrawn.draw_date;
+            }
           }
-          const countResult = countStatement.get(num) as { count: number } | undefined;
 
-          frequency += countResult?.count ?? 0;
-
-          // Separately get the last drawn info
-          const lastDrawn = lastDrawStatement.get(num) as
-            | { contest_number: number; draw_date: string }
-            | undefined;
-
-          if (lastDrawn && (lastContest === null || lastDrawn.contest_number > lastContest)) {
-            lastContest = lastDrawn.contest_number;
-            lastDate = lastDrawn.draw_date;
-          }
+          // Update frequency table
+          updateStatement.run(frequency, lastContest, lastDate, num);
         }
 
-        // Update frequency table
-        updateStatement.run(frequency, lastContest, lastDate, num);
-      }
-
-      // Release savepoint if all updates succeeded
-      this.db.exec(`RELEASE ${savepointName}`);
+      });
     } catch (error) {
-      try {
-        this.db.exec(`ROLLBACK TO ${savepointName}`);
-        this.db.exec(`RELEASE ${savepointName}`);
-      } catch {
-        // Ignore rollback errors when no savepoint was started.
-      }
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to update number frequencies: ${errorMessage}`);
     }

@@ -4,6 +4,8 @@
  */
 
 import { sanitizeStructuredMetadata } from './security/sanitize-metadata';
+import { getScopedLogSink } from './log-context';
+export { runWithLogSink } from './log-context';
 
 export type LogSink = (entry: LogEntry) => void;
 
@@ -14,7 +16,8 @@ export function registerLogSink(sink: LogSink): void {
 }
 
 function emitToSinks(entry: LogEntry): void {
-  for (const sink of logSinks) {
+  const scopedSink = getScopedLogSink();
+  for (const sink of scopedSink ? [scopedSink] : logSinks) {
     try {
       sink(entry);
     } catch (error) {

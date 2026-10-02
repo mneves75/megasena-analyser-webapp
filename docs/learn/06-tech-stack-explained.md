@@ -1,5 +1,10 @@
 # 06 - Tecnologias Explicadas (Onboarding Completo)
 
+## Migração Cloudflare em preparação
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+
+
 > Trilha de onboarding do **sistema** (código como fonte primária). Para a trilha de
 > **matemática da loteria**, veja `chapter-01-introduction.md` ... `chapter-08-testing.md`.
 
@@ -70,7 +75,7 @@ Pense em três camadas:
   o servidor standalone de produção, as Server Actions e a API rodam em Bun.
 - Docs: https://nextjs.org/docs
 
-### React (`19.2.6`) — biblioteca de UI
+### React (`19.2.8`) — biblioteca de UI
 
 - **O que é:** biblioteca de componentes. Versão 19 com Server Components.
 - **Por que aparece:** define a fronteira servidor/cliente. Tudo é Server Component a
@@ -114,9 +119,9 @@ Pense em três camadas:
 ### TailwindCSS v4 + tokens semânticos
 
 - **O que é:** CSS utilitário. Versão 4 via `@tailwindcss/postcss`.
-- **Onde:** `app/globals.css` (`@import "tailwindcss"`, `@config "../tailwind.config.js"`),
+- **Onde:** `app/globals.css` (`@import "tailwindcss"`, `@config "../tailwind.config.cjs"`),
   tokens HSL em `:root` e `.dark` (`--background`, `--primary`, `--chart-1..5`, etc.),
-  `tailwind.config.js` (`darkMode: 'class'`, mapeia tokens para classes utilitárias).
+  `tailwind.config.cjs` (`darkMode: 'class'`, mapeia tokens para classes utilitárias).
 - **Regra do projeto:** nunca cores fixas (`text-white`); só tokens (`text-foreground`,
   `bg-background`).
 
@@ -227,7 +232,7 @@ grep -rl "date-fns" app components lib        # esperado: vazio
    (`API_HOST`/`API_PORT`, default `localhost:3201`) → `server.ts` handler
    `'/api/statistics'` → `StatisticsEngine` → `bun:sqlite`.
 3. **(Médio / mudança)** Adicione um novo token de cor semântico (`--info`) em
-   `app/globals.css` (`:root` e `.dark`) e exponha-o em `tailwind.config.js`. Use-o em
+   `app/globals.css` (`:root` e `.dark`) e exponha-o em `tailwind.config.cjs`. Use-o em
    um componente sem nenhuma cor fixa. **Aprendizado:** o fluxo "design tokens primeiro,
    componente depois".
 4. **(Difícil / investigação)** O projeto declara `vite` e `@vitejs/plugin-react` como
@@ -240,7 +245,7 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 ### Procedência das afirmações
 
 - **Verificado no código:** versões e flags em `package.json`; `bun:sqlite` em
-  `lib/db.ts`; Zod em `server.ts`; tokens em `globals.css`/`tailwind.config.js`;
+  `lib/db.ts`; Zod em `server.ts`; tokens em `globals.css`/`tailwind.config.cjs`;
   `Intl` em `lib/utils.ts`; ausência de imports de `framer-motion`/`date-fns` (grep);
   `server-only` em `log-sink.server.ts`; charts em `components/charts/*`.
 - **Inferido do código:** papel do Vite como infraestrutura do Vitest (deduzido de

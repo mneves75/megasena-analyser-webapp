@@ -60,8 +60,10 @@ export class TimeSeriesEngine {
            UNION ALL SELECT draw_date, number_2 FROM draws
            UNION ALL SELECT draw_date, number_3 FROM draws
            UNION ALL SELECT draw_date, number_4 FROM draws
-           UNION ALL SELECT draw_date, number_5 FROM draws
-           UNION ALL SELECT draw_date, number_6 FROM draws
+           UNION ALL SELECT * FROM (
+             SELECT draw_date, number_5 FROM draws
+             UNION ALL SELECT draw_date, number_6 FROM draws
+           )
          )
          SELECT ${periodFormat} as period, num, COUNT(*) as frequency
          FROM occurrences
@@ -100,4 +102,3 @@ export class TimeSeriesEngine {
     return periods.map((p) => p.period);
   }
 }
-

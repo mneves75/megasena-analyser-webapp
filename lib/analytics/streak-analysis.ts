@@ -94,9 +94,11 @@ export class StreakAnalysisEngine {
         UNION ALL
         SELECT number_4, contest_number FROM draws
         UNION ALL
-        SELECT number_5, contest_number FROM draws
-        UNION ALL
-        SELECT number_6, contest_number FROM draws
+        SELECT * FROM (
+          SELECT number_5, contest_number FROM draws
+          UNION ALL
+          SELECT number_6, contest_number FROM draws
+        )
       )
       SELECT num, COUNT(*) as frequency, MAX(contest_number) as lastContest
       FROM all_occurrences

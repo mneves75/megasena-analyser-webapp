@@ -34,8 +34,10 @@ const NUMBER_OCCURRENCES_CTE = `
     UNION ALL SELECT contest_number, draw_date, number_2 FROM draws
     UNION ALL SELECT contest_number, draw_date, number_3 FROM draws
     UNION ALL SELECT contest_number, draw_date, number_4 FROM draws
-    UNION ALL SELECT contest_number, draw_date, number_5 FROM draws
-    UNION ALL SELECT contest_number, draw_date, number_6 FROM draws
+    UNION ALL SELECT * FROM (
+      SELECT contest_number, draw_date, number_5 FROM draws
+      UNION ALL SELECT contest_number, draw_date, number_6 FROM draws
+    )
   )`;
 
 /**
@@ -325,8 +327,10 @@ export class DrawArchiveEngine {
            UNION ALL SELECT number_2 FROM hits
            UNION ALL SELECT number_3 FROM hits
            UNION ALL SELECT number_4 FROM hits
-           UNION ALL SELECT number_5 FROM hits
-           UNION ALL SELECT number_6 FROM hits
+           UNION ALL SELECT * FROM (
+             SELECT number_5 FROM hits
+             UNION ALL SELECT number_6 FROM hits
+           )
          )
          SELECT number, COUNT(*) AS count FROM companions
          WHERE number != ?1

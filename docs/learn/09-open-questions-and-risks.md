@@ -1,5 +1,12 @@
 # 09 - Perguntas em Aberto, Suposições e Riscos
 
+## Migração Cloudflare em preparação
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+
+Critérios de implantação: identidade do destino, staging acessível, dados atuais da CAIXA, backup/restauração, retenção, CSP/hidratação/Argent e funcionamento pelo domínio público. Build local e dados do seed não substituem esses gates.
+
+
 ## O que este capítulo ensina
 
 Tudo que **não** é certo: ambiguidades, suposições não verificadas, dívida

@@ -1,5 +1,13 @@
 # Segurança
 
+## Superfícies de execução
+
+A produção permanece no VPS/Coolify v1.16.3. O candidato Cloudflare ainda não foi publicado. As seções Bun/proxy abaixo descrevem o caminho atual; CSP e hidratação precisam ser verificadas também no Worker vinext antes do cutover.
+
+No candidato, `lib/api/handler.ts` mantém validação, CORS, pseudonimização e headers defensivos. `cloudflare/worker.ts` usa `cf-connecting-ip` como metadado do visitante e encaminha a API para o Durable Object privado `MegaSenaData`. Chamadas server-side usam o binding `DATA`; um header público não autoriza bypass de rate limit. A exceção interna só vale quando o adaptador marca a chamada como interna e não há IP de visitante. Os buckets de 100 requisições/minuto persistem no SQLite do objeto. `IP_HASH_SECRET` continua obrigatório, com no mínimo 32 caracteres.
+
+Banco e sinks de log são selecionados por contexto, sem reutilizar um banco global entre operações concorrentes. Ingestão valida antes da transação e grava concursos/caches atomicamente. Importação, status e atualização ficam privados ao binding; verificar a impossibilidade de acesso por HTTP público como controle negativo de staging. Logs, auditoria e backup mantêm os limites existentes. A observabilidade do Worker está configurada, mas seu conteúdo e retenção no provedor ainda precisam de verificação antes da publicação; não registrar segredos, IPs brutos ou dados privados em logs públicos.
+
 ## CSP em produção
 
 O projeto usa CSP nonce-based em `proxy.ts` e `lib/security/csp.ts`.

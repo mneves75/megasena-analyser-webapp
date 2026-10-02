@@ -5,6 +5,8 @@ const eslintConfig = [
   {
     ignores: [
       '.next/**',
+      '.cloudflare/**',
+      '.vinext/**',
       '.tmp/**',
       'node_modules/**',
       'out/**',

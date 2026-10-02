@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.16.3",
+  "version": "1.17.0",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -10,7 +10,7 @@
     "start": "bun run scripts/start-prod.ts",
     "lint": "eslint . --max-warnings=0",
     "lint:ast": "ast-grep scan --config sgconfig.yml",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest",
@@ -29,15 +29,23 @@
     "seo:indexnow": "bun run scripts/indexnow-submit.ts",
     "audit:prune": "bun run scripts/prune-audit-logs.ts",
     "log:prune": "bun run scripts/prune-log-events.ts",
-    "doctor": "./node_modules/.bin/react-doctor"
+    "doctor": "./node_modules/.bin/react-doctor",
+    "dev:vinext": "vite dev --port 3001",
+    "build:vinext": "vite build",
+    "start:vinext": "vite preview",
+    "build:cloudflare": "cf build --mode staging",
+    "build:cloudflare:production": "cf build --mode production",
+    "deploy:cloudflare:staging": "cf deploy --mode staging",
+    "deploy:cloudflare:production": "cf deploy --mode production",
+    "test:cloudflare": "bun run tests/cloudflare/database-runtime.ts && bun run tests/cloudflare/transport-runtime.ts && bun run tests/cloudflare/worker-runtime.ts && bun run tests/cloudflare/retained-data-runtime.ts && bun run tests/cloudflare/database-persistence-runtime.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.462.0",
     "next": "16.3.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "recharts": "^3.8.1",
     "server-only": "^0.0.1",
     "tailwind-merge": "^2.6.1",
@@ -46,6 +54,8 @@
   },
   "devDependencies": {
     "@ast-grep/cli": "0.45.0",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-ad79608dd",
+    "@cloudflare/workers-types": "5.20260930.2",
     "@eslint/eslintrc": "3.3.5",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.18",
@@ -56,20 +66,27 @@
     "@types/node": "^22.18.7",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vinext/cloudflare": "1.0.1",
     "@vitejs/plugin-react": "6.0.1",
+    "@vitejs/plugin-rsc": "^0.5.35",
     "@vitest/coverage-v8": "4.1.11",
     "ajv": "8.20.0",
     "baseline-browser-mapping": "2.11.23",
     "caniuse-lite": "^1.0.30001792",
+    "cf": "1.0.0-beta.5",
+    "esbuild": "0.28.1",
     "eslint": "9.36.0",
     "eslint-config-next": "16.3.6",
     "jsdom": "^27.4.0",
+    "miniflare": "5.20260926.0-alpha",
     "postcss": "8.5.25",
     "prettier": "^3.8.3",
     "react-doctor": "^0.9.2",
+    "react-server-dom-webpack": "19.2.8",
     "rollup": "4.59.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
+    "vinext": "1.0.1",
     "vite": "8.0.16",
     "vitest": "4.1.11"
   },
@@ -102,5 +119,6 @@
   },
   "patchedDependencies": {
     "minimatch@3.1.4": "patches/minimatch@3.1.4.patch"
-  }
+  },
+  "type": "module"
 }

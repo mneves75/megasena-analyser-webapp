@@ -14,8 +14,13 @@ description: Project structure and where things live
   helpers live in `app/_lib/` and `app/_components/`. There is no `app/api/`.
   Never add a `loading.tsx` above archive routes (it turns 404s into soft 404s);
   links into archive routes must not prefetch (see AGENTS.md "SEO/pSEO invariants").
-- `server.ts`: standalone Bun server owning every `/api/*` endpoint (port 3201).
-  `next.config.js` `rewrites()` forwards `/api/:path*` to it. New endpoints go here.
+- `lib/api/handler.ts`: shared API contract; `server.ts` is its local/VPS Bun adapter (port 3201).
+- `cloudflare/worker.ts`: pending vinext frontend Worker with API calls through
+  private `DATA` binding to `MegaSenaData` SQLite in `cloudflare/data-object.ts`.
+  `cloudflare/ingestion.ts` owns CAIXA refresh; `vite.config.ts` selects Worker
+  database/transport adapters. `cloudflare.config.ts` owns bindings and Cron.
+  On Bun, `next.config.js` forwards `/api/:path*` to `server.ts`. New endpoints
+  belong in `lib/api/handler.ts`.
 - `proxy.ts`: the Next.js 16 middleware (Next renamed `middleware` → `proxy`); mints
   the per-request CSP nonce and sets page security headers.
 - `components/`: reusable UI using Tailwind semantic tokens and shadcn variants.

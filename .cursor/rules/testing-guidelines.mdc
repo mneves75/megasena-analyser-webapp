@@ -23,4 +23,9 @@ Commands:
   UI paths with Argent. The owner's current instruction prohibits Playwright.
 - `bun run lint` with `--max-warnings=0`; `bun run lint:fix` for autofix.
 
+The Cloudflare candidate adds build:cloudflare, build:cloudflare:production and
+test:cloudflare for Worker/DO runtime evidence, including persistence, atomic
+ingestion and private-binding controls. Run Argent against this runtime. Existing
+coverage, Bun SQLite and standalone build gates remain binding.
+
 See: `AGENTS.md` → "Done-when" for the full gate list.
