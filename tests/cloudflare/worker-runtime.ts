@@ -27,6 +27,11 @@ try {
   assert(staging.env.ALLOWED_ORIGINS?.value === '', 'staging starts with no cross-origin grants');
   assert(production.env.DEPLOYMENT_STAGE.value === 'production' && production.env.ALLOWED_ORIGINS === undefined, 'production delegates the canonical-origin default to the API');
   assert(staging.env.IP_HASH_SECRET.type === 'secret' && production.env.IP_HASH_SECRET.type === 'secret', 'required secret remains declared');
+  for (const target of [staging, production]) {
+    const daily = target.env['DAILY_REFRESH_ENABLED' as keyof typeof target.env];
+    assert(daily && 'value' in daily && daily.value === '1', 'every deployed target enables the durable daily scheduler');
+    assert(!target.triggers?.some(trigger => trigger.type === 'scheduled'), 'daily alarm is the sole recurring scheduler');
+  }
   assert(staging.env.AUDIT_RETENTION_DAYS?.value === '400' && production.env.LOG_RETENTION_DAYS?.value === '30', 'default retention bindings preserve existing policy');
   process.env[retentionVariables[0]] = '365';
   process.env[retentionVariables[1]] = '14';

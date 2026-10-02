@@ -22,6 +22,23 @@ export interface DrawSource {
   fetchDraw(contest?: number): Promise<MegaSenaDrawData>;
 }
 
+export class DrawSourceFailure extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+  }
+}
+
+async function fetchValidatedDraw(source: DrawSource, contest?: number): Promise<MegaSenaDrawData> {
+  try {
+    const draw = await source.fetchDraw(contest);
+    if (contest !== undefined && draw.numero !== contest) throw new Error(`Requested contest ${contest}, received ${draw.numero}.`);
+    drawValues(draw);
+    return draw;
+  } catch (error) {
+    throw new DrawSourceFailure(error);
+  }
+}
+
 export interface RefreshResult {
   status: 'success' | 'incomplete';
   inserted: number;
@@ -107,16 +124,13 @@ export async function refreshDraws(
   const maxDraws = options.maxDraws ?? 5;
   if (!Number.isInteger(maxDraws) || maxDraws < 1 || maxDraws > 20) throw new Error('Refresh batch must contain 1–20 draws.');
   const previous = database.prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { last: number };
-  const latest = await source.fetchDraw();
-  drawValues(latest);
-  if (latest.numero < previous.last) throw new Error('CAIXA latest contest is older than stored data.');
+  const latest = await fetchValidatedDraw(source);
+  if (latest.numero < previous.last) throw new DrawSourceFailure('CAIXA latest contest is older than stored data.');
   const end = Math.min(latest.numero, previous.last + maxDraws);
   const draws: MegaSenaDrawData[] = [];
   // All network work completes before the first SQLite write or writer transaction.
   for (let contest = previous.last + 1; contest <= end; contest++) {
-    const draw = contest === latest.numero ? latest : await source.fetchDraw(contest);
-    if (draw.numero !== contest) throw new Error(`Requested contest ${contest}, received ${draw.numero}.`);
-    drawValues(draw);
+    const draw = contest === latest.numero ? latest : await fetchValidatedDraw(source, contest);
     draws.push(draw);
   }
   if (draws.length === 0) draws.push(latest);

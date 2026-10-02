@@ -37,7 +37,7 @@
     "build:cloudflare:production": "cf build --mode production",
     "deploy:cloudflare:staging": "cf deploy --mode staging",
     "deploy:cloudflare:production": "cf deploy --mode production",
-    "test:cloudflare": "bun run tests/cloudflare/database-runtime.ts && bun run tests/cloudflare/transport-runtime.ts && bun run tests/cloudflare/worker-runtime.ts && bun run tests/cloudflare/retained-data-runtime.ts && bun run tests/cloudflare/database-persistence-runtime.ts"
+    "test:cloudflare": "bun run tests/cloudflare/database-runtime.ts && bun run tests/cloudflare/transport-runtime.ts && bun run tests/cloudflare/worker-runtime.ts && bun run tests/cloudflare/retained-data-runtime.ts && bun run tests/cloudflare/database-persistence-runtime.ts && bun run tests/cloudflare/scheduler-runtime.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

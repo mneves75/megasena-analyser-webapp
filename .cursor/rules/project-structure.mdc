@@ -18,7 +18,8 @@ description: Project structure and where things live
 - `cloudflare/worker.ts`: staging vinext frontend Worker with API calls through
   private `DATA` binding to `MegaSenaData` SQLite in `cloudflare/data-object.ts`.
   `cloudflare/ingestion.ts` owns CAIXA refresh; `vite.config.ts` selects Worker
-  database/transport adapters. `cloudflare.config.ts` owns bindings and Cron.
+  database/transport adapters. `cloudflare.config.ts` owns bindings; `MegaSenaData`
+  owns the persisted daily alarm and bounded retries.
   On Bun, `next.config.js` forwards `/api/:path*` to `server.ts`. New endpoints
   belong in `lib/api/handler.ts`.
 - `proxy.ts`: the Next.js 16 middleware (Next renamed `middleware` → `proxy`); mints

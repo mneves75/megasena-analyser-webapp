@@ -6,7 +6,7 @@ import { createApiHandler, type ApiPeer } from '@/lib/api/handler';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { runWithLogSink } from '@/lib/logger';
-import { importSeedDraws, refreshDraws, type RefreshResult } from './ingestion';
+import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from './ingestion';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
 import migration002 from '../db/migrations/002_add_performance_indexes.sql?raw';
@@ -49,6 +49,20 @@ export interface DataEnvironment {
   BOOTSTRAP_PUBLIC_SEED?: string;
   AUDIT_RETENTION_DAYS?: string;
   LOG_RETENTION_DAYS?: string;
+  DAILY_REFRESH_ENABLED?: string;
+}
+
+interface RefreshSchedule {
+  next_due_at: number;
+  next_kind: 'daily' | 'retry';
+  revision: number;
+}
+
+function nextDailyRefresh(now: number): number {
+  const next = new Date(now);
+  next.setUTCHours(6, 0, 0, 0);
+  if (next.getTime() <= now) next.setUTCDate(next.getUTCDate() + 1);
+  return next.getTime();
 }
 
 class RefreshFailure extends Error {
@@ -63,12 +77,14 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   private readonly audit = createAuditWriter({ automaticFlush: false });
   private readonly auditRetentionDays: number;
   private readonly logRetentionDays: number;
+  private readonly dailyRefreshEnabled: boolean;
   private refreshInFlight: Promise<RefreshResult> | undefined;
 
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
     super(ctx, env);
     this.auditRetentionDays = Number(env.AUDIT_RETENTION_DAYS ?? '400');
     this.logRetentionDays = Number(env.LOG_RETENTION_DAYS ?? '30');
+    this.dailyRefreshEnabled = env.DAILY_REFRESH_ENABLED === '1';
     if ((env.ENVIRONMENT ?? 'production') === 'production' && (env.IP_HASH_SECRET?.trim().length ?? 0) < 32) {
       throw new Error('IP_HASH_SECRET required in production (at least 32 characters)');
     }
@@ -80,6 +96,10 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       id INTEGER PRIMARY KEY CHECK(id = 1), status TEXT NOT NULL, attempted_at TEXT NOT NULL,
       completed_at TEXT, last_contest INTEGER, latest_contest INTEGER, error_message TEXT,
       retry_count INTEGER NOT NULL DEFAULT 0
+    ); CREATE TABLE IF NOT EXISTS ingestion_schedule (
+      id INTEGER PRIMARY KEY CHECK(id = 1), next_due_at INTEGER NOT NULL,
+      next_kind TEXT NOT NULL CHECK(next_kind IN ('daily', 'retry')),
+      revision INTEGER NOT NULL
     )`);
     const stored = this.database.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number };
     if (env.BOOTSTRAP_PUBLIC_SEED === '1' && stored.count === 0) {
@@ -91,6 +111,35 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
     });
+    if (this.dailyRefreshEnabled) {
+      void ctx.blockConcurrencyWhile(() => this.initializeSchedule());
+    }
+  }
+
+  private schedule(): RefreshSchedule | undefined {
+    return this.database.prepare('SELECT next_due_at, next_kind, revision FROM ingestion_schedule WHERE id = 1').get() as RefreshSchedule | undefined;
+  }
+
+  private async initializeSchedule(): Promise<void> {
+    await this.ctx.storage.transaction(async () => {
+      const alarm = await this.ctx.storage.getAlarm();
+      const schedule = this.schedule();
+      if (schedule) {
+        if (alarm === null) await this.ctx.storage.setAlarm(schedule.next_due_at);
+        return;
+      }
+      // Adopt an older retry alarm; deployment must not reset its budget.
+      await this.writeSchedule(alarm ?? Date.now() + 1000, alarm === null ? 'daily' : 'retry');
+    });
+  }
+
+  /** Caller holds the storage transaction: journal and native alarm commit together. */
+  private async writeSchedule(due: number, kind: RefreshSchedule['next_kind']): Promise<number> {
+    this.database.prepare(`INSERT INTO ingestion_schedule (id, next_due_at, next_kind, revision) VALUES (1, ?, ?, 1)
+      ON CONFLICT(id) DO UPDATE SET next_due_at = excluded.next_due_at,
+      next_kind = excluded.next_kind, revision = revision + 1`).run(due, kind);
+    await this.ctx.storage.setAlarm(due);
+    return this.schedule()!.revision;
   }
 
   private checkRateLimit(clientId: string) {
@@ -129,47 +178,78 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   }
 
   refresh(): Promise<RefreshResult> {
+    if (this.refreshInFlight) return this.refreshInFlight;
+    if (this.dailyRefreshEnabled) {
+      const schedule = this.schedule();
+      if (!schedule || schedule.next_due_at > Date.now()) return Promise.reject(new Error('CAIXA refresh is not due.'));
+      return this.refreshWithRetry(schedule.next_kind === 'daily');
+    }
     return this.refreshWithRetry(true);
   }
 
   private refreshWithRetry(resetRetries: boolean): Promise<RefreshResult> {
     if (this.refreshInFlight) return this.refreshInFlight;
     this.refreshInFlight = runWithDatabase(this.database, async () => {
-      if (resetRetries) this.database.prepare('UPDATE ingestion_status SET retry_count = 0 WHERE id = 1').run();
-      this.database.prepare(`INSERT INTO ingestion_status (id, status, attempted_at) VALUES (1, 'running', CURRENT_TIMESTAMP)
-        ON CONFLICT(id) DO UPDATE SET status = 'running', attempted_at = CURRENT_TIMESTAMP, error_message = NULL`).run();
+      const reservation = await this.ctx.storage.transaction(async () => {
+        if (resetRetries) this.database.prepare('UPDATE ingestion_status SET retry_count = 0 WHERE id = 1').run();
+        this.database.prepare(`INSERT INTO ingestion_status (id, status, attempted_at) VALUES (1, 'running', CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE SET status = 'running', attempted_at = CURRENT_TIMESTAMP, error_message = NULL`).run();
+        // Persist the next wake-up before network I/O, including the final daily successor.
+        await this.reserveSuccessor();
+        return this.schedule()?.revision;
+      });
       let result: RefreshResult;
       try {
         this.pruneRetention();
         result = await refreshDraws(this.database);
       } catch (error) {
-        this.database.prepare("UPDATE ingestion_status SET status = 'failed', error_message = ? WHERE id = 1").run(error instanceof Error ? error.message : String(error));
-        await this.scheduleRetry();
-        // Only a failure whose retry policy was persisted is safe for alarm() to handle.
+        if (this.schedule()?.revision === reservation) {
+          this.database.prepare("UPDATE ingestion_status SET status = 'failed', error_message = ? WHERE id = 1").run(error instanceof Error ? error.message : String(error));
+        }
+        if (!(error instanceof DrawSourceFailure)) throw error;
+        // The successor was already persisted; only expected upstream failures are caught by alarm().
         throw new RefreshFailure(error);
       }
-      this.database.prepare(`UPDATE ingestion_status SET status = ?, completed_at = CURRENT_TIMESTAMP,
-        last_contest = ?, latest_contest = ?, error_message = NULL WHERE id = 1`).run(result.status, result.lastContest, result.latestContest);
-      if (result.status === 'incomplete') await this.scheduleRetry();
-      else await this.ctx.storage.deleteAlarm();
+      await this.ctx.storage.transaction(async () => {
+        if (this.schedule()?.revision !== reservation) return;
+        this.database.prepare(`UPDATE ingestion_status SET status = ?, completed_at = CURRENT_TIMESTAMP,
+          last_contest = ?, latest_contest = ?, error_message = NULL WHERE id = 1`).run(result.status, result.lastContest, result.latestContest);
+        if (result.status === 'success') {
+          this.database.prepare('UPDATE ingestion_status SET retry_count = 0 WHERE id = 1').run();
+          if (this.dailyRefreshEnabled) await this.writeSchedule(nextDailyRefresh(Date.now()), 'daily');
+          else await this.ctx.storage.deleteAlarm();
+        }
+      });
       return result;
     }).finally(() => { this.refreshInFlight = undefined; });
     return this.refreshInFlight;
   }
 
-  private async scheduleRetry(): Promise<void> {
-    // The asynchronous storage transaction couples SQLite state to the alarm write.
-    await this.ctx.storage.transaction(async () => {
-      const row = this.database.prepare('SELECT retry_count FROM ingestion_status WHERE id = 1').get() as { retry_count: number };
-      // Three persisted retries; the next daily Cron starts a new bounded cycle.
-      if (row.retry_count >= 3) { await this.ctx.storage.deleteAlarm(); return; }
-      this.database.prepare('UPDATE ingestion_status SET retry_count = retry_count + 1 WHERE id = 1').run();
-      await this.ctx.storage.setAlarm(Date.now() + 5 * 60 * 1000 * 2 ** row.retry_count);
-    });
+  private async reserveSuccessor(): Promise<void> {
+    const row = this.database.prepare('SELECT retry_count FROM ingestion_status WHERE id = 1').get() as { retry_count: number };
+    if (row.retry_count >= 3) {
+      if (this.dailyRefreshEnabled) await this.writeSchedule(nextDailyRefresh(Date.now()), 'daily');
+      else await this.ctx.storage.deleteAlarm();
+      return;
+    }
+    this.database.prepare('UPDATE ingestion_status SET retry_count = retry_count + 1 WHERE id = 1').run();
+    const due = Date.now() + 5 * 60 * 1000 * 2 ** row.retry_count;
+    if (this.dailyRefreshEnabled) await this.writeSchedule(due, 'retry');
+    else await this.ctx.storage.setAlarm(due);
   }
 
   override async alarm(): Promise<void> {
-    try { await this.refreshWithRetry(false); }
+    if (this.dailyRefreshEnabled) {
+      const schedule = this.schedule();
+      if (schedule && schedule.next_due_at > Date.now()) {
+        await this.ctx.storage.setAlarm(schedule.next_due_at);
+        return;
+      }
+    }
+    try {
+      const result = await (this.dailyRefreshEnabled ? this.refresh() : this.refreshWithRetry(false));
+      console.info('caixa.daily_refresh', result);
+    }
     catch (error) {
       if (!(error instanceof RefreshFailure)) throw error;
       console.error('ingestion.alarm_failed', error.message);

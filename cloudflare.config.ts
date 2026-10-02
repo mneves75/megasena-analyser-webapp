@@ -1,4 +1,4 @@
-import { bindings, defineConfig, defineWorker, exports, triggers } from 'cf/config';
+import { bindings, defineConfig, defineWorker, exports } from 'cf/config';
 import pkg from './package.json' with { type: 'json' };
 import siteDomains from './lib/site-domains.json' with { type: 'json' };
 
@@ -32,13 +32,14 @@ export default defineConfig(({ mode }) => {
         ALLOWED_ORIGINS: bindings.text(allowedOrigins ?? ''),
       }),
       BOOTSTRAP_PUBLIC_SEED: bindings.text('1'),
+      DAILY_REFRESH_ENABLED: bindings.text('1'),
       AUDIT_RETENTION_DAYS: bindings.text(process.env[isProduction ? 'CLOUDFLARE_PRODUCTION_AUDIT_RETENTION_DAYS' : 'CLOUDFLARE_STAGING_AUDIT_RETENTION_DAYS'] ?? '400'),
       LOG_RETENTION_DAYS: bindings.text(process.env[isProduction ? 'CLOUDFLARE_PRODUCTION_LOG_RETENTION_DAYS' : 'CLOUDFLARE_STAGING_LOG_RETENTION_DAYS'] ?? '30'),
       TRUSTED_CLIENT_IP_HEADER: bindings.text('cf-connecting-ip'),
     },
     exports: { MegaSenaData: exports.durableObject({ storage: 'sqlite' }) },
-    // 06:00 UTC = 03:00 em Brasília, após o processamento do concurso anterior.
-    triggers: [triggers.scheduled({ schedule: '0 6 * * *' })],
+    // MegaSenaData owns the persisted daily alarm; retire existing Cron registrations separately.
+    triggers: [],
     observability: { enabled: true },
   }),
   };

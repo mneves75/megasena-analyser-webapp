@@ -55,11 +55,6 @@ const worker = {
       status: response.status, statusText: response.statusText, headers,
     });
   },
-  async scheduled(): Promise<void> {
-    const result = await database().refresh();
-    console.info('caixa.daily_refresh', result);
-    if (result.status !== 'success') throw new Error('CAIXA catch-up pending; retry alarm scheduled.');
-  },
 };
 
 export default worker;
