@@ -1,0 +1,57 @@
+steps:
+  - launch: { chromium: ../launch-chromium.sh }
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Gerador de Apostas Otimizado
+        role: h1
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: Aviso de privacidade e armazenamento local
+        role: region
+  - tap:
+      text: Entendi
+  - tool: await-ui-element
+    args:
+      condition: hidden
+      selector:
+        text: Aviso de privacidade e armazenamento local
+        role: region
+  - tap:
+      id: budget-input
+  - tool: run-sequence
+    args:
+      steps:
+        - tool: keyboard
+          args:
+            key: backspace
+        - tool: keyboard
+          args:
+            key: backspace
+        - tool: keyboard
+          args:
+            text: 50,50
+  - tool: gesture-scroll
+    args:
+      x: 0.5
+      y: 0.8
+      deltaY: 0.8
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: R$ 50,50
+        role: span
+  - scroll-to: { target: { text: Gerar Apostas, role: button } }
+  - tap:
+      text: Gerar Apostas
+  - tool: await-ui-element
+    args:
+      condition: visible
+      selector:
+        text: 8 apostas geradas
+        role: p
+      timeoutMs: 15000

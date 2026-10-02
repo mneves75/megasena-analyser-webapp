@@ -965,7 +965,7 @@ function createMethodNotAllowedResponse(ctx: RequestContext, allowedMethods: rea
 
 const PORT = Number(process.env['API_PORT']) || 3201;
 
-serve({
+const server = serve({
   port: PORT,
   async fetch(req, server) {
     const url = new URL(req.url);
@@ -1287,6 +1287,8 @@ async function gracefulShutdown(signal: string): Promise<void> {
   
   isShuttingDown = true;
   logger.info('system.shutdown_started', { signal });
+  await server.stop();
+  let shutdownFailed = false;
   
   try {
     if (stopAuditRetentionScheduler) {
@@ -1312,25 +1314,26 @@ async function gracefulShutdown(signal: string): Promise<void> {
     await stopAuditWriter();
     logger.info('audit.writer_stopped');
   } catch (error) {
+    shutdownFailed = true;
     logger.error('audit.stop_failed', error, { signal });
   }
 
+  logger.info('system.shutdown_complete', { signal });
   try {
     await stopLogWriter();
-    logger.info('log.writer_stopped');
   } catch (error) {
-    logger.error('log.writer_stop_failed', error, { signal });
+    shutdownFailed = true;
+    console.error('log.writer_stop_failed', error);
   }
   
   try {
     closeDatabase();
-    logger.info('db.closed');
   } catch (error) {
-    logger.error('db.close_failed', error, { signal });
+    shutdownFailed = true;
+    console.error('db.close_failed', error);
   }
 
-  logger.info('system.shutdown_complete', { signal });
-  process.exit(0);
+  process.exit(shutdownFailed ? 1 : 0);
 }
 
 process.on('SIGTERM', () => {

@@ -119,6 +119,9 @@ export async function stopLogWriter(): Promise<void> {
   }
 
   await flushLogQueue('stop');
+  while (logQueue.length > 0) {
+    await flushLogQueue('stop');
+  }
 }
 
 export function enqueueLogEvent(entry: LogEventEntry): void {
@@ -151,9 +154,9 @@ export async function flushLogQueue(
     }
 
     const batch = logQueue.splice(0, LOG_FLUSH_BATCH_SIZE);
-    const db = getDatabase();
-
+    let db: ReturnType<typeof getDatabase> | undefined;
     try {
+      db = getDatabase();
       db.exec('BEGIN IMMEDIATE TRANSACTION');
       const stmt = db.prepare(`
         INSERT INTO log_events (
@@ -199,12 +202,15 @@ export async function flushLogQueue(
       }
     } catch (error) {
       try {
-        db.exec('ROLLBACK');
+        db?.exec('ROLLBACK');
       } catch {
         // ignore rollback errors
       }
       logQueue = batch.concat(logQueue).slice(0, LOG_QUEUE_MAX);
       console.error('[log-store] flush failed', { reason, error });
+      if (reason === 'stop') {
+        throw error;
+      }
     }
   })().finally(() => {
     flushInFlight = null;

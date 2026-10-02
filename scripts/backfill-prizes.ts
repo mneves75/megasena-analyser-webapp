@@ -91,22 +91,40 @@ async function main(): Promise<void> {
   let updated = 0;
   let failed = 0;
   let consecutiveFailures = 0;
-  let inTransaction = false;
-
-  const beginBatch = (): void => {
-    db.exec('BEGIN TRANSACTION');
-    inTransaction = true;
-  };
+  let pending: MegaSenaDrawData[] = [];
   const commitBatch = (): void => {
-    if (inTransaction) {
+    if (pending.length === 0) return;
+    db.exec('BEGIN IMMEDIATE TRANSACTION');
+    try {
+      for (const draw of pending) {
+        const sena = findPrizeTier(draw, 'Sena');
+        const quina = findPrizeTier(draw, 'Quina');
+        const quadra = findPrizeTier(draw, 'Quadra');
+        update.run(
+          sena?.valorPremio ?? 0,
+          sena?.numeroDeGanhadores ?? 0,
+          quina?.valorPremio ?? 0,
+          quina?.numeroDeGanhadores ?? 0,
+          quadra?.valorPremio ?? 0,
+          quadra?.numeroDeGanhadores ?? 0,
+          draw.valorArrecadado ?? 0,
+          draw.acumulado ? 1 : 0,
+          draw.valorAcumuladoConcurso ?? 0,
+          draw.valorEstimadoProximoConcurso ?? 0,
+          draw.numero
+        );
+      }
       db.exec('COMMIT');
-      inTransaction = false;
+      updated += pending.length;
+      pending = [];
+    } catch (error) {
+      db.exec('ROLLBACK');
+      pending = [];
+      throw error;
     }
   };
 
   try {
-    beginBatch();
-
     for (const [index, contest] of contests.entries()) {
       let draw: MegaSenaDrawData | null = null;
       try {
@@ -132,31 +150,13 @@ async function main(): Promise<void> {
       }
 
       consecutiveFailures = 0;
-      const sena = findPrizeTier(draw, 'Sena');
-      const quina = findPrizeTier(draw, 'Quina');
-      const quadra = findPrizeTier(draw, 'Quadra');
-
-      update.run(
-        sena?.valorPremio ?? 0,
-        sena?.numeroDeGanhadores ?? 0,
-        quina?.valorPremio ?? 0,
-        quina?.numeroDeGanhadores ?? 0,
-        quadra?.valorPremio ?? 0,
-        quadra?.numeroDeGanhadores ?? 0,
-        draw.valorArrecadado ?? 0,
-        draw.acumulado ? 1 : 0,
-        draw.valorAcumuladoConcurso ?? 0,
-        draw.valorEstimadoProximoConcurso ?? 0,
-        contest
-      );
-      updated++;
+      pending.push(draw);
 
       if ((index + 1) % COMMIT_BATCH_SIZE === 0) {
         commitBatch();
         console.log(
           `  ${index + 1}/${contests.length} processed (updated ${updated}, failed ${failed})`
         );
-        beginBatch();
       }
 
       await delay(delayMs);
@@ -164,8 +164,8 @@ async function main(): Promise<void> {
 
     commitBatch();
   } catch (error) {
-    // Commit whatever the current batch already applied so a re-run resumes
-    // instead of repeating work; the loop only aborts on sustained API failure.
+    // Retain fetched progress on sustained API failure. A failed DB batch has
+    // already been rolled back and removed; it is never partially committed.
     try {
       commitBatch();
     } catch {

@@ -19,6 +19,14 @@ interface BudgetSelectorProps {
   className?: string;
 }
 
+function parseBudget(input: string): number {
+  const value = input.trim().replace(/^R\$\s*/, '');
+  if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{0,2})?$/.test(value)) {
+    return 0;
+  }
+  return Number(value.replace(/\./g, '').replace(',', '.'));
+}
+
 export function BudgetSelector({
   value,
   onChange,
@@ -27,17 +35,17 @@ export function BudgetSelector({
   isOptimizedMode = false,
   className
 }: BudgetSelectorProps) {
-  const [inputValue, setInputValue] = useState(value.toString());
-  const numericInputValue = inputValue.length > 0 ? Number.parseInt(inputValue, 10) : 0;
+  const [inputValue, setInputValue] = useState(value.toString().replace('.', ','));
+  const numericInputValue = parseBudget(inputValue);
   const isBelowMin = inputValue.length > 0 && numericInputValue < min;
   const isAboveMax = inputValue.length > 0 && numericInputValue > max;
   const hasBudgetError = isBelowMin || isAboveMax;
   const errorId = 'budget-input-error';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^\d]/g, '');
+    const val = e.target.value;
     setInputValue(val);
-    onChange(Number.parseInt(val, 10) || 0);
+    onChange(parseBudget(val));
   };
 
   const handlePresetClick = (preset: number) => {
@@ -64,8 +72,7 @@ export function BudgetSelector({
               type="text"
               value={inputValue}
               onChange={handleInputChange}
-              inputMode="numeric"
-              pattern="[0-9]*"
+              inputMode="decimal"
               aria-invalid={hasBudgetError ? 'true' : undefined}
               aria-errormessage={hasBudgetError ? errorId : undefined}
               className="pl-10 text-lg font-semibold tabular-nums"

@@ -50,14 +50,17 @@ export function GeneratorForm() {
       const data = await generateBets(budget, strategy, mode);
       
       if (isMountedRef.current && requestId === activeRequestIdRef.current) {
+        if ('error' in data) {
+          setError(data.error);
+          requestAnimationFrame(() => errorRef.current?.focus());
+          return;
+        }
         setResult(data);
         requestAnimationFrame(() => resultsRef.current?.focus());
       }
-    } catch (err) {
+    } catch {
       if (isMountedRef.current && requestId === activeRequestIdRef.current) {
-        const errorMessage =
-          err instanceof Error ? err.message : pt.generatorForm.errorFallback;
-        setError(errorMessage);
+        setError(pt.generatorForm.errorFallback);
         requestAnimationFrame(() => errorRef.current?.focus());
         // Error already logged by server, no need to log again on client
       }

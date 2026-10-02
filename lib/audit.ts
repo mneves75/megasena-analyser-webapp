@@ -136,6 +136,9 @@ export async function stopAuditWriter(): Promise<void> {
   }
 
   await flushAuditQueue('stop');
+  while (auditQueue.length > 0) {
+    await flushAuditQueue('stop');
+  }
 }
 
 export function enqueueAuditEvent(input: AuditEventInput): void {
@@ -162,9 +165,9 @@ export async function flushAuditQueue(reason: 'interval' | 'threshold' | 'stop' 
     }
 
     const batch = auditQueue.splice(0, AUDIT_FLUSH_BATCH_SIZE);
-    const db = getDatabase();
-
+    let db: ReturnType<typeof getDatabase> | undefined;
     try {
+      db = getDatabase();
       db.exec('BEGIN IMMEDIATE TRANSACTION');
       const stmt = db.prepare(`
         INSERT INTO audit_logs (
@@ -195,7 +198,7 @@ export async function flushAuditQueue(reason: 'interval' | 'threshold' | 'stop' 
       logger.debug('audit.flush_success', { reason, count: batch.length });
     } catch (error) {
       try {
-        db.exec('ROLLBACK');
+        db?.exec('ROLLBACK');
       } catch (rollbackError) {
         logger.error('audit.rollback_failed', rollbackError);
       }
@@ -204,6 +207,9 @@ export async function flushAuditQueue(reason: 'interval' | 'threshold' | 'stop' 
       auditQueue = batch.concat(auditQueue).slice(0, AUDIT_QUEUE_MAX);
 
       logger.error('system.audit_flush_failed', error, { reason, count: batch.length });
+      if (reason === 'stop') {
+        throw error;
+      }
     }
   })().finally(() => {
     flushInFlight = null;

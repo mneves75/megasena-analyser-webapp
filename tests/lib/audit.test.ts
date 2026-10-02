@@ -1,6 +1,36 @@
 import { describe, it, expect, vi } from 'vitest';
 
 describe('audit', () => {
+  it('rejects a failed shutdown flush and retains its batch for retry', async () => {
+    process.env.VITEST = '1';
+    vi.resetModules();
+    const { runMigrations, getDatabase } = await import('@/lib/db');
+    const { enqueueAuditEvent, stopAuditWriter } = await import('@/lib/audit');
+    runMigrations();
+    const db = getDatabase();
+    enqueueAuditEvent({ event: 'api.dashboard_read' });
+    const exec = vi.spyOn(db, 'exec').mockImplementationOnce(() => { throw new Error('DB unavailable'); });
+    await expect(stopAuditWriter()).rejects.toThrow('DB unavailable');
+    exec.mockRestore();
+    await stopAuditWriter();
+    const row = db.prepare('SELECT count(*) as count FROM audit_logs').get() as { count: number };
+    expect(row.count).toBe(1);
+  });
+
+  it('drains every queued batch before shutdown resolves', async () => {
+    process.env.VITEST = '1';
+    vi.resetModules();
+    const { runMigrations, getDatabase } = await import('@/lib/db');
+    const { enqueueAuditEvent, stopAuditWriter } = await import('@/lib/audit');
+    runMigrations();
+    for (let index = 0; index < 1000; index++) {
+      enqueueAuditEvent({ event: 'api.dashboard_read', requestId: `shutdown_${index}` });
+    }
+    await stopAuditWriter();
+    const row = getDatabase().prepare('SELECT count(*) as count FROM audit_logs').get() as { count: number };
+    expect(row.count).toBe(1000);
+  });
+
   it('flushes queued events into SQLite audit_logs (in-memory)', async () => {
     process.env.VITEST = '1';
     vi.resetModules();

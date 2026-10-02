@@ -176,6 +176,12 @@ Os overrides em `pnpm-workspace.yaml` (chave `overrides`) existem para manter `p
 
 Overrides atuais de segurança:
 
+Next.js e eslint-config-next usam 16.3.6, fora do intervalo afetado por
+[GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
+Os peers de desenvolvimento têm overrides específicos para `ajv-formats>ajv`
+(API AJV 8, preservando AJV 6 no ESLint) e `css-tree >=3.2.1 <4`.
+`pnpm peers check` deve confirmar compatibilidade além do audit de segurança.
+
 - `@babel/core`
 - `brace-expansion >=5.0.12` (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p)
 - `fast-uri >=3.1.8 <4` (GHSA-hrr3-gc8f-f4qj)

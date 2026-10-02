@@ -109,6 +109,9 @@ bun run start            # stack de produção local
 
 - Boot ordenado (API antes do Next), `SIGTERM`→`SIGKILL` com período de graça, flush
   final das filas de log/auditoria no shutdown, `bunfig.toml` `run.noOrphans=true`.
+  A API para de aceitar requisições antes da drenagem, persiste todos os lotes e
+  fecha o banco por último; uma falha de persistência resulta em saída não zero.
+  O backfill consulta a CAIXA antes de abrir cada transação curta de escrita.
 
 ## Como verificar isso no código
 

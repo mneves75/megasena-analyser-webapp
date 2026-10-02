@@ -48,7 +48,7 @@ Pense em três camadas:
   Use `pnpm install`, `bun run dev` e `bun x vitest`.
 - Docs: https://bun.sh/docs
 
-### Next.js (`16.3.5`) — framework web (App Router)
+### Next.js (`16.3.6`) — framework web (App Router)
 
 - **O que é:** framework React full-stack. Aqui usado em modo **App Router** com
   `output: standalone`.

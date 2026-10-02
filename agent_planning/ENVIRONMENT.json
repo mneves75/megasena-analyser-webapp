@@ -1,0 +1,32 @@
+{
+  "inspectedAt": "2026-10-02",
+  "source": "argent-environment-inspector",
+  "projectType": "web",
+  "is_react_native": false,
+  "framework": "Next.js 16.3.6 / React 19.2.8; vinext 1.0.1 Cloudflare staging",
+  "runtime": "Bun 1.4.2 with bun:sqlite in production; Cloudflare Workers with SQLite Durable Objects in staging",
+  "packageManager": "pnpm 11.13.0",
+  "build": "bun run build",
+  "development": "bun run dev",
+  "production": "bun run start",
+  "ports": {
+    "next": 3000,
+    "api": 3201,
+    "argentFixture": 3117
+  },
+  "fixture": "bun run scripts/prepare-e2e-db.ts",
+  "argent": "bun run test:argent",
+  "argentFlow": ".argent/flows/qa-generator-mobile-375-pagination.yaml",
+  "argentPassesRequired": 2,
+  "playwrightAllowed": false,
+  "productionSecretNames": [
+    "IP_HASH_SECRET"
+  ],
+  "optionalSecretNames": [
+    "INTERNAL_API_SECRET",
+    "INDEXNOW_KEY"
+  ],
+  "deployment": "Manual deployment with separate staging and production targets. Public-domain acceptance, recoverable backups and final data reconciliation are required before retiring the previous runtime. Account-specific state and evidence remain private.",
+  "ci": "Automatic Cloudflare Runtime gates; legacy Docker/Playwright pipeline requires manual dispatch",
+  "ciIsDeploymentProof": false
+}

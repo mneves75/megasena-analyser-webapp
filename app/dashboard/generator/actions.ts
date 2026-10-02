@@ -35,7 +35,7 @@ export async function generateBets(
   budget: number,
   strategy: BetStrategy,
   mode: BetGenerationMode
-): Promise<BetGenerationResult> {
+): Promise<BetGenerationResult | { error: string }> {
   // Call the Bun API server instead of directly instantiating BetGenerator
   // Server Actions run in Node.js, but database requires Bun runtime
   const requestHeaders = await forwardedClientIpHeaders();
@@ -61,7 +61,7 @@ export async function generateBets(
     // The API answers validation failures with an actionable pt-BR message
     // (budget above the optimized cap, for example). Surfacing the HTTP reason
     // phrase instead would show the user an untranslated "Bad Request".
-    throw new Error(readApiErrorMessage(text));
+    return { error: readApiErrorMessage(text) };
   }
 
   const json = (await response.json()) as GenerateBetsApiResponse;
@@ -72,7 +72,7 @@ export async function generateBets(
       hasData: Boolean(json.data),
       success: json.success,
     });
-    throw new Error(json.error ?? GENERIC_ERROR);
+    return { error: json.error ?? GENERIC_ERROR };
   }
 
   return json.data;

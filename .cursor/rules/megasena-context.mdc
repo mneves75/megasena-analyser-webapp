@@ -79,6 +79,10 @@ Batch large ingestions in a single transaction with rollback, and run
 
 ## Common Tasks
 
+Generator error/decimal-budget and shutdown invariants follow `AGENTS.md`.
+ChatGPT Search eligibility and measurement follow `docs/CHATGPT-SEARCH.md`;
+preserve the absence of acquisition analytics.
+
 ### Add New Strategy
 
 1. Extend `BetStrategy` in `lib/analytics/bet-generator.types.ts`

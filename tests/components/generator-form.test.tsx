@@ -130,7 +130,16 @@ describe('GeneratorForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Erro:/i)).toBeInTheDocument();
-      expect(screen.getByText(/Falha controlada/i)).toBeInTheDocument();
+      expect(screen.getByText(/Erro ao gerar apostas. Tente novamente./i)).toBeInTheDocument();
+    });
+  });
+
+  it('exibe erros esperados retornados pela ação sem depender de exceções RSC', async () => {
+    vi.mocked(generateBets).mockResolvedValue({ error: 'Orçamento indisponível.' });
+    render(<GeneratorForm />);
+    fireEvent.click(screen.getByRole('button', { name: /Gerar Apostas/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Orçamento indisponível.');
     });
   });
 
