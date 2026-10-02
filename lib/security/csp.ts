@@ -1,4 +1,6 @@
-const CAIXA_API_ORIGIN = 'https://servicebus2.caixa.gov.br';
+import { API_CONFIG } from '@/lib/constants';
+
+const CAIXA_API_ORIGIN = new URL(API_CONFIG.CAIXA_BASE_URL).origin;
 export const HSTS_HEADER_VALUE = 'max-age=31536000; includeSubDomains; preload';
 
 export interface CspOptions {

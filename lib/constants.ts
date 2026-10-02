@@ -44,7 +44,7 @@ export const BET_PRICES: Record<number, number> = {
 
 // API Configuration
 export const API_CONFIG = {
-  CAIXA_BASE_URL: 'https://servicebus2.caixa.gov.br/portaldeloterias/api',
+  CAIXA_BASE_URL: 'https://servicebus3.caixa.gov.br/portaldeloterias/api',
   REQUEST_TIMEOUT: 30000, // 30 seconds (increased from 10s for slow responses)
   RATE_LIMIT_DELAY: 1000, // Base delay between requests
   MAX_RETRIES: 5, // Maximum retry attempts (increased from 3)

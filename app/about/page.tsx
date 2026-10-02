@@ -56,7 +56,7 @@ export default function AboutPage() {
             <p>
               Todos os dados de sorteios são obtidos diretamente da{' '}
               <strong>API pública da CAIXA Econômica Federal</strong>
-              {' '}(servicebus2.caixa.gov.br), a fonte oficial dos resultados
+              , a fonte oficial dos resultados
               das loterias brasileiras.
             </p>
             <p>

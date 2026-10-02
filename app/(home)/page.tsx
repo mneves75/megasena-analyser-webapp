@@ -27,7 +27,7 @@ const homeFaqs = [
   {
     question: 'De onde vêm os dados dos sorteios?',
     answer:
-      'Todos os dados são obtidos da API pública oficial da CAIXA Econômica Federal (servicebus2.caixa.gov.br), que é a fonte autorizada dos resultados das loterias brasileiras.',
+      'Todos os dados são obtidos da API pública oficial da CAIXA Econômica Federal, que é a fonte autorizada dos resultados das loterias brasileiras.',
   },
   {
     question: 'Onde vejo o resultado de um concurso da Mega-Sena?',

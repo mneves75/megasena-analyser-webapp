@@ -37,7 +37,7 @@ caches/auditoria internos) escrevem.
 
 1. `scripts/pull-draws.ts` chama `caixaClient.fetchAllDraws(...)`
    (`lib/api/caixa-client.ts`).
-2. O cliente faz `GET https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/{n}`
+2. O cliente faz `GET https://servicebus3.caixa.gov.br/portaldeloterias/api/megasena/{n}`
    com **retry exponencial** (`fetchWithRetry`, até `API_CONFIG.MAX_RETRIES = 5`),
    **timeout** de 30s (`AbortController`), **ETag/304** (cache condicional) e
    **rate limiting progressivo** entre requisições.

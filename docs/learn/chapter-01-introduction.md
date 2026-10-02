@@ -155,7 +155,7 @@ const price = BET_PRICES[6];  // Claro, rastreável, fácil de atualizar
 <summary>Solução</summary>
 
 1. `BET_PRICES[15]` = 30030.0 (R$30.030)
-2. `API_CONFIG.CAIXA_BASE_URL` = "https://servicebus2.caixa.gov.br/portaldeloterias/api"
+2. `API_CONFIG.CAIXA_BASE_URL` = "https://servicebus3.caixa.gov.br/portaldeloterias/api"
 3. `BET_GENERATION_LIMITS.MAX_BETS_PER_GENERATION` = 200
 4. `API_CONFIG.REQUEST_TIMEOUT` = 30000 (30 segundos)
 

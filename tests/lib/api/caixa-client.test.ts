@@ -2,6 +2,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
 
 describe('CaixaAPIClient', () => {
+  it('fetches official results from the endpoint published by the CAIXA portal', async () => {
+    const client = new CaixaAPIClient({ maxRetries: 1 });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url !== 'https://servicebus3.caixa.gov.br/portaldeloterias/api/megasena/3065') {
+        return Promise.resolve(new Response(null, { status: 403 }));
+      }
+      return Promise.resolve(new Response(JSON.stringify({
+        numero: 3065, dataApuracao: '01/10/2026',
+        listaDezenas: ['08', '10', '30', '38', '50', '53'],
+      })));
+    }));
+    await expect(client.fetchDraw(3065)).resolves.toMatchObject({ numero: 3065 });
+  });
   it('keeps the request deadline active while a response body is stalled', async () => {
     const client = new CaixaAPIClient();
     Object.assign(client, { timeout: 25 });

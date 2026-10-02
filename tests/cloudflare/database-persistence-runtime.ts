@@ -3,6 +3,7 @@ import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import publicSeed from '../../db/seed/draws.json';
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw new Error(message); }
 const directory = await realpath(await mkdtemp(path.join(tmpdir(), 'megasena-persistence-test-')));
@@ -29,7 +30,7 @@ try {
   const health = await first.dispatchFetch('https://example.com/api/health');
   assert(health.status === 200 && health.headers.get('x-ratelimit-remaining') === '99', 'first durable rate-limit request');
   firstStatus = await (await first.dispatchFetch('https://example.com/status')).json() as typeof firstStatus;
-  assert(firstStatus.draws === 3065 && firstStatus.auditRows === 1 && firstStatus.logRows >= 2, 'initial draws/audit/log persisted');
+  assert(firstStatus.draws === publicSeed.length + 1 && firstStatus.auditRows === 1 && firstStatus.logRows >= 2, 'initial draws/audit/log persisted');
 } finally { await first.dispose(); }
 // A new runtime process opens the same exclusive persisted storage.
 const second = new Miniflare(options);
@@ -39,7 +40,7 @@ try {
   const health = await second.dispatchFetch('https://example.com/api/health');
   assert(health.status === 200 && health.headers.get('x-ratelimit-remaining') === '98', 'rate-limit counter survives restart');
   const final = await (await second.dispatchFetch('https://example.com/status')).json() as typeof firstStatus;
-  assert(final.auditRows === 2 && final.draws === 3065, 'restarted audit and draws');
+  assert(final.auditRows === 2 && final.draws === publicSeed.length + 1, 'restarted audit and draws');
   const evidence = { pass: true, runtimeRestart: true, draws: final.draws, auditRows: final.auditRows, logRows: final.logRows, retainedRateLimitRemaining: 98 };
   await mkdir('.scratch/cloudflare-database', { recursive: true });
   await writeFile('.scratch/cloudflare-database/persistence-runtime-result.json', JSON.stringify(evidence));

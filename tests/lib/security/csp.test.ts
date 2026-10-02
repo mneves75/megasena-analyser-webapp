@@ -18,7 +18,8 @@ describe('buildCsp', () => {
     expect(scriptSrcElem).toBe("script-src-elem 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain('upgrade-insecure-requests');
-    expect(csp).toMatch(/connect-src[^;]*servicebus2\.caixa\.gov\.br/);
+    expect(csp).toMatch(/connect-src[^;]*servicebus3\.caixa\.gov\.br/);
+    expect(csp).not.toContain('servicebus2.caixa.gov.br');
   });
 
   it('usa nonce em style-src de produção sem unsafe-inline', () => {

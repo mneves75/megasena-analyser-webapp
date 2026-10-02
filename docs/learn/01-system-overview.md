@@ -76,7 +76,7 @@ graph TD
     ENG["StatisticsEngine / BetGenerator / *AnalysisEngine"]
     DB[("SQLite (bun:sqlite)")]
   end
-  CAIXA["API CAIXA (servicebus2.caixa.gov.br)"]
+  CAIXA["API CAIXA (servicebus3.caixa.gov.br)"]
   PULL["scripts/pull-draws.ts"]
 
   Browser -->|HTTP| MW --> RSC
