@@ -6,19 +6,35 @@ import config from '../../cloudflare.config';
 
 const originVariables = ['CLOUDFLARE_STAGING_ALLOWED_ORIGINS', 'CLOUDFLARE_PRODUCTION_ALLOWED_ORIGINS'] as const;
 const originalOrigins = originVariables.map(name => process.env[name]);
+const retentionVariables = ['CLOUDFLARE_STAGING_AUDIT_RETENTION_DAYS', 'CLOUDFLARE_STAGING_LOG_RETENTION_DAYS', 'CLOUDFLARE_PRODUCTION_AUDIT_RETENTION_DAYS', 'CLOUDFLARE_PRODUCTION_LOG_RETENTION_DAYS'] as const;
+const originalRetention = retentionVariables.map(name => process.env[name]);
 try {
   for (const name of originVariables) delete process.env[name];
+  for (const name of retentionVariables) delete process.env[name];
   const staging = config({ mode: 'staging', isPreview: false }).worker;
   const production = config({ mode: 'production', isPreview: false }).worker;
   assert(staging.env.DEPLOYMENT_STAGE.value === 'staging' && staging.env.ENVIRONMENT.value === 'production', 'staging policy is separate from security environment');
   assert(staging.env.ALLOWED_ORIGINS?.value === '', 'staging starts with no cross-origin grants');
   assert(production.env.DEPLOYMENT_STAGE.value === 'production' && production.env.ALLOWED_ORIGINS === undefined, 'production delegates the canonical-origin default to the API');
   assert(staging.env.IP_HASH_SECRET.type === 'secret' && production.env.IP_HASH_SECRET.type === 'secret', 'required secret remains declared');
+  assert(staging.env.AUDIT_RETENTION_DAYS?.value === '400' && production.env.LOG_RETENTION_DAYS?.value === '30', 'default retention bindings preserve existing policy');
+  process.env[retentionVariables[0]] = '365';
+  process.env[retentionVariables[1]] = '14';
+  process.env[retentionVariables[2]] = '730';
+  process.env[retentionVariables[3]] = '90';
+  for (const [mode, auditDays, logDays] of [['staging', '365', '14'], ['production', '730', '90']] as const) {
+    const configured = config({ mode, isPreview: false }).worker;
+    assert(configured.env.AUDIT_RETENTION_DAYS?.value === auditDays && configured.env.LOG_RETENTION_DAYS?.value === logDays, `${mode} preserves its own retention settings`);
+  }
   for (const mode of ['staging', 'production']) {
     process.env[mode === 'production' ? originVariables[1] : originVariables[0]] = 'https://example.com';
     assert(config({ mode, isPreview: false }).worker.env.ALLOWED_ORIGINS?.value === 'https://example.com', `${mode} honors explicit operator origins`);
   }
 } finally {
+  retentionVariables.forEach((name, index) => {
+    const previous = originalRetention[index];
+    if (previous === undefined) delete process.env[name]; else process.env[name] = previous;
+  });
   originVariables.forEach((name, index) => {
     const previous = originalOrigins[index];
     if (previous === undefined) delete process.env[name]; else process.env[name] = previous;

@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createDurableDatabase, getDatabase, runWithDatabase } from '../../lib/cloudflare/database';
 import { withDatabaseTransaction } from '../../lib/db-transaction';
-import { applyMigrations, MegaSenaData } from '../../cloudflare/data-object';
+import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
 import { appendDraws, refreshDraws } from '../../cloudflare/ingestion';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
@@ -79,6 +79,7 @@ export class TestData extends DurableObject {
       try { appendDraws(db, [{ ...draw, listaDezenas: ['1', '2', '3', '4', '5', '6'] }]); } catch { rejected = true; }
       assert(rejected, 'existing draw conflict');
       const before = (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
+      rejected = false;
       try { await refreshDraws(db, { fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
       assert(rejected && (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === before, 'outage preserves data');
       assert(getDatabase() === db, 'async database scope');
@@ -94,14 +95,40 @@ export class TestData extends DurableObject {
 
 export class TestRetryData extends MegaSenaData {
   async retryAlarm(): Promise<void> { await this.alarm(); }
+  async failNextAlarmWrite(): Promise<void> {
+    await this.ctx.storage.deleteAlarm();
+    const setAlarm = this.ctx.storage.setAlarm.bind(this.ctx.storage);
+    this.ctx.storage.setAlarm = async () => {
+      this.ctx.storage.setAlarm = setAlarm;
+      throw new Error('Injected alarm storage failure');
+    };
+  }
   alarmTime(): Promise<number | null> { return this.ctx.storage.getAlarm(); }
   insertExpiredEvents(): void {
     this.ctx.storage.sql.exec("INSERT INTO audit_logs (id,timestamp,event) VALUES ('expired-audit','2000-01-01T00:00:00.000Z','test'); INSERT INTO log_events (id,timestamp,level,event) VALUES ('expired-log','2000-01-01T00:00:00.000Z','info','test')");
   }
+  insertRetainedEvents(): void {
+    this.insertExpiredEvents();
+    this.ctx.storage.sql.exec("INSERT INTO audit_logs (id,timestamp,event) VALUES ('retained-audit',datetime('now','-500 days'),'test'); INSERT INTO log_events (id,timestamp,level,event) VALUES ('retained-log',datetime('now','-60 days'),'info','test')");
+  }
+}
+
+export class TestConfiguredRetention extends TestRetryData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    const configured = { ...env, AUDIT_RETENTION_DAYS: '730', LOG_RETENTION_DAYS: '90' };
+    super(ctx, configured);
+  }
+}
+
+export class TestDisabledRetention extends TestRetryData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    const configured = { ...env, AUDIT_RETENTION_DAYS: '0', LOG_RETENTION_DAYS: 'invalid' };
+    super(ctx, configured);
+  }
 }
 
 const worker = {
-  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<MegaSenaData>; RETRY: DurableObjectNamespace<TestRetryData> }) {
+  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<MegaSenaData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
     try {
       const first = env.DATA.getByName('first');
       const second = env.DATA.getByName('second');
@@ -128,9 +155,28 @@ const worker = {
       for (let attempt = 0; attempt < 3; attempt++) await retry.retryAlarm();
       assert((await retry.status()).ingestion?.['retry_count'] === 3, 'bounded retry count');
       assert(await retry.alarmTime() === null, 'no alarm after retry budget exhaustion');
+      const schedulingFailure = env.RETRY.getByName('scheduling-failure');
+      try { await schedulingFailure.refresh(); } catch { /* Upstream outage schedules the first retry. */ }
+      await schedulingFailure.failNextAlarmWrite();
+      rejected = false;
+      try { await schedulingFailure.retryAlarm(); } catch { rejected = true; }
+      assert(rejected, 'alarm storage failure must escape for platform retry');
+      assert((await schedulingFailure.status()).ingestion?.['retry_count'] === 1, 'failed alarm write must not consume retry budget');
+      await schedulingFailure.retryAlarm();
+      assert((await schedulingFailure.status()).ingestion?.['retry_count'] === 2 && await schedulingFailure.alarmTime() !== null, 'platform retry recovers alarm scheduling');
+      const retention = env.RETENTION.getByName('configured');
+      await retention.insertRetainedEvents();
+      try { await retention.refresh(); } catch { /* Retention also runs during an upstream outage. */ }
+      const retained = await retention.status();
+      assert(retained.auditRows === 1 && retained.logRows === 1, 'configured retention preserves eligible history and deletes expired rows');
+      const disabled = env.DISABLED_RETENTION.getByName('disabled');
+      await disabled.insertRetainedEvents();
+      try { await disabled.refresh(); } catch { /* Invalid/disabled settings must never trigger fallback deletion. */ }
+      const unpruned = await disabled.status();
+      assert(unpruned.auditRows === 2 && unpruned.logRows === 2, 'disabled or invalid retention preserves records like Bun');
       return Response.json({ pass: true, ...result, objectIsolation: true, publicSeedDraws: initial.draws,
         seedOccurrences: initial.numberOccurrences, seedPairs: initial.cachedPairs,
-        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, outageRetention: true, nativeBunTransactions: true });
+        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, disabledRetention: true, nativeBunTransactions: true });
     } catch (error) {
       return Response.json({ pass: false, error: String(error) }, { status: 500 });
     }

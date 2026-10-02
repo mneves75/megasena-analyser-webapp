@@ -43,7 +43,7 @@ const runtime = new Miniflare(convertV4MiniflareOptions({
   workers: [{
     name: 'database-test', modules: true, script: bundle.outputFiles[0]!.text,
     compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'],
-    durableObjects: { DATA: { className: 'TestData', useSQLite: true }, SEEDED: { className: 'MegaSenaData', useSQLite: true }, RETRY: { className: 'TestRetryData', useSQLite: true } },
+    durableObjects: { DATA: { className: 'TestData', useSQLite: true }, SEEDED: { className: 'MegaSenaData', useSQLite: true }, RETRY: { className: 'TestRetryData', useSQLite: true }, RETENTION: { className: 'TestConfiguredRetention', useSQLite: true }, DISABLED_RETENTION: { className: 'TestDisabledRetention', useSQLite: true } },
     bindings: { ENVIRONMENT: 'development', BOOTSTRAP_PUBLIC_SEED: '1' },
     outboundService: async () => new Response('CAIXA failure control', { status: 400 }),
   }],

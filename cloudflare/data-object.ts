@@ -47,16 +47,28 @@ export interface DataEnvironment {
   ENVIRONMENT?: string;
   ALLOWED_ORIGINS?: string;
   BOOTSTRAP_PUBLIC_SEED?: string;
+  AUDIT_RETENTION_DAYS?: string;
+  LOG_RETENTION_DAYS?: string;
+}
+
+class RefreshFailure extends Error {
+  constructor(cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+  }
 }
 
 export class MegaSenaData extends DurableObject<DataEnvironment> {
   private readonly database: DatabaseLike;
   private readonly handler: ReturnType<typeof createApiHandler>;
   private readonly audit = createAuditWriter({ automaticFlush: false });
+  private readonly auditRetentionDays: number;
+  private readonly logRetentionDays: number;
   private refreshInFlight: Promise<RefreshResult> | undefined;
 
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
     super(ctx, env);
+    this.auditRetentionDays = Number(env.AUDIT_RETENTION_DAYS ?? '400');
+    this.logRetentionDays = Number(env.LOG_RETENTION_DAYS ?? '30');
     if ((env.ENVIRONMENT ?? 'production') === 'production' && (env.IP_HASH_SECRET?.trim().length ?? 0) < 32) {
       throw new Error('IP_HASH_SECRET required in production (at least 32 characters)');
     }
@@ -126,40 +138,53 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       if (resetRetries) this.database.prepare('UPDATE ingestion_status SET retry_count = 0 WHERE id = 1').run();
       this.database.prepare(`INSERT INTO ingestion_status (id, status, attempted_at) VALUES (1, 'running', CURRENT_TIMESTAMP)
         ON CONFLICT(id) DO UPDATE SET status = 'running', attempted_at = CURRENT_TIMESTAMP, error_message = NULL`).run();
+      let result: RefreshResult;
       try {
         this.pruneRetention();
-        const result = await refreshDraws(this.database);
-        this.database.prepare(`UPDATE ingestion_status SET status = ?, completed_at = CURRENT_TIMESTAMP,
-          last_contest = ?, latest_contest = ?, error_message = NULL WHERE id = 1`).run(result.status, result.lastContest, result.latestContest);
-        if (result.status === 'incomplete') await this.scheduleRetry();
-        else await this.ctx.storage.deleteAlarm();
-        return result;
+        result = await refreshDraws(this.database);
       } catch (error) {
         this.database.prepare("UPDATE ingestion_status SET status = 'failed', error_message = ? WHERE id = 1").run(error instanceof Error ? error.message : String(error));
         await this.scheduleRetry();
-        throw error;
+        // Only a failure whose retry policy was persisted is safe for alarm() to handle.
+        throw new RefreshFailure(error);
       }
+      this.database.prepare(`UPDATE ingestion_status SET status = ?, completed_at = CURRENT_TIMESTAMP,
+        last_contest = ?, latest_contest = ?, error_message = NULL WHERE id = 1`).run(result.status, result.lastContest, result.latestContest);
+      if (result.status === 'incomplete') await this.scheduleRetry();
+      else await this.ctx.storage.deleteAlarm();
+      return result;
     }).finally(() => { this.refreshInFlight = undefined; });
     return this.refreshInFlight;
   }
 
   private async scheduleRetry(): Promise<void> {
-    const row = this.database.prepare('SELECT retry_count FROM ingestion_status WHERE id = 1').get() as { retry_count: number };
-    // Three persisted retries; the next daily Cron starts a new bounded cycle.
-    if (row.retry_count >= 3) { await this.ctx.storage.deleteAlarm(); return; }
-    this.database.prepare('UPDATE ingestion_status SET retry_count = retry_count + 1 WHERE id = 1').run();
-    await this.ctx.storage.setAlarm(Date.now() + 5 * 60 * 1000 * 2 ** row.retry_count);
+    // The asynchronous storage transaction couples SQLite state to the alarm write.
+    await this.ctx.storage.transaction(async () => {
+      const row = this.database.prepare('SELECT retry_count FROM ingestion_status WHERE id = 1').get() as { retry_count: number };
+      // Three persisted retries; the next daily Cron starts a new bounded cycle.
+      if (row.retry_count >= 3) { await this.ctx.storage.deleteAlarm(); return; }
+      this.database.prepare('UPDATE ingestion_status SET retry_count = retry_count + 1 WHERE id = 1').run();
+      await this.ctx.storage.setAlarm(Date.now() + 5 * 60 * 1000 * 2 ** row.retry_count);
+    });
   }
 
   override async alarm(): Promise<void> {
     try { await this.refreshWithRetry(false); }
-    catch (error) { console.error('ingestion.alarm_failed', error instanceof Error ? error.message : String(error)); }
+    catch (error) {
+      if (!(error instanceof RefreshFailure)) throw error;
+      console.error('ingestion.alarm_failed', error.message);
+    }
   }
 
   private pruneRetention(): void {
     withDatabaseTransaction(this.database, () => {
-      this.database.prepare("DELETE FROM audit_logs WHERE julianday(timestamp) < julianday('now', '-400 days')").run();
-      this.database.prepare("DELETE FROM log_events WHERE julianday(timestamp) < julianday('now', '-30 days')").run();
+      // Match Bun: invalid or nonpositive settings disable deletion, never shorten retention.
+      if (Number.isFinite(this.auditRetentionDays) && this.auditRetentionDays > 0) {
+        this.database.prepare("DELETE FROM audit_logs WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.auditRetentionDays} days`);
+      }
+      if (Number.isFinite(this.logRetentionDays) && this.logRetentionDays > 0) {
+        this.database.prepare("DELETE FROM log_events WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.logRetentionDays} days`);
+      }
       this.database.prepare('DELETE FROM rate_limit_windows WHERE reset_at <= ?').run(Date.now());
     });
   }

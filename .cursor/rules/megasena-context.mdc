@@ -9,6 +9,9 @@ betting strategies. It makes **no predictions** — lottery outcomes are random 
 UI must say so. User-facing copy is pt-BR.
 
 `AGENTS.md` at the repo root is the canonical agent contract; this file is a summary.
+Worker retry count and alarm scheduling share one storage transaction. Preserve
+configured audit/log retention per environment before migrating retained rows;
+defaults remain 400/30 days. See `docs/DEPLOY.md` for build inputs and acceptance.
 
 ## Architecture
 
