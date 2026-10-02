@@ -329,7 +329,7 @@ export default async function StatisticsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="mb-6 grid grid-cols-8 gap-2 sm:grid-cols-10 md:grid-cols-12">
+              <div className="mb-6 grid grid-cols-4 gap-2 sm:grid-cols-10 md:grid-cols-12">
                 {delays.slice(0, 30).map((delay) => (
                   <div key={delay.number} className="flex flex-col items-center gap-1">
                     <LotteryBall number={delay.number} size="sm" />
