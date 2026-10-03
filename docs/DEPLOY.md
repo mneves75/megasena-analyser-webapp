@@ -2,7 +2,7 @@
 
 ## Hospedagem Worker e migração
 
-A versão 1.17.0 executa a aplicação em um Worker vinext/App Router, com SQLite
+A versão 1.17.1 executa a aplicação em um Worker vinext/App Router, com SQLite
 no Durable Object `MegaSenaData` pelo binding privado `DATA`. Não há API
 administrativa pública do banco. O caminho Docker abaixo permite execução local
 e recuperação durante a migração.
@@ -26,7 +26,7 @@ Dimensione importação e consultas antes da transferência; monitore leituras,
 gravações, CPU e armazenamento sem publicar dados de assinatura ou consumo.
 
 1. Confirmar conta e zonas antes de cada escrita. Uma troca de credencial exige repetir a conferência.
-2. Rodar lint, lint estrutural, typecheck, Vitest com cobertura, SQLite real Bun, `pnpm audit` e build standalone. Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare`. Verificar persistência Worker/DO, ingestão inválida, rollback transacional, rate limit e controles negativos de acesso interno. Inspecionar páginas, hidratação e Server Actions com Argent Chromium; não usar Playwright nesta migração.
+2. Rodar lint, lint estrutural, typecheck, Vitest com cobertura, SQLite real Bun, `bun run security:braces`, `pnpm audit` e build standalone. A regressão da mitigação local deve preceder o audit, conforme SECURITY.md. Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare`. Verificar persistência Worker/DO, ingestão inválida, rollback transacional, rate limit e controles negativos de acesso interno. Inspecionar páginas, hidratação e Server Actions com Argent Chromium; não usar Playwright nesta migração.
 3. Preparar staging distinto, com `IP_HASH_SECRET` de pelo menos 32 caracteres e origens CORS correspondentes ao domínio de staging. Configuração é por ambiente. Deploy é ação externa e exige autorização para o alvo exato. Usar o fluxo `cf` e descobrir comandos com `cf cli search`. Os scripts explícitos são `bun run deploy:cloudflare:staging` e `bun run deploy:cloudflare:production`.
 4. Validar em staging `/api/health`, versão do artefato, dados, CSP por requisição, hidratação, Server Actions, 404/308, metadata, sitemap e robots. Repetir controles negativos, reinicialização do objeto e retenção. Build local não comprova comportamento publicado.
 5. Verificar backup recuperável dos dados existentes e prova de restauração/retenção do destino antes de trocar DNS. Gerar snapshot consistente do SQLite do VPS com `VACUUM INTO`; não copiar o arquivo vivo. Importar por caminho privado validado, sem substituir silenciosamente registros existentes. O bootstrap público não migra auditoria ou logs privados; transferi-los exige escopo e destino aprovados.
@@ -37,7 +37,7 @@ gravações, CPU e armazenamento sem publicar dados de assinatura ou consumo.
 
 Obtenha autorização específica para arquivar e retirar o ambiente anterior. Mantenha-o ativo até os gates acima passarem, incluindo os dados reais, o domínio público e a atualização diária verificada.
 
-1. Inventariar somente os serviços, contêineres, jobs e configurações pertencentes ao Mega-Sena, incluindo o staging antigo. Confirmar os identificadores e dependências antes de alterar recursos.
+1. Identificar somente os serviços, contêineres, jobs e configurações pertencentes ao Mega-Sena como alvos, incluindo o staging antigo. Confirmar identificadores e dependências antes de alterar recursos. Preservar também um inventário privado completo dos recursos compartilhados imediatamente antes e depois da operação, para comprovar que os demais foram mantidos; um assert ou inventário antigo não substitui essa comparação independente.
 2. Preservar em arquivo privado o snapshot final consistente do banco, os arquivos persistentes necessários, a configuração de deploy, a revisão/imagem exata e as instruções de restauração. Verificar integridade, checksums e recuperação. Segredos e dados privados ficam fora deste repositório público.
 3. Após o aceite, encerrar os serviços/jobs antigos e remover seus recursos no Coolify, preservando os dados recuperáveis. Conferir se a operação do Coolify também apagaria volumes antes de executá-la. Remover o agrupamento do projeto apenas se não contiver outros aplicativos.
 4. Confirmar ausência de processos/jobs ativos deste projeto no VPS e dos recursos correspondentes no Coolify. Repetir health, versão, dados, CSP e DNS públicos no Cloudflare; registrar o resultado e a localização privada do arquivo no runbook operacional privado.
@@ -65,6 +65,13 @@ O contador de tentativas e o próximo alarme são gravados numa transação de a
 ### CI e evidência local
 
 O workflow `Cloudflare Runtime` executa automaticamente os gates de código, auditoria, cobertura, SQLite Bun, seis runtimes workerd, build standalone e builds Cloudflare staging/produção, sem credenciais de deploy. O runtime do agendador inclui interrupção durante uma chamada de rede e retomada em outro processo. Ele não publica automaticamente. Os builds devem rodar em sequência: geram tipos de rotas em `.next`. A verificação visual desta migração usa Argent. O workflow Docker legado contém Playwright e agora só pode ser iniciado manualmente; não substitui o aceite visual exigido.
+
+Ao transportar um build pronto, preserve os bytes de `.cloudflare/output/v0` e
+verifique versão, ambiente, domínios e hash antes de `cf deploy --prebuilt`.
+No macOS, crie arquivos tar com `COPYFILE_DISABLE=1` para não gerar metadados
+AppleDouble `._*`. Esses metadados não são módulos JavaScript e devem ficar fora
+do bundle e dos assets. Confira os membros do arquivo e o diretório restaurado
+antes do upload. Um build e um CI bem-sucedidos não validam o transporte posterior.
 
 ### Decisão reavaliada: operação e manutenção
 

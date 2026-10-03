@@ -1,8 +1,8 @@
 # Descoberta no ChatGPT Search
 
-A versão 1.17.0 está publicada no domínio canônico com Worker/SQLite Durable Object. Staging permanece separado, com `X-Robots-Tag: noindex, nofollow` e robots bloqueando todos os caminhos. Os checks técnicos públicos foram repetidos após o corte; eles não comprovam visitas de crawlers reais, citações ou tráfego de leitores. A preferência de treinamento e a ausência de analytics de aquisição foram preservadas.
+A versão 1.17.1 está publicada no domínio canônico com Worker/SQLite Durable Object. Staging permanece separado, com `X-Robots-Tag: noindex, nofollow` e robots bloqueando todos os caminhos. Os checks técnicos públicos foram repetidos após o corte e a manutenção de segurança; eles não comprovam visitas de crawlers reais, citações ou tráfego de leitores. A preferência de treinamento e a ausência de analytics de aquisição foram preservadas.
 
-Verificação técnica em 02/10/2026. Público: leitores em pt-BR que consultam resultados oficiais da Mega-Sena, histórico, estatísticas descritivas e geração de apostas por orçamento. O site não prevê sorteios; cada concurso é independente. Dados oficiais vêm da CAIXA e são atualizados periodicamente.
+Verificação técnica em 03/10/2026. Público: leitores em pt-BR que consultam resultados oficiais da Mega-Sena, histórico, estatísticas descritivas e geração de apostas por orçamento. O site não prevê sorteios; cada concurso é independente. Dados oficiais vêm da CAIXA e são atualizados periodicamente.
 
 ## Superfície pública observada
 
@@ -45,10 +45,11 @@ Guarde respostas, URLs citadas, erros e screenshots em evidência privada. Regis
 
 ## Estados desta auditoria
 
-O candidato final foi publicado em staging (`v1.17.0-beta8`) e
-produção (`v1.17.0`). O código da aplicação e o seed dessas versões foram
-preservados durante a limpeza do histórico. Os checks públicos de versão/saúde
-e CSP passaram após o deploy.
+O candidato de manutenção foi publicado em staging (`v1.17.1-beta1`) e
+produção (`v1.17.1`). A limpeza do histórico preservou os arquivos da aplicação
+das versões anteriores; a atualização posterior mitiga a dependência das ferramentas
+de build. Os checks públicos de versão/saúde, CSP, API e Argent em desktop/celular
+passaram após os dois deploys. CI de main e das duas tags também passou.
 Essa publicação não comprova visita de crawler, citação no ChatGPT ou referral.
 
 | Critério | Estado | Limite |
