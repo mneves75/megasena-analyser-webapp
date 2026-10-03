@@ -130,7 +130,7 @@ history scan, fails on findings), `security:csp:edge` (verify edge did not repla
 CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`.
 
 **Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
-`bun run test -- --run --coverage`, `bun run test:sqlite`, `pnpm audit`, and `bun run build` all pass;
+`bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit`, and `bun run build` all pass;
 Argent Chromium verification for UI-affecting changes. The owner requires Argent
 for this review: do not run Playwright. Existing `tests/app` remain legacy coverage;
 the saved Argent flow covers generator pagination, not that entire suite. See

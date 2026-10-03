@@ -205,6 +205,32 @@ Remova um override apenas quando:
 2. `pnpm install` atualizar o `pnpm-lock.yaml` sem reintroduzir a versão vulnerável;
 3. `pnpm audit` continuar retornando `No known vulnerabilities found`;
 4. `bun run lint`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite` e `bun run build` passarem, com verificação de UI pelo Argent nesta revisão conforme o README.
+### Mitigação local de `braces`
+
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+afeta `braces <=3.0.3` por esgotamento da pilha. Em 2026-10-03, o registro
+não publica uma versão corrigida. O pacote entra pelas ferramentas de build.
+O limite de caracteres existente não limita a profundidade dos padrões.
+
+O override fixa `3.0.3` e o patch pnpm limita chaves e parênteses a 100 níveis.
+Antes de `compile`, `expand` e `stringify`, uma validação iterativa também
+protege ASTs fornecidas diretamente: rejeita profundidade excessiva, ciclos,
+cadeias cíclicas de pais e árvores acima de 20.000 visitas. Opções do chamador
+não aumentam esses limites. Campos escalares da AST têm seus tipos validados
+antes de qualquer coerção. Padrões comuns, ranges, literais e o limite aceito
+têm controles positivos em `tests/security/braces.test.ts`.
+
+O audit do registro enxerga a versão original, sem avaliar patches locais.
+Por isso, `auditConfig.ignoreGhsas` tem uma exceção somente para esse advisory.
+Todos os caminhos de audit no CI executam **antes** `bun run security:braces`,
+contra a dependência realmente instalada. A suíte falha sem a proteção; a
+exceção não libera outro advisory. Localmente, execute esse gate antes de
+`pnpm audit`. A proteção deve ser reavaliada em cada atualização de dependências.
+
+Quando houver versão oficial corrigida, atualize o lockfile e remova juntos o
+override, o patch e essa exceção, após executar a regressão e os gates completos.
+Mantenha testes relevantes para provar que a correção oficial cobre os casos.
+
 ### HTTPS na entrada Cloudflare
 
 O Worker aplica HSTS em todas as respostas da aplicação quando `ENVIRONMENT=production` e a URL recebida usa HTTPS, incluindo staging, robots, sitemap, redirects e erros. O valor é compartilhado com os helpers existentes. Headers como `X-Forwarded-Proto` não podem ativar essa garantia; o caminho Bun mantém seu contrato de proxy. A regressão usa listeners reais HTTPS/HTTP no workerd, com controle negativo de header encaminhado.

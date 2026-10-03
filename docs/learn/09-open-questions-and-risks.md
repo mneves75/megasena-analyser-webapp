@@ -1,10 +1,14 @@
 # 09 - Perguntas em Aberto, Suposições e Riscos
 
-## Cloudflare em staging
+## Cloudflare e leitura deste registro
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 Critérios de implantação: identidade do destino, staging acessível, dados atuais da CAIXA, backup/restauração, retenção, CSP/hidratação/Argent e funcionamento pelo domínio público. Build local e dados do seed não substituem esses gates.
+
+As investigações abaixo são um registro histórico de aprendizado, não uma lista
+de defeitos atuais. Confira cada hipótese no código vigente antes de agir;
+contratos atuais ficam em [AGENTS.md](../../AGENTS.md) e na documentação de segurança.
 
 
 ## O que este capítulo ensina

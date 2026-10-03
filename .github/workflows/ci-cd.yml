@@ -66,7 +66,9 @@ jobs:
         run: corepack enable && pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit
+        run: |
+          bun run security:braces
+          pnpm audit
 
       - name: Run linter
         run: bun run lint
@@ -188,7 +190,9 @@ jobs:
         run: corepack enable && pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit
+        run: |
+          bun run security:braces
+          pnpm audit
 
       - name: Build Next.js standalone output
         env:

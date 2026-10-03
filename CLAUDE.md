@@ -12,3 +12,6 @@ For visible UI changes, use the Argent Chromium skills to verify interaction, la
 
 Search discovery and measurement follow docs/CHATGPT-SEARCH.md. Preserve the
 privacy and crawler invariants owned by AGENTS.md.
+
+Dependency audits must follow the local patch regression gate owned by
+AGENTS.md and docs/SECURITY.md.

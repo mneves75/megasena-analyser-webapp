@@ -7,7 +7,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-10-03
+
+- Mitigação local de GHSA-vfj7-8cjw-p6xm em `braces`: limite de profundidade de padrões e validação iterativa de ASTs antes dos caminhos recursivos. A regressão da dependência instalada precede o audit no CI; exceção restrita documentada até existir uma versão oficial corrigida.
 - Limpeza autorizada do histórico de branches e tags para remover notas privadas de operação e identidade pessoal; código, dependências, assets e dados públicos das versões preservados. Documentos históricos de operação usam suas versões públicas atuais.
+
+## [1.17.1-beta1] - 2026-10-03
+
+- Candidato de staging da mitigação de segurança e documentação pública atualizada.
 
 ## [1.17.0] - 2026-10-02
 

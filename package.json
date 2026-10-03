@@ -1,6 +1,6 @@
 {
   "name": "megasena-analyser",
-  "version": "1.17.0",
+  "version": "1.17.1",
   "private": true,
   "scripts": {
     "dev": "bun run scripts/dev.ts",
@@ -19,6 +19,7 @@
     "test:argent": "argent flow run qa-generator-mobile-375-pagination --platform chromium",
     "security:secrets": "bun run scripts/scan-secrets.ts",
     "security:secrets:history": "bun run scripts/scan-secret-history.ts",
+    "security:braces": "vitest run tests/security/braces.test.ts",
     "security:csp:edge": "bun run scripts/check-edge-csp.ts",
     "deploy:verify": "bun run scripts/check-production-freshness.ts",
     "db:migrate": "bun run scripts/migrate.ts",

@@ -4,7 +4,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Hospedagem e atualização diária
 
-A versão 1.17.0 hospeda frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA. Produção e staging usam ambientes separados; staging bloqueia indexação. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
+A versão 1.17.1 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA, e acrescenta a mitigação local de segurança das ferramentas de build descrita em [docs/SECURITY.md](docs/SECURITY.md). Produção e staging usam ambientes separados; staging bloqueia indexação. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
 
 - `cloudflare/worker.ts` atende páginas App Router via vinext/Vite e encaminha `/api/*` ao Durable Object SQLite `MegaSenaData` pelo binding privado `DATA`.
 - `lib/api/handler.ts` contém o contrato compartilhado da API; `server.ts` é o adaptador Bun. Contextos de banco e log isolam operações concorrentes.
@@ -514,7 +514,7 @@ O `docker-compose.yml` local publica as portas apenas em `127.0.0.1`. Em produç
 3. Garanta que todos os testes passam com `bun run test -- --run`
 4. Atualize a documentação para novas funcionalidades
 
-Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima.
+Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
 
 Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação permite apenas a exceção estreita `style-src-attr 'unsafe-inline'` para atributos de estilo. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
 

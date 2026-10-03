@@ -19,7 +19,10 @@ inventários, backups, logs e resultados privados ficam fora do Git.
 - [x] Remover detalhes operacionais e notas pessoais da árvore pública atual.
 - [x] Verificar o histórico separadamente; alterações novas não apagam commits anteriores.
 - [x] Preparar backup e limpar branches e tags com autorização explícita.
-- [x] Verificar publicação do histórico limpo, preservação do código e CI.
+- [x] Verificar publicação do histórico limpo e preservação do código.
+- [ ] Corrigir a nova falha de segurança transitiva e verificar CI no candidato.
+- [x] Executar revisão independente da mitigação e gates locais completos.
+- [ ] Publicar beta e produção da versão de correção, com aceite público.
 
 A limpeza das referências publicadas não elimina cópias em clones, forks ou
 caches externos. Novos trabalhos devem partir do histórico atualizado.

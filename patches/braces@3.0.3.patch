@@ -1,0 +1,128 @@
+diff --git a/lib/assert-safe-tree.js b/lib/assert-safe-tree.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..61297b85299c34b9711218d056a7853197b7c522
+--- /dev/null
++++ b/lib/assert-safe-tree.js
+@@ -0,0 +1,47 @@
++'use strict';
++
++// A character limit alone cannot bound the recursive walkers' call depth.
++// Validate AST input iteratively too: callers can bypass parse() entirely.
++module.exports = ast => {
++  const pending = [{ node: ast, depth: 0 }];
++  const ancestors = new Set();
++  let visited = 0;
++  while (pending.length) {
++    const frame = pending.pop();
++    const { node, depth } = frame;
++    if (frame.leave) {
++      ancestors.delete(node);
++      continue;
++    }
++    if (!node || typeof node !== 'object' || Array.isArray(node)) {
++      throw new TypeError('Expected a syntax tree node');
++    }
++    if (typeof node.type !== 'string' ||
++        (node.value !== undefined && typeof node.value !== 'string') ||
++        ['commas', 'ranges'].some(key => node[key] !== undefined &&
++          (typeof node[key] !== 'number' || !Number.isFinite(node[key])))) {
++      throw new TypeError('Invalid syntax tree scalar');
++    }
++    if (ancestors.has(node)) throw new RangeError('Cyclic syntax tree');
++    // Parser recovery can leave valid parent links outside the returned subtree.
++    // Bound those links without requiring them to match the nodes traversal.
++    const parents = new Set([node]);
++    let parent = node.parent;
++    while (parent) {
++      if (parents.has(parent)) throw new RangeError('Invalid parent reference');
++      if (parents.size > 101) throw new RangeError('Maximum nesting depth (100) exceeded');
++      parents.add(parent);
++      parent = parent.parent;
++    }
++    if (node.nodes && depth > 100) throw new RangeError('Maximum nesting depth (100) exceeded');
++    if (++visited > 20000) throw new RangeError('Maximum syntax tree size exceeded');
++    if (node.nodes) {
++      if (!Array.isArray(node.nodes)) throw new TypeError('Expected an array of syntax tree nodes');
++      ancestors.add(node);
++      pending.push({ node, leave: true });
++      for (let index = node.nodes.length - 1; index >= 0; index--) {
++        pending.push({ node: node.nodes[index], depth: depth + 1 });
++      }
++    }
++  }
++};
+diff --git a/lib/compile.js b/lib/compile.js
+index dce69beb90ece5c3b0ca234a949418f9f34eedbc..22140b13902e047e55120732fa197e6a1305ca23 100644
+--- a/lib/compile.js
++++ b/lib/compile.js
+@@ -2,8 +2,10 @@
+ 
+ const fill = require('fill-range');
+ const utils = require('./utils');
++const assertSafeTree = require('./assert-safe-tree');
+ 
+ const compile = (ast, options = {}) => {
++  assertSafeTree(ast);
+   const walk = (node, parent = {}) => {
+     const invalidBlock = utils.isInvalidBrace(parent);
+     const invalidNode = node.invalid === true && options.escapeInvalid === true;
+diff --git a/lib/expand.js b/lib/expand.js
+index 35b2c41d6afdb8f0197959e26079f266e48370d3..bccb67a41d37860421ad262e47c1191f5d79116f 100644
+--- a/lib/expand.js
++++ b/lib/expand.js
+@@ -3,6 +3,7 @@
+ const fill = require('fill-range');
+ const stringify = require('./stringify');
+ const utils = require('./utils');
++const assertSafeTree = require('./assert-safe-tree');
+ 
+ const append = (queue = '', stash = '', enclose = false) => {
+   const result = [];
+@@ -31,6 +32,7 @@ const append = (queue = '', stash = '', enclose = false) => {
+ };
+ 
+ const expand = (ast, options = {}) => {
++  assertSafeTree(ast);
+   const rangeLimit = options.rangeLimit === undefined ? 1000 : options.rangeLimit;
+ 
+   const walk = (node, parent = {}) => {
+diff --git a/lib/parse.js b/lib/parse.js
+index 3a6988e629f52aee6609dc5ec290a5e9ff47cecb..18fe77d6fa14dabe9ef3b1150c802fd9c4b46152 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -143,6 +143,7 @@ const parse = (input, options = {}) => {
+      */
+ 
+     if (value === CHAR_LEFT_PARENTHESES) {
++      if (stack.length > 100) throw new RangeError('Maximum nesting depth (100) exceeded');
+       block = push({ type: 'paren', nodes: [] });
+       stack.push(block);
+       push({ type: 'text', value });
+@@ -195,6 +196,7 @@ const parse = (input, options = {}) => {
+      */
+ 
+     if (value === CHAR_LEFT_CURLY_BRACE) {
++      if (stack.length > 100) throw new RangeError('Maximum nesting depth (100) exceeded');
+       depth++;
+ 
+       const dollar = prev.value && prev.value.slice(-1) === '$' || block.dollar === true;
+diff --git a/lib/stringify.js b/lib/stringify.js
+index 8bcf872c31894f81a8c64d9202fd607e4fd7ea2b..46aefa3f3683066fdd078e414f915f83ca7aa103 100644
+--- a/lib/stringify.js
++++ b/lib/stringify.js
+@@ -1,8 +1,10 @@
+ 'use strict';
+ 
+ const utils = require('./utils');
++const assertSafeTree = require('./assert-safe-tree');
+ 
+ module.exports = (ast, options = {}) => {
++  assertSafeTree(ast);
+   const stringify = (node, parent = {}) => {
+     const invalidBlock = options.escapeInvalid && utils.isInvalidBrace(parent);
+     const invalidNode = node.invalid === true && options.escapeInvalid === true;
+@@ -29,4 +31,3 @@ module.exports = (ast, options = {}) => {
+ 
+   return stringify(ast);
+ };
+-

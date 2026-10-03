@@ -23,6 +23,7 @@ overrides:
   '@humanfs/node': '>=0.16.8 <0.17'
   js-yaml: '>=4.3.2 <5'
   minimatch: 3.1.4
+  braces: 3.0.3
   picomatch: '>=2.3.2'
   nanoid: '>=3.3.18 <4'
   postcss: '>=8.5.23'
@@ -30,6 +31,7 @@ overrides:
   ws: '>=8.21.0'
 
 patchedDependencies:
+  braces@3.0.3: 1006e8f9227b37fd7efeb44cc02eb6d8f6f89924bb41911771bdd1216d7df254
   minimatch@3.1.4: e337727e64acbf3229da57481073654bafe6bd2e30c6e0210aba05838063f212
 
 importers:
@@ -6620,7 +6622,7 @@ snapshots:
     dependencies:
       balanced-match: 4.0.4
 
-  braces@3.0.3:
+  braces@3.0.3(patch_hash=1006e8f9227b37fd7efeb44cc02eb6d8f6f89924bb41911771bdd1216d7df254):
     dependencies:
       fill-range: 7.1.1
 
@@ -7975,7 +7977,7 @@ snapshots:
 
   micromatch@4.0.8:
     dependencies:
-      braces: 3.0.3
+      braces: 3.0.3(patch_hash=1006e8f9227b37fd7efeb44cc02eb6d8f6f89924bb41911771bdd1216d7df254)
       picomatch: 4.0.5
 
   mime-db@1.54.0: {}

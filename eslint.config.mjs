@@ -8,6 +8,7 @@ const eslintConfig = [
       '.cloudflare/**',
       '.vinext/**',
       '.tmp/**',
+      '.scratch/**',
       'node_modules/**',
       'out/**',
       'dist/**',

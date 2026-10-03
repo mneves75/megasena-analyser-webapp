@@ -64,6 +64,8 @@ overrides:
   # GHSA-5p4m-2wfm-xmqj (<4.3.1) e GHSA-2883-xcg3-v3hh (<4.3.2).
   js-yaml: '>=4.3.2 <5'
   minimatch: 3.1.4
+  # Temporary local mitigation; see docs/SECURITY.md before removing this pin.
+  braces: 3.0.3
   picomatch: '>=2.3.2'
   # GHSA-2v37-7h3g-55p8: nanoid <3.3.18 entra via next>postcss. 3.3.18 é
   # compatível com o range ^3.3 pedido pelo postcss.
@@ -72,4 +74,11 @@ overrides:
   rollup: 4.59.0
   ws: '>=8.21.0'
 patchedDependencies:
+  braces@3.0.3: patches/braces@3.0.3.patch
   minimatch@3.1.4: patches/minimatch@3.1.4.patch
+# The registry advisory cannot recognize local pnpm patches. Every CI audit
+# first proves this exact mitigation through security:braces; all other
+# advisories remain blocking. Remove together with the upstream fixed upgrade.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm
