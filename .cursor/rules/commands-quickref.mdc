@@ -5,8 +5,8 @@ description: Build, dev, lint, and test command quick reference
 ## Commands Quick Reference
 
 Bun is the local/VPS runtime (`>=1.4.2`), with `bun:sqlite`; pnpm is the dependency
-manager (`pnpm@11`). The staging Worker uses vinext/Vite and SQLite Durable Object
-storage. Current production remains VPS v1.16.3.
+manager (`pnpm@11`). Production and staging Workers use vinext/Vite and SQLite
+Durable Object storage. Docker remains a local and recovery path.
 
 - Install deps: `pnpm install` (run `corepack enable` first) — never `bun install` or `npm install`
 - Dev servers: `bun run dev` → Next.js on `http://localhost:3000` + Bun API on `:3201`
@@ -33,6 +33,6 @@ Security & config:
   production — the server exits without it.
 - Secret scans: `bun run security:secrets`, `bun run security:secrets:history`.
 - There is no Supabase here. SQLite is a local file on Bun and private Durable
-  Object storage on the staging Worker path.
+  Object storage on the production/staging Worker path.
 
 Full contract: `AGENTS.md` at the repo root.
