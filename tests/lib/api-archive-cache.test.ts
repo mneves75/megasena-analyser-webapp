@@ -14,6 +14,7 @@ vi.mock('../../lib/db', async () => {
 import { createApiHandler } from '../../lib/api/handler';
 import { getDatabase } from '../../lib/db';
 import { DrawArchiveEngine } from '../../lib/analytics/draw-archive';
+import { ContestResponseCache } from '../../lib/api/response-cache';
 
 function insertDraw(contest: number, date: string, numbers: readonly number[]) {
   getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
@@ -39,6 +40,16 @@ const get = async (api: ReturnType<typeof handler>, path: string) => {
 };
 
 describe('draw archive responses are memoized per draws revision', () => {
+  it('passes the handler APP_VERSION into response cache keys', async () => {
+    const cache = vi.spyOn(ContestResponseCache.prototype, 'getOrCompute');
+    for (const appVersion of ['release-1', 'release-2']) {
+      const api = createApiHandler({ environment: 'development', appVersion, audit: () => {} });
+      expect((await get(api, '/api/sitemap')).status).toBe(200);
+    }
+    const builds = cache.mock.calls.map(([key]) => new URL(key, 'https://example.com').searchParams.get('build'));
+    expect(builds).toEqual(['release-1', 'release-2']);
+  });
+
   it.each([
     ['/api/draws?contest=2', 'getDrawPage'],
     ['/api/draws?year=2025', 'getYearArchive'],

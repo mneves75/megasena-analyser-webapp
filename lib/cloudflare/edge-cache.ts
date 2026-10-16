@@ -71,7 +71,8 @@ export async function withDrawsEdgeCache(
   { cache, buildVersion, drawsVersion, waitUntil }: DrawsEdgeCacheDependencies
 ): Promise<Response> {
   const url = new URL(request.url);
-  if (request.method !== 'GET' || !isDeterministicRoute(url)) return render();
+  if (request.method !== 'GET' || !isDeterministicRoute(url)
+    || request.headers.has('Authorization') || request.headers.has('Cookie')) return render();
 
   let key: Request;
   try {

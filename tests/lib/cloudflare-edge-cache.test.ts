@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { isDeterministicRoute, withDrawsEdgeCache, type EdgeCache } from '@/lib/cloudflare/edge-cache';
+import { APP_INFO } from '@/lib/constants';
 
 class MemoryCache implements EdgeCache {
   readonly entries = new Map<string, Response>();
@@ -17,7 +18,7 @@ function setup(version: string | null = '3065') {
   const state = { version };
   const deps = {
     cache,
-    buildVersion: '1.17.1',
+    buildVersion: APP_INFO.VERSION,
     drawsVersion: vi.fn(async () => state.version),
     waitUntil: (promise: Promise<unknown>) => { pending.push(promise); },
   };
@@ -86,14 +87,48 @@ describe('Worker edge cache for deterministic draw-derived routes', () => {
   });
 
   it('separates releases so a deploy never serves output from the previous renderer', async () => {
-    const { deps, flush } = setup();
+    const { cache, deps, flush } = setup();
     const request = () => new Request('https://example.com/llms.txt');
     await withDrawsEdgeCache(request(), image('old', 'public, max-age=600'), deps);
     await flush();
     const renderNew = image('new', 'public, max-age=600');
-    const afterDeploy = await withDrawsEdgeCache(request(), renderNew, { ...deps, buildVersion: '1.17.2' });
+    const nextBuild = `${deps.buildVersion}-next`;
+    const afterDeploy = await withDrawsEdgeCache(request(), renderNew, { ...deps, buildVersion: nextBuild });
+    await flush();
     expect(renderNew).toHaveBeenCalledTimes(1);
     expect(await afterDeploy.text()).toBe('new');
+    const keys = [...cache.entries.keys()].map(key => new URL(key));
+    expect(keys.map(key => key.searchParams.get('build'))).toEqual([APP_INFO.VERSION, nextBuild]);
+    expect(keys.map(key => key.searchParams.get('draws'))).toEqual(['3065', '3065']);
+  });
+
+  it.each(['Authorization', 'Cookie'])('bypasses cache reads and writes for requests carrying %s', async (header) => {
+    const { cache, deps, flush } = setup();
+    const match = vi.spyOn(cache, 'match');
+    const put = vi.spyOn(cache, 'put');
+    const url = 'https://example.com/llms.txt';
+    const personalized = image('personalized', 'public, max-age=600');
+
+    // A private request must neither populate an empty cache nor read a warm one.
+    for (const warm of [false, true]) {
+      if (warm) {
+        await withDrawsEdgeCache(new Request(url), image('public', 'public, max-age=600'), deps);
+        await flush();
+      }
+      vi.clearAllMocks();
+      // Presence alone is enough to bypass, even if a proxy leaves an empty header.
+      for (const value of ['test-value', '']) {
+        const response = await withDrawsEdgeCache(new Request(url, { headers: { [header]: value } }), personalized, deps);
+        await flush();
+        expect(await response.text()).toBe('personalized');
+        expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+      }
+      expect(personalized).toHaveBeenCalledTimes(2);
+      expect(deps.drawsVersion).not.toHaveBeenCalled();
+      expect(match).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
+      expect(cache.entries.size).toBe(warm ? 1 : 0);
+    }
   });
 
   it('never replays a CSP nonce: each response carries a fresh one', async () => {

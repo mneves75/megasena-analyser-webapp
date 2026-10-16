@@ -1,4 +1,5 @@
 import { getDatabase } from '@/lib/db';
+import { APP_INFO } from '@/lib/constants';
 
 interface ResponseCacheEntry {
   version: string | number | null;
@@ -10,21 +11,22 @@ const DEFAULT_MAX_ENTRIES = 32;
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 
 /**
- * Builds a cache key from the handler's VALIDATED effective options only.
+ * Builds a release-scoped cache key from the handler's VALIDATED effective options only.
  * Never key on raw query strings: unknown or duplicate parameters would let
  * clients force cache misses (eviction attack) or collapse semantically
  * different requests into one entry.
  */
 export function buildResponseCacheKey(
   route: string,
-  options: Record<string, boolean | number | string> = {}
+  options: Record<string, boolean | number | string> = {},
+  buildVersion: string = APP_INFO.VERSION
 ): string {
   const entries = Object.entries(options).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
-  if (entries.length === 0) {
-    return route;
+  const search = new URLSearchParams({ build: buildVersion });
+  for (const [key, value] of entries) {
+    search.append(key, String(value));
   }
-  const canonical = entries.map(([key, value]) => `${key}=${String(value)}`).join('&');
-  return `${route}?${canonical}`;
+  return `${route}?${search}`;
 }
 
 export function getDrawsVersion(): string | null {
