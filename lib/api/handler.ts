@@ -167,10 +167,13 @@ export function createApiHandler(options: ApiHandlerOptions) {
   // Trends keys derive from user-chosen number sets (high cardinality); a separate
   // instance keeps that traffic from evicting the shared analytics entries above.
   const trendsResponseCache = new ContestResponseCache(64);
-  // Public archive views crawled page by page. Only the costly number views are
-  // cached (60 profiles + the index = 61 validated keys, below capacity); single
-  // draws and year lists are indexed lookups and bypass the cache entirely.
+  // Public archive views crawled page by page. Number views have 61 validated
+  // keys, below capacity.
   const archiveResponseCache = new ContestResponseCache(64);
+  // Draw views measure 3-18 ms (shared change-tracking CTEs, not indexed
+  // lookups). Contest keys are unbounded by crawling, so they get their own
+  // instance; a draw page, its two social images and the sitemap all reuse it.
+  const drawsResponseCache = new ContestResponseCache(256);
 
   /**
    * Create a standardized error response
@@ -616,20 +619,29 @@ export function createApiHandler(options: ApiHandlerOptions) {
         }
         ctx.audit = { event: 'api.draws_read', metadata: { view: query.kind } };
 
-        const engine = new DrawArchiveEngine();
-        const payload =
+        const cacheKey = buildResponseCacheKey(
+          ctx.route,
           query.kind === 'contest'
+            ? { contest: query.contest }
+            : query.kind === 'year'
+              ? { year: query.year }
+              : { view: query.kind }
+        );
+        const body = drawsResponseCache.getOrCompute(cacheKey, getDrawsVersion(), () => {
+          const engine = new DrawArchiveEngine();
+          return query.kind === 'contest'
             ? engine.getDrawPage(query.contest)
             : query.kind === 'year'
               ? engine.getYearArchive(query.year)
               : query.kind === 'megaDaVirada'
                 ? engine.getMegaDaVirada()
                 : engine.getArchiveIndex();
-        if (payload === null) {
+        });
+        if (body === 'null') {
           return createErrorResponse(ctx, 'Nenhum sorteio encontrado.', null, 404);
         }
 
-        return new Response(JSON.stringify(payload), {
+        return new Response(body, {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
@@ -679,7 +691,12 @@ export function createApiHandler(options: ApiHandlerOptions) {
     '/api/sitemap': (_req, ctx) => {
       ctx.audit = { event: 'api.sitemap_read' };
       try {
-        return new Response(JSON.stringify(new DrawArchiveEngine().getSitemapData()), {
+        const body = drawsResponseCache.getOrCompute(
+          buildResponseCacheKey(ctx.route),
+          getDrawsVersion(),
+          () => new DrawArchiveEngine().getSitemapData()
+        );
+        return new Response(body, {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
