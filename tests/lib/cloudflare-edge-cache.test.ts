@@ -237,3 +237,208 @@ describe('Worker edge cache for deterministic draw-derived routes', () => {
     }
   });
 });
+
+const STORED_NONCE = 'MDEyMzQ1Njc4OWFiY2RlZg==';
+const HTML_BODY = `<!doctype html><html lang="pt-BR"><head><style nonce="${STORED_NONCE}">body{margin:0}</style></head><body><h1>Concurso 3000</h1><script nonce="${STORED_NONCE}">self.__next_f.push([1, '${STORED_NONCE}', {"nonce":"${STORED_NONCE}"}]);</script><p>${STORED_NONCE}</p></body></html>`;
+const HTML_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8',
+  'Cache-Control': 'no-store',
+  'Content-Security-Policy': `script-src 'nonce-${STORED_NONCE}' 'strict-dynamic'; style-src 'nonce-${STORED_NONCE}'`,
+  'Content-Security-Policy-Report-Only': `script-src 'nonce-${STORED_NONCE}'`,
+  'X-Nonce': STORED_NONCE,
+  'X-Test-Repeated-Nonce': `${STORED_NONCE} ${STORED_NONCE}`,
+};
+const html = () => vi.fn(async () => new Response(HTML_BODY, { headers: HTML_HEADERS }));
+const nonceOf = (response: Response) => /'nonce-([^']+)'/.exec(response.headers.get('Content-Security-Policy') ?? '')?.[1];
+
+describe('Worker edge cache for archive HTML', () => {
+  it('preserves an absent origin Cache-Control header on both MISS and HIT', async () => {
+    const { deps, flush } = setup();
+    const headers = new Headers(HTML_HEADERS);
+    headers.delete('Cache-Control');
+    const render = vi.fn(async () => new Response(HTML_BODY, { headers }));
+    const request = () => new Request('https://example.com/concurso/3000');
+    const miss = await withDrawsEdgeCache(request(), render, deps);
+    await flush();
+    const hit = await withDrawsEdgeCache(request(), render, deps);
+    expect(miss.headers.get('X-Megasena-Cache')).toBe('MISS');
+    expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+    expect(miss.headers.has('Cache-Control')).toBe(false);
+    expect(hit.headers.has('Cache-Control')).toBe(false);
+  });
+
+  it.each(['/concurso/1', '/concurso/999999', '/numeros/1', '/numeros/60', '/resultados/1996', '/resultados/2100'])(
+    'caches canonical archive route %s and keeps MISS output unchanged', async (path) => {
+      const { cache, deps, flush } = setup();
+      const render = html();
+      const request = () => new Request(`https://example.com${path}`);
+      const miss = await withDrawsEdgeCache(request(), render, deps);
+      await flush();
+      expect(miss.headers.get('X-Megasena-Cache')).toBe('MISS');
+      for (const [name, value] of Object.entries(HTML_HEADERS)) expect(miss.headers.get(name)).toBe(value);
+      expect(await miss.text()).toBe(HTML_BODY);
+      const hit = await withDrawsEdgeCache(request(), render, deps);
+      expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+      expect(hit.headers.get('Cache-Control')).toBe('no-store');
+      expect(hit.headers.has('X-Megasena-Origin-Cache-Control')).toBe(false);
+      expect(render).toHaveBeenCalledTimes(1);
+      const stored = [...cache.entries.values()][0]!;
+      expect(stored.headers.get('Cache-Control')).toBe('public, max-age=86400');
+      expect(stored.headers.get('X-Megasena-Origin-Cache-Control')).toBe('no-store');
+      expect(await stored.clone().text()).toBe(HTML_BODY);
+    }
+  );
+
+  it('gives two HTML HITs distinct fresh nonces, different from the stored nonce', async () => {
+    const { deps, flush } = setup();
+    const render = html();
+    const request = () => new Request('https://example.com/concurso/3000');
+    await withDrawsEdgeCache(request(), render, deps);
+    await flush();
+    const first = await withDrawsEdgeCache(request(), render, deps);
+    const second = await withDrawsEdgeCache(request(), render, deps);
+    expect(first.headers.get('X-Megasena-Cache')).toBe('HIT');
+    expect(second.headers.get('X-Megasena-Cache')).toBe('HIT');
+    const nonces = [nonceOf(first), nonceOf(second)];
+    for (const nonce of nonces) {
+      expect(nonce).toMatch(/^[A-Za-z0-9+/]{22}==$/);
+      expect(nonce).not.toBe(STORED_NONCE);
+    }
+    expect(nonces[0]).not.toBe(nonces[1]);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it('replaces every stored nonce in every header and throughout the HTML, including inline RSC text', async () => {
+    const { deps, flush } = setup();
+    const request = () => new Request('https://example.com/concurso/3000');
+    await withDrawsEdgeCache(request(), html(), deps);
+    await flush();
+    const hit = await withDrawsEdgeCache(request(), html(), deps);
+    const nonce = nonceOf(hit)!;
+    expect(nonce).not.toBe(STORED_NONCE);
+    for (const [name, value] of Object.entries(HTML_HEADERS)) {
+      expect(hit.headers.get(name)).toBe(value.replaceAll(STORED_NONCE, nonce));
+    }
+    expect([...hit.headers.values()].join('\n')).not.toContain(STORED_NONCE);
+    const body = await hit.text();
+    expect(body).toBe(HTML_BODY.replaceAll(STORED_NONCE, nonce));
+    expect(body).not.toContain(STORED_NONCE);
+    expect(body).toContain(`<script nonce="${nonce}">`);
+  });
+
+  it('misses and re-renders HTML when a new contest changes drawsVersion', async () => {
+    const { cache, deps, state, flush } = setup('3065');
+    const render = vi.fn(async () => new Response(`${HTML_BODY}<p>Último concurso ${state.version}</p>`, { headers: HTML_HEADERS }));
+    const request = () => new Request('https://example.com/numeros/10');
+    await withDrawsEdgeCache(request(), render, deps);
+    await flush();
+    expect((await withDrawsEdgeCache(request(), render, deps)).headers.get('X-Megasena-Cache')).toBe('HIT');
+    state.version = '3066';
+    const miss = await withDrawsEdgeCache(request(), render, deps);
+    await flush();
+    expect(miss.headers.get('X-Megasena-Cache')).toBe('MISS');
+    expect(await miss.text()).toContain('Último concurso 3066');
+    const hit = await withDrawsEdgeCache(request(), render, deps);
+    expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+    expect(await hit.text()).toContain('Último concurso 3066');
+    expect(render).toHaveBeenCalledTimes(2);
+    expect(cache.entries.size).toBe(2);
+  });
+
+  it('keys HTML by path, build and revision while ignoring query strings', async () => {
+    const { cache, deps, flush } = setup();
+    const render = html();
+    await withDrawsEdgeCache(new Request('https://example.com/resultados/2025?a=1'), render, deps);
+    await flush();
+    const hit = await withDrawsEdgeCache(new Request('https://example.com/resultados/2025?b=2'), render, deps);
+    expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+    const miss = await withDrawsEdgeCache(new Request('https://example.com/resultados/2025'), render, { ...deps, buildVersion: 'next-build' });
+    await flush();
+    expect(miss.headers.get('X-Megasena-Cache')).toBe('MISS');
+    expect(render).toHaveBeenCalledTimes(2);
+    expect(cache.entries.size).toBe(2);
+  });
+
+  it.each(['Cookie', 'Authorization', 'rsc', 'next-router-prefetch', 'next-router-state-tree'])(
+    'bypasses HTML cache reads and writes when %s is present, including empty values', async (header) => {
+      const { cache, deps, flush } = setup();
+      const match = vi.spyOn(cache, 'match');
+      const put = vi.spyOn(cache, 'put');
+      const url = 'https://example.com/concurso/3000';
+      const render = html();
+      for (const warm of [false, true]) {
+        if (warm) {
+          await withDrawsEdgeCache(new Request(url), html(), deps);
+          await flush();
+        }
+        vi.clearAllMocks();
+        for (const value of ['', '1']) {
+          const response = await withDrawsEdgeCache(new Request(url, { headers: { [header]: value } }), render, deps);
+          await flush();
+          expect(await response.text()).toBe(HTML_BODY);
+          expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+        }
+        expect(render).toHaveBeenCalledTimes(2);
+        expect(deps.drawsVersion).not.toHaveBeenCalled();
+        expect(match).not.toHaveBeenCalled();
+        expect(put).not.toHaveBeenCalled();
+        expect(cache.entries.size).toBe(warm ? 1 : 0);
+      }
+    }
+  );
+
+  it.each(['?_rsc=payload', '?_rsc=', '?_rsc'])('bypasses HTML cache for RSC query %s', async (query) => {
+    const { cache, deps, flush } = setup();
+    const render = html();
+    await withDrawsEdgeCache(new Request('https://example.com/concurso/3000'), render, deps);
+    await flush();
+    vi.clearAllMocks();
+    const match = vi.spyOn(cache, 'match');
+    const response = await withDrawsEdgeCache(new Request(`https://example.com/concurso/3000${query}`), render, deps);
+    expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(match).not.toHaveBeenCalled();
+    expect(deps.drawsVersion).not.toHaveBeenCalled();
+    expect(cache.entries.size).toBe(1);
+  });
+
+  it.each(['/', '/resultados', '/numeros', '/concurso/abc', '/concurso/0', '/concurso/01', '/concurso/1000000', '/concurso/3000/', '/concurso/3000/extra', '/numeros/0', '/numeros/61', '/numeros/01', '/resultados/1995', '/resultados/2101', '/resultados/02025', '/concurso/1.5', '/numeros/-1'])(
+    'never caches HTML at non-archive or invalid path %s', async (path) => {
+      const { cache, deps, flush } = setup();
+      const render = html();
+      for (let i = 0; i < 2; i++) {
+        const response = await withDrawsEdgeCache(new Request(`https://example.com${path}`), render, deps);
+        expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+      }
+      await flush();
+      expect(render).toHaveBeenCalledTimes(2);
+      expect(cache.entries.size).toBe(0);
+      expect(deps.drawsVersion).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(['HEAD', 'POST'])('bypasses HTML cache for %s requests', async (method) => {
+    const { cache, deps, flush } = setup();
+    await withDrawsEdgeCache(new Request('https://example.com/concurso/3000', { method }), html(), deps);
+    await flush();
+    expect(cache.entries.size).toBe(0);
+    expect(deps.drawsVersion).not.toHaveBeenCalled();
+  });
+
+  it('does not store HTML without a CSP nonce, non-HTML, Set-Cookie or non-200 responses', async () => {
+    for (const response of [
+      new Response(HTML_BODY, { headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' } }),
+      new Response(HTML_BODY, { headers: { ...HTML_HEADERS, 'Content-Security-Policy': "default-src 'none'" } }),
+      new Response(HTML_BODY, { headers: { ...HTML_HEADERS, 'Content-Security-Policy': "script-src 'nonce-'" } }),
+      new Response('rsc', { headers: { ...HTML_HEADERS, 'Content-Type': 'text/x-component' } }),
+      new Response(HTML_BODY, { headers: { ...HTML_HEADERS, 'Set-Cookie': 'a=b' } }),
+      ...[301, 404, 500].map(status => new Response(HTML_BODY, { status, headers: HTML_HEADERS })),
+    ]) {
+      const { cache, deps, flush } = setup();
+      const result = await withDrawsEdgeCache(new Request('https://example.com/concurso/3000'), async () => response, deps);
+      await flush();
+      expect(result).toBe(response);
+      expect(cache.entries.size).toBe(0);
+    }
+  });
+});
