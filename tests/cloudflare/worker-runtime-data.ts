@@ -7,5 +7,6 @@ export class MegaSenaData extends DurableObject {
       headers: { 'Cache-Control': 'no-store', 'Content-Security-Policy': "default-src 'none'" },
     });
   }
+  drawsVersion() { return '1'; }
   refresh() { return { status: 'success' }; }
 }

@@ -3,6 +3,7 @@ import '../lib/log-context.runtime';
 import { createDurableDatabase, runWithDatabase } from '@/lib/cloudflare/database';
 import { withDatabaseTransaction, type DatabaseLike } from '@/lib/db-transaction';
 import { createApiHandler, type ApiPeer } from '@/lib/api/handler';
+import { getDrawsVersion } from '@/lib/api/response-cache';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { runWithLogSink } from '@/lib/logger';
@@ -160,6 +161,11 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       try { return await this.handler.fetch(request, peer); }
       finally { await logs.stop(); }
     }));
+  }
+
+  /** Cache key component for the Worker's edge cache; no request or visitor data. */
+  drawsVersion(): string | null {
+    return runWithDatabase(this.database, () => getDrawsVersion());
   }
 
   importDraws(input: unknown): number {

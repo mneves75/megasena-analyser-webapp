@@ -25,6 +25,9 @@ pages through vinext and routes `/api/*` through private binding `DATA` to
 `MegaSenaData` (`cloudflare/data-object.ts`). `lib/api/handler.ts` is the shared
 API contract; `server.ts` is the local/VPS Bun adapter. New API routes belong in
 the shared handler. Database and log contexts are scoped per operation.
+`lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
+in the Worker Cache API keyed by the draws revision (`MegaSenaData.drawsVersion`),
+only for public 200 responses. Never cache HTML: it carries the per-request CSP nonce.
 
 `vite.config.ts` selects the Durable Object database and private server-side API
 transport. Public headers cannot authorize internal RPC. `cloudflare.config.ts`

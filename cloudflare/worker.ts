@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import app from 'vinext/server/app-router-entry';
 import type { MegaSenaData } from './data-object';
 import { HSTS_HEADER_VALUE } from '../lib/security/csp';
+import { withDrawsEdgeCache, type EdgeCache } from '../lib/cloudflare/edge-cache';
 import { BASE_URL } from '../lib/constants';
 import siteDomains from '../lib/site-domains.json';
 
@@ -10,6 +11,7 @@ export { MegaSenaData } from './data-object';
 interface WorkerEnv {
   DATA: DurableObjectNamespace<MegaSenaData>;
   ASSETS: Fetcher;
+  APP_VERSION?: string;
   DEPLOYMENT_STAGE?: string;
   ENVIRONMENT?: string;
 }
@@ -46,7 +48,13 @@ const worker = {
         clientIp: request.headers.get('cf-connecting-ip'),
         secure: url.protocol === 'https:',
       })
-      : await app.fetch(request, env as unknown as WorkerEnv, context);
+      : await withDrawsEdgeCache(request, () => app.fetch(request, env as unknown as WorkerEnv, context), {
+        buildVersion: workerEnv.APP_VERSION ?? 'unknown',
+        // The repo-wide bun-types CacheStorage hides the Workers-only default cache.
+        cache: (caches as unknown as { default: EdgeCache }).default,
+        drawsVersion: () => database().drawsVersion(),
+        waitUntil: promise => context.waitUntil(promise),
+      });
     if (!preventIndexing && !secure) return response;
     const headers = new Headers(response.headers);
     if (preventIndexing) headers.set('X-Robots-Tag', 'noindex, nofollow');
