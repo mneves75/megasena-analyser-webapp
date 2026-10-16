@@ -49,7 +49,12 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 ### API Layer (`lib/api/`)
 
 - `caixa-client.ts`: CAIXA integration with retry and progressive rate limiting
-- `response-cache.ts`: contest-response cache keyed by draws version
+- `response-cache.ts`: contest-response cache keyed by app version and draws revision
+- `lib/cloudflare/edge-cache.ts`: Worker Cache API layer for social images,
+  `sitemap.xml` and `llms.txt`, keyed by `APP_VERSION` and the draws revision;
+  requests with `Authorization` or `Cookie` bypass reads and writes. Bump
+  `APP_VERSION` (from `package.json`'s version) whenever renderers change. HTML is
+  never cached (per-request CSP nonce).
 
 ### Security (`lib/security/`)
 
