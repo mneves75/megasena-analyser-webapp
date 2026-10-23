@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+- `docs/INCIDENT-RESPONSE.md` cobre dispositivo perdido e credencial vazada: revogação de sessões e tokens do Cloudflare e do GitHub, troca de `IP_HASH_SECRET` por ambiente, revisão dos logs de auditoria e exigência de criptografia de disco e bloqueio de tela.
+
 ## [1.17.2] - 2026-10-23
 
 - Dependências corrigidas para `pnpm audit` voltar a passar: Next.js e eslint-config-next 16.4.2 (inclui os críticos GHSA-2464-fhr4-w9xw e GHSA-673q-mjm6-r5xr), Vite 8.1.6 (GHSA-587h-7wmj-h5pm e avisos relacionados), sharp 0.35.5 (GHSA-wq5f-xc86-pv6w), source-map-js 1.2.2 (GHSA-68fv-2mgg-jv7q) e Vitest 4.1.12 (`@vitest/mocker`).

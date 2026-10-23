@@ -1,6 +1,6 @@
 # Plano de Resposta a Incidente — Mega-Sena Analyzer
 
-**Última atualização:** 2026-05-20
+**Última atualização:** 2026-10-23
 **Aplicabilidade:** todo evento de segurança envolvendo dados pessoais (Art. 48 LGPD) ou continuidade do serviço.
 
 ---
@@ -42,11 +42,24 @@ Incidente é qualquer evento que afete confidencialidade, integridade ou disponi
 ### Fase 2 — Contenção (T0+0 a T0+24 h)
 
 1. Isolar a superfície: revogar credenciais, bloquear endpoint, desligar componente.
-2. Snapshot forense:
+2. Snapshot forense (caminho Docker/VPS de recuperação):
    - `db/mega-sena.db` (cópia somente leitura)
    - `db/mega-sena.db-wal` e `db/mega-sena.db-shm`
    - Últimos 7 dias de `log_events` e `audit_logs`
 3. Congelar deploys até erradicação.
+
+#### Dispositivo perdido ou credencial vazada
+
+Vale para qualquer computador ou celular com acesso de produção e para qualquer credencial exposta (em log, commit, captura de tela ou conversa).
+
+1. Dispositivo perdido ou roubado: bloquear e apagar remotamente pelo serviço de localização do fabricante.
+2. Cloudflare: encerrar a sessão OAuth do `cf` e revogar os tokens de API ligados ao dispositivo ou à credencial. Criar substitutos só depois, com o menor escopo necessário.
+3. GitHub: revogar as sessões, os tokens pessoais e as chaves SSH e de assinatura do dispositivo.
+4. `IP_HASH_SECRET`, se puder ter vazado: gerar um valor aleatório novo com pelo menos 32 caracteres e trocá-lo em staging e em produção com `cf workers secrets update IP_HASH_SECRET --mode staging` e depois `--mode production`, na raiz do projeto. O valor nunca vai na linha de comando nem em log. A troca cria uma nova versão do Worker. Pseudônimos e chaves de rate limit anteriores deixam de correlacionar com os novos. O comprometimento desse segredo é critério de notificação (seção 4).
+5. Depois de cada troca, confirmar que a nova versão atende 100% do tráfego, que `/api/health` responde e que `bun run deploy:verify` passa.
+6. Revisar os logs de auditoria da conta Cloudflare e do GitHub desde a última atividade legítima conhecida: logins, tokens criados, deploys, segredos, DNS e membros. Registrar o resultado no registro privado do incidente.
+
+Prevenção: todo dispositivo com acesso de produção usa criptografia de disco e bloqueio automático de tela.
 
 ### Fase 3 — Erradicação (T0+24 h a T0+72 h)
 
