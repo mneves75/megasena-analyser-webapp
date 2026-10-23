@@ -9,8 +9,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.17.3] - 2026-10-23
 
+- Rotas públicas com número (`/concurso`, `/numeros`, `/resultados`) validam zeros à esquerda em tempo linear; uma URL longa só de zeros não consome mais CPU antes do 404.
+
 - `docs/INCIDENT-RESPONSE.md` cobre dispositivo perdido e credencial vazada: revogação de sessões e tokens do Cloudflare e do GitHub, troca de `IP_HASH_SECRET` por ambiente, revisão dos logs de auditoria e exigência de criptografia de disco e bloqueio de tela.
 - `security.txt` renovado até 2027-10-22, dentro do limite de um ano do RFC 9116. Um teste falha quando faltam 90 dias para expirar.
+
+## [1.17.3-beta2] - 2026-10-23
+
+- Candidato de staging com a validação linear dos parâmetros numéricos das rotas.
 
 ## [1.17.3-beta1] - 2026-10-23
 

@@ -77,7 +77,8 @@ export function resolveIntegerParam(
   if (value !== null) {
     return value;
   }
-  if (/^0+\d+$/.test(raw)) {
+  // `0+` and `[1-9]` cannot overlap, so a long zero run fails in linear time.
+  if (/^0+[1-9]\d*$/.test(raw)) {
     const unpadded = parseCanonicalInteger(raw.replace(/^0+/, ''), min, max);
     if (unpadded !== null) {
       permanentRedirect(canonicalPath(unpadded));
