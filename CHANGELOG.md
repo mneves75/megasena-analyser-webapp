@@ -7,6 +7,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.17.4] - 2026-10-23
+
+- Dependências atualizadas dentro das versões menores: React e React DOM 19.3.1 (inclui a melhoria de protocolo dos React Server Components de 19.2.9/19.3.1), vinext 1.3.0 e `@vinext/cloudflare` 1.2.0, Vite 8.3.5, Tailwind CSS 4.3.3, Recharts 3.10.1 e ferramentas de desenvolvimento (ast-grep 0.51.0, React Doctor 0.9.18, Prettier, Playwright, tipos). Os pins de `rollup`, `caniuse-lite` e `baseline-browser-mapping` sobem acima dos pisos de segurança; a CLI `cf` e as atualizações major ficam para uma versão própria.
+
+## [1.17.4-beta1] - 2026-10-23
+
+- Candidato de staging da atualização de dependências.
+
 ## [1.17.3] - 2026-10-23
 
 - Rotas públicas com número (`/concurso`, `/numeros`, `/resultados`) validam zeros à esquerda em tempo linear; uma URL longa só de zeros não consome mais CPU antes do 404.

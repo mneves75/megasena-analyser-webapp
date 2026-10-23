@@ -48,13 +48,13 @@ overrides:
   # cssstyle/dom-selector aceitam 3.x; o patch de sintaxe exige >=3.2.1.
   css-tree: '>=3.2.1 <4'
   # GHSA-w5vr-8v7q-w6rv: <2.11.0.
-  baseline-browser-mapping: 2.11.23
+  baseline-browser-mapping: 2.11.30
   # GHSA-rgw5-rvv9-x895: DoS via unbounded brace expansion. O range antigo
   # '>=1.1.16 <2' ainda resolvia 1.1.16, que o advisory marca como
   # vulnerável. Forçamos a linha 5.x corrigida.
   # GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7 e GHSA-6j4f-fj2g-mc7p: <5.0.12.
   brace-expansion: '>=5.0.12'
-  caniuse-lite: 1.0.30001792
+  caniuse-lite: 1.0.30001819
   # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp: <3.1.6.
   # GHSA-hrr3-gc8f-f4qj: normalização de host corrigida em 3.1.8.
   fast-uri: '>=3.1.8 <4'
@@ -71,7 +71,7 @@ overrides:
   # compatível com o range ^3.3 pedido pelo postcss.
   nanoid: '>=3.3.18 <4'
   postcss: '>=8.5.23'
-  rollup: 4.59.0
+  rollup: 4.65.0
   ws: '>=8.21.0'
 patchedDependencies:
   braces@3.0.3: patches/braces@3.0.3.patch
