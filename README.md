@@ -4,7 +4,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Hospedagem e atualização diária
 
-A versão 1.17.2 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA e a mitigação local de segurança das ferramentas de build descrita em [docs/SECURITY.md](docs/SECURITY.md), e atualiza Next.js, Vite e sharp para versões corrigidas. Produção e staging usam ambientes separados; staging bloqueia indexação. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
+A versão 1.17.3 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA e a mitigação local de segurança das ferramentas de build descrita em [docs/SECURITY.md](docs/SECURITY.md), e atualiza Next.js, Vite e sharp para versões corrigidas. Produção e staging usam ambientes separados; staging bloqueia indexação. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
 
 - `cloudflare/worker.ts` atende páginas App Router via vinext/Vite e encaminha `/api/*` ao Durable Object SQLite `MegaSenaData` pelo binding privado `DATA`.
 - `lib/api/handler.ts` contém o contrato compartilhado da API; `server.ts` é o adaptador Bun. Contextos de banco e log isolam operações concorrentes.
