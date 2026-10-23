@@ -8,6 +8,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 - `docs/INCIDENT-RESPONSE.md` cobre dispositivo perdido e credencial vazada: revogação de sessões e tokens do Cloudflare e do GitHub, troca de `IP_HASH_SECRET` por ambiente, revisão dos logs de auditoria e exigência de criptografia de disco e bloqueio de tela.
+- `security.txt` renovado até 2027-10-22, dentro do limite de um ano do RFC 9116. Um teste falha quando faltam 90 dias para expirar.
 
 ## [1.17.2] - 2026-10-23
 
