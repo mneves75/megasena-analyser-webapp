@@ -33,8 +33,8 @@ overrides:
   # Cloudflare tooling: patched HTTP client and archive decoder.
   'undici@7': '>=7.29.1 <8'
   'fflate@0.7': '>=0.7.5 <0.8'
-  # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj) e GHSA-rgj7-g3m4-5g8c (<0.35.4).
-  sharp: '>=0.35.4'
+  # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj), GHSA-rgj7-g3m4-5g8c (<0.35.4) e GHSA-wq5f-xc86-pv6w (<0.35.5).
+  sharp: '>=0.35.5'
   # <8: Babel 8 e um major breaking/ESM-only; consumidores transitivos pedem 7.x.
   '@babel/core': '>=7.29.1 <8'
   # react-doctor/conf precisa de ajv 8; ESLint precisa de ajv 6. Usamos override

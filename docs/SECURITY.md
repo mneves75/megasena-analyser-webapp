@@ -184,8 +184,10 @@ Os overrides em `pnpm-workspace.yaml` (chave `overrides`) existem para manter `p
 
 Overrides atuais de segurança:
 
-Next.js e eslint-config-next usam 16.3.6, fora do intervalo afetado por
-[GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j).
+Next.js e eslint-config-next usam 16.4.2, fora do intervalo afetado por
+[GHSA-vcvr-r3jv-pc5j](https://github.com/advisories/GHSA-vcvr-r3jv-pc5j) e dos avisos corrigidos em 16.4.1,
+como os críticos [GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw) e
+[GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr).
 Os peers de desenvolvimento têm overrides específicos para `ajv-formats>ajv`
 (API AJV 8, preservando AJV 6 no ESLint) e `css-tree >=3.2.1 <4`.
 `pnpm peers check` deve confirmar compatibilidade além do audit de segurança.

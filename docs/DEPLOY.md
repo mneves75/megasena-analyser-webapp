@@ -2,7 +2,7 @@
 
 ## Hospedagem Worker e migração
 
-A versão 1.17.1 executa a aplicação em um Worker vinext/App Router, com SQLite
+A versão 1.17.2 executa a aplicação em um Worker vinext/App Router, com SQLite
 no Durable Object `MegaSenaData` pelo binding privado `DATA`. Não há API
 administrativa pública do banco. O caminho Docker abaixo permite execução local
 e recuperação durante a migração.

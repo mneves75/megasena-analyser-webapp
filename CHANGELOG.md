@@ -7,6 +7,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.17.2] - 2026-10-23
+
+- Dependências corrigidas para `pnpm audit` voltar a passar: Next.js e eslint-config-next 16.4.2 (inclui os críticos GHSA-2464-fhr4-w9xw e GHSA-673q-mjm6-r5xr), Vite 8.1.6 (GHSA-587h-7wmj-h5pm e avisos relacionados), sharp 0.35.5 (GHSA-wq5f-xc86-pv6w), source-map-js 1.2.2 (GHSA-68fv-2mgg-jv7q) e Vitest 4.1.12 (`@vitest/mocker`).
+- `engines.node` restrito a Node 22 e `.nvmrc` 22.23.4, a versão em que a suíte foi verificada; `packageManager` mantém o hash de integridade do Corepack.
+
+## [1.17.2-beta1] - 2026-10-23
+
+- Candidato de staging das correções de dependências.
+
 ## [1.17.1] - 2026-10-03
 
 - Mitigação local de GHSA-vfj7-8cjw-p6xm em `braces`: limite de profundidade de padrões e validação iterativa de ASTs antes dos caminhos recursivos. A regressão da dependência instalada precede o audit no CI; exceção restrita documentada até existir uma versão oficial corrigida.

@@ -1,6 +1,6 @@
 # Descoberta no ChatGPT Search
 
-A versão 1.17.1 está publicada no domínio canônico com Worker/SQLite Durable Object. Staging permanece separado, com `X-Robots-Tag: noindex, nofollow` e robots bloqueando todos os caminhos. Os checks técnicos públicos foram repetidos após o corte e a manutenção de segurança; eles não comprovam visitas de crawlers reais, citações ou tráfego de leitores. A preferência de treinamento e a ausência de analytics de aquisição foram preservadas.
+A versão 1.17.2 está publicada no domínio canônico com Worker/SQLite Durable Object. Staging permanece separado, com `X-Robots-Tag: noindex, nofollow` e robots bloqueando todos os caminhos. Os checks técnicos públicos foram repetidos após o corte e a manutenção de segurança; eles não comprovam visitas de crawlers reais, citações ou tráfego de leitores. A preferência de treinamento e a ausência de analytics de aquisição foram preservadas.
 
 Verificação técnica em 03/10/2026. Público: leitores em pt-BR que consultam resultados oficiais da Mega-Sena, histórico, estatísticas descritivas e geração de apostas por orçamento. O site não prevê sorteios; cada concurso é independente. Dados oficiais vêm da CAIXA e são atualizados periodicamente.
 
