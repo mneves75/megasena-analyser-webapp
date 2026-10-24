@@ -198,6 +198,16 @@ async function main(): Promise<void> {
   );
 
   closeDatabase();
+
+  // Contests whose prizes are still zero keep the "Prêmios" section and the
+  // prize-correlation averages wrong, so a partial repair must not read as
+  // success to a cron wrapper chaining on the exit code.
+  if (failed > 0) {
+    console.error(
+      `[ERROR] ${failed} concurso(s) sem prêmio após o backfill. Re-execute para retomar.`
+    );
+    process.exitCode = 1;
+  }
 }
 
 main();

@@ -3,7 +3,7 @@ import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LotteryBall } from '@/components/lottery-ball';
 import { TrendingUp, TrendingDown, Clock, BarChart2, Link2, PieChart, Hash, Sigma, Flame, Trophy, Snowflake, Info } from 'lucide-react';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDecimal, formatNumber } from '@/lib/utils';
 import { SectionNav, type StatisticsSection } from '@/components/statistics/section-nav';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
 import type { DrawStatistics, NumberFrequency, Pattern } from '@/lib/analytics/statistics';
@@ -539,7 +539,7 @@ export default async function StatisticsPage() {
                 </div>
                 <div className="rounded-lg border bg-card/50 p-4">
                   <div className="text-sm text-muted-foreground">{pt.statistics.primes.averageLabel}</div>
-                  <div className="text-3xl font-bold tabular-nums">{primes.averagePrimesPerDraw.toFixed(2)}</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatDecimal(primes.averagePrimesPerDraw, 2)}</div>
                   <div className="text-xs text-muted-foreground">{pt.statistics.primes.averageSuffix}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-4">
@@ -555,7 +555,7 @@ export default async function StatisticsPage() {
                   {primes.distribution.map((dist) => (
                     <div key={dist.primeCount} className="rounded-lg border bg-card/50 p-2 text-center">
                       <div className="text-lg font-bold tabular-nums">{dist.primeCount}</div>
-                      <div className="text-xs text-muted-foreground tabular-nums">{dist.percentage}%</div>
+                      <div className="text-xs text-muted-foreground tabular-nums">{formatDecimal(dist.percentage, 2)}%</div>
                     </div>
                   ))}
                 </div>
@@ -678,9 +678,11 @@ export default async function StatisticsPage() {
                           </div>
                         </div>
                         <div className="text-center">
-                          <div className="text-xs font-medium tabular-nums">{hot.recentOccurrences}x</div>
+                          <div className="text-sm font-semibold tabular-nums">
+                            {formatDecimal(hot.streakIntensity)}×
+                          </div>
                           <div className="text-xs text-muted-foreground tabular-nums">
-                            {hot.streakIntensity}x
+                            {hot.recentOccurrences} de 10
                           </div>
                         </div>
                       </div>
@@ -705,9 +707,11 @@ export default async function StatisticsPage() {
                             </div>
                           </div>
                           <div className="text-center">
-                            <div className="text-xs font-medium tabular-nums">{cold.recentOccurrences}x</div>
+                            <div className="text-sm font-semibold tabular-nums">
+                              {formatDecimal(cold.streakIntensity)}×
+                            </div>
                             <div className="text-xs text-muted-foreground tabular-nums">
-                              {cold.streakIntensity}x
+                              {cold.recentOccurrences} de 10
                             </div>
                           </div>
                         </div>
@@ -754,14 +758,16 @@ export default async function StatisticsPage() {
                             <div className="text-xs text-muted-foreground">
                               {pt.statistics.prizeCorrelation.averagePrizeLabel}
                             </div>
-                            <div className="font-semibold tabular-nums">R$ {(lucky.averagePrizeSena / 1_000_000).toFixed(2)}M</div>
+                            <div className="font-semibold tabular-nums">
+                            {formatCurrency(lucky.averagePrizeSena)}
+                          </div>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-muted-foreground">
                             {pt.statistics.prizeCorrelation.correlationLabel}
                           </div>
-                          <div className="text-lg font-bold text-primary tabular-nums">{lucky.correlationScore}x</div>
+                          <div className="text-lg font-bold text-primary tabular-nums">{formatDecimal(lucky.correlationScore)}×</div>
                         </div>
                       </div>
                     ))}
@@ -782,14 +788,16 @@ export default async function StatisticsPage() {
                               <div className="text-xs text-muted-foreground">
                                 {pt.statistics.prizeCorrelation.averagePrizeLabel}
                               </div>
-                              <div className="font-semibold tabular-nums">R$ {(unlucky.averagePrizeSena / 1_000_000).toFixed(2)}M</div>
+                              <div className="font-semibold tabular-nums">
+                              {formatCurrency(unlucky.averagePrizeSena)}
+                            </div>
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-xs text-muted-foreground">
                               {pt.statistics.prizeCorrelation.correlationLabel}
                             </div>
-                            <div className="text-lg font-bold text-destructive tabular-nums">{unlucky.correlationScore}x</div>
+                            <div className="text-lg font-bold text-destructive tabular-nums">{formatDecimal(unlucky.correlationScore)}×</div>
                           </div>
                         </div>
                       ))}

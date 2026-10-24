@@ -22,7 +22,10 @@ function isoCutoffFromDays(days: number): string {
 }
 
 export async function runAuditRetention(options: AuditRetentionOptions): Promise<AuditRetentionResult> {
-  const retentionDays = typeof options.retentionDays === 'number' ? options.retentionDays : 365;
+  // 400 matches the deployed policy (server.ts, cloudflare.config.ts,
+  // docs/PRIVACY.md). A shorter library default silently deleted a month of
+  // evidence whenever a caller omitted the argument.
+  const retentionDays = typeof options.retentionDays === 'number' ? options.retentionDays : 400;
   const cutoffIso = options.beforeIso ?? isoCutoffFromDays(retentionDays);
   const executedAt = new Date().toISOString();
   const reason = options.reason ?? 'manual';

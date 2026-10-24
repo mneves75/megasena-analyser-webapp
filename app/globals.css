@@ -163,8 +163,7 @@
   }
 }
 
-/* Respect the user's reduced-motion preference (accessibility golden rule) */
-@media (prefers-reduced-motion: reduce) {
+/* Respect the user's reduced-motion preference (accessibility golden rule) */@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {

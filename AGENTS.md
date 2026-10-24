@@ -72,7 +72,9 @@ See docs/DEPLOY.md; do not infer deployment authorization from preparation.
   move the pin.
 - **CI uses a pinned Bun version** recorded in `.bun-ci-version` and installed via
   `.github/actions/setup-bun-pinned/action.yml`. Next.js production builds still
-  compile under Node 22.23.2 (CI pin): the old Bun 1.3.14 Linux SIGSEGV building
+  compile under the Node patch in `.nvmrc` (currently 22.23.4; the workflows and
+  `tests/scripts/supply-chain-controls.test.ts` read that file, so the gate cannot
+  drift a patch behind the runtime image): the old Bun 1.3.14 Linux SIGSEGV building
   Next.js 16.3.0 was a napi thread-safe-function use-after-free, fixed in
   Bun 1.4.0 (oven-sh/bun#36866), but the builder stays Node until `next build`
   under Bun is re-validated in CI. The Next.js standalone server itself already
@@ -185,6 +187,35 @@ README.md for the isolated local production fixture and two-pass replay.
   `...webapp/` and Vitest matched it against every path, zeroing the gate.
 - `.cursor/rules/*.mdc` repeats architecture for Cursor; update it after changing this contract.
 
+## Engineering principles
+
+- **Remove the replaced path; do not add a compatibility layer.** When a design
+  supersedes an older one, delete the old code, flag, alias and fallback in the same
+  change. Do not preserve backward compatibility. Existing shims (the
+  `scripts/fetch-missing.ts` entry point, the standalone Bun/Docker path) are tracked
+  debt to retire, not patterns to copy.
+- **Pick the simplest implementation that fully meets the current requirement.** No
+  speculative abstraction, configuration knob, plugin point or indirection; add the
+  seam when the second real caller exists.
+- **Grow the system in layers.** Start from the smallest version that works end to end
+  (fetch → store → analyse → serve), then add one capability on top of something that
+  already works. Never trade a working product for unfinished complexity, and never let
+  a half-built layer block a shipped one.
+- **Keep components modular and concerns separated.** Storage (`lib/db.ts`), the shared
+  API contract (`lib/api/handler.ts`), statistics (`lib/analytics/`), transport
+  (`cloudflare/worker.ts`, `server.ts`) and presentation (`app/`, `components/`) stay
+  apart; new endpoints belong in the shared handler, never in `app/`.
+- **Lean on what is already installed.** Check `package.json`, the installed types and
+  the library's own docs before writing a helper or adding a package; do not assume a
+  dependency lacks a capability without verifying.
+- **Prefer established, well-maintained libraries** when they reduce overall complexity
+  or improve reliability. Do not reimplement common functionality without a stated
+  reason. New packages still pass the `pnpm` supply-chain gates in
+  `pnpm-workspace.yaml`.
+- **Decide for the long term.** Do not accept a stopgap that only works for now and is
+  meant to be replaced later; if a decision is provisional, removing it is part of the
+  work, not a layer to preserve.
+
 ## Conventions & constraints (project-specific)
 
 - **Test DB is in-memory:** `lib/db.ts` swaps to `InMemoryDatabase` under Vitest
@@ -214,10 +245,21 @@ README.md for the isolated local production fixture and two-pass replay.
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting
-  (100 req/min/IP, incl. `/api/health`). `X-Forwarded-*` only trusted when
+  (100 req/min per **network**, incl. `/api/health`; a 429 is audited like any other
+  outcome). `X-Forwarded-*` only trusted when
   `TRUST_PROXY_HEADERS=true` + loopback/`TRUSTED_PROXY_IPS`. Internal rate-limit bypass
   needs a strong `INTERNAL_API_SECRET` + a **loopback** target — `API_HOST` must stay
   loopback or the secret is withheld and SSR calls fall back to the public quota.
+- **The quota is keyed by network, not by address.** `rateLimitSubject`
+  (`lib/security/http.ts`) collapses an IPv6 address to its `/64` and leaves IPv4
+  unchanged before the HMAC; keying the full `/128` gave one subscriber a fresh bucket
+  per rotated address. The same subject is the audited `clientIdHash`, so this is also
+  what bounds the pseudonymised identifier: with no `IP_HASH_SECRET` the fallback is a
+  random per-process salt, never an unsalted SHA-256 of the address.
+- **Quota and retention constants are shared, never duplicated.** `RATE_LIMIT_MAX_REQUESTS`
+  and `RATE_LIMIT_WINDOW_MS` (`lib/api/handler.ts`) feed both the Bun cache and the
+  Durable Object; `audit:prune`, `runAuditRetention`, the Bun server and the Worker all
+  default to 400 audit days.
 - **Forwarded-IP trust is an ops contract, not just code.** The header chosen for the
   client IP becomes the rate-limit key, so the public edge must rewrite it on every
   request. `CF-Connecting-IP` is set by Cloudflare and is *not* rewritten by an
@@ -230,7 +272,10 @@ README.md for the isolated local production fixture and two-pass replay.
   `listaRateioPremio`/`faixa` handling, so a DB restored from an old snapshot will show
   `R$ 0,00` across the "Prêmios" section until it is backfilled.
 - Backfill fetches CAIXA batches outside SQLite write transactions. Keep network
-  waits outside the writer lock and preserve resumability on upstream failures.
+  waits outside the writer lock and preserve resumability on upstream failures. `db:pull`
+  follows the same rule: it downloads the range first and only then opens the write
+  transaction, and `--allow-partial` refuses an interior gap in the stored sequence
+  (a missing newest contest is the only accepted hole).
 - ChatGPT Search guidance is in `docs/CHATGPT-SEARCH.md`. Preserve the existing
   crawler/training preference and absence of acquisition analytics; eligibility,
   genuine crawler access, citations and reader traffic need separate evidence.

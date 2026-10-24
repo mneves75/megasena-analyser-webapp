@@ -12,6 +12,19 @@ import {
   type BetGenerationResult,
   type BetStrategy,
 } from '@/lib/analytics/bet-generator.types';
+import { formatCurrency } from '@/lib/utils';
+
+/**
+ * The caller supplied a budget the requested mode cannot satisfy. This is a
+ * 400-class input error, not a server fault: the message already names the
+ * minimum, so the API can return it verbatim instead of a generic 500.
+ */
+export class BetGenerationInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BetGenerationInputError';
+  }
+}
 
 /**
  * Candidate pool for strategy-based number selection
@@ -266,12 +279,14 @@ export class BetGenerator {
     const minimumMultipleBetCost = this.getBetCost(BetGenerator.MIN_MULTIPLE_BET_NUMBERS);
 
     if (budget < simpleBetCost) {
-      throw new Error(`Orçamento insuficiente. Mínimo: R$ ${simpleBetCost.toFixed(2)}`);
+      throw new BetGenerationInputError(
+        `Orçamento insuficiente. Mínimo: ${formatCurrency(simpleBetCost)}`
+      );
     }
 
     if (mode === BET_GENERATION_MODE.MULTIPLE_ONLY && budget < minimumMultipleBetCost) {
-      throw new Error(
-        `Orçamento insuficiente para aposta múltipla. Mínimo: R$ ${minimumMultipleBetCost.toFixed(2)}`
+      throw new BetGenerationInputError(
+        `Orçamento insuficiente para aposta múltipla. Mínimo: ${formatCurrency(minimumMultipleBetCost)}`
       );
     }
 

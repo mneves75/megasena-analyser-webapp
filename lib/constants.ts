@@ -57,22 +57,6 @@ export const API_CONFIG = {
   PROGRESSIVE_DELAY_MAX: 3000,
 } as const;
 
-// Prize Tiers
-export const PRIZE_TIERS = {
-  SENA: 6,
-  QUINA: 5,
-  QUADRA: 4,
-} as const;
-
-// Chart Colors
-export const CHART_COLORS = {
-  primary: 'hsl(var(--chart-1))',
-  secondary: 'hsl(var(--chart-2))',
-  tertiary: 'hsl(var(--chart-3))',
-  quaternary: 'hsl(var(--chart-4))',
-  quinary: 'hsl(var(--chart-5))',
-} as const;
-
 // Bet Generation Strategies
 export const BET_GENERATION_MODE = {
   SIMPLE_ONLY: 'simple_only',
@@ -87,25 +71,6 @@ export type BetGenerationMode = (typeof BET_GENERATION_MODE)[keyof typeof BET_GE
 export const BUDGET_PRESETS = [
   10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
 ] as const;
-
-// Number of combinations per bet size
-export const BET_COMBINATIONS: Record<number, number> = {
-  6: 1,
-  7: 7,
-  8: 28,
-  9: 84,
-  10: 210,
-  11: 462,
-  12: 924,
-  13: 1716,
-  14: 3003,
-  15: 5005,
-  16: 8008,
-  17: 12376,
-  18: 18564,
-  19: 27132,
-  20: 38760,
-} as const;
 
 // Bet Generation Algorithm Constants
 export const BET_ALLOCATION = {

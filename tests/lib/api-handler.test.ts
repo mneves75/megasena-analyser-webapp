@@ -48,6 +48,51 @@ describe('runtime-neutral API handler', () => {
     expect(limited.headers.get('Content-Security-Policy')).toContain("default-src 'none'");
     expect((await second.fetch(request(), { clientIp: '203.0.113.1' })).status).toBe(404);
   });
+  it('records a throttled request in the audit log', async () => {
+    const audit = vi.fn();
+    const handler = createApiHandler({ ...options, audit });
+    for (let i = 0; i < 100; i++) {
+      await handler.fetch(request(), { clientIp: '198.51.100.77' });
+    }
+    audit.mockClear();
+
+    const limited = await handler.fetch(request(), { clientIp: '198.51.100.77' });
+
+    expect(limited.status).toBe(429);
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'api.dashboard_read',
+        statusCode: 429,
+        success: false,
+        metadata: { rateLimited: true },
+      })
+    );
+  });
+
+  it('returns 400 with the actionable message when the mode minimum is not met', async () => {
+    closeDatabase();
+    getDatabase();
+    const handler = createApiHandler({
+      ...options,
+      minHealthTotalDraws: 0,
+      allowedOrigins: 'https://example.com',
+    });
+
+    const response = await handler.fetch(
+      new Request('https://example.com/api/generate-bets', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ budget: 10, mode: 'multiple_only' }),
+      }),
+      { clientIp: '198.51.100.88' }
+    );
+
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { success: boolean; error: string };
+    expect(body.success).toBe(false);
+    expect(body.error).toMatch(/múltipla/i);
+  });
+
   it('charges internal requests that identify visitors while exempting private background calls', async () => {
     const handler = createApiHandler(options);
     for (let i = 0; i < 101; i++) {

@@ -70,7 +70,13 @@ async function main(): Promise<void> {
   }
 
   const parsed = parseArgs(process.argv.slice(2));
-  const retentionDays = typeof parsed.days === 'number' ? parsed.days : 365;
+  const configuredRetention = Number(process.env['AUDIT_RETENTION_DAYS'] ?? '400');
+  const retentionDays =
+    typeof parsed.days === 'number'
+      ? parsed.days
+      : Number.isFinite(configuredRetention) && configuredRetention > 0
+        ? configuredRetention
+        : 400;
   const cutoffIso = parsed.before ?? new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
 
   logger.info('audit.retention_started', {

@@ -14,6 +14,29 @@ interface SaveDrawOptions {
   incremental?: boolean;
 }
 
+/**
+ * `--allow-partial` may be missing the newest contests (CAIXA has not published
+ * them yet); it may never leave an interior hole. A gapped archive 404s a real
+ * draw, makes the previous/next pager skip a contest, and makes every later
+ * import abort on its own sequence check.
+ */
+function assertGapFreeArchive(draws: readonly MegaSenaDrawData[]): void {
+  const contests = draws.map((draw) => draw.numero).sort((left, right) => left - right);
+  for (let index = 1; index < contests.length; index += 1) {
+    const previous = contests[index - 1];
+    const current = contests[index];
+    if (previous === undefined || current === undefined) {
+      continue;
+    }
+    if (current !== previous + 1) {
+      throw new Error(
+        `A ingestão parcial deixaria um buraco entre os concursos ${previous} e ` +
+          `${current}. Recolha os concursos ausentes antes de gravar.`
+      );
+    }
+  }
+}
+
 function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
   const numbers = normalizeMegaSenaNumbers(draw.listaDezenas);
 
@@ -118,44 +141,42 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
   let skippedDraws = 0;
 
   try {
-    // Begin transaction for batch inserts
-    db.exec('BEGIN TRANSACTION');
-
+    // Fetch everything BEFORE opening the write transaction. The crawl issues
+    // one request per contest with a delay; holding the writer lock across it
+    // starves the audit and log writers for the whole run (they drop rows once
+    // their queues fill) and turns one upstream failure into a total rollback.
+    let drawsToStore: MegaSenaDrawData[];
     if (limit) {
-      // Fetch only the latest draws
       console.log(`Fetching latest draw...`);
       const latestDraw = await caixaClient.fetchDraw();
       const startContest = Math.max(1, latestDraw.numero - limit + 1);
 
       console.log(`Fetching draws from ${startContest} to ${latestDraw.numero}...`);
-
+      drawsToStore = [];
       for (let contest = startContest; contest <= latestDraw.numero; contest++) {
-        const draw = await caixaClient.fetchDraw(contest);
-        const wasInserted = saveDraw({ draw, db, incremental });
-
-        if (wasInserted) {
-          newDraws++;
-          console.log(`[OK] Added draw #${contest}`);
-        } else {
-          skippedDraws++;
-          if (incremental) {
-            console.log(`[SKIP] Skipped draw #${contest} (already exists)`);
-          }
-        }
+        drawsToStore.push(await caixaClient.fetchDraw(contest));
       }
     } else {
-      // Fetch range of draws
-      const draws = await caixaClient.fetchAllDraws(start, end, { allowPartial });
+      drawsToStore = await caixaClient.fetchAllDraws(start, end, { allowPartial });
+    }
 
-      console.log(`\nProcessing ${draws.length} draws...`);
+    if (!limit) {
+      assertGapFreeArchive(drawsToStore);
+    }
 
-      for (const draw of draws) {
-        const wasInserted = saveDraw({ draw, db, incremental });
+    console.log(`\nProcessing ${drawsToStore.length} draws...`);
 
-        if (wasInserted) {
-          newDraws++;
-        } else {
-          skippedDraws++;
+    db.exec('BEGIN TRANSACTION');
+    for (const draw of drawsToStore) {
+      const wasInserted = saveDraw({ draw, db, incremental });
+
+      if (wasInserted) {
+        newDraws++;
+        if (limit) console.log(`[OK] Added draw #${draw.numero}`);
+      } else {
+        skippedDraws++;
+        if (limit && incremental) {
+          console.log(`[SKIP] Skipped draw #${draw.numero} (already exists)`);
         }
       }
     }

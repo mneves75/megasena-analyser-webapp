@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { StatisticsEngine } from '../analytics/statistics';
 import { BetGenerator } from '../analytics/bet-generator';
+import { BetGenerationInputError } from '../analytics/bet-generator';
 import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from '../constants';
 import { DelayAnalysisEngine } from '../analytics/delay-analysis';
 import { DecadeAnalysisEngine } from '../analytics/decade-analysis';
@@ -18,12 +19,13 @@ import type { AuditEventInput, AuditEventName } from '../audit';
 import { buildApiSecurityHeaders } from '../security/csp';
 import {
   isJsonContentType,
+  rateLimitSubject,
   RequestBodyTooLargeError,
   readJsonBodyWithLimit,
 } from '../security/http';
 import { parseTrendNumbers, parseTrendsQuery } from '../security/trends-input';
 import { hashForAudit } from '../security/pseudonymize';
-import { createHash, createHmac } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
@@ -36,6 +38,14 @@ export interface ApiPeer {
   internal?: boolean;
   secure?: boolean;
 }
+
+/**
+ * One window and one quota for every adapter. They were duplicated in the
+ * Durable Object as literals (100 / 60000), so raising the quota here changed
+ * the advertised header but not the enforcement.
+ */
+export const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+export const RATE_LIMIT_MAX_REQUESTS = 100;
 export interface ApiHandlerOptions {
   environment: string;
   appVersion: string;
@@ -79,9 +89,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
           return isValid;
         });
 
-  // Rate limiter configuration
-  const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-  const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests per minute
+  // Request body cap and cache bound; the limiter window and quota are shared
+  // module constants so the Bun cache and the Durable Object cannot diverge.
   const MAX_REQUEST_BODY_SIZE = 1024 * 10; // 10KB
   const RATE_LIMIT_CACHE_MAX_SIZE = 10000; // Maximum entries in rate limit cache
 
@@ -173,6 +182,17 @@ export function createApiHandler(options: ApiHandlerOptions) {
   const archiveResponseCache = new ContestResponseCache(64);
 
   /**
+   * Per-handler salt for environments that have no `IP_HASH_SECRET`.
+   *
+   * The client digest is persisted for 400 days as the audit `clientIdHash`, so
+   * falling back to an unsalted SHA-256 of the address would store a reversible
+   * identifier: the whole IPv4 space is small enough to brute force. A random
+   * per-process salt keeps the grouping within one instance without making the
+   * stored value linkable across restarts or enumerable from an address.
+   */
+  const fallbackAuditSalt = randomBytes(32);
+
+  /**
    * Create a standardized error response
    */
   function createErrorResponse(
@@ -203,10 +223,15 @@ export function createApiHandler(options: ApiHandlerOptions) {
       return 'unknown';
     }
 
+    // Group by network, not by address: see rateLimitSubject for why a /128 key
+    // gives one IPv6 client an unbounded number of buckets.
+    const subject = rateLimitSubject(clientIp) || clientIp;
     const secret = options.ipHashSecret?.trim();
-    if (!secret || secret.length < 32) return `sha256:${createHash('sha256').update(clientIp).digest('hex')}`;
+    if (!secret || secret.length < 32) {
+      return `salted-sha256:${createHmac('sha256', fallbackAuditSalt).update(subject).digest('hex')}`;
+    }
     const windowId = Math.max(0, Math.floor((Date.now() - Date.parse('2026-01-01T00:00:00.000Z')) / (30 * 24 * 60 * 60 * 1000)));
-    return `hmac-sha256:v1:${windowId}:${createHmac('sha256', secret).update(`v1:${windowId}:${clientIp}`).digest('hex')}`;
+    return `hmac-sha256:v1:${windowId}:${createHmac('sha256', secret).update(`v1:${windowId}:${subject}`).digest('hex')}`;
   }
 
   function createRequestContext(
@@ -249,6 +274,51 @@ export function createApiHandler(options: ApiHandlerOptions) {
     });
   }
 
+  /**
+   * Single exit for every response: request id + security headers, the audit
+   * record, and the completion log. This block had been copied four times and
+   * the copies had already diverged: the 429 path never audited the request.
+   */
+  async function finalize(
+    ctx: RequestContext,
+    response: Response,
+    startTime: number
+  ): Promise<Response> {
+    const finalized = withRequestIdHeader(response, ctx);
+
+    if (ctx.audit) {
+      const auditEvent: AuditEventInput = {
+        event: ctx.audit.event,
+        requestId: ctx.requestId,
+        route: ctx.route,
+        method: ctx.method,
+        statusCode: finalized.status,
+        success: finalized.status < 400,
+        durationMs: Date.now() - startTime,
+        clientIdHash: ctx.clientId,
+      };
+
+      if (ctx.userAgent) {
+        auditEvent.userAgent = ctx.userAgent;
+      }
+      if (ctx.audit.metadata) {
+        auditEvent.metadata = ctx.audit.metadata;
+      }
+
+      await options.audit(auditEvent);
+    }
+
+    logger.info('api.request_completed', {
+      requestId: ctx.requestId,
+      route: ctx.route,
+      method: ctx.method,
+      statusCode: finalized.status,
+      durationMs: Date.now() - startTime,
+    });
+
+    return finalized;
+  }
+
   function checkRateLimit(clientIp: string | null): { allowed: boolean; remaining: number; resetAt: number } {
     const key = getRateLimitKey(clientIp);
     const now = Date.now();
@@ -259,7 +329,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     if (!entry || entry.resetAt < now) {
       entry = {
         count: 1,
-        resetAt: now + RATE_LIMIT_WINDOW,
+        resetAt: now + RATE_LIMIT_WINDOW_MS,
       };
       rateLimiterCache.set(key, entry);
 
@@ -816,6 +886,14 @@ export function createApiHandler(options: ApiHandlerOptions) {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
+        if (error instanceof BetGenerationInputError) {
+          ctx.audit = {
+            event: 'bets.generate_requested',
+            metadata: { validationError: true, reason: 'budget_below_mode_minimum' },
+          };
+          return createErrorResponse(ctx, error.message, null, 400);
+        }
+
         logger.error('bets.generate_failed', error, {
           requestId: ctx.requestId,
           route: ctx.route,
@@ -861,298 +939,154 @@ export function createApiHandler(options: ApiHandlerOptions) {
   }
 
   async function fetch(req: Request, peer: ApiPeer = {}): Promise<Response> {
-      const url = new URL(req.url);
-      const startTime = Date.now();
-      const clientIp = peer.clientIp ?? null;
-      const rateLimitExempt = peer.internal === true && clientIp === null;
-      const ctx = createRequestContext(req, url, getRateLimitKey(clientIp), peer.secure ?? url.protocol === 'https:');
-      const corsHeaders = getCorsHeaders(ctx.origin ?? null);
+    const url = new URL(req.url);
+    const startTime = Date.now();
+    const clientIp = peer.clientIp ?? null;
+    const rateLimitExempt = peer.internal === true && clientIp === null;
+    const ctx = createRequestContext(
+      req,
+      url,
+      getRateLimitKey(clientIp),
+      peer.secure ?? url.protocol === 'https:'
+    );
+    const corsHeaders = getCorsHeaders(ctx.origin ?? null);
+    const rateLimitHeaders = (limit: {
+      remaining: number;
+      resetAt: number;
+    }): Record<string, string> => ({
+      'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
+      'X-RateLimit-Remaining': limit.remaining.toString(),
+      'X-RateLimit-Reset': limit.resetAt.toString(),
+    });
 
-      logger.info('api.request_received', {
+    logger.info('api.request_received', {
+      requestId: ctx.requestId,
+      route: ctx.route,
+      method: ctx.method,
+      userAgent: ctx.userAgent,
+      launchStage: ctx.launchStage,
+      clientId: ctx.clientId,
+    });
+
+    try {
+      // A non-API path is never registered: answer the preflight and 404 the
+      // rest. This replaces a branch that could not be reached, because every
+      // registered handler lives under /api/.
+      if (!url.pathname.startsWith('/api/')) {
+        const response =
+          req.method === 'OPTIONS'
+            ? new Response(null, { status: 204, headers: corsHeaders })
+            : createErrorResponse(ctx, 'Não encontrado.', null, 404);
+        const headers = new Headers(response.headers);
+        Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value));
+        return await finalize(
+          ctx,
+          new Response(response.body, { status: response.status, headers }),
+          startTime
+        );
+      }
+
+      // Every API route is metered, including the public health check and the
+      // preflight, so a preflight cannot be used as an unmetered probe.
+      const rateLimit = rateLimitExempt
+        ? {
+            allowed: true,
+            remaining: RATE_LIMIT_MAX_REQUESTS,
+            resetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
+          }
+        : options.checkRateLimit?.(getRateLimitKey(clientIp)) ?? checkRateLimit(clientIp);
+
+      if (!rateLimit.allowed) {
+        logger.warn('api.rate_limit_exceeded', {
+          requestId: ctx.requestId,
+          route: ctx.route,
+          method: ctx.method,
+          clientId: ctx.clientId,
+        });
+
+        // A throttled request is still an audited request; without this the
+        // busiest abuse path left no record while a 405 did.
+        ctx.audit = {
+          event: apiAuditEvents[url.pathname] ?? 'api.dashboard_read',
+          metadata: { rateLimited: true },
+        };
+
+        const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);
+        return await finalize(
+          ctx,
+          new Response(
+            JSON.stringify({
+              error: 'Muitas requisições',
+              requestId: ctx.requestId,
+              message: `Limite de requisições excedido. Tente novamente em ${retryAfter} segundos.`,
+            }),
+            {
+              status: 429,
+              headers: {
+                'Content-Type': 'application/json',
+                ...rateLimitHeaders(rateLimit),
+                'Retry-After': retryAfter.toString(),
+                ...corsHeaders,
+              },
+            }
+          ),
+          startTime
+        );
+      }
+
+      if (req.method === 'OPTIONS') {
+        return await finalize(
+          ctx,
+          new Response(null, {
+            status: 204,
+            headers: { ...corsHeaders, ...rateLimitHeaders(rateLimit) },
+          }),
+          startTime
+        );
+      }
+
+      const handler = apiHandlers[url.pathname];
+      const response = handler
+        ? await (async () => {
+            const allowedMethods = apiAllowedMethods[url.pathname];
+            if (allowedMethods && !allowedMethods.includes(req.method)) {
+              ctx.audit = {
+                event: apiAuditEvents[url.pathname] ?? 'api.dashboard_read',
+                metadata: { validationError: true, reason: 'method_not_allowed' },
+              };
+              return createMethodNotAllowedResponse(ctx, allowedMethods);
+            }
+            return handler(req, ctx);
+          })()
+        : createErrorResponse(ctx, 'Não encontrado.', null, 404);
+
+      const headers = new Headers(response.headers);
+      Object.entries(rateLimitHeaders(rateLimit)).forEach(([key, value]) => headers.set(key, value));
+      Object.entries(corsHeaders).forEach(([key, value]) => headers.set(key, value));
+
+      return await finalize(
+        ctx,
+        new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        }),
+        startTime
+      );
+    } catch (error) {
+      logger.error('api.unhandled_exception', error, {
         requestId: ctx.requestId,
         route: ctx.route,
         method: ctx.method,
-        userAgent: ctx.userAgent,
-        launchStage: ctx.launchStage,
-        clientId: ctx.clientId,
+        durationMs: Date.now() - startTime,
       });
 
-      try {
-        // Handle non-API CORS preflight requests.
-        if (req.method === 'OPTIONS' && !url.pathname.startsWith('/api/')) {
-          const response = new Response(null, {
-            status: 204,
-            headers: corsHeaders,
-          });
-          const finalized = withRequestIdHeader(response, ctx);
-          logger.info('api.request_completed', {
-            requestId: ctx.requestId,
-            route: ctx.route,
-            method: ctx.method,
-            statusCode: finalized.status,
-            durationMs: Date.now() - startTime,
-          });
-          return finalized;
-        }
-
-        // Apply rate limiting to all API routes, including public health checks.
-        if (url.pathname.startsWith('/api/')) {
-          const rateLimit = rateLimitExempt
-            ? {
-                allowed: true,
-                remaining: RATE_LIMIT_MAX_REQUESTS,
-                resetAt: Date.now() + RATE_LIMIT_WINDOW,
-              }
-            : options.checkRateLimit?.(getRateLimitKey(clientIp)) ?? checkRateLimit(clientIp);
-
-          if (!rateLimit.allowed) {
-            logger.warn('api.rate_limit_exceeded', {
-              requestId: ctx.requestId,
-              route: ctx.route,
-              method: ctx.method,
-              clientId: ctx.clientId,
-            });
-
-            const response = new Response(
-              JSON.stringify({
-                error: 'Muitas requisições',
-                requestId: ctx.requestId,
-                message: `Limite de requisições excedido. Tente novamente em ${Math.ceil((rateLimit.resetAt - Date.now()) / 1000)} segundos.`,
-              }),
-              {
-                status: 429,
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-RateLimit-Limit': RATE_LIMIT_MAX_REQUESTS.toString(),
-                  'X-RateLimit-Remaining': rateLimit.remaining.toString(),
-                  'X-RateLimit-Reset': rateLimit.resetAt.toString(),
-                  'Retry-After': Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
-                  ...corsHeaders,
-                },
-              }
-            );
-
-            const finalized = withRequestIdHeader(response, ctx);
-            logger.info('api.request_completed', {
-              requestId: ctx.requestId,
-              route: ctx.route,
-              method: ctx.method,
-              statusCode: finalized.status,
-              durationMs: Date.now() - startTime,
-            });
-
-            return finalized;
-          }
-
-          // Handle API CORS preflight only after consuming the rate-limit budget.
-          if (req.method === 'OPTIONS') {
-            const response = new Response(null, {
-              status: 204,
-              headers: corsHeaders,
-            });
-
-            const headers = new Headers(response.headers);
-            headers.set('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS.toString());
-            headers.set('X-RateLimit-Remaining', rateLimit.remaining.toString());
-            headers.set('X-RateLimit-Reset', rateLimit.resetAt.toString());
-
-            const finalized = withRequestIdHeader(
-              new Response(response.body, {
-                status: response.status,
-                statusText: response.statusText,
-                headers,
-              }),
-              ctx
-            );
-
-            logger.info('api.request_completed', {
-              requestId: ctx.requestId,
-              route: ctx.route,
-              method: ctx.method,
-              statusCode: finalized.status,
-              durationMs: Date.now() - startTime,
-            });
-
-            return finalized;
-          }
-
-          // Add rate limit headers to successful responses
-          const response = await (async () => {
-            const handler = apiHandlers[url.pathname];
-            if (handler) {
-              const allowedMethods = apiAllowedMethods[url.pathname];
-              if (allowedMethods && !allowedMethods.includes(req.method)) {
-                ctx.audit = {
-                  event: apiAuditEvents[url.pathname] ?? 'api.dashboard_read',
-                  metadata: { validationError: true, reason: 'method_not_allowed' },
-                };
-                return createMethodNotAllowedResponse(ctx, allowedMethods);
-              }
-              return handler(req, ctx);
-            }
-
-            return createErrorResponse(ctx, 'Não encontrado.', null, 404);
-          })();
-
-          // Clone response to add headers (rate limit + CORS)
-          const headers = new Headers(response.headers);
-          headers.set('X-RateLimit-Limit', RATE_LIMIT_MAX_REQUESTS.toString());
-          headers.set('X-RateLimit-Remaining', rateLimit.remaining.toString());
-          headers.set('X-RateLimit-Reset', rateLimit.resetAt.toString());
-
-          Object.entries(corsHeaders).forEach(([key, value]) => {
-            headers.set(key, value);
-          });
-
-          const finalized = withRequestIdHeader(
-            new Response(response.body, {
-              status: response.status,
-              statusText: response.statusText,
-              headers,
-            }),
-            ctx
-          );
-
-          if (ctx.audit) {
-            const auditEvent: AuditEventInput = {
-              event: ctx.audit.event,
-              requestId: ctx.requestId,
-              route: ctx.route,
-              method: ctx.method,
-              statusCode: finalized.status,
-              success: finalized.status < 400,
-              durationMs: Date.now() - startTime,
-              clientIdHash: ctx.clientId,
-            };
-
-            if (ctx.userAgent) {
-              auditEvent.userAgent = ctx.userAgent;
-            }
-            if (ctx.audit.metadata) {
-              auditEvent.metadata = ctx.audit.metadata;
-            }
-
-            await options.audit(auditEvent);
-          }
-
-          logger.info('api.request_completed', {
-            requestId: ctx.requestId,
-            route: ctx.route,
-            method: ctx.method,
-            statusCode: finalized.status,
-            durationMs: Date.now() - startTime,
-          });
-
-          return finalized;
-        }
-
-        // Handle any non-/api route registered in apiHandlers.
-        const handler = apiHandlers[url.pathname];
-        if (handler) {
-          const response = await handler(req, ctx);
-
-          const headers = new Headers(response.headers);
-          Object.entries(corsHeaders).forEach(([key, value]) => {
-            headers.set(key, value);
-          });
-
-          const finalized = withRequestIdHeader(
-            new Response(response.body, {
-              status: response.status,
-              statusText: response.statusText,
-              headers,
-            }),
-            ctx
-          );
-
-          if (ctx.audit) {
-            const auditEvent: AuditEventInput = {
-              event: ctx.audit.event,
-              requestId: ctx.requestId,
-              route: ctx.route,
-              method: ctx.method,
-              statusCode: finalized.status,
-              success: finalized.status < 400,
-              durationMs: Date.now() - startTime,
-              clientIdHash: ctx.clientId,
-            };
-
-            if (ctx.userAgent) {
-              auditEvent.userAgent = ctx.userAgent;
-            }
-            if (ctx.audit.metadata) {
-              auditEvent.metadata = ctx.audit.metadata;
-            }
-
-            await options.audit(auditEvent);
-          }
-
-          logger.info('api.request_completed', {
-            requestId: ctx.requestId,
-            route: ctx.route,
-            method: ctx.method,
-            statusCode: finalized.status,
-            durationMs: Date.now() - startTime,
-          });
-
-          return finalized;
-        }
-
-        const notFound = createErrorResponse(ctx, 'Não encontrado.', null, 404);
-        const finalized = withRequestIdHeader(
-          new Response(notFound.body, {
-            status: notFound.status,
-            statusText: notFound.statusText,
-            headers: {
-              ...Object.fromEntries(notFound.headers.entries()),
-              ...corsHeaders,
-            },
-          }),
-          ctx
-        );
-
-        if (ctx.audit) {
-          const auditEvent: AuditEventInput = {
-            event: ctx.audit.event,
-            requestId: ctx.requestId,
-            route: ctx.route,
-            method: ctx.method,
-            statusCode: finalized.status,
-            success: finalized.status < 400,
-            durationMs: Date.now() - startTime,
-            clientIdHash: ctx.clientId,
-          };
-
-          if (ctx.userAgent) {
-            auditEvent.userAgent = ctx.userAgent;
-          }
-          if (ctx.audit.metadata) {
-            auditEvent.metadata = ctx.audit.metadata;
-          }
-
-          await options.audit(auditEvent);
-        }
-
-        logger.info('api.request_completed', {
-          requestId: ctx.requestId,
-          route: ctx.route,
-          method: ctx.method,
-          statusCode: finalized.status,
-          durationMs: Date.now() - startTime,
-        });
-
-        return finalized;
-      } catch (error) {
-        logger.error('api.unhandled_exception', error, {
-          requestId: ctx.requestId,
-          route: ctx.route,
-          method: ctx.method,
-          durationMs: Date.now() - startTime,
-        });
-
-        const response = createErrorResponse(ctx, 'Erro interno do servidor.', null, 500);
-        return withRequestIdHeader(response, ctx);
-      }
+      return withRequestIdHeader(
+        createErrorResponse(ctx, 'Erro interno do servidor.', null, 500),
+        ctx
+      );
     }
+  }
+
   return { fetch, routes: Object.keys(apiHandlers).sort() };
 }

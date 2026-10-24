@@ -86,6 +86,36 @@ describe('audit', () => {
     expect((metadata.nested as Record<string, unknown>).safe).toBe('nested-value');
   });
 
+  it('bounds the client-supplied method and route before they reach the table', async () => {
+    process.env.VITEST = '1';
+    vi.resetModules();
+
+    const { runMigrations, getDatabase } = await import('@/lib/db');
+    const { enqueueAuditEvent, flushAuditQueue } = await import('@/lib/audit');
+
+    runMigrations();
+
+    enqueueAuditEvent({
+      event: 'api.health_read',
+      requestId: 'req_oversized_1',
+      route: `/api/health?x=${'a'.repeat(400)}`,
+      method: 'M'.repeat(64),
+      statusCode: 405,
+      success: false,
+    });
+
+    await flushAuditQueue('manual');
+
+    const rows = getDatabase()
+      .prepare('SELECT request_id, method, route FROM audit_logs')
+      .all() as Array<{ request_id: string; method: string; route: string }>;
+    const row = rows.find((candidate) => candidate.request_id === 'req_oversized_1');
+
+    expect(row).toBeDefined();
+    expect(row?.method).toHaveLength(16);
+    expect(row?.route).toHaveLength(200);
+  });
+
   it('retention hard-delete is idempotent (no rows left to delete)', async () => {
     process.env.VITEST = '1';
     vi.resetModules();

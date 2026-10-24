@@ -1,6 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 
 describe('audit retention', () => {
+  it('defaults to the 400 days the deployed policy documents', async () => {
+    process.env.VITEST = '1';
+    vi.resetModules();
+    const { runMigrations } = await import('@/lib/db');
+    const { runAuditRetention } = await import('@/lib/audit-retention');
+
+    runMigrations();
+    const result = await runAuditRetention({ dryRun: true, reason: 'default-check' });
+
+    const cutoff = Date.parse(result.cutoffIso);
+    const expected = Date.now() - 400 * 24 * 60 * 60 * 1000;
+    expect(Math.abs(cutoff - expected)).toBeLessThan(60_000);
+  });
+
   it('hard-deletes audit logs older than cutoff', async () => {
     process.env.VITEST = '1';
     vi.resetModules();

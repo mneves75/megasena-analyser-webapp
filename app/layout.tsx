@@ -112,9 +112,11 @@ export default async function RootLayout({
         <MultiJsonLd schemas={schemas} nonce={nonce} />
         <ThemeProvider defaultTheme="system">
           <SiteHeader />
-          <main id="main-content" className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1">
+            <StorageDisclosure />
+            {children}
+          </main>
           <Footer />
-          <StorageDisclosure />
         </ThemeProvider>
       </body>
     </html>

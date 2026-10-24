@@ -37,3 +37,6 @@ Após o conjunto: `bun run build` e `bun run db:migrate` + verificações SQL de
 
 - [006 — Supply chain do CI e ferramentas de segurança](006-security-supply-chain-remediation.md):
   corrige o scan Codex Security validado no HEAD `0e425305` (1 Medium e 3 Low).
+- [007 — Auditoria adversarial de 2026-10-24](007-adversarial-audit-2026-10-24.md):
+  23 achados corrigidos na v1.18.0 e 5 pendências priorizadas (101–105). Re-avaliar
+  DEBT-02/DEBT-05 da lista acima: o emulador de SQL agora é a pendência 101.

@@ -138,7 +138,7 @@ Ao migrar zonas entre contas, confira a delegação no registrador e nos servido
 
 ## Pré-requisitos
 
-- Node.js `>= 22.0.0` na máquina que compila o Next.js (CI fixa `22.23.2`)
+- Node.js `>= 22.0.0` na máquina que compila o Next.js (CI fixa `22.23.4`)
 - Bun `>= 1.4.2` na máquina que gera o build (CI usa a versão exata em `.bun-ci-version`)
 - Docker no servidor; a imagem de runtime usa Bun 1.4.2 estável pinado por digest imutável
 - Acesso SSH gerenciado fora do repositório

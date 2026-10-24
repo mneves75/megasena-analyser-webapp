@@ -7,6 +7,27 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-10-24
+
+Auditoria adversarial de correção, segurança e performance. Nenhum achado crítico ou alto.
+
+- O aviso de privacidade saiu da faixa fixa no rodapé e entrou no fluxo da página: a faixa cobria o botão "Gerar Apostas" no desktop e as dezenas do último sorteio no celular.
+- Números decimais passam a usar o separador pt-BR em todo o painel (`3,19×`, `28,57%`); prêmios médios aparecem em reais em vez de "R$ 24.90M".
+- O selo vermelho de "número quente" saiu: `--destructive` volta a significar erro, e a intensidade virou a métrica principal do cartão.
+- O ícone de abertura das perguntas frequentes passou a usar o conjunto de ícones do projeto, no lugar de um glifo Unicode.
+- Limite de requisições agrupa por rede: um cliente IPv6 com um `/64` não obtém mais um balde novo a cada endereço. Requisições limitadas (429) passam a ser auditadas.
+- Sem `IP_HASH_SECRET`, o identificador de cliente usa HMAC com sal aleatório por processo em vez de SHA-256 sem sal do endereço.
+- `method` e `route` gravados em `audit_logs` são limitados a 16 e 200 caracteres.
+- `audit:prune` passa a usar os mesmos 400 dias da política publicada e de `AUDIT_RETENTION_DAYS`.
+- Orçamento abaixo do mínimo do modo escolhido retorna HTTP 400 com o valor mínimo, em vez de 500 genérico.
+- `db:pull` busca os concursos antes de abrir a transação de escrita, para não bloquear os escritores de auditoria e log durante o crawl; `--allow-partial` recusa um arquivo com buraco interno.
+- `db:backfill-prizes` retorna código de saída 1 quando sobram concursos sem prêmio.
+- O matcher do proxy passou a exigir `/` nos prefixos (`api/`, `_next/static/`), fechando um caminho de página sem CSP.
+- Durable Object: `rate_limit_windows.reset_at` ganhou índice e a contagem de escrita deixou de custar uma segunda consulta por comando.
+- Removidos o motor `ComplexityScoreEngine`, `getTopPairsForNumber` (sem chamadores e semanticamente errado) e três constantes não usadas.
+- CI compila com o Node de `.nvmrc` e verifica isso a partir do arquivo, não de um literal; `package.json` não carrega mais `overrides` que o pnpm ignora.
+- Notas privadas de handoff ficam fora do repositório por `.gitignore`.
+
 ## [1.17.4] - 2026-10-23
 
 - Dependências atualizadas dentro das versões menores: React e React DOM 19.3.1 (inclui a melhoria de protocolo dos React Server Components de 19.2.9/19.3.1), vinext 1.3.0 e `@vinext/cloudflare` 1.2.0, Vite 8.3.5, Tailwind CSS 4.3.3, Recharts 3.10.1 e ferramentas de desenvolvimento (ast-grep 0.51.0, React Doctor 0.9.18, Prettier, Playwright, tipos). Os pins de `rollup`, `caniuse-lite` e `baseline-browser-mapping` sobem acima dos pisos de segurança; a CLI `cf` e as atualizações major ficam para uma versão própria.

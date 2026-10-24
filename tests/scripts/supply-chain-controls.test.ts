@@ -140,15 +140,30 @@ describe('controles de supply chain', () => {
     );
     expect(packageJson.scripts['build']).not.toContain('bun --bun next build');
 
+    // The pin must track .nvmrc, not a literal: CI compiled with one Node patch
+    // behind the runtime image after the 22.23.4 security bump.
+    const pinnedNode = (await read('.nvmrc')).trim();
     for (const job of [e2eJob, buildJob]) {
       expect(job).toContain(setupNode);
-      expect(job).toContain('node-version: 22.23.2');
+      expect(job).toContain(`node-version: ${pinnedNode}`);
     }
     expect(deploy).toContain('Node.js `>= 22.0.0` na máquina que compila o Next.js');
   });
 
-  it('empacota as dependências do CLI de backfill no Docker e nos tarballs', async () => {
-    const dockerfile = await read('Dockerfile');
+  it('mantém os pins de segurança apenas onde o pnpm os aplica', async () => {
+    // npm's `overrides` and the duplicate `patchedDependencies` were inert under
+    // pnpm; keeping them let a CVE pin land in the authoritative-looking file
+    // with no effect while pnpm-workspace.yaml drifted out of sync.
+    const manifest = JSON.parse(await read('package.json')) as Record<string, unknown>;
+    const workspace = await read('pnpm-workspace.yaml');
+
+    expect(manifest['overrides']).toBeUndefined();
+    expect(manifest['patchedDependencies']).toBeUndefined();
+    expect(workspace).toMatch(/^overrides:$/m);
+    expect(workspace).toMatch(/^patchedDependencies:$/m);
+  });
+
+  it('empacota as dependências do CLI de backfill no Docker e nos tarballs', async () => {    const dockerfile = await read('Dockerfile');
     const deploy = await read('docs/DEPLOY.md');
 
     expect(dockerfile).toContain('COPY scripts/cli-args.ts ./scripts/cli-args.ts');

@@ -43,7 +43,7 @@ export type TrendsQuery = z.infer<typeof trendsQuerySchema>;
 // `.default()` to undefined, so absent parameters must be normalized first.
 export function parseTrendsQuery(
   searchParams: URLSearchParams
-): z.SafeParseReturnType<z.input<typeof trendsQuerySchema>, TrendsQuery> {
+): z.ZodSafeParseResult<TrendsQuery> {
   return trendsQuerySchema.safeParse({
     numbers: searchParams.get('numbers') ?? undefined,
     period: searchParams.get('period') ?? undefined,

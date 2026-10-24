@@ -2,7 +2,12 @@ import { DurableObject } from 'cloudflare:workers';
 import '../lib/log-context.runtime';
 import { createDurableDatabase, runWithDatabase } from '@/lib/cloudflare/database';
 import { withDatabaseTransaction, type DatabaseLike } from '@/lib/db-transaction';
-import { createApiHandler, type ApiPeer } from '@/lib/api/handler';
+import {
+  createApiHandler,
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_WINDOW_MS,
+  type ApiPeer,
+} from '@/lib/api/handler';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { runWithLogSink } from '@/lib/logger';
@@ -92,7 +97,8 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     applyMigrations(this.database);
     this.database.exec(`CREATE TABLE IF NOT EXISTS rate_limit_windows (
       client_id TEXT PRIMARY KEY, count INTEGER NOT NULL, reset_at INTEGER NOT NULL
-    ); CREATE TABLE IF NOT EXISTS ingestion_status (
+    ); CREATE INDEX IF NOT EXISTS idx_rate_limit_windows_reset_at ON rate_limit_windows(reset_at);
+    CREATE TABLE IF NOT EXISTS ingestion_status (
       id INTEGER PRIMARY KEY CHECK(id = 1), status TEXT NOT NULL, attempted_at TEXT NOT NULL,
       completed_at TEXT, last_contest INTEGER, latest_contest INTEGER, error_message TEXT,
       retry_count INTEGER NOT NULL DEFAULT 0
@@ -147,9 +153,13 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     return withDatabaseTransaction(this.database, () => {
       this.database.prepare('DELETE FROM rate_limit_windows WHERE reset_at <= ?').run(now);
       this.database.prepare(`INSERT INTO rate_limit_windows (client_id, count, reset_at) VALUES (?, 1, ?)
-        ON CONFLICT(client_id) DO UPDATE SET count = count + 1`).run(clientId, now + 60000);
+        ON CONFLICT(client_id) DO UPDATE SET count = count + 1`).run(clientId, now + RATE_LIMIT_WINDOW_MS);
       const row = this.database.prepare('SELECT count, reset_at FROM rate_limit_windows WHERE client_id = ?').get(clientId) as { count: number; reset_at: number };
-      return { allowed: row.count <= 100, remaining: Math.max(0, 100 - row.count), resetAt: row.reset_at };
+      return {
+        allowed: row.count <= RATE_LIMIT_MAX_REQUESTS,
+        remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - row.count),
+        resetAt: row.reset_at,
+      };
     });
   }
 

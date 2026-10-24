@@ -102,4 +102,7 @@ traefik*.yaml
 
 # Private operational notes and evidence
 .scratch/
+# Session handoffs carry deployment identifiers and a private mailbox; the public
+# repo must never receive them, so the whole directory stays untracked.
+docs/handoffs/
 /memory/

@@ -19,15 +19,16 @@ export default defineConfig({
         'lib/**/*.ts',
       ],
       reporter: ['text', 'json', 'html'],
-      // Ratchet at the measured baseline (2026-09-25); the target is 80%. Until
-      // then the gate had silently measured 0/0: an `app/**` exclude matched
-      // every path because the checkout folder ends in "...webapp/". `include`
-      // already limits coverage to components/ and lib/, so app/ needs no exclude.
+      // Ratchet at the measured baseline; the target is 80%. The gate had once
+      // silently measured 0/0: an `app/**` exclude matched every path because the
+      // checkout folder ends in "...webapp/". `include` already limits coverage to
+      // components/ and lib/, so app/ needs no exclude. Raised on 2026-10-24 from
+      // the measured 76.55 / 73.05 / 75.05 / 76.9, keeping a small buffer below it.
       thresholds: {
-        lines: 71,
-        functions: 72,
-        branches: 67,
-        statements: 71,
+        lines: 75,
+        functions: 73,
+        branches: 71,
+        statements: 75,
       },
       exclude: [
         'node_modules/',
@@ -48,7 +49,6 @@ export default defineConfig({
         'lib/api/caixa-client.ts',
         'proxy.ts',
         'server.ts',
-        'lib/analytics/complexity-score.ts',
         'lib/analytics/decade-analysis.ts',
         'lib/analytics/delay-analysis.ts',
         'lib/analytics/pair-analysis.ts',

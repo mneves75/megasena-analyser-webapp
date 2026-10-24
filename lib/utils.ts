@@ -30,6 +30,14 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('pt-BR').format(value);
 }
 
+/**
+ * pt-BR decimal for rates and ratios. Interpolating a raw JS number renders
+ * `3.19`, which is the en-US separator and reads as a thousands group here.
+ */
+export function formatDecimal(value: number, maximumFractionDigits: number = 2): string {
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits }).format(value);
+}
+
 function parseIsoDate(date: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
   if (!match) {

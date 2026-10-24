@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import type { ElementType } from 'react';
-import { Activity, AlertTriangle, BarChart3, Flame, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, ChevronDown, Flame, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
@@ -235,11 +235,12 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           <div className="mt-4 space-y-3">
             {homeFaqs.map((faq) => (
               <details key={faq.question} className="group rounded-lg border border-border bg-card p-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                   {faq.question}
-                  <span className="text-muted-foreground transition-transform duration-200 ease-out-quint group-open:rotate-180">
-                    &#9660;
-                  </span>
+                  <ChevronDown
+                    aria-hidden
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out-quint group-open:rotate-180"
+                  />
                 </summary>
                 <p className="mt-3 text-sm text-muted-foreground">{faq.answer}</p>
               </details>

@@ -95,6 +95,59 @@ export function hasClientIpHeader(req: Request): boolean {
   return configuredClientIpHeaders().some((header) => req.headers.has(header));
 }
 
+/**
+ * Expands an IPv6 address into its eight 16-bit groups, or `null` when the
+ * compression is malformed. `isIP` has already validated the shape; this only
+ * resolves the `::` shorthand so the prefix can be derived positionally.
+ */
+function expandIpv6(address: string): number[] | null {
+  const withoutZone = address.split('%')[0] ?? '';
+  const halves = withoutZone.split('::');
+  if (halves.length > 2) {
+    return null;
+  }
+
+  const left = halves[0] ? halves[0].split(':') : [];
+  const right = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const missing = 8 - left.length - right.length;
+  if (missing < 0 || (halves.length === 1 && missing !== 0)) {
+    return null;
+  }
+
+  const groups = [...left, ...Array<string>(missing).fill('0'), ...right];
+  const parsed = groups.map((group) => Number.parseInt(group, 16));
+  return parsed.every((value) => Number.isInteger(value) && value >= 0 && value <= 0xffff)
+    ? parsed
+    : null;
+}
+
+/**
+ * Grouping subject for rate limiting and the audited client hash.
+ *
+ * A single subscriber normally controls a whole IPv6 `/64`, so keying on the
+ * full `/128` hands one client a fresh bucket for every address it rotates to.
+ * IPv4 is used unchanged, an IPv4-mapped IPv6 address collapses to its IPv4
+ * form, and any other IPv6 address collapses to its `/64` prefix.
+ */
+export function rateLimitSubject(address: string): string {
+  const candidate = address.trim().split('%')[0] ?? '';
+  if (candidate.length === 0) {
+    return '';
+  }
+
+  const normalized = normalizeSocketAddress(candidate);
+  if (isIP(normalized) !== 6) {
+    return normalized;
+  }
+
+  const groups = expandIpv6(normalized);
+  if (groups === null) {
+    return normalized;
+  }
+
+  return `${groups.slice(0, 4).map((group) => group.toString(16)).join(':')}::/64`;
+}
+
 function trustedForwardedIp(req: Request): string | null {
   for (const header of configuredClientIpHeaders()) {
     const address = readClientIpHeader(req, header);

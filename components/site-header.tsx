@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
@@ -46,6 +46,23 @@ export function isActivePath(pathname: string, href: string): boolean {
 export function SiteHeader(): React.JSX.Element {
   const pathname = usePathname() ?? '/';
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // The mobile menu is a disclosure, not a modal, so the expected escape is a
+  // keyboard dismissal and a reset when the route changes by any means.
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

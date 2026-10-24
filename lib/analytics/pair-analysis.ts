@@ -248,11 +248,4 @@ export class PairAnalysisEngine {
       .all() as Array<{ number: number; frequency: number }>;
     return new Map(rows.map((row) => [row.number, row.frequency] as const));
   }
-
-  getTopPairsForNumber(number: number, limit: number = 10): PairStats[] {
-    const allPairs = this.getNumberPairs(1);
-    return allPairs
-      .filter((pair) => pair.pair.includes(number))
-      .slice(0, limit);
-  }
 }

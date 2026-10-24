@@ -2,12 +2,11 @@ import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import { StatsCard } from '@/components/stats-card';
-import { cn, formatCurrency, formatDate, formatNumber, formatPercentage } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatDecimal, formatNumber, formatPercentage } from '@/lib/utils';
 import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics';
 import {
   BarChart3,
   TrendingUp,
-  Flame,
   Trophy,
   Calculator,
   Database,
@@ -291,15 +290,14 @@ export default async function DashboardPage() {
               <div className="grid grid-cols-5 gap-3 md:grid-cols-10">
                 {hotNumbers.map((hot: HotNumber) => (
                   <div key={hot.number} className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <LotteryBall number={hot.number} size="md" />
-                      <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground">
-                        <Flame aria-hidden className="h-3 w-3" />
-                      </div>
-                    </div>
+                    <NumberBallLink number={hot.number} size="md" />
                     <div className="text-center">
-                      <div className="text-xs font-medium tabular-nums">{hot.recentOccurrences}x</div>
-                      <div className="text-xs text-muted-foreground tabular-nums">{hot.streakIntensity}x</div>
+                      <div className="text-sm font-semibold tabular-nums">
+                        {formatDecimal(hot.streakIntensity)}×
+                      </div>
+                      <div className="text-xs text-muted-foreground tabular-nums">
+                        {hot.recentOccurrences} de 10
+                      </div>
                     </div>
                   </div>
                 ))}

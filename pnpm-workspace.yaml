@@ -31,7 +31,11 @@ allowBuilds:
 # npm/Bun), que o pnpm ignora silenciosamente.
 overrides:
   # Cloudflare tooling: patched HTTP client and archive decoder.
-  'undici@7': '>=7.29.1 <8'
+  # GHSA-xjj6-f33q-929c, GHSA-4qv8-2p9j-2685, GHSA-f72v-6w45-q472 (<7.30.1).
+  'undici@7': '>=7.30.1 <8'
+  # GHSA-mrhx-c7xc-m3w5 (<4.6.6). @cloudflare/config still pins 4.4.3 through the
+  # build tooling; the app itself already depends on the patched line.
+  'zod@4': '>=4.6.7 <5'
   'fflate@0.7': '>=0.7.5 <0.8'
   # libvips CVEs herdadas (GHSA-f88m-g3jw-g9cj), GHSA-rgj7-g3m4-5g8c (<0.35.4) e GHSA-wq5f-xc86-pv6w (<0.35.5).
   sharp: '>=0.35.5'
@@ -57,7 +61,8 @@ overrides:
   caniuse-lite: 1.0.30001819
   # GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf, GHSA-jqff-g426-hqxp: <3.1.6.
   # GHSA-hrr3-gc8f-f4qj: normalização de host corrigida em 3.1.8.
-  fast-uri: '>=3.1.8 <4'
+  # GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr, GHSA-xhq7-xmqj-769h, GHSA-333x-w4r6-6crp (<3.1.9).
+  fast-uri: '>=3.1.9 <4'
   flatted: 3.4.2
   # GHSA-p498-v437-472g: <0.16.8 (via eslint).
   '@humanfs/node': '>=0.16.8 <0.17'

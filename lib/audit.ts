@@ -110,8 +110,11 @@ export function createAuditWriter(options: { automaticFlush: boolean } = { autom
       timestamp,
       event: input.event,
       request_id: input.requestId ?? null,
-      route: input.route ?? null,
-      method: input.method ?? null,
+      route: input.route ? sanitizeString(input.route, 200) : null,
+      // The method token is client-controlled on any rejected request (405 is
+      // audited) and lands in a 400-day table, so it is bounded like every
+      // other free-text column instead of trusted to the edge.
+      method: input.method ? sanitizeString(input.method, 16) : null,
       status_code: typeof input.statusCode === 'number' ? Math.round(input.statusCode) : null,
       success: input.success === false ? 0 : 1,
       duration_ms: typeof input.durationMs === 'number' ? Math.round(input.durationMs) : null,

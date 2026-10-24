@@ -26,10 +26,12 @@ describe('Worker database request scopes', () => {
     const db = createDurableDatabase(storage);
     expect(db.prepare('SELECT count(*) AS count FROM draws').get()).toEqual({ count: 3 });
     expect(db.prepare('SELECT * FROM draws').all()).toEqual([{ count: 3 }]);
-    expect(db.prepare('INSERT INTO draws VALUES (?)').run(1)).toEqual({ changes: 1 });
+    // `run` deliberately does not pay a second `SELECT changes()` round trip:
+    // only the ingestion counter wants the count and it reads it explicitly.
+    expect(db.prepare('INSERT INTO draws VALUES (?)').run(1)).toEqual({ changes: 0 });
     withDatabaseTransaction(db, () => db.exec('SELECT 1'));
     expect(storage.transactionSync).toHaveBeenCalledOnce();
-    expect(storage.sql.exec.mock.calls.flat().join(' ')).not.toMatch(/BEGIN|SAVEPOINT/);
+    expect(storage.sql.exec.mock.calls.flat().join(' ')).not.toMatch(/BEGIN|SAVEPOINT|changes\(\)/);
   });
 });
 

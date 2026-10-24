@@ -41,8 +41,10 @@ export const config = {
       // Router prefetches are RSC payloads, not documents, so they need no CSP.
       // Do NOT also skip `Purpose: prefetch`: that is a full HTML document the
       // browser may display on navigation, and skipping it served it without CSP.
+      // Each directory prefix ends in `/`: a bare `api` also matched `/api-docs`
+      // and any future sibling, serving it without a CSP.
       source:
-        '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|\\.well-known).*)',
+        '/((?!api/|_next/static/|_next/image/|favicon.ico|robots.txt|sitemap.xml|\\.well-known/).*)',
       missing: [{ type: 'header', key: 'next-router-prefetch' }],
     },
   ],

@@ -85,7 +85,12 @@ function appendValues(database: DatabaseLike, entries: unknown[][]): number {
           throw new Error(`Existing contest ${values[0]} conflicts with incoming date or numbers.`);
         }
       }
-      inserted += (insert.run(...values) as { changes: number }).changes;
+      insert.run(...values);
+      // Read the count explicitly: the shared adapter no longer runs
+      // `SELECT changes()` on every write, because only this ingestion counter
+      // consumes it. `changes()` excludes trigger writes, which is what the
+      // sequence/cache bookkeeping expects.
+      inserted += (database.prepare('SELECT changes() AS changes').get() as { changes: number }).changes;
     }
     const sequence = database.prepare('SELECT COUNT(*) AS count, COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { count: number; last: number };
     if (sequence.count !== sequence.last) throw new Error('Draw import must preserve a gap-free contest sequence.');
