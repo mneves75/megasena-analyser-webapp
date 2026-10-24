@@ -396,11 +396,14 @@ export default async function StatisticsPage() {
                     <div className="mb-2 flex items-center justify-between">
                       <span className="font-semibold tabular-nums">{decade.decade}</span>
                       <div className="text-right tabular-nums">
-                        <span className="text-lg font-bold">{decade.percentage}%</span>
+                        <span className="text-lg font-bold tabular-nums">
+                          {formatDecimal(decade.percentage, 2)}%
+                        </span>
                         <span
                           className={`ml-2 text-sm ${decade.deviation > 0 ? 'text-primary' : 'text-destructive'}`}
                         >
-                          {decade.deviation > 0 ? '+' : ''}{decade.deviation}%
+                          {decade.deviation > 0 ? '+' : ''}
+                          {formatDecimal(decade.deviation, 2)}%
                         </span>
                       </div>
                     </div>
@@ -448,7 +451,7 @@ export default async function StatisticsPage() {
                     <div className="text-right">
                       <div className="text-lg font-bold tabular-nums">{pair.frequency}x</div>
                       <div className="text-xs text-muted-foreground tabular-nums">
-                        {pt.statistics.pairs.correlationLabel}: {pair.correlation}
+                        {pt.statistics.pairs.correlationLabel}: {formatDecimal(pair.correlation)}
                       </div>
                     </div>
                   </div>
@@ -496,7 +499,7 @@ export default async function StatisticsPage() {
                             {parityStats.mostCommon.oddCount} {pt.statistics.parity.oddLabel}
                           </span>
                           <span className="text-2xl font-bold text-primary tabular-nums">
-                            {parityStats.mostCommon.percentage}%
+                            {formatDecimal(parityStats.mostCommon.percentage, 2)}%
                           </span>
                         </div>
                       </div>
@@ -505,7 +508,7 @@ export default async function StatisticsPage() {
                           {pt.statistics.parity.balancedLabel}
                         </div>
                         <div className="text-2xl font-bold text-primary tabular-nums">
-                          {parityStats.balancedPercentage}%
+                          {formatDecimal(parityStats.balancedPercentage, 2)}%
                         </div>
                         <div className="text-xs text-muted-foreground mt-1">
                           {pt.statistics.parity.drawsLabel}
@@ -591,47 +594,48 @@ export default async function StatisticsPage() {
               <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="rounded-lg border bg-card/50 p-4">
                   <div className="text-sm text-muted-foreground">{pt.statistics.sum.meanLabel}</div>
-                  <div className="text-3xl font-bold tabular-nums">{sumStats.mean}</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatDecimal(sumStats.mean)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-4">
                   <div className="text-sm text-muted-foreground">{pt.statistics.sum.medianLabel}</div>
-                  <div className="text-3xl font-bold tabular-nums">{sumStats.median}</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatDecimal(sumStats.median)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-4">
                   <div className="text-sm text-muted-foreground">{pt.statistics.sum.modeLabel}</div>
-                  <div className="text-3xl font-bold tabular-nums">{sumStats.mode}</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatDecimal(sumStats.mode)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-4">
                   <div className="text-sm text-muted-foreground">{pt.statistics.sum.stdDevLabel}</div>
-                  <div className="text-3xl font-bold tabular-nums">{sumStats.stdDev}</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatDecimal(sumStats.stdDev)}</div>
                 </div>
               </div>
 
               <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                 <div className="rounded-lg border bg-card/50 p-3 text-center">
                   <div className="text-xs text-muted-foreground tabular-nums">5o {pt.statistics.sum.percentileLabel}</div>
-                  <div className="text-xl font-bold tabular-nums">{sumStats.percentiles.p5}</div>
+                  <div className="text-xl font-bold tabular-nums">{formatDecimal(sumStats.percentiles.p5)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-3 text-center">
                   <div className="text-xs text-muted-foreground tabular-nums">25o {pt.statistics.sum.percentileLabel}</div>
-                  <div className="text-xl font-bold tabular-nums">{sumStats.percentiles.p25}</div>
+                  <div className="text-xl font-bold tabular-nums">{formatDecimal(sumStats.percentiles.p25)}</div>
                 </div>
                 <div className="rounded-lg border bg-primary/15 p-3 text-center">
                   <div className="text-xs text-muted-foreground tabular-nums">50o {pt.statistics.sum.percentileLabel}</div>
-                  <div className="text-xl font-bold tabular-nums">{sumStats.percentiles.p50}</div>
+                  <div className="text-xl font-bold tabular-nums">{formatDecimal(sumStats.percentiles.p50)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-3 text-center">
                   <div className="text-xs text-muted-foreground tabular-nums">75o {pt.statistics.sum.percentileLabel}</div>
-                  <div className="text-xl font-bold tabular-nums">{sumStats.percentiles.p75}</div>
+                  <div className="text-xl font-bold tabular-nums">{formatDecimal(sumStats.percentiles.p75)}</div>
                 </div>
                 <div className="rounded-lg border bg-card/50 p-3 text-center">
                   <div className="text-xs text-muted-foreground tabular-nums">95o {pt.statistics.sum.percentileLabel}</div>
-                  <div className="text-xl font-bold tabular-nums">{sumStats.percentiles.p95}</div>
+                  <div className="text-xl font-bold tabular-nums">{formatDecimal(sumStats.percentiles.p95)}</div>
                 </div>
               </div>
 
               <div className="text-center text-xs text-muted-foreground tabular-nums">
-                {pt.statistics.sum.rangeLabel}: {sumStats.minSum} - {sumStats.maxSum}
+                {pt.statistics.sum.rangeLabel}: {formatNumber(sumStats.minSum)} -{' '}
+                {formatNumber(sumStats.maxSum)}
               </div>
             </CardContent>
           </Card>
