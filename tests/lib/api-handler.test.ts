@@ -48,25 +48,35 @@ describe('runtime-neutral API handler', () => {
     expect(limited.headers.get('Content-Security-Policy')).toContain("default-src 'none'");
     expect((await second.fetch(request(), { clientIp: '203.0.113.1' })).status).toBe(404);
   });
-  it('records a throttled request in the audit log', async () => {
+  it('records a throttled request on a known route and keeps unknown paths out of the audit table', async () => {
+    closeDatabase();
+    getDatabase();
     const audit = vi.fn();
-    const handler = createApiHandler({ ...options, audit });
+    const handler = createApiHandler({ ...options, audit, minHealthTotalDraws: 0 });
+    const clientIp = '198.51.100.77';
     for (let i = 0; i < 100; i++) {
-      await handler.fetch(request(), { clientIp: '198.51.100.77' });
+      await handler.fetch(new Request('https://example.com/api/health'), { clientIp });
     }
     audit.mockClear();
 
-    const limited = await handler.fetch(request(), { clientIp: '198.51.100.77' });
+    const limited = await handler.fetch(new Request('https://example.com/api/health'), { clientIp });
 
     expect(limited.status).toBe(429);
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({
-        event: 'api.dashboard_read',
+        event: 'api.health_read',
         statusCode: 429,
         success: false,
         metadata: { rateLimited: true },
       })
     );
+
+    audit.mockClear();
+    const unknown = '198.51.100.78';
+    for (let i = 0; i < 101; i++) {
+      await handler.fetch(new Request('https://example.com/api/missing'), { clientIp: unknown });
+    }
+    expect(audit).not.toHaveBeenCalled();
   });
 
   it('returns 400 with the actionable message when the mode minimum is not met', async () => {

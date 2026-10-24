@@ -24,6 +24,16 @@ describe('rateLimitSubject', () => {
     expect(new Set([first, second, third]).size).toBe(1);
   });
 
+  it('treats an embedded dotted-quad as part of the same /64', () => {
+    const spelled = rateLimitSubject('2001:db8:abcd:1234:0:0:192.0.2.1');
+    const compressed = rateLimitSubject('2001:db8:abcd:1234::192.0.2.1');
+    const plain = rateLimitSubject('2001:db8:abcd:1234::1');
+
+    expect(spelled).toBe('2001:db8:abcd:1234::/64');
+    expect(compressed).toBe(spelled);
+    expect(plain).toBe(spelled);
+  });
+
   it('separates addresses from different /64 prefixes', () => {
     expect(rateLimitSubject('2001:db8:abcd:1234::1')).not.toBe(
       rateLimitSubject('2001:db8:abcd:1235::1')

@@ -7,6 +7,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-10-24
+
+Correções da revisão de release feita em outro modelo sobre a 1.18.0.
+
+- Endereço IPv6 com sufixo IPv4 embutido (`2001:db8::192.0.2.1`) volta a agrupar pelo `/64`; antes o sufixo quebrava a expansão e cada endereço ganhava um balde próprio.
+- `--allow-partial` também recusa um intervalo que começaria depois do fim do arquivo já gravado, e não só um buraco dentro do próprio lote.
+- Requisição limitada (429) em rota inexistente deixa de ser registrada como leitura de dashboard: só rotas conhecidas entram na auditoria.
+
 ## [1.18.0] - 2026-10-24
 
 Auditoria adversarial de correção, segurança e performance. Nenhum achado crítico ou alto.

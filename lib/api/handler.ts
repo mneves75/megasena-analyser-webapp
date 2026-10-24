@@ -1004,12 +1004,13 @@ export function createApiHandler(options: ApiHandlerOptions) {
           clientId: ctx.clientId,
         });
 
-        // A throttled request is still an audited request; without this the
-        // busiest abuse path left no record while a 405 did.
-        ctx.audit = {
-          event: apiAuditEvents[url.pathname] ?? 'api.dashboard_read',
-          metadata: { rateLimited: true },
-        };
+        // A throttled request on a known route is audited like any other
+        // outcome. An unknown path keeps only the structured rate-limit log:
+        // labelling it as a dashboard read put a false event in the audit table.
+        const knownEvent = apiAuditEvents[url.pathname];
+        if (knownEvent) {
+          ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
+        }
 
         const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);
         return await finalize(

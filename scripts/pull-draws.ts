@@ -5,6 +5,7 @@ import { getDatabase, closeDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
+import { assertContiguousArchive } from '@/lib/analytics/archive-sequence';
 import { toIsoDate } from '@/lib/utils';
 import { parsePositiveIntegerArg } from '@/scripts/cli-args';
 
@@ -12,29 +13,6 @@ interface SaveDrawOptions {
   draw: MegaSenaDrawData;
   db: ReturnType<typeof getDatabase>;
   incremental?: boolean;
-}
-
-/**
- * `--allow-partial` may be missing the newest contests (CAIXA has not published
- * them yet); it may never leave an interior hole. A gapped archive 404s a real
- * draw, makes the previous/next pager skip a contest, and makes every later
- * import abort on its own sequence check.
- */
-function assertGapFreeArchive(draws: readonly MegaSenaDrawData[]): void {
-  const contests = draws.map((draw) => draw.numero).sort((left, right) => left - right);
-  for (let index = 1; index < contests.length; index += 1) {
-    const previous = contests[index - 1];
-    const current = contests[index];
-    if (previous === undefined || current === undefined) {
-      continue;
-    }
-    if (current !== previous + 1) {
-      throw new Error(
-        `A ingestão parcial deixaria um buraco entre os concursos ${previous} e ` +
-          `${current}. Recolha os concursos ausentes antes de gravar.`
-      );
-    }
-  }
 }
 
 function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
@@ -161,7 +139,15 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
     }
 
     if (!limit) {
-      assertGapFreeArchive(drawsToStore);
+      // A partial run may miss the newest contests, never an interior one, and
+      // it must continue the archive already stored.
+      const stored = db
+        .prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws')
+        .get() as { last: number };
+      assertContiguousArchive(
+        drawsToStore.map((draw) => draw.numero),
+        stored.last
+      );
     }
 
     console.log(`\nProcessing ${drawsToStore.length} draws...`);

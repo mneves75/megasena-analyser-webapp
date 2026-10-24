@@ -98,10 +98,32 @@ export function hasClientIpHeader(req: Request): boolean {
 /**
  * Expands an IPv6 address into its eight 16-bit groups, or `null` when the
  * compression is malformed. `isIP` has already validated the shape; this only
- * resolves the `::` shorthand so the prefix can be derived positionally.
+ * resolves the `::` shorthand and an embedded dotted-quad so the prefix can be
+ * derived positionally.
+ *
+ * `2001:db8::192.0.2.1` is a valid IPv6 literal that `isIP` accepts as family 6.
+ * Without converting the tail, `parseInt('192.0.2.1', 16)` yielded NaN and every
+ * such address fell back to its full string — two addresses in one /64 got two
+ * different quota buckets.
  */
 function expandIpv6(address: string): number[] | null {
-  const withoutZone = address.split('%')[0] ?? '';
+  let withoutZone = address.split('%')[0] ?? '';
+  const tailStart = withoutZone.lastIndexOf(':') + 1;
+  const tail = withoutZone.slice(tailStart);
+  if (tail.includes('.')) {
+    const octets = tail.split('.').map((part) => Number.parseInt(part, 10));
+    if (
+      octets.length !== 4 ||
+      !octets.every((value) => Number.isInteger(value) && value >= 0 && value <= 255)
+    ) {
+      return null;
+    }
+    const [first, second, third, fourth] = octets as [number, number, number, number];
+    const high = ((first << 8) | second).toString(16);
+    const low = ((third << 8) | fourth).toString(16);
+    withoutZone = `${withoutZone.slice(0, tailStart)}${high}:${low}`;
+  }
+
   const halves = withoutZone.split('::');
   if (halves.length > 2) {
     return null;
