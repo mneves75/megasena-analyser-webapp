@@ -1,7 +1,7 @@
 # Política de Privacidade
 
-**Última atualização:** 2 de outubro de 2026
-**Versão:** 2.1 (hospedagem Cloudflare em staging)
+**Última atualização:** 25 de outubro de 2026
+**Versão:** 2.2 (produção na Cloudflare Workers)
 
 ---
 
@@ -80,8 +80,11 @@ Esses dados são usados para:
 |-----------|-----------------|
 | Logs estruturados (`log_events`) | 30 dias |
 | Auditoria (`audit_logs`) | 400 dias |
-| Backups do banco | 7 dias rolantes |
-| Rate limit em memória | Janela rolante de 60 segundos |
+| Recuperação do provedor (PITR do Durable Object) | Até 30 dias após a alteração ou eliminação |
+| Backups do caminho VPS de recuperação | 7 dias rolantes |
+| Contador de rate limit (SQLite do Durable Object; memória no caminho VPS) | Janela de 60 segundos |
+
+O banco SQLite do Durable Object permite à operação restaurá-lo a qualquer ponto dos últimos 30 dias. Por isso, um registro eliminado pela rotina de retenção continua recuperável por esse mecanismo do provedor por até 30 dias e só então deixa de existir.
 
 Retenção é executada por agendadores diários (`runLogRetention` / `runAuditRetention`). Você pode solicitar redução antecipada por meio do canal de privacidade.
 
@@ -89,7 +92,7 @@ Retenção é executada por agendadores diários (`runLogRetention` / `runAuditR
 
 ## 6. Compartilhamento e operadores
 
-**Hospedagem:** o caminho VPS permanece durante a migração. O caminho Cloudflare Workers executa a aplicação e armazena sorteios, logs e auditoria em SQLite Durable Object. A migração preserva finalidade e retenção; não acrescenta cookies, analytics de aquisição ou chaves de armazenamento no navegador.
+**Hospedagem:** a produção e o staging rodam na Cloudflare Workers, que executa a aplicação e armazena sorteios, logs e auditoria em SQLite Durable Object. Um servidor VPS permanece apenas como caminho de recuperação. Nenhum dos dois acrescenta cookies, analytics de aquisição ou chaves de armazenamento no navegador.
 
 Não vendemos, alugamos nem compartilhamos dados com terceiros para fins comerciais.
 
@@ -97,8 +100,8 @@ Operadores que processam dados em nosso nome:
 
 | Operador | Função | Local | Salvaguarda |
 |----------|--------|-------|-------------|
-| Cloudflare, Inc. | CDN, mitigação de DDoS, TLS; execução Worker e armazenamento Durable Object no staging | Infraestrutura global, sem restrição configurada ao Brasil | Termos do operador; condições aplicáveis à produção devem ser confirmadas antes do cutover |
-| Provedor de VPS | Hospedagem do servidor | Conforme contrato | Cláusulas-padrão do provedor |
+| Cloudflare, Inc. | CDN, mitigação de DDoS, TLS; execução Worker e armazenamento Durable Object (produção e staging) | Infraestrutura global, sem restrição configurada ao Brasil | Termos e Data Processing Addendum do operador |
+| Provedor de VPS | Servidor do caminho de recuperação | Conforme contrato | Cláusulas-padrão do provedor |
 
 A Cloudflare pode registrar metadados técnicos de tráfego de acordo com a própria política dela. A observabilidade Workers está habilitada. Os logs do provedor são separados dos logs SQL da aplicação: a política adotada prevê retenção de sete dias, que deve ser conferida na configuração do provedor. A aplicação mantém seus prazos de 30 dias para logs e 400 dias para auditoria. Ver referências e limites em `docs/LGPD-COMPLIANCE.md`.
 
@@ -209,4 +212,4 @@ Sim. Para dados no servidor, envie e-mail para `privacidade@megasena-analyzer.co
 
 ### Quanto tempo guardamos os dados operacionais?
 
-Logs estruturados: 30 dias. Auditoria: 400 dias. Backups: 7 dias rolantes.
+Logs estruturados: 30 dias. Auditoria: 400 dias. Depois de eliminado, um registro ainda pode ser restaurado pelo provedor por até 30 dias. Backups do caminho VPS: 7 dias rolantes.

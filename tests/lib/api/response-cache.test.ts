@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getDatabase, runMigrations } from '@/lib/db';
+import { closeDatabase, getDatabase } from '@/lib/db';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
@@ -8,7 +8,8 @@ import {
 
 describe('ContestResponseCache', () => {
   beforeEach(() => {
-    runMigrations();
+    // A fresh migrated database per test.
+    closeDatabase();
   });
 
   it('builds keys from validated effective options only, independent of insertion order', () => {

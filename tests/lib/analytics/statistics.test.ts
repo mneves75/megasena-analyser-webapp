@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { getDatabase, runMigrations } from '@/lib/db';
 import { MEGASENA_CONSTANTS, STATISTICS_DISPLAY } from '@/lib/constants';
@@ -85,15 +85,14 @@ describe('StatisticsEngine', () => {
     });
 
     it('should throw error on database failure', () => {
-      // Close database to simulate failure
-      db.close();
-
-      expect(() => {
-        stats.updateNumberFrequencies();
-      }).toThrow();
-
-      // Reopen for other tests
-      db = getDatabase();
+      const failure = vi.spyOn(db, 'prepare').mockImplementation(() => {
+        throw new Error('simulated database failure');
+      });
+      try {
+        expect(() => stats.updateNumberFrequencies()).toThrow('simulated database failure');
+      } finally {
+        failure.mockRestore();
+      }
     });
   });
 

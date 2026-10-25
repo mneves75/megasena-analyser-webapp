@@ -135,7 +135,10 @@ class Logger {
     }
 
     const resolvedLaunchStage =
-      typeof launchStage === 'string' ? launchStage : process.env['NODE_ENV'] ?? 'development';
+      typeof launchStage === 'string'
+        ? launchStage
+        // The Worker binds DEPLOYMENT_STAGE; staging also runs with NODE_ENV=production.
+        : process.env['DEPLOYMENT_STAGE'] ?? process.env['NODE_ENV'] ?? 'development';
     if (resolvedLaunchStage) {
       entry.launchStage = resolvedLaunchStage;
     }

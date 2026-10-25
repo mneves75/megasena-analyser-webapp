@@ -138,12 +138,13 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
       drawsToStore = await caixaClient.fetchAllDraws(start, end, { allowPartial });
     }
 
-    if (!limit) {
-      // A partial run may miss the newest contests, never an interior one, and
-      // it must continue the archive already stored.
-      const stored = db
-        .prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws')
-        .get() as { last: number };
+    // A partial run may miss the newest contests, never an interior one, and it
+    // must continue the archive already stored. Only `--limit` on an empty archive
+    // (the quick start) may begin at the latest-N window.
+    const stored = db
+      .prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws')
+      .get() as { last: number };
+    if (!limit || stored.last > 0) {
       assertContiguousArchive(
         drawsToStore.map((draw) => draw.numero),
         stored.last

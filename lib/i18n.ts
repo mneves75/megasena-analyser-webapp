@@ -524,7 +524,7 @@ export const pt = {
   },
   privacy: {
     title: 'Política de Privacidade',
-    updatedAt: '2 de outubro de 2026',
+    updatedAt: '25 de outubro de 2026',
     summaryTitle: 'Resumo: Coletamos o mínimo necessário para operar o serviço.',
     summaryBody:
       'Sem cadastro, sem autenticação, sem cookies HTTP, sem analytics de marketing. Pseudonimizamos identificadores técnicos (HMAC-SHA256) e mantemos apenas telemetria operacional mínima para segurança, auditoria e disponibilidade.',
@@ -576,13 +576,14 @@ export const pt = {
       {
         title: '4. Retenção e eliminação',
         paragraphs: [
-          'Logs da aplicação: 30 dias. Auditoria: 400 dias. Backups do ambiente VPS: 7 dias rolantes. Logs de observabilidade da Cloudflare: 7 dias no plano vigente. A aplicação executa a limpeza dos registros expirados diariamente.',
+          'Logs da aplicação: 30 dias. Auditoria: 400 dias. Logs de observabilidade da Cloudflare: 7 dias no plano vigente. A aplicação executa a limpeza dos registros expirados diariamente.',
+          'O banco da Cloudflare permite restaurar qualquer ponto dos últimos 30 dias. Um registro eliminado continua recuperável por esse mecanismo do provedor por até 30 dias. Backups do servidor de recuperação (VPS): 7 dias rolantes.',
         ],
       },
       {
         title: '5. Compartilhamento e operadores',
         paragraphs: [
-          'Não vendemos, alugamos ou compartilhamos dados com terceiros para fins comerciais. A Cloudflare entrega e protege o site. Nos ambientes hospedados na Cloudflare, ela também executa a aplicação e armazena registros operacionais e de auditoria. Um provedor de VPS hospeda os ambientes que ainda utilizam essa infraestrutura.',
+          'Não vendemos, alugamos ou compartilhamos dados com terceiros para fins comerciais. A Cloudflare entrega e protege o site. Ela também executa a aplicação e armazena registros operacionais e de auditoria. Um provedor de VPS hospeda apenas o servidor de recuperação.',
         ],
       },
       {
