@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { createApiHandler } from '../../lib/api/handler';
 import { closeDatabase, getDatabase } from '../../lib/db';
 import { BASE_URL } from '../../lib/constants';
+import { DrawArchiveEngine } from '../../lib/analytics/draw-archive';
+import '../../lib/log-context.runtime';
+import { runWithLogSink } from '../../lib/logger';
 
 const options = { environment: 'production', appVersion: 'test',
   ipHashSecret: 'public-api-factory-test-secret-0123456789', audit: vi.fn() };
@@ -33,6 +36,20 @@ describe('runtime-neutral API handler', () => {
     const invalidMethod = await handler.fetch(new Request('https://example.com/api/health', { method: 'POST' }));
     expect(invalidMethod.status).toBe(405);
     expect(invalidMethod.headers.get('Allow')).toBe('GET');
+  });
+  it('logs the deployment stage, not the fail-closed security environment, on every entry', async () => {
+    const previous = process.env['DEPLOYMENT_STAGE'];
+    process.env['DEPLOYMENT_STAGE'] = 'staging';
+    const stages: (string | undefined)[] = [];
+    try {
+      await runWithLogSink(entry => { stages.push(entry.launchStage); },
+        () => createApiHandler(options).fetch(request(), { clientIp: '203.0.113.9' }));
+    } finally {
+      if (previous === undefined) delete process.env['DEPLOYMENT_STAGE'];
+      else process.env['DEPLOYMENT_STAGE'] = previous;
+    }
+    expect(stages.length).toBeGreaterThan(1);
+    expect(new Set(stages)).toEqual(new Set(['staging']));
   });
   it('fails closed when production pseudonymization is unconfigured', () => {
     expect(() => createApiHandler({ ...options, ipHashSecret: '' })).toThrow('IP_HASH_SECRET');
@@ -112,5 +129,33 @@ describe('runtime-neutral API handler', () => {
       await handler.fetch(request(), { internal: true, clientIp: '203.0.113.2' });
     }
     expect((await handler.fetch(request(), { internal: true, clientIp: '203.0.113.2' })).status).toBe(429);
+  });
+  it('serves shared archive listings from the revision cache and keeps draw pages uncached', async () => {
+    closeDatabase();
+    const insert = getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    insert.run(1, '2025-01-01', 1, 2, 3, 4, 5, 6);
+    const handler = createApiHandler(options);
+    const get = (route: string) => handler.fetch(new Request(`https://example.com${route}`), { clientIp: '203.0.113.20' });
+    const spies = [
+      vi.spyOn(DrawArchiveEngine.prototype, 'getYearArchive'),
+      vi.spyOn(DrawArchiveEngine.prototype, 'getArchiveIndex'),
+      vi.spyOn(DrawArchiveEngine.prototype, 'getMegaDaVirada'),
+      vi.spyOn(DrawArchiveEngine.prototype, 'getSitemapData'),
+      vi.spyOn(DrawArchiveEngine.prototype, 'getDrawPage'),
+    ];
+    try {
+      const routes = ['/api/draws?year=2025', '/api/draws', '/api/draws?view=mega-da-virada', '/api/sitemap', '/api/draws?contest=1'];
+      for (let pass = 0; pass < 2; pass++) {
+        for (const route of routes) expect((await get(route)).status).toBe(200);
+      }
+      expect((await get('/api/draws?year=2024')).status).toBe(404);
+      expect(spies.map(spy => spy.mock.calls.length)).toEqual([2, 1, 1, 1, 2]);
+      insert.run(2, '2025-01-08', 7, 8, 9, 10, 11, 12);
+      const year = await (await get('/api/draws?year=2025')).json() as { draws: unknown[] };
+      expect(year.draws).toHaveLength(2);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
   });
 });

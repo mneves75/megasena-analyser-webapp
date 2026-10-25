@@ -4,12 +4,14 @@
   "description": "Análise estatística avançada e gerador inteligente de apostas da Mega-Sena",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#22c55e",
-  "orientation": "portrait-primary",
+  "background_color": "#fbfdfe",
+  "theme_color": "#fbfdfe",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["finance", "utilities"],
+  "categories": [
+    "finance",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icon",

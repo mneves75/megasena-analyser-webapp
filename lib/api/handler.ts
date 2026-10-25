@@ -3,6 +3,7 @@ import { StatisticsEngine } from '../analytics/statistics';
 import { BetGenerator } from '../analytics/bet-generator';
 import { BetGenerationInputError } from '../analytics/bet-generator';
 import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from '../constants';
+import siteDomains from '../site-domains.json';
 import { DelayAnalysisEngine } from '../analytics/delay-analysis';
 import { DecadeAnalysisEngine } from '../analytics/decade-analysis';
 import { TimeSeriesEngine } from '../analytics/time-series';
@@ -77,7 +78,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
         'http://localhost:3002',
         'http://localhost:3201',
       ]
-    : (options.allowedOrigins ?? 'https://megasena-analyzer.com.br')
+    : (options.allowedOrigins ?? `https://${siteDomains.primaryDomain}`)
         .split(',')
         .map((origin) => origin.trim())
         .filter((origin) => {
@@ -107,7 +108,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
     clientId: string;
     origin?: string | null;
     isSecure: boolean;
-    launchStage: string;
     audit?: {
       event: AuditEventName;
       metadata?: Record<string, unknown>;
@@ -176,10 +176,12 @@ export function createApiHandler(options: ApiHandlerOptions) {
   // Trends keys derive from user-chosen number sets (high cardinality); a separate
   // instance keeps that traffic from evicting the shared analytics entries above.
   const trendsResponseCache = new ContestResponseCache(64);
-  // Public archive views crawled page by page. Only the costly number views are
-  // cached (60 profiles + the index = 61 validated keys, below capacity); single
-  // draws and year lists are indexed lookups and bypass the cache entirely.
-  const archiveResponseCache = new ContestResponseCache(64);
+  // Public archive views crawled page by page. Listings shared by many pages
+  // (60 number profiles, the number index, ~31 years, the archive index, Mega da
+  // Virada and the sitemap: under 100 validated keys) each scan the whole draws
+  // table, so they are cached by draws revision. Single draws are 3,000+ crawl-once
+  // keys and bypass the cache.
+  const archiveResponseCache = new ContestResponseCache(128);
 
   /**
    * Per-handler salt for environments that have no `IP_HASH_SECRET`.
@@ -247,7 +249,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
       clientId,
       origin: req.headers.get('origin'),
       isSecure: requestIsSecure,
-      launchStage: options.environment ?? 'development',
     };
 
     const userAgent = req.headers.get('user-agent');
@@ -687,19 +688,23 @@ export function createApiHandler(options: ApiHandlerOptions) {
         ctx.audit = { event: 'api.draws_read', metadata: { view: query.kind } };
 
         const engine = new DrawArchiveEngine();
-        const payload =
+        const body =
           query.kind === 'contest'
-            ? engine.getDrawPage(query.contest)
-            : query.kind === 'year'
-              ? engine.getYearArchive(query.year)
-              : query.kind === 'megaDaVirada'
-                ? engine.getMegaDaVirada()
-                : engine.getArchiveIndex();
-        if (payload === null) {
+            ? JSON.stringify(engine.getDrawPage(query.contest))
+            : archiveResponseCache.getOrCompute(
+                buildResponseCacheKey(ctx.route, query.kind === 'year' ? { year: query.year } : { view: query.kind }),
+                getDrawsVersion(),
+                () => query.kind === 'year'
+                  ? engine.getYearArchive(query.year)
+                  : query.kind === 'megaDaVirada'
+                    ? engine.getMegaDaVirada()
+                    : engine.getArchiveIndex()
+              );
+        if (body === 'null') {
           return createErrorResponse(ctx, 'Nenhum sorteio encontrado.', null, 404);
         }
 
-        return new Response(JSON.stringify(payload), {
+        return new Response(body, {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
@@ -749,7 +754,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
     '/api/sitemap': (_req, ctx) => {
       ctx.audit = { event: 'api.sitemap_read' };
       try {
-        return new Response(JSON.stringify(new DrawArchiveEngine().getSitemapData()), {
+        const body = archiveResponseCache.getOrCompute(ctx.route, getDrawsVersion(),
+          () => new DrawArchiveEngine().getSitemapData());
+        return new Response(body, {
           headers: { 'Content-Type': 'application/json' },
         });
       } catch (error) {
@@ -964,7 +971,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
       route: ctx.route,
       method: ctx.method,
       userAgent: ctx.userAgent,
-      launchStage: ctx.launchStage,
       clientId: ctx.clientId,
     });
 

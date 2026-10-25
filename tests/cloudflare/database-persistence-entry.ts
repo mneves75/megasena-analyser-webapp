@@ -1,8 +1,14 @@
 import { MegaSenaData } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
-export { MegaSenaData };
+
+export class PersistenceData extends MegaSenaData {
+  launchStages(): string[] {
+    return this.ctx.storage.sql.exec<{ stage: string | null }>('SELECT DISTINCT launch_stage AS stage FROM log_events')
+      .toArray().map(row => String(row.stage));
+  }
+}
 const worker = {
-  async fetch(request: Request, env: { DATA: DurableObjectNamespace<MegaSenaData> }) {
+  async fetch(request: Request, env: { DATA: DurableObjectNamespace<PersistenceData> }) {
     const object = env.DATA.getByName('persistence-fixture');
     const pathname = new URL(request.url).pathname;
     if (pathname === '/initialize') {
@@ -12,6 +18,7 @@ const worker = {
       return Response.json(await object.status());
     }
     if (pathname === '/status') return Response.json(await object.status());
+    if (pathname === '/stages') return Response.json(await object.launchStages());
     return object.handle(new Request('https://example.com/api/health'), { clientIp: '203.0.113.8', internal: false, secure: true });
   },
 };

@@ -3,15 +3,7 @@ import { DelayAnalysisEngine } from '@/lib/analytics/delay-analysis';
 import { getDatabase, runMigrations } from '@/lib/db';
 import { MEGASENA_CONSTANTS } from '@/lib/constants';
 
-// Check if running with in-memory database (Vitest without Bun)
-const isInMemoryDb = typeof process !== 'undefined' &&
-  Boolean(process.env?.VITEST) &&
-  typeof globalThis.Bun === 'undefined';
-
-// Skip tests that require complex SQL features not supported by in-memory DB
-const describeWithDb = isInMemoryDb ? describe.skip : describe;
-
-describeWithDb('DelayAnalysisEngine', () => {
+describe('DelayAnalysisEngine', () => {
   let delayEngine: DelayAnalysisEngine;
   let db: ReturnType<typeof getDatabase>;
 

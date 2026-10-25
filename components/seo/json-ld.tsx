@@ -1,10 +1,5 @@
 import { headers } from 'next/headers';
 
-interface JsonLdProps {
-  data: Record<string, unknown> | Array<Record<string, unknown>>;
-  nonce?: string | null | undefined;
-}
-
 async function resolveNonce(nonce: string | null | undefined): Promise<string | undefined> {
   if (nonce !== undefined) {
     return nonce ?? undefined;
@@ -19,19 +14,6 @@ async function resolveNonce(nonce: string | null | undefined): Promise<string | 
 
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
-}
-
-export async function JsonLd({ data, nonce }: JsonLdProps) {
-  const resolvedNonce = await resolveNonce(nonce);
-
-  return (
-    <script
-      nonce={resolvedNonce}
-      type="application/ld+json"
-      suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
-    />
-  );
 }
 
 /**

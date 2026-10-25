@@ -307,7 +307,7 @@ export default async function DashboardPage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <Link href="/dashboard/statistics" aria-label={pt.nav.statistics} className="group">
+          <Link href="/dashboard/statistics" className="group">
             <Card className="hover-lift h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -321,7 +321,7 @@ export default async function DashboardPage() {
             </Card>
           </Link>
 
-          <Link href="/dashboard/generator" aria-label={pt.nav.generator} className="group">
+          <Link href="/dashboard/generator" className="group">
             <Card className="hover-lift h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">

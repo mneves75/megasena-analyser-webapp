@@ -20,8 +20,9 @@ const compiled = await build({
   } }],
 });
 const options = { ...convertV4MiniflareOptions({ workers: [{ name: 'persistence-test', modules: true, script: compiled.outputFiles[0]!.text,
-  compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'], bindings: { ENVIRONMENT: 'development', BOOTSTRAP_PUBLIC_SEED: '1' },
-  durableObjects: { DATA: { className: 'MegaSenaData', useSQLite: true } } }] }), resourcePersistencePath: path.join(directory, 'storage') };
+  compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'], // Production always binds a stable secret; without it the per-process salt (by design) re-keys the quota.
+  bindings: { ENVIRONMENT: 'development', BOOTSTRAP_PUBLIC_SEED: '1', IP_HASH_SECRET: 'public-persistence-test-only-secret-0123456789', DEPLOYMENT_STAGE: 'staging' },
+  durableObjects: { DATA: { className: 'PersistenceData', useSQLite: true } } }] }), resourcePersistencePath: path.join(directory, 'storage') };
 let firstStatus: { draws: number; auditRows: number; logRows: number };
 const first = new Miniflare(options);
 try {
@@ -41,7 +42,9 @@ try {
   assert(health.status === 200 && health.headers.get('x-ratelimit-remaining') === '98', 'rate-limit counter survives restart');
   const final = await (await second.dispatchFetch('https://example.com/status')).json() as typeof firstStatus;
   assert(final.auditRows === 2 && final.draws === publicSeed.length + 1, 'restarted audit and draws');
-  const evidence = { pass: true, runtimeRestart: true, draws: final.draws, auditRows: final.auditRows, logRows: final.logRows, retainedRateLimitRemaining: 98 };
+  const stages = await (await second.dispatchFetch('https://example.com/stages')).json() as string[];
+  assert(JSON.stringify(stages) === '["staging"]', `log rows carry the deployment stage: ${JSON.stringify(stages)}`);
+  const evidence = { pass: true, runtimeRestart: true, draws: final.draws, auditRows: final.auditRows, logRows: final.logRows, retainedRateLimitRemaining: 98, launchStages: stages };
   await mkdir('.scratch/cloudflare-database', { recursive: true });
   await writeFile('.scratch/cloudflare-database/persistence-runtime-result.json', JSON.stringify(evidence));
   console.log(JSON.stringify(evidence));

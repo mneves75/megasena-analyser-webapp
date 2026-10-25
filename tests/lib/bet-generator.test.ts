@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { BetGenerator } from '@/lib/analytics/bet-generator';
+import { BetGenerationInputError, BetGenerator } from '@/lib/analytics/bet-generator';
 import { runMigrations } from '@/lib/db';
 import {
   MEGASENA_CONSTANTS,
@@ -15,7 +15,7 @@ describe('BetGenerator', () => {
 
   it('should generate valid simple bets', () => {
     const generator = new BetGenerator();
-    const result = generator.generateBets(50, 'random');
+    const result = generator.generateOptimizedBets(50, BET_GENERATION_MODE.SIMPLE_ONLY, 'random');
 
     expect(result.bets.length).toBeGreaterThan(0);
     expect(result.totalCost).toBeLessThanOrEqual(50);
@@ -29,7 +29,7 @@ describe('BetGenerator', () => {
 
   it('should generate valid multiple bets', () => {
     const generator = new BetGenerator();
-    const result = generator.generateMultipleBet(100, 'balanced');
+    const result = generator.generateOptimizedBets(100, BET_GENERATION_MODE.MULTIPLE_ONLY, 'balanced');
 
     expect(result.bets.length).toBe(1);
     expect(result.totalCost).toBeLessThanOrEqual(100);
@@ -42,7 +42,7 @@ describe('BetGenerator', () => {
   it('should allow 20-number multiple bets when budget allows', () => {
     const generator = new BetGenerator();
     const budget = BET_PRICES[20] ?? 0;
-    const result = generator.generateMultipleBet(budget, 'balanced');
+    const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, 'balanced');
 
     expect(result.bets.length).toBe(1);
     const bet = result.bets[0];
@@ -52,13 +52,13 @@ describe('BetGenerator', () => {
 
   it('should throw error for insufficient budget', () => {
     const generator = new BetGenerator();
-    expect(() => generator.generateBets(2, 'random')).toThrow();
+    expect(() => generator.generateOptimizedBets(2, BET_GENERATION_MODE.SIMPLE_ONLY, 'random')).toThrow();
   });
 
   it('should respect budget constraints', () => {
     const generator = new BetGenerator();
     const budget = 100;
-    const result = generator.generateBets(budget, 'hot_numbers');
+    const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.SIMPLE_ONLY, 'hot_numbers');
 
     expect(result.totalCost).toBeLessThanOrEqual(budget);
     expect(result.remainingBudget).toBeGreaterThanOrEqual(0);
@@ -185,12 +185,14 @@ describe('BetGenerator.buildOptimizedBetSizes (via OPTIMIZED mode)', () => {
   it('rejects an optimized budget above the documented cap', () => {
     const generator = new BetGenerator();
 
-    expect(() =>
+    const generate = () =>
       generator.generateOptimizedBets(
         BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET + 1,
         BET_GENERATION_MODE.OPTIMIZED,
         'random'
-      )
-    ).toThrow(/Orçamento otimizado limitado/);
+      );
+    // An input error, so the API answers 400 with this text instead of a generic 500.
+    expect(generate).toThrow(BetGenerationInputError);
+    expect(generate).toThrow(/Orçamento otimizado limitado/);
   });
 });

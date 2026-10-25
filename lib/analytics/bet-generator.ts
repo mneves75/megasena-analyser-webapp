@@ -291,7 +291,7 @@ export class BetGenerator {
     }
 
     if (mode === BET_GENERATION_MODE.OPTIMIZED && budget > BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET) {
-      throw new Error(
+      throw new BetGenerationInputError(
         `Orçamento otimizado limitado a R$ ${BET_GENERATION_LIMITS.OPTIMIZED_MAX_BUDGET.toLocaleString(
           'pt-BR'
         )},00. Use outro modo para valores maiores.`
@@ -713,22 +713,6 @@ export class BetGenerator {
 
   private generateBetId(): string {
     return `bet_${crypto.randomUUID()}`;
-  }
-
-  /**
-   * Legacy method - generates simple bets only
-   * @deprecated Use generateOptimizedBets instead
-   */
-  generateBets(budget: number, strategy: BetStrategy = 'balanced'): BetGenerationResult {
-    return this.generateOptimizedBets(budget, BET_GENERATION_MODE.SIMPLE_ONLY, strategy);
-  }
-
-  /**
-   * Legacy method - generates largest multiple bet only
-   * @deprecated Use generateOptimizedBets with MULTIPLE_ONLY mode instead
-   */
-  generateMultipleBet(budget: number, strategy: BetStrategy = 'balanced'): BetGenerationResult {
-    return this.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, strategy);
   }
 
   private generateFibonacciNumbers(count: number, usedNumbers: Set<number> = new Set()): number[] {

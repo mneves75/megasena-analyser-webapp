@@ -7,9 +7,7 @@ export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || `https://${siteDomai
 export const APP_INFO = {
   NAME: 'Mega-Sena Analyzer',
   VERSION: process.env['NEXT_PUBLIC_APP_VERSION'] || packageJson.version,
-  BUILD_DATE: process.env['NEXT_PUBLIC_BUILD_DATE'] || '2026-05-26',
   DESCRIPTION: 'Análise estatística e gerador inteligente de apostas',
-  AUTHOR: 'Mega-Sena Analyzer Team',
 } as const;
 
 // Mega-Sena Game Constants
@@ -94,13 +92,10 @@ export const STATISTICS_DISPLAY = {
   TOP_NUMBERS_COUNT: 20, // Top N hot/cold numbers to display
   DASHBOARD_TOP_COUNT: 10, // Top N for dashboard overview
   RECENT_DRAWS_DEFAULT: 50, // Default number of recent draws to fetch
-  PATTERNS_MIN_OCCURRENCES: 1, // Minimum occurrences to show pattern
 } as const;
 
 // Chart Configuration
 export const CHART_CONFIG = {
-  HEATMAP_COLORS: ['#dbeafe', '#93c5fd', '#60a5fa', '#fb923c', '#ef4444'],
-  MAX_TIME_SERIES_NUMBERS: 6,
   DEFAULT_STREAK_WINDOW: 10,
 } as const;
 

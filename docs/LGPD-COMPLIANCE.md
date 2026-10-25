@@ -30,11 +30,11 @@ Não há coleta deliberada de dado pessoal sensível, dado financeiro, identidad
 
 | ID | Atividade | Dados tratados | Finalidade | Base legal (Art. 7º/11) | Retenção | Origem | Compartilhamento | Local de armazenamento |
 |----|-----------|----------------|-----------|-------------------------|----------|--------|------------------|-----------------------|
-| T1 | Log estruturado de eventos da aplicação | Pseudônimo do IP no formato `hmac-sha256:v1:<windowId>:<digest>` (HMAC-SHA256 com `IP_HASH_SECRET` e salt rotativo de 30 dias produzido por `lib/security/pseudonymize.ts`), user-agent truncado (120 chars), rota, método, status, duração, requestId, metadata sanitizada | Operação do serviço, diagnóstico, troubleshooting, observabilidade | Art. 7º, IX — legítimo interesse do controlador (operação técnica) | 30 dias (padrão `LOG_RETENTION_DAYS=30`) | Servidor da aplicação | Operador de hospedagem | SQLite no VPS (produção); SQLite Durable Object na Cloudflare (staging) |
-| T2 | Auditoria das chamadas à API (geração de aposta, leituras de resultados e estatísticas) | Pseudônimo do IP no formato `hmac-sha256:v1:<windowId>:<digest>` (mesmo esquema HMAC-SHA256 com salt rotativo), user-agent truncado, rota, método, status, duração, requestId, metadata sanitizada | Segurança, integridade, rate limiting, evidência forense | Art. 7º, IX — legítimo interesse / Art. 7º, VI — exercício regular de direitos em processo administrativo | Padrão 400 dias (`AUDIT_RETENTION_DAYS=400`); reavaliar para 180 dias | Servidor da aplicação | Operador de hospedagem | SQLite no VPS (produção); SQLite Durable Object na Cloudflare (staging) |
+| T1 | Log estruturado de eventos da aplicação | Pseudônimo do IP no formato `hmac-sha256:v1:<windowId>:<digest>` (HMAC-SHA256 com `IP_HASH_SECRET` e salt rotativo de 30 dias produzido por `lib/security/pseudonymize.ts`), user-agent truncado (120 chars), rota, método, status, duração, requestId, metadata sanitizada | Operação do serviço, diagnóstico, troubleshooting, observabilidade | Art. 7º, IX — legítimo interesse do controlador (operação técnica) | 30 dias (padrão `LOG_RETENTION_DAYS=30`) | Servidor da aplicação | Operador de hospedagem | SQLite Durable Object na Cloudflare (produção e staging); SQLite no VPS (caminho de recuperação) |
+| T2 | Auditoria das chamadas à API (geração de aposta, leituras de resultados e estatísticas) | Pseudônimo do IP no formato `hmac-sha256:v1:<windowId>:<digest>` (mesmo esquema HMAC-SHA256 com salt rotativo), user-agent truncado, rota, método, status, duração, requestId, metadata sanitizada | Segurança, integridade, rate limiting, evidência forense | Art. 7º, IX — legítimo interesse / Art. 7º, VI — exercício regular de direitos em processo administrativo | Padrão 400 dias (`AUDIT_RETENTION_DAYS=400`); reavaliar para 180 dias | Servidor da aplicação | Operador de hospedagem | SQLite Durable Object na Cloudflare (produção e staging); SQLite no VPS (caminho de recuperação) |
 | T3 | Rate limit por ambiente | Pseudônimo HMAC-SHA256 do IP como chave; nenhum IP em texto claro no bucket | Proteção contra abuso | Art. 7º, IX — legítimo interesse | Janela de 60 s; limpeza conforme implementação do ambiente | Servidor da aplicação | Operador de hospedagem | Memória no Bun/VPS; buckets persistidos no SQLite Durable Object |
 | T4 | Preferências funcionais (tema + reconhecimento do aviso de privacidade) | `megasena-theme` (`light\|dark\|system`) e `megasena-privacy-ack` (versão do aviso já visualizada, ex.: `2026-05-20`) | UX (memorizar preferência) e UX/transparência (evitar reexibir aviso já visto) | Art. 7º, IX — legítimo interesse / storage estritamente necessário equivalente | Persistência indefinida sob controle do titular | Navegador | Não sai do dispositivo do titular | `localStorage` do navegador |
-| T5 | Tráfego HTTP intermediado por Cloudflare | IP, user-agent, headers HTTP padrão | CDN, mitigação DDoS, TLS e observabilidade Worker no staging | Art. 7º, IX — legítimo interesse / Art. 33 — transferência internacional sob salvaguardas | Conforme política da Cloudflare; retenção adotada para Workers Logs: sete dias | Titular | Operador (Cloudflare) | Edge global da Cloudflare |
+| T5 | Tráfego HTTP intermediado por Cloudflare | IP, user-agent, headers HTTP padrão | CDN, mitigação DDoS, TLS e observabilidade Worker | Art. 7º, IX — legítimo interesse / Art. 33 — transferência internacional sob salvaguardas | Conforme política da Cloudflare; retenção adotada para Workers Logs: sete dias | Titular | Operador (Cloudflare) | Edge global da Cloudflare |
 | T6 | Backup periódico do banco SQLite no VPS | Cópia dos itens T1+T2 | Continuidade e disaster recovery | Art. 7º, IX — legítimo interesse | Backup vivo: 7 dias rolantes; antes de purga: cópia obrigatória | Servidor da aplicação | Não compartilhado | Volume local com permissões restritas |
 
 **Notas técnicas sobre o pseudônimo (T1, T2, T3):**
@@ -61,8 +61,8 @@ Não há coleta deliberada de dado pessoal sensível, dado financeiro, identidad
 | Papel | Identificação | Responsabilidade |
 |-------|---------------|------------------|
 | Controlador | Equipe Mega-Sena Analyzer (projeto independente) | Decide finalidades e meios |
-| Operador | Cloudflare, Inc. (CDN/edge, Worker e Durable Object no staging) | Processa tráfego, execução e armazenamento operacional |
-| Operador | Provedor de hospedagem do servidor (VPS) | Processa armazenamento sob direção do controlador |
+| Operador | Cloudflare, Inc. (CDN/edge, Worker e Durable Object em produção e staging) | Processa tráfego, execução e armazenamento operacional |
+| Operador | Provedor do servidor VPS (caminho de recuperação) | Processa armazenamento sob direção do controlador |
 | Encarregado (DPO) | Encarregado de Proteção de Dados — Mega-Sena Analyzer (`privacidade@megasena-analyzer.com.br`) | Canal único de comunicação com titulares e ANPD |
 
 O encarregado é divulgado de forma clara e acessível na Política de Privacidade conforme Art. 41, §1º. O canal `privacidade@megasena-analyzer.com.br` é monitorado e responde dentro do prazo do Art. 19.
@@ -183,6 +183,7 @@ Não usamos dark patterns, pop-ups bloqueantes injustificados ou linguagem evasi
 |------|-----------------|------------|
 | Logs estruturados (`log_events`) | 30 dias | `runLogRetention` agenda diária + script `bun run log:prune` |
 | Auditoria (`audit_logs`) | 400 dias (legítimo interesse para evidência forense; reavaliar para 180 dias se não houver necessidade documentada) | `runAuditRetention` agenda diária + script `bun run audit:prune` |
+| Recuperação PITR do Durable Object | 30 dias após a alteração ou eliminação | Automática pelo provedor; a restauração é ato manual da operação |
 | Backups do VPS (`db/backups/*`) | 7 dias rolantes | Script de rotação remove arquivos com mtime > 7 dias |
 | Rate limit no Bun/VPS | Janela de 60 s | GC interno a cada 5 minutos |
 | Rate limit no Durable Object | Janela de 60 s; expiração bloqueia reutilização do bucket | Eliminação física na próxima requisição ou no refresh diário |
@@ -199,7 +200,7 @@ A exceção de hard-delete para audit/logs está documentada porque (a) não há
 | Cloudflare, Inc. | Edge global (incluindo EUA) | Cláusulas-padrão Cloudflare (Data Processing Addendum), participação em padrões reconhecidos (ISO 27001, SOC 2) | https://www.cloudflare.com/trust-hub/ |
 | Provedor de VPS | Conforme contratado | Cláusulas padrão do provedor; localização preferencial América do Sul/Europa | Contrato vigente com o provedor |
 
-O caminho Workers executa código e armazena registros operacionais na Cloudflare. Não há restrição de localização configurada ao Brasil. Antes do cutover, confirmar as condições aplicáveis do operador e verificar a reconciliação do delta final. Evidências de transferência ficam em armazenamento privado.
+A produção executa código e armazena registros operacionais na Cloudflare. Não há restrição de localização configurada ao Brasil. Evidências de transferência ficam em armazenamento privado.
 
 ---
 
@@ -211,7 +212,7 @@ O caminho Workers executa código e armazena registros operacionais na Cloudflar
 
 As referências técnicas não comprovam adequação contratual nem restauração dos registros reais. Backup local de teste e persistência após reinício não substituem esse aceite.
 
-O Worker preserva os prazos efetivos de auditoria/logs por bindings configuráveis em cada ambiente, mantendo 400/30 dias por padrão. Configuração inválida ou não positiva desativa a eliminação, em paridade com o Bun. O cutover deve conferir os valores da origem e reconciliar a política pública antes de qualquer alteração de prazo. Detalhes operacionais em `docs/DEPLOY.md`; essa correção está publicada na beta3.
+O Worker preserva os prazos efetivos de auditoria/logs por bindings configuráveis em cada ambiente, mantendo 400/30 dias por padrão. Configuração inválida ou não positiva desativa a eliminação, em paridade com o Bun. Qualquer alteração de prazo reconcilia a política pública antes de entrar em vigor. Detalhes operacionais em `docs/DEPLOY.md`.
 
 ## 10. Plano de resposta a incidente (Art. 48)
 
