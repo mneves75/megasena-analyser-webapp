@@ -17,6 +17,7 @@ import {
   PageTitle,
   RandomnessNote,
   SectionHeading,
+  SourceLine,
   TableFrame,
   cellClass,
   frequencyShadeClass,
@@ -207,7 +208,12 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         </section>
       ) : null}
 
-      {editions.length > 1 ? <FactList facts={recordFacts(editions)} /> : null}
+      {editions.length > 1 ? (
+        <div className="space-y-2">
+          <FactList facts={recordFacts(editions)} />
+          <SourceLine />
+        </div>
+      ) : null}
 
       {editions.length > 0 ? (
         <section aria-labelledby="edicoes" className="space-y-4">
@@ -231,10 +237,10 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
                   <th scope="col" className={thClass}>
                     Dezenas
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Apostas ganhadoras
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Prêmio por aposta
                   </th>
                 </tr>
@@ -257,10 +263,10 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
                     <td className={cn(cellClass, 'min-w-[14rem]')}>
                       <DezenaChips numbers={draw.numbers} />
                     </td>
-                    <td className={cellClass}>
+                    <td className={cn(cellClass, 'text-right')}>
                       {draw.sena.winners === 0 ? 'Nenhuma' : formatNumber(draw.sena.winners)}
                     </td>
-                    <td className={cellClass}>
+                    <td className={cn(cellClass, 'text-right')}>
                       {draw.sena.winners > 0 ? formatCurrency(draw.sena.prize) : '—'}
                     </td>
                   </tr>
@@ -268,6 +274,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
               </tbody>
             </table>
           </TableFrame>
+          <SourceLine />
         </section>
       ) : null}
 

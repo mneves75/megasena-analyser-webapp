@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { LotteryBall } from '@/components/lottery-ball';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import type { NumberProfile } from '@/lib/api/archive-contract';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -146,10 +145,7 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />
-        <div className="flex flex-wrap items-center gap-5">
-          <LotteryBall number={number} size="lg" />
-          <PageTitle>Número {number} na Mega-Sena</PageTitle>
-        </div>
+        <PageTitle>Número {number} na Mega-Sena</PageTitle>
         <AnswerSummary>
           {lastAppearance ? (
             <>

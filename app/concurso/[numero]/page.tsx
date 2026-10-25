@@ -27,6 +27,7 @@ import {
   Pager,
   RandomnessNote,
   SectionHeading,
+  SourceLine,
   TableFrame,
   inlineLinkClass,
   tableClass,
@@ -250,10 +251,10 @@ export default async function DrawResultPage({
                 <th scope="col" className={thClass}>
                   Faixa
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Apostas ganhadoras
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Prêmio por aposta
                 </th>
               </tr>
@@ -265,10 +266,10 @@ export default async function DrawResultPage({
                     {label}{' '}
                     <span className="font-normal text-muted-foreground">({hits} acertos)</span>
                   </th>
-                  <td className={cellClass}>
+                  <td className={`${cellClass} text-right`}>
                     {tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}
                   </td>
-                  <td className={cellClass}>
+                  <td className={`${cellClass} text-right`}>
                     {tier.winners > 0
                       ? formatCurrency(tier.prize)
                       : label === 'Sena'
@@ -281,11 +282,13 @@ export default async function DrawResultPage({
           </table>
         </TableFrame>
         {prizeFacts.length > 0 ? <FactList facts={prizeFacts} /> : null}
+        <SourceLine />
       </section>
 
       <section aria-labelledby="analise" className="space-y-4">
         <SectionHeading id="analise">Análise do sorteio</SectionHeading>
         <FactList facts={analysisFacts} />
+        <SourceLine through={contest} />
       </section>
 
       <section aria-labelledby="historico" className="space-y-4">
@@ -347,6 +350,7 @@ export default async function DrawResultPage({
             </tbody>
           </table>
         </TableFrame>
+        <SourceLine through={contest} />
       </section>
 
       <Pager

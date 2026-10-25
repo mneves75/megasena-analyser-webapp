@@ -58,7 +58,7 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 
 ### UI Components (`components/`)
 
-- shadcn/ui based components plus custom `lottery-ball.tsx` and `stats-card.tsx`
+- shadcn/ui based primitives plus `number-field.tsx` (the 6×10 field of sixty) and the archive vocabulary in `app/_components/archive-ui.tsx`
 - Design tokens in `app/globals.css`
 
 ## Important Patterns

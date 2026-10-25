@@ -16,6 +16,7 @@ import {
   RankedList,
   rankBy,
   SectionHeading,
+  SourceLine,
   TableFrame,
   cellClass,
   frequencyShadeClass,
@@ -220,6 +221,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             </tbody>
           </table>
         </TableFrame>
+        <SourceLine />
       </section>
 
       <RandomnessNote>

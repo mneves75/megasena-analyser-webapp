@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
-import { LotteryBall } from '@/components/lottery-ball';
 import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
@@ -80,25 +79,6 @@ export function PageTitle({ children }: { children: ReactNode }): React.JSX.Elem
   return <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">{children}</h1>;
 }
 
-export function NumberBallLink({
-  number,
-  size = 'md',
-}: {
-  number: number;
-  size?: 'sm' | 'md' | 'lg';
-}): React.JSX.Element {
-  return (
-    <ArchiveLink
-      href={`/numeros/${number}`}
-      // Unpadded so the accessible name contains the visible label (WCAG 2.5.3).
-      aria-label={`Estatísticas do número ${number}`}
-      className={cn('rounded-full', focusRing)}
-    >
-      <LotteryBall number={number} size={size} />
-    </ArchiveLink>
-  );
-}
-
 /** The first paragraph answers the page's query in plain words. */
 export function AnswerSummary({ children }: { children: ReactNode }): React.JSX.Element {
   return (
@@ -134,20 +114,22 @@ export interface Fact {
   hint?: string;
 }
 
+/** Facts as ruled table rows: the term (and its note) left, the figure right. */
 export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Element {
-  // The 1px gaps are the border colour showing through, so every row must be
-  // full: pick only column counts that divide the number of facts.
-  const columns = cn(
-    facts.length % 2 === 0 && 'sm:grid-cols-2',
-    facts.length % 3 === 0 && 'lg:grid-cols-3'
-  );
   return (
-    <dl className={cn('grid gap-px border-y-2 border-y-primary bg-border', columns)}>
+    <dl className="max-w-3xl divide-y divide-border border-y-2 border-y-primary">
       {facts.map((fact) => (
-        <div key={fact.term} className="flex flex-col gap-1 bg-background px-1 py-4 sm:px-4">
-          <dt className="text-sm text-muted-foreground">{fact.term}</dt>
-          <dd className="font-condensed text-2xl font-semibold tabular-nums">{fact.value}</dd>
-          {fact.hint ? <dd className="text-xs text-muted-foreground">{fact.hint}</dd> : null}
+        <div
+          key={fact.term}
+          className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 py-3"
+        >
+          <dt className="text-sm text-muted-foreground">
+            {fact.term}
+            {fact.hint ? <span className="mt-0.5 block text-xs">{fact.hint}</span> : null}
+          </dt>
+          <dd className="text-right font-condensed text-xl font-semibold tabular-nums">
+            {fact.value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -200,47 +182,50 @@ export function DrawsTable({
   draws: readonly DrawRecord[];
 }): React.JSX.Element {
   return (
-    <TableFrame>
-      <table className={tableClass}>
-        <caption className="sr-only">{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col" className={thClass}>
-              Concurso
-            </th>
-            <th scope="col" className={thClass}>
-              Data
-            </th>
-            <th scope="col" className={thClass}>
-              Dezenas
-            </th>
-            <th scope="col" className={thClass}>
-              Sena
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {draws.map((draw) => (
-            <tr key={draw.contestNumber}>
-              <th scope="row" className={cellClass}>
-                <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
-                  {draw.contestNumber}
-                </ArchiveLink>
+    <>
+      <TableFrame>
+        <table className={tableClass}>
+          <caption className="sr-only">{caption}</caption>
+          <thead>
+            <tr>
+              <th scope="col" className={thClass}>
+                Concurso
               </th>
-              <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-              <td className={cellClass}>
-                <DezenaChips numbers={draw.numbers} />
-              </td>
-              <td className={cellClass}>
-                {draw.sena.winners === 0
-                  ? 'Acumulou'
-                  : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
-              </td>
+              <th scope="col" className={thClass}>
+                Data
+              </th>
+              <th scope="col" className={thClass}>
+                Dezenas
+              </th>
+              <th scope="col" className={thClass}>
+                Sena
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableFrame>
+          </thead>
+          <tbody>
+            {draws.map((draw) => (
+              <tr key={draw.contestNumber}>
+                <th scope="row" className={cellClass}>
+                  <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
+                    {draw.contestNumber}
+                  </ArchiveLink>
+                </th>
+                <td className={cellClass}>{formatDate(draw.drawDate)}</td>
+                <td className={cellClass}>
+                  <DezenaChips numbers={draw.numbers} />
+                </td>
+                <td className={cellClass}>
+                  {draw.sena.winners === 0
+                    ? 'Acumulou'
+                    : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
+      <SourceLine />
+    </>
   );
 }
 
