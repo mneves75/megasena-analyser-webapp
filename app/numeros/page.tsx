@@ -13,6 +13,8 @@ import {
   Breadcrumbs,
   PageTitle,
   RandomnessNote,
+  RankedList,
+  rankBy,
   SectionHeading,
   TableFrame,
   cellClass,
@@ -32,49 +34,6 @@ const BREADCRUMBS: BreadcrumbItem[] = [
 ];
 const TIES_LISTED = 5;
 const RANKED_SHOWN = 10;
-
-interface RankedEntry {
-  number: number;
-  /** Competition rank: tied values share a position, like the number pages. */
-  rank: number;
-  detail: string;
-}
-
-/** Top entries by a score (higher first), with shared positions for ties. */
-function rankBy<T extends { number: number }>(
-  items: readonly T[],
-  score: (item: T) => number,
-  detail: (item: T) => string
-): RankedEntry[] {
-  const sorted = [...items].sort((a, b) => score(b) - score(a) || a.number - b.number);
-  return sorted.slice(0, RANKED_SHOWN).map((item) => ({
-    number: item.number,
-    rank: 1 + sorted.filter((other) => score(other) > score(item)).length,
-    detail: detail(item),
-  }));
-}
-
-function RankedList({
-  labelId,
-  entries,
-}: {
-  labelId: string;
-  entries: RankedEntry[];
-}): React.JSX.Element {
-  return (
-    <ol aria-labelledby={labelId} className="divide-y divide-border border-y-2 border-y-primary">
-      {entries.map((entry) => (
-        <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
-          <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
-          <ArchiveLink href={`/numeros/${entry.number}`} className={inlineLinkClass}>
-            {dezena(entry.number)}
-          </ArchiveLink>
-          <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
 
 export const metadata: Metadata = buildPageMetadata({
   path: PATH,
@@ -139,6 +98,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             <RankedList
               labelId="mais-sorteados"
               entries={rankBy(
+                RANKED_SHOWN,
                 numbers,
                 (summary) => summary.frequency,
                 (summary) => countLabel(summary.frequency, 'vez', 'vezes')
@@ -152,6 +112,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             <RankedList
               labelId="mais-atrasados"
               entries={rankBy(
+                RANKED_SHOWN,
                 numbers,
                 // A number never drawn has been absent for the whole archive.
                 (summary) => summary.lastAppearance?.drawsSince ?? archive.totalDraws + 1,

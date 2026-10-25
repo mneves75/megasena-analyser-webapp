@@ -244,9 +244,66 @@ export function DrawsTable({
   );
 }
 
+/** The yearbook's source line under a table or figure. */
+export function SourceLine({ through }: { through?: number | null }): React.JSX.Element {
+  return (
+    <p className="text-xs text-muted-foreground">
+      Fonte: CAIXA Econômica Federal{through ? `, concursos 1 a ${through}` : ''}.
+    </p>
+  );
+}
+
+export interface RankedEntry {
+  number: number;
+  /** Competition rank: tied values share a position, like the number pages. */
+  rank: number;
+  detail: string;
+}
+
+/** Top `limit` entries by a score (higher first), with shared positions for ties. */
+export function rankBy<T extends { number: number }>(
+  limit: number,
+  items: readonly T[],
+  score: (item: T) => number,
+  detail: (item: T) => string
+): RankedEntry[] {
+  const sorted = [...items].sort((a, b) => score(b) - score(a) || a.number - b.number);
+  return sorted.slice(0, limit).map((item) => ({
+    number: item.number,
+    rank: 1 + sorted.filter((other) => score(other) > score(item)).length,
+    detail: detail(item),
+  }));
+}
+
+/** Ranked numbers as ruled rows: position, linked dezena, measure. */
+export function RankedList({
+  labelId,
+  entries,
+}: {
+  labelId: string;
+  entries: readonly RankedEntry[];
+}): React.JSX.Element {
+  return (
+    <ol aria-labelledby={labelId} className="divide-y divide-border border-y-2 border-y-primary">
+      {entries.map((entry) => (
+        <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
+          <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
+          <ArchiveLink
+            href={`/numeros/${entry.number}`}
+            className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
+          >
+            {dezena(entry.number)}
+          </ArchiveLink>
+          <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export function RandomnessNote({ children }: { children?: ReactNode }): React.JSX.Element {
   return (
-    <aside className="max-w-[68ch] border-l-2 border-primary pl-4 text-sm text-muted-foreground">
+    <aside className="max-w-[68ch] border-t border-border pt-3 text-sm text-muted-foreground">
       <p>
         <span className="font-semibold text-foreground">Nota. </span>
         {children ??
@@ -282,7 +339,7 @@ export function Pager({
     <nav aria-label={label} className="grid gap-3 border-t-2 border-primary sm:grid-cols-2">
       {previous ? (
         <ArchiveLink href={previous.href} className={linkClass}>
-          <span className="text-xs text-muted-foreground">← {previous.label}</span>
+          <span className="text-xs text-muted-foreground">{previous.label}</span>
           <span className="font-condensed text-xl font-semibold tabular-nums">
             {previous.detail}
           </span>
@@ -292,7 +349,7 @@ export function Pager({
       )}
       {next ? (
         <ArchiveLink href={next.href} className={cn(linkClass, 'sm:items-end sm:text-right')}>
-          <span className="text-xs text-muted-foreground">{next.label} →</span>
+          <span className="text-xs text-muted-foreground">{next.label}</span>
           <span className="font-condensed text-xl font-semibold tabular-nums">{next.detail}</span>
         </ArchiveLink>
       ) : null}
