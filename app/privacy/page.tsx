@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
-import { Shield, FileCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { PageTitle, TermRows, proseClass } from '@/app/_components/archive-ui';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
@@ -35,48 +34,36 @@ export default function PrivacyPage(): React.JSX.Element {
         name={pt.meta.privacy.title}
         description={pt.meta.privacy.description}
       />
-      <div className="container mx-auto px-4 py-8">
-        <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Shield className="h-8 w-8 text-primary" />
-            <h1 className="mb-0">{pt.privacy.title}</h1>
+      <div className="container mx-auto px-4 py-10">
+        <article className={proseClass}>
+          <div className="space-y-3">
+            <PageTitle>{pt.privacy.title}</PageTitle>
+            <p className="text-sm">
+              {pt.common.lastUpdated}: {pt.privacy.updatedAt}
+            </p>
           </div>
 
-          <p className="text-muted-foreground text-sm">
-            {pt.common.lastUpdated}: {pt.privacy.updatedAt}
+          <p className="text-lg !text-foreground">
+            <strong>{pt.privacy.summaryTitle}</strong> {pt.privacy.summaryBody}
           </p>
 
-          <div className="not-prose my-8 rounded-sm border-2 border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
-            <p className="font-bold text-primary text-lg mb-2">
-              {pt.privacy.summaryTitle}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              {pt.privacy.summaryBody}
-            </p>
-          </div>
+          <section className="space-y-3">
+            <h2>{pt.privacy.controllerTitle}</h2>
+            <TermRows
+              rows={pt.privacy.controllerRows.map((row) => ({
+                term: row.label,
+                detail: row.value,
+              }))}
+            />
+          </section>
 
-          <div className="not-prose my-6 rounded-lg border border-muted bg-muted/30 p-5">
-            <h2 className="mb-3 text-lg font-semibold">{pt.privacy.controllerTitle}</h2>
-            <dl className="grid gap-2 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
-              {pt.privacy.controllerRows.map((row) => (
-                <div key={row.label} className="contents">
-                  <dt className="font-medium text-foreground">{row.label}</dt>
-                  <dd className="text-muted-foreground">{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="not-prose my-6 rounded-lg border border-primary/30 bg-primary/5 p-5 dark:bg-primary/10">
-            <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-              <FileCheck aria-hidden className="h-5 w-5 text-primary" />
-              {pt.privacy.rightsCtaTitle}
-            </h2>
-            <p className="mb-3 text-sm text-muted-foreground">{pt.privacy.rightsCtaBody}</p>
-            <Button asChild variant="default" size="sm">
+          <section className="space-y-3">
+            <h2>{pt.privacy.rightsCtaTitle}</h2>
+            <p>
+              {pt.privacy.rightsCtaBody}{' '}
               <Link href={pt.privacy.rightsCtaLinkHref}>{pt.privacy.rightsCtaLinkLabel}</Link>
-            </Button>
-          </div>
+            </p>
+          </section>
 
           {privacySections.map((section) => (
             <section key={section.title} className="space-y-3">
@@ -91,9 +78,7 @@ export default function PrivacyPage(): React.JSX.Element {
                   ))}
                 </ul>
               )}
-              {section.note && (
-                <p className="text-sm text-muted-foreground">{section.note}</p>
-              )}
+              {section.note && <p className="text-sm">{section.note}</p>}
               {section.link && (
                 <p>
                   {section.link.prefix}{' '}
@@ -106,11 +91,7 @@ export default function PrivacyPage(): React.JSX.Element {
             </section>
           ))}
 
-          <div className="not-prose mt-8 rounded-lg border border-muted bg-muted/30 p-4">
-            <p className="text-sm text-muted-foreground">
-              {pt.privacy.notice}
-            </p>
-          </div>
+          <p className="border-t border-border pt-3 text-sm">{pt.privacy.notice}</p>
         </article>
       </div>
     </>

@@ -161,7 +161,6 @@ export default async function DashboardPage() {
             className="grid gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12"
           >
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{pt.dashboard.lastDraw}</p>
               <h2
                 id="dashboard-last"
                 className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"

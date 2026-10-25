@@ -7,6 +7,21 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-10-25
+
+Redesenho completo do site como um anuário estatístico da Mega-Sena.
+
+- Identidade nova: fundo branco frio, uma única tinta (verde-petróleo) e a família Archivo com largura condensada para números e títulos. Fios finos substituem cartões, sombras e brilhos. Todos os pares de cor passam de 4,5:1 nos temas claro e escuro.
+- Cada sorteio aparece no volante completo de 60 dezenas, com as seis sorteadas marcadas: na página inicial, no concurso, na Mega da Virada, no dashboard e nas páginas de número, onde a dezena da página aparece circulada ao lado das companheiras.
+- Página inicial: o último concurso domina a primeira dobra, com prêmio, link para o rateio e a linha "Fonte: CAIXA Econômica Federal, concursos 1 a N". As funções do site viraram um índice "Neste site".
+- Dashboard, estatísticas e gerador refeitos no mesmo vocabulário: listas ranqueadas, tabelas com faixa de cabeçalho, fatos em linhas de tabela e opções do gerador em listas de rádio com a marca do volante. Saem as bolas soltas, os cartões de métrica, os gráficos de barra e rosca e as caixas de dica.
+- Rodapé, Sobre, Privacidade, Direitos LGPD e Termos no mesmo vocabulário: o rodapé vira um colofão em linhas (recursos, legal, jogo responsável com CVV 188 e o aviso do ECA, e um único Aviso), e as páginas de leitura perdem as caixas coloridas, os ícones nos títulos, os rótulos em caixa alta e os números em círculo.
+- Toda tabela e figura do arquivo leva uma linha de fonte; valores em reais ficam alinhados à direita com algarismos tabulares. `/numeros` e a Mega da Virada ganham cartogramas de frequência em quatro tons.
+- Acessibilidade: o dashboard deixa de pular de h1 para h3, as opções do gerador seguem como grupo de rádio com navegação por setas, e o texto corrido quebra linhas com `text-wrap: pretty`.
+- O teste de "resposta antiga" do gerador não verificava nada: o botão fica desabilitado durante a geração, então o segundo pedido nunca saía. Agora ele afirma que o segundo clique é bloqueado.
+- Removidos `LotteryBall`, `NumberBallLink`, `StatsCard`, o `BetCard` em cartão, os componentes de gráfico, a dependência `recharts`, os tokens `--chart-*` e 39 chaves de tradução sem uso. As quatro telas de carregamento compartilham um esqueleto de linhas.
+- A documentação do banco de testes descreve o SQLite real em memória (`node:sqlite`) que substituiu o emulador na 1.18.2.
+
 ## [1.18.2] - 2026-10-25
 
 Fecha o gate `Cloudflare Runtime` que estava vermelho desde a 1.18.0 e conclui os itens 101–105 do plano de auditoria.

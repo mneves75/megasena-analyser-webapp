@@ -141,7 +141,6 @@ export const pt = {
   },
   dashboard: {
     title: 'Dashboard',
-    lastDraw: 'Último concurso',
     archiveTitle: 'O arquivo em números',
     totalDraws: 'Concursos registrados',
     accumulationRate: 'Concursos que acumularam',
@@ -361,7 +360,7 @@ export const pt = {
   terms: {
     title: 'Termos de Uso',
     updatedAt: '3 de dezembro de 2025',
-    warningTitle: 'AVISO IMPORTANTE',
+    warningTitle: 'Aviso importante',
     warningIntro: 'Esta ferramenta NÃO aumenta suas chances de ganhar na loteria.',
     warningBody:
       'A Mega-Sena é um jogo puramente aleatório. Cada sorteio é independente. Padrões históricos não predizem resultados futuros. Todas as combinações têm exatamente a mesma probabilidade.',
@@ -398,7 +397,7 @@ export const pt = {
       },
     ],
     liability: {
-      title: '4. ISENÇÃO DE RESPONSABILIDADE',
+      title: '4. Isenção de responsabilidade',
       subtitle: 'O serviço é fornecido "como está" (as is), sem garantias de qualquer tipo.',
       intro: 'NÃO nos responsabilizamos por:',
       items: [
@@ -651,10 +650,9 @@ export const pt = {
     termsLink: 'Termos de Serviço',
     privacyLink: 'Política de Privacidade',
     rightsLink: 'Direitos LGPD',
+    aboutLink: 'Sobre o projeto',
     resourcesTitle: 'Recursos',
     responsibleGamingTitle: 'Jogo Responsável',
-    responsibleGamingText: 'Jogue com responsabilidade. A loteria é um jogo de sorte.',
-    helpTitle: 'Precisa de ajuda?',
     helpContact: 'CVV: 188 (24h, gratuito)',
     helpLinkLabel: 'Jogadores Anônimos',
     minorsNotice: 'Apostas em loterias são proibidas para menores de 18 anos (ECA, art. 81).',
@@ -667,8 +665,6 @@ export const pt = {
     disclaimerSource:
       'Este projeto não é afiliado, patrocinado ou endossado pela Caixa Econômica Federal. Os dados de sorteios são obtidos de fontes públicas oficiais.',
     rightsReservedPrefix: 'Todos os direitos reservados.',
-    developedWith: 'Desenvolvido com dados públicos da CAIXA',
-    compliance: 'Privacidade e transparência',
   },
 } as const;
 

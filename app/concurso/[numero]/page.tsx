@@ -231,13 +231,20 @@ export default async function DrawResultPage({
                 : ''}
             </AnswerSummary>
           </div>
-          <NumberField
-            struck={draw.numbers}
-            linked
-            size="lg"
-            label={`Dezenas sorteadas no concurso ${contest}`}
-            className="self-start"
-          />
+          <figure className="space-y-3 self-start border-t-2 border-primary pt-4">
+            <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              <span className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl">
+                Concurso {contest}
+              </span>
+              <span className="text-muted-foreground tabular-nums">{date}</span>
+            </figcaption>
+            <NumberField
+              struck={draw.numbers}
+              linked
+              size="lg"
+              label={`Dezenas sorteadas no concurso ${contest}`}
+            />
+          </figure>
         </div>
       </header>
 

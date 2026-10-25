@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
-import { FileText, AlertTriangle } from 'lucide-react';
+import { PageTitle, TermRows, proseClass } from '@/app/_components/archive-ui';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 
@@ -25,8 +25,8 @@ type ResponsibleGamingItem = {
 
 export default function TermsPage(): React.JSX.Element {
   const termsSections = pt.terms.sections as ReadonlyArray<TermsSection>;
-  const responsibleGamingItems =
-    pt.terms.responsibleGaming.items as ReadonlyArray<ResponsibleGamingItem>;
+  const responsibleGamingItems = pt.terms.responsibleGaming
+    .items as ReadonlyArray<ResponsibleGamingItem>;
 
   return (
     <>
@@ -35,34 +35,25 @@ export default function TermsPage(): React.JSX.Element {
         name={pt.meta.terms.title}
         description={pt.meta.terms.description}
       />
-      <div className="container mx-auto px-4 py-8">
-        <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
-          <div className="flex items-center gap-3 mb-6">
-            <FileText className="h-8 w-8 text-primary" />
-            <h1 className="mb-0">{pt.terms.title}</h1>
+      <div className="container mx-auto px-4 py-10">
+        <article className={proseClass}>
+          <div className="space-y-3">
+            <PageTitle>{pt.terms.title}</PageTitle>
+            <p className="text-sm">
+              {pt.common.lastUpdated}: {pt.terms.updatedAt}
+            </p>
           </div>
 
-          <p className="text-muted-foreground text-sm">
-            {pt.common.lastUpdated}: {pt.terms.updatedAt}
-          </p>
-
-          {/* AVISO PRINCIPAL - O MAIS IMPORTANTE */}
-          <div className="not-prose my-8 rounded-sm border-2 border-destructive/30 bg-destructive/10 p-6 dark:bg-destructive/15">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
-              <div>
-                <p className="font-bold text-destructive text-lg mb-2">
-                  {pt.terms.warningTitle}
-                </p>
-                <p className="text-destructive/90 mb-2">
-                  {pt.terms.warningIntro}
-                </p>
-                <p className="text-destructive/90 text-sm">
-                  {pt.terms.warningBody}
-                </p>
-              </div>
-            </div>
-          </div>
+          <section
+            aria-labelledby="terms-warning"
+            className="space-y-2 border-t-2 border-destructive pt-4"
+          >
+            <p id="terms-warning" className="font-title text-xl font-semibold !text-destructive">
+              {pt.terms.warningTitle}
+            </p>
+            <p className="!text-foreground">{pt.terms.warningIntro}</p>
+            <p>{pt.terms.warningBody}</p>
+          </section>
 
           {termsSections.map((section) => (
             <section key={section.title} className="space-y-3">
@@ -80,40 +71,31 @@ export default function TermsPage(): React.JSX.Element {
             </section>
           ))}
 
-          {/* ISENCAO DE RESPONSABILIDADE */}
-          <div className="not-prose my-8 rounded-sm border border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
-            <h3 className="font-bold text-foreground text-lg mb-4">
-              {pt.terms.liability.title}
-            </h3>
-            <p className="text-primary text-sm mb-4 uppercase font-medium">
-              {pt.terms.liability.subtitle}
-            </p>
-            <p className="text-muted-foreground text-sm mb-2">
-              <strong>{pt.terms.liability.intro}</strong>
-            </p>
-            <ul className="text-muted-foreground text-sm space-y-1 list-disc list-inside">
+          <section className="space-y-3">
+            <h2>{pt.terms.liability.title}</h2>
+            <p className="!text-foreground">{pt.terms.liability.subtitle}</p>
+            <p>{pt.terms.liability.intro}</p>
+            <ul className="text-muted-foreground">
               {pt.terms.liability.items.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
-          </div>
+          </section>
 
           <h2>{pt.terms.responsibleGaming.title}</h2>
           <p>{pt.terms.responsibleGaming.intro}</p>
-          <ul>
-            {responsibleGamingItems.map((item) => (
-              <li key={item.label}>
-                <strong>{item.label}</strong>:{' '}
-                {item.href ? (
-                  <a href={item.href} target="_blank" rel="noopener noreferrer">
-                    {item.value}
-                  </a>
-                ) : (
-                  item.value
-                )}
-              </li>
-            ))}
-          </ul>
+          <TermRows
+            rows={responsibleGamingItems.map((item) => ({
+              term: item.label,
+              detail: item.href ? (
+                <a href={item.href} target="_blank" rel="noopener noreferrer">
+                  {item.value}
+                </a>
+              ) : (
+                item.value
+              ),
+            }))}
+          />
 
           <h2>{pt.terms.changes.title}</h2>
           <p>{pt.terms.changes.body}</p>
@@ -121,11 +103,7 @@ export default function TermsPage(): React.JSX.Element {
           <h2>{pt.terms.law.title}</h2>
           <p>{pt.terms.law.body}</p>
 
-          <div className="not-prose mt-8 rounded-lg border border-muted bg-muted/30 p-4">
-            <p className="text-sm text-muted-foreground">
-              {pt.terms.closingNote}
-            </p>
-          </div>
+          <p className="border-t border-border pt-3 text-sm">{pt.terms.closingNote}</p>
         </article>
       </div>
     </>

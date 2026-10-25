@@ -75,7 +75,6 @@ interface HomeSnapshot {
   lastContestNumber: number | null;
 }
 
-
 async function getHomeSnapshot(): Promise<HomeSnapshot> {
   try {
     const response = await fetchApi('/api/dashboard', {
@@ -120,25 +119,28 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         extra={[generateFAQSchema(homeFaqs)]}
       />
       <div className="container mx-auto px-4 pb-20 pt-10 sm:pt-14">
-        <section className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:gap-x-16">
-          <div className="flex flex-col gap-6 lg:pt-4">
-            <h1 className="text-5xl font-semibold sm:text-6xl">{pt.home.heroTitle}</h1>
+        {/* DOM order is the phone reading order (title, field, actions, note); the
+            grid places the field beside them on wide screens. */}
+        <section className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-16 lg:gap-y-8">
+          <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-1 lg:pt-4">
+            <h1 className="text-4xl font-semibold sm:text-6xl">{pt.home.heroTitle}</h1>
             <p className="max-w-[44ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/dashboard/generator">Gerar apostas</Link>
-              </Button>
-            </div>
           </div>
 
-          <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
             <LatestDrawFigure draw={latestDraw} contestNumber={lastContestNumber} />
           </div>
 
-          <div className="lg:col-start-1 lg:row-start-2 lg:self-end">
+          <div className="grid grid-cols-2 gap-3 sm:flex lg:col-start-1 lg:row-start-2">
+            <Button asChild size="lg">
+              <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/dashboard/generator">Gerar apostas</Link>
+            </Button>
+          </div>
+
+          <div className="lg:col-start-1 lg:row-start-3">
             <RandomnessNote>{pt.home.disclaimer.text}</RandomnessNote>
           </div>
         </section>
@@ -168,7 +170,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           </ol>
         </section>
 
-        <section aria-labelledby="home-about" className="mt-20 grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+        <section
+          aria-labelledby="home-about"
+          className="mt-20 grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
+        >
           <div>
             <h2 id="home-about" className="text-3xl font-semibold">
               O que é o Mega-Sena Analyzer?

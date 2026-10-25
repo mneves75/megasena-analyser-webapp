@@ -95,10 +95,7 @@ export function SiteHeader(): React.JSX.Element {
               >
                 {link.label}
                 {active && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-3 -bottom-px h-0.5 bg-primary"
-                  />
+                  <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 bg-primary" />
                 )}
               </Link>
             );
@@ -137,10 +134,10 @@ export function SiteHeader(): React.JSX.Element {
                     aria-current={active ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     className={cn(
-                      'flex border-l-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      'flex min-h-11 items-center py-2.5 text-sm font-medium underline-offset-[6px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       active
-                        ? 'border-primary bg-tint text-foreground'
-                        : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
+                        ? 'text-foreground underline decoration-primary decoration-2'
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
                     {link.label}

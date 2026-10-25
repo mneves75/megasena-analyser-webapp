@@ -62,33 +62,6 @@ export default function GeneratorPage() {
             orçamento de forma ótima entre apostas simples (6 números) e múltiplas (7-20 números),
             minimizando o valor desperdiçado.
           </p>
-          <div className="grid border-t-2 border-primary md:grid-cols-2 md:gap-x-8">
-            <div className="border-b border-border py-4">
-              <h3 className="mb-1 text-base font-semibold text-foreground">Balanceada</h3>
-              <p>
-                Combina números quentes (mais sorteados) e frios (menos sorteados) para
-                diversificação.
-              </p>
-            </div>
-            <div className="border-b border-border py-4">
-              <h3 className="mb-1 text-base font-semibold text-foreground">Otimizada</h3>
-              <p>
-                Maximiza a utilização do orçamento, escolhendo tamanhos de aposta que minimizam o
-                troco.
-              </p>
-            </div>
-            <div className="border-b border-border py-4">
-              <h3 className="mb-1 text-base font-semibold text-foreground">Quentes / Frios</h3>
-              <p>Prioriza números com maior ou menor frequência histórica de sorteio.</p>
-            </div>
-            <div className="border-b border-border py-4">
-              <h3 className="mb-1 text-base font-semibold text-foreground">Fibonacci</h3>
-              <p>
-                Seleciona números baseados na sequência matemática de Fibonacci aplicada ao
-                intervalo 1-60.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
     </div>

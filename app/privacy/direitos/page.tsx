@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
-import { FileCheck, Mail, ShieldCheck } from 'lucide-react';
+import { PageTitle, TermRows, proseClass } from '@/app/_components/archive-ui';
 import { RightsRequestTemplate } from '@/components/privacy/rights-request-template';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -16,101 +16,78 @@ const PRIVACY_CHANNEL = pt.privacyRights.channelValue;
 
 export default function PrivacyRightsPage(): React.JSX.Element {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-10">
       <PageJsonLd
         path="/privacy/direitos"
         name={pt.meta.privacyRights.title}
         description={pt.meta.privacyRights.description}
       />
-      <article className="mx-auto max-w-[70ch] space-y-6 break-words leading-7 [&_a:hover]:underline [&_a]:text-primary [&_a]:underline-offset-2 [&_h1]:text-balance [&_h1]:font-title [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-balance [&_h2]:font-title [&_h2]:text-xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6">
-          <div className="mb-4 flex items-center gap-3">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-            <h1 className="mb-0">{pt.privacyRights.title}</h1>
-          </div>
-          <p className="text-muted-foreground text-sm">
+      <article className={proseClass}>
+        <div className="space-y-3">
+          <PageTitle>{pt.privacyRights.title}</PageTitle>
+          <p className="text-sm">
             {pt.common.lastUpdated}: {pt.privacyRights.updatedAt}
           </p>
-          <p className="text-muted-foreground">{pt.privacyRights.subtitle}</p>
+        </div>
+        <p className="text-lg !text-foreground">{pt.privacyRights.subtitle}</p>
 
-          <div className="not-prose my-6 rounded-lg border border-primary/30 bg-primary/5 p-5 dark:bg-primary/10">
-            <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
-              <Mail aria-hidden className="h-5 w-5 text-primary" />
-              {pt.privacyRights.introTitle}
-            </h2>
-            <p className="text-sm text-muted-foreground">{pt.privacyRights.introBody}</p>
-            <p className="mt-3 text-sm">
-              <span className="font-medium">{pt.privacyRights.channelLabel}:</span>{' '}
-              <a
-                href={`mailto:${PRIVACY_CHANNEL}?subject=Solicita%C3%A7%C3%A3o%20LGPD`}
-                className="underline-offset-2 hover:underline"
-              >
-                {PRIVACY_CHANNEL}
-              </a>
-            </p>
-          </div>
+        <section className="space-y-3">
+          <h2>{pt.privacyRights.introTitle}</h2>
+          <p>{pt.privacyRights.introBody}</p>
+          <p className="!text-foreground">
+            {pt.privacyRights.channelLabel}:{' '}
+            <a href={`mailto:${PRIVACY_CHANNEL}?subject=Solicita%C3%A7%C3%A3o%20LGPD`}>
+              {PRIVACY_CHANNEL}
+            </a>
+          </p>
+        </section>
 
-          <section className="not-prose my-8 space-y-3">
-            <h2 className="flex items-center gap-2 text-xl font-semibold">
-              <FileCheck aria-hidden className="h-5 w-5 text-primary" />
-              {pt.privacyRights.rightsTitle}
-            </h2>
-            <ul className="grid gap-3 sm:grid-cols-2">
-              {pt.privacyRights.rights.map((right) => (
-                <li
-                  key={right.legalRef}
-                  className="rounded-lg border border-muted bg-card/50 p-4"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                    {right.legalRef}
-                  </p>
-                  <p className="mt-1 font-medium text-foreground">{right.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{right.description}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="not-prose my-8 space-y-3">
-            <h2 className="text-xl font-semibold">{pt.privacyRights.howTitle}</h2>
-            <ol className="space-y-2 text-sm text-muted-foreground">
-              {pt.privacyRights.howSteps.map((step, idx) => (
-                <li key={step} className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                    {idx + 1}
-                  </span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </section>
-
-          <RightsRequestTemplate
-            title={pt.privacyRights.templateTitle}
-            body={pt.privacyRights.templateBody}
-            copyLabel={pt.privacyRights.copyTemplate}
-            copiedLabel={pt.privacyRights.copiedTemplate}
-            channel={PRIVACY_CHANNEL}
+        <section className="space-y-3">
+          <h2>{pt.privacyRights.rightsTitle}</h2>
+          <TermRows
+            rows={pt.privacyRights.rights.map((right) => ({
+              term: right.title,
+              detail: (
+                <>
+                  {right.description}{' '}
+                  <span className="whitespace-nowrap text-xs">({right.legalRef})</span>
+                </>
+              ),
+            }))}
           />
+        </section>
 
-          <section className="not-prose my-8 rounded-lg border border-muted bg-muted/30 p-5">
-            <h2 className="mb-2 text-lg font-semibold">{pt.privacyRights.anpdTitle}</h2>
-            <p className="text-sm text-muted-foreground">{pt.privacyRights.anpdBody}</p>
-            <p className="mt-3 text-sm">
-              <a
-                href={pt.privacyRights.anpdLinkHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline-offset-2 hover:underline"
-              >
-                {pt.privacyRights.anpdLinkLabel}
-              </a>
-            </p>
-          </section>
+        <section className="space-y-3">
+          <h2>{pt.privacyRights.howTitle}</h2>
+          <ol className="text-muted-foreground">
+            {pt.privacyRights.howSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </section>
 
-          <section className="not-prose my-8 rounded-lg border border-muted bg-muted/30 p-5">
-            <h2 className="mb-2 text-lg font-semibold">{pt.privacyRights.legalRefTitle}</h2>
-            <p className="text-sm text-muted-foreground">{pt.privacyRights.legalRefBody}</p>
-          </section>
+        <RightsRequestTemplate
+          title={pt.privacyRights.templateTitle}
+          body={pt.privacyRights.templateBody}
+          copyLabel={pt.privacyRights.copyTemplate}
+          copiedLabel={pt.privacyRights.copiedTemplate}
+          channel={PRIVACY_CHANNEL}
+        />
+
+        <section className="space-y-3">
+          <h2>{pt.privacyRights.anpdTitle}</h2>
+          <p>{pt.privacyRights.anpdBody}</p>
+          <p>
+            <a href={pt.privacyRights.anpdLinkHref} target="_blank" rel="noopener noreferrer">
+              {pt.privacyRights.anpdLinkLabel}
+            </a>
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2>{pt.privacyRights.legalRefTitle}</h2>
+          <p>{pt.privacyRights.legalRefBody}</p>
+        </section>
       </article>
     </div>
   );

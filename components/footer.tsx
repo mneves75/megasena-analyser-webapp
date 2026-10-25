@@ -2,154 +2,126 @@ import Link from 'next/link';
 import { APP_INFO } from '@/lib/constants';
 import { pt } from '@/lib/i18n';
 
+const linkClass =
+  'rounded-sm text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+const ROW = 'grid gap-2 py-4 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-8';
+const LABEL = 'text-sm font-semibold text-foreground';
+const LINKS = 'flex flex-wrap gap-x-5 gap-y-2 text-sm';
+
+const ARCHIVE_LINKS = [
+  { href: '/resultados', label: pt.nav.results, archive: true },
+  { href: '/numeros', label: pt.nav.numbersFull, archive: true },
+  { href: '/mega-da-virada', label: pt.nav.megaDaVirada, archive: true },
+  { href: '/dashboard', label: pt.nav.dashboard, archive: false },
+  { href: '/dashboard/statistics', label: pt.nav.statistics, archive: false },
+  { href: '/dashboard/generator', label: pt.nav.generator, archive: false },
+] as const;
+
+const LEGAL_LINKS = [
+  { href: '/terms', label: pt.footer.termsLink },
+  { href: '/privacy', label: pt.footer.privacyLink },
+  { href: '/privacy/direitos', label: pt.footer.rightsLink },
+  { href: '/about', label: pt.footer.aboutLink },
+] as const;
+
 export function Footer(): React.JSX.Element {
   const currentYear = new Date().getFullYear();
 
-  const linkClass =
-    'text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm';
-
   return (
     <footer className="border-t-2 border-primary bg-background">
-      <div className="container mx-auto px-4 py-12">
-        {/* Main Footer Content */}
-        <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
-          {/* About Section */}
-          <div className="space-y-3">
-            <p className="font-title text-base font-semibold text-foreground [font-stretch:88%]">
-              {APP_INFO.NAME}
-            </p>
-            <p className="max-w-[38ch] text-sm leading-relaxed text-muted-foreground">
-              {pt.footer.aboutText}
-            </p>
-          </div>
+      <div className="container mx-auto px-4 py-10">
+        <div className={`${ROW} pt-0`}>
+          <p className="font-title text-base font-semibold text-foreground [font-stretch:88%]">
+            {APP_INFO.NAME}
+          </p>
+          <p className="max-w-[68ch] text-sm text-muted-foreground">{pt.footer.aboutText}</p>
+        </div>
 
-          {/* Legal Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">{pt.footer.legalTitle}</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li>
-                <Link href="/terms" className={linkClass}>
-                  {pt.footer.termsLink}
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className={linkClass}>
-                  {pt.footer.privacyLink}
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy/direitos" className={linkClass}>
-                  {pt.footer.rightsLink}
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className={linkClass}>
-                  Sobre o Projeto
-                </Link>
-              </li>
+        <div className="divide-y divide-border border-y border-border">
+          <nav aria-labelledby="footer-resources" className={ROW}>
+            <h2 id="footer-resources" className={LABEL}>
+              {pt.footer.resourcesTitle}
+            </h2>
+            <ul className={LINKS}>
+              {ARCHIVE_LINKS.map((link) => (
+                <li key={link.href}>
+                  {/* Archive pages are full data renders: no viewport prefetch. */}
+                  <Link
+                    href={link.href}
+                    {...(link.archive ? { prefetch: false } : {})}
+                    className={linkClass}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Resources Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">{pt.footer.resourcesTitle}</h3>
-            <ul className="space-y-2.5 text-sm">
-              <li>
-                <Link href="/resultados" prefetch={false} className={linkClass}>
-                  {pt.nav.results}
-                </Link>
-              </li>
-              <li>
-                <Link href="/numeros" prefetch={false} className={linkClass}>
-                  {pt.nav.numbersFull}
-                </Link>
-              </li>
-              <li>
-                <Link href="/mega-da-virada" prefetch={false} className={linkClass}>
-                  {pt.nav.megaDaVirada}
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className={linkClass}>
-                  {pt.nav.dashboard}
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard/statistics" className={linkClass}>
-                  {pt.nav.statistics}
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard/generator" className={linkClass}>
-                  {pt.nav.generator}
-                </Link>
-              </li>
+          <nav aria-labelledby="footer-legal" className={ROW}>
+            <h2 id="footer-legal" className={LABEL}>
+              {pt.footer.legalTitle}
+            </h2>
+            <ul className={LINKS}>
+              {LEGAL_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={linkClass}>
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Responsible Gaming Section */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">
+          <section aria-labelledby="footer-responsible" className={ROW}>
+            <h2 id="footer-responsible" className={LABEL}>
               {pt.footer.responsibleGamingTitle}
-            </h3>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <p className="leading-relaxed">{pt.footer.responsibleGamingText}</p>
-              <div className="space-y-1 text-xs leading-relaxed">
-                <p className="font-medium text-foreground">{pt.footer.helpTitle}</p>
-                <p>{pt.footer.helpContact}</p>
-                <p>
+            </h2>
+            <div className="space-y-2 text-sm">
+              <ul className={LINKS}>
+                <li className="text-foreground">{pt.footer.helpContact}</li>
+                <li>
                   <a
                     href="https://www.jogadoresanonimos.com.br"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`underline underline-offset-4 ${linkClass}`}
+                    className={linkClass}
                   >
                     {pt.footer.helpLinkLabel}
                   </a>
-                </p>
-                <p>
+                </li>
+                <li>
                   <a
                     href={pt.footer.officialHelpUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`underline underline-offset-4 ${linkClass}`}
+                    className={linkClass}
                   >
                     {pt.footer.officialHelpLabel}
                   </a>
-                </p>
-                <p className="font-medium text-foreground">{pt.footer.minorsNotice}</p>
-              </div>
+                </li>
+              </ul>
+              <p className="font-medium text-foreground">{pt.footer.minorsNotice}</p>
             </div>
-          </div>
+          </section>
+
+          <section aria-labelledby="footer-disclaimer" className={ROW}>
+            <h2 id="footer-disclaimer" className={LABEL}>
+              {pt.footer.disclaimerTitle}
+            </h2>
+            <div className="max-w-[68ch] space-y-2 text-sm text-muted-foreground">
+              <p>{pt.footer.disclaimerBody}</p>
+              <p>{pt.footer.disclaimerSource}</p>
+            </div>
+          </section>
         </div>
 
-        {/* Disclaimer */}
-        <div className="mt-12 border-t border-border pt-8">
-          <div className="max-w-prose space-y-2 text-xs leading-relaxed text-muted-foreground">
-            <p className="text-sm font-semibold text-foreground">{pt.footer.disclaimerTitle}</p>
-            <p>{pt.footer.disclaimerBody}</p>
-            <p>{pt.footer.disclaimerSource}</p>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="mt-8 border-t border-border pt-6">
-          <div className="flex flex-col items-center justify-between gap-4 text-xs text-muted-foreground md:flex-row">
-            <p>
-              © {currentYear} {APP_INFO.NAME}. {pt.footer.rightsReservedPrefix}
-            </p>
-            <div className="flex items-center gap-3">
-              <span>{pt.footer.developedWith}</span>
-              <span aria-hidden className="hidden text-border md:inline">
-                •
-              </span>
-              <span className="hidden md:inline">{pt.footer.compliance}</span>
-              <span aria-hidden className="hidden text-border md:inline">
-                •
-              </span>
-              <span className="tabular-nums">v{APP_INFO.VERSION}</span>
-            </div>
-          </div>
+        <div className="flex flex-col gap-2 pt-4 text-xs text-muted-foreground sm:flex-row sm:justify-between">
+          <p>
+            © {currentYear} {APP_INFO.NAME}. {pt.footer.rightsReservedPrefix}
+          </p>
+          <p className="tabular-nums">v{APP_INFO.VERSION}</p>
         </div>
       </div>
     </footer>

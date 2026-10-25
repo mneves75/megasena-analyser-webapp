@@ -63,7 +63,6 @@ describe('Footer - Core Sections', () => {
   it('should render about section', () => {
     render(<Footer />);
 
-    // O wordmark da marca substitui o heading "Sobre o Projeto" na coluna institucional.
     expect(screen.getAllByText(/mega-sena analyzer/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/ferramenta de an.lise estat.stica/i)).toBeInTheDocument();
   });
@@ -71,13 +70,21 @@ describe('Footer - Core Sections', () => {
   it('should render legal section', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/^legal$/i)).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /^legal$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /sobre o projeto/i })).toHaveAttribute(
+      'href',
+      '/about'
+    );
   });
 
   it('should render resources section', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/recursos/i)).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /recursos/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /resultados/i })).toHaveAttribute(
+      'href',
+      '/resultados'
+    );
   });
 
   it('should render responsible gaming section', () => {

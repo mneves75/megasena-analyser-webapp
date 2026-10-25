@@ -31,7 +31,12 @@ export const textLinkClass = cn(
   focusRing
 );
 
-const FREQUENCY_SHADES = ['bg-card', 'bg-primary/10', 'bg-primary/20', 'bg-primary/35'] as const;
+const FREQUENCY_SHADES = [
+  'bg-background',
+  'bg-primary/10',
+  'bg-primary/20',
+  'bg-primary/35',
+] as const;
 
 /** Cartogram cell shade: darker for numbers drawn more often within [min, max]. */
 export function frequencyShadeClass(value: number, min: number, max: number): string {
@@ -130,6 +135,29 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
           <dd className="text-right font-condensed text-xl font-semibold tabular-nums">
             {fact.value}
           </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** Long-form reading pages (about, privacy, terms): measure, rhythm and hairline-ruled section heads. */
+export const proseClass =
+  'max-w-[60ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:font-title [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
+
+export interface TermRow {
+  term: string;
+  detail: ReactNode;
+}
+
+/** Text definitions as ruled rows: the term left, its prose right (FactList is for figures). */
+export function TermRows({ rows }: { rows: readonly TermRow[] }): React.JSX.Element {
+  return (
+    <dl className="divide-y divide-border border-t border-border text-sm">
+      {rows.map((row) => (
+        <div key={row.term} className="grid gap-1 py-3 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-6">
+          <dt className="font-medium text-foreground">{row.term}</dt>
+          <dd className="text-muted-foreground">{row.detail}</dd>
         </div>
       ))}
     </dl>
