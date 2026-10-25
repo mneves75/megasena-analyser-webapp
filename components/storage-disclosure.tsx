@@ -2,7 +2,6 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { Shield } from 'lucide-react';
 import { pt } from '@/lib/i18n';
 
 const STORAGE_KEY = 'megasena-privacy-ack';
@@ -60,24 +59,23 @@ export function StorageDisclosure(): React.ReactElement | null {
     <div
       role="region"
       aria-label={pt.storageBanner.ariaLabel}
-      className="border-b border-border bg-muted/40"
+      className="border-b border-border bg-tint"
     >
       <div className="container mx-auto flex items-start gap-3 px-4 py-3">
-        <Shield aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-sm font-semibold text-foreground">{pt.storageBanner.title}</p>
           <p className="text-xs text-muted-foreground">{pt.storageBanner.body}</p>
           <p className="text-xs text-muted-foreground">
             <Link
               href={pt.storageBanner.learnMoreHref}
-              className="underline-offset-2 hover:underline"
+              className="underline underline-offset-2 hover:text-foreground"
             >
               {pt.storageBanner.learnMore}
             </Link>
             <span aria-hidden> · </span>
             <Link
               href={pt.storageBanner.rightsLinkHref}
-              className="underline-offset-2 hover:underline"
+              className="underline underline-offset-2 hover:text-foreground"
             >
               {pt.storageBanner.rightsLink}
             </Link>
@@ -86,7 +84,7 @@ export function StorageDisclosure(): React.ReactElement | null {
         <button
           type="button"
           onClick={handleAccept}
-          className="inline-flex shrink-0 items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {pt.storageBanner.accept}
         </button>

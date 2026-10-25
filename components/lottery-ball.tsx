@@ -6,23 +6,24 @@ interface LotteryBallProps {
   className?: string;
 }
 
+/** A drawn number: the ink-filled disc the number field strikes. */
 export function LotteryBall({ number, size = 'md', className }: LotteryBallProps) {
   const sizeClasses = {
-    xs: 'w-6 h-6 text-[10px]',
+    xs: 'w-6 h-6 text-[11px]',
     sm: 'w-8 h-8 text-xs',
-    md: 'w-12 h-12 text-base',
-    lg: 'w-16 h-16 text-xl',
+    md: 'w-11 h-11 text-base',
+    lg: 'w-14 h-14 text-xl',
   };
 
   return (
     <div
       className={cn(
-        'flex items-center justify-center rounded-full bg-gradient-to-b from-primary-glow to-primary font-semibold text-primary-foreground tabular-nums shadow-ball transition-transform duration-200 ease-out-quint hover:scale-105',
+        'flex items-center justify-center rounded-full bg-primary font-condensed font-semibold text-primary-foreground tabular-nums',
         sizeClasses[size],
         className
       )}
     >
-      {number}
+      {String(number).padStart(2, '0')}
     </div>
   );
 }

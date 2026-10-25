@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
-import { ChevronRight, Info } from 'lucide-react';
 import { LotteryBall } from '@/components/lottery-ball';
 import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
@@ -34,12 +33,15 @@ export const textLinkClass = cn(
 /** Visible trail; the same items feed the BreadcrumbList JSON-LD. */
 export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): React.JSX.Element {
   return (
-    <nav aria-label="Trilha de navegação" className="text-sm text-muted-foreground">
-      <ol className="flex flex-wrap items-center gap-1">
+    <nav
+      aria-label="Trilha de navegação"
+      className="border-b border-border pb-2 text-sm text-muted-foreground"
+    >
+      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
-            <li key={item.url} className="flex items-center gap-1">
+            <li key={item.url} className="flex items-center gap-2">
               {isLast ? (
                 <span aria-current="page" className="text-foreground">
                   {item.name}
@@ -52,7 +54,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
                   >
                     {item.name}
                   </ArchiveLink>
-                  <ChevronRight aria-hidden className="h-3.5 w-3.5" />
+                  <span aria-hidden className="text-border">/</span>
                 </>
               )}
             </li>
@@ -65,7 +67,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
 
 export function PageTitle({ children }: { children: ReactNode }): React.JSX.Element {
   return (
-    <h1 className="text-balance font-title text-3xl font-bold tracking-tight sm:text-4xl">
+    <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">
       {children}
     </h1>
   );
@@ -95,7 +97,7 @@ export function AnswerSummary({ children }: { children: ReactNode }): React.JSX.
   return (
     <p
       data-testid="answer-summary"
-      className="max-w-[70ch] text-lg leading-relaxed text-foreground"
+      className="max-w-[68ch] text-lg leading-relaxed text-foreground"
     >
       {children}
     </p>
@@ -109,9 +111,8 @@ export function ArchiveFreshness({ archive }: { archive: ArchiveState }): React.
   }
   return (
     <p className="text-sm text-muted-foreground">
-      Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)})
-      {archive.lastModified ? `, base atualizada em ${formatDateInBrasilia(archive.lastModified)}` : ''}{' '}
-      · resultados oficiais da CAIXA
+      Fonte: CAIXA Econômica Federal. Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)})
+      {archive.lastModified ? `, base atualizada em ${formatDateInBrasilia(archive.lastModified)}` : ''}.
     </p>
   );
 }
@@ -132,14 +133,14 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
   return (
     <dl
       className={cn(
-        'grid gap-px overflow-hidden rounded-xl border border-border bg-border',
+        'grid gap-px border-y-2 border-y-primary bg-border',
         columns
       )}
     >
       {facts.map((fact) => (
-        <div key={fact.term} className="flex flex-col gap-1 bg-card p-4">
+        <div key={fact.term} className="flex flex-col gap-1 bg-background px-1 py-4 sm:px-4">
           <dt className="text-sm text-muted-foreground">{fact.term}</dt>
-          <dd className="font-title text-xl font-semibold tabular-nums">{fact.value}</dd>
+          <dd className="font-condensed text-2xl font-semibold tabular-nums">{fact.value}</dd>
           {fact.hint ? <dd className="text-xs text-muted-foreground">{fact.hint}</dd> : null}
         </div>
       ))}
@@ -149,30 +150,28 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
 
 export function SectionHeading({ id, children }: { id: string; children: ReactNode }): React.JSX.Element {
   return (
-    <h2 id={id} className="text-balance font-title text-xl font-semibold tracking-tight sm:text-2xl">
+    <h2 id={id} className="text-balance font-title text-2xl font-semibold sm:text-3xl">
       {children}
     </h2>
   );
 }
 
 export function TableFrame({ children }: { children: ReactNode }): React.JSX.Element {
-  return <div className="overflow-x-auto rounded-xl border border-border bg-card">{children}</div>;
+  return <div className="overflow-x-auto border-y-2 border-y-primary bg-card">{children}</div>;
 }
 
 export const tableClass = 'w-full min-w-[32rem] border-collapse text-left text-sm';
-export const thClass = 'px-4 py-3 font-medium text-muted-foreground';
+/** Head cells sit on the tinted band, set in the condensed width. */
+export const thClass = 'bg-tint px-4 py-2.5 font-condensed text-sm font-semibold text-foreground';
 /** Body cells, including row headers (`<th scope="row">`). */
-export const cellClass = 'border-t border-border px-4 py-3 tabular-nums';
+export const cellClass = 'border-t border-border px-4 py-2.5 tabular-nums';
 
-/** Compact, non-interactive dezenas for dense tables (no client JS per ball). */
+/** Dezenas in dense tables: plain figures in fixed slots, the yearbook way. */
 export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.JSX.Element {
   return (
-    <span className="flex flex-wrap gap-1">
+    <span className="flex flex-wrap gap-x-2 gap-y-1 font-condensed text-base font-semibold">
       {numbers.map((number) => (
-        <span
-          key={number}
-          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold tabular-nums text-foreground"
-        >
+        <span key={number} className="w-6 text-center tabular-nums">
           {dezena(number)}
         </span>
       ))}
@@ -227,9 +226,9 @@ export function DrawsTable({
 
 export function RandomnessNote({ children }: { children?: ReactNode }): React.JSX.Element {
   return (
-    <aside className="flex max-w-[75ch] items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-      <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
+    <aside className="max-w-[68ch] border-l-2 border-primary pl-4 text-sm text-muted-foreground">
       <p>
+        <span className="font-semibold text-foreground">Nota. </span>
         {children ??
           'A Mega-Sena é aleatória: cada concurso é independente e nenhum dado histórico prevê o próximo resultado.'}{' '}
         <Link href="/about" className={textLinkClass}>
@@ -256,15 +255,15 @@ export function Pager({
   label: string;
 }): React.JSX.Element {
   const linkClass = cn(
-    'flex min-h-11 flex-col rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:bg-accent',
+    'flex min-h-11 flex-col rounded-sm py-3 transition-colors hover:text-primary',
     focusRing
   );
   return (
-    <nav aria-label={label} className="grid gap-3 sm:grid-cols-2">
+    <nav aria-label={label} className="grid gap-3 border-t-2 border-primary sm:grid-cols-2">
       {previous ? (
         <ArchiveLink href={previous.href} className={linkClass}>
           <span className="text-xs text-muted-foreground">← {previous.label}</span>
-          <span className="font-medium tabular-nums">{previous.detail}</span>
+          <span className="font-condensed text-xl font-semibold tabular-nums">{previous.detail}</span>
         </ArchiveLink>
       ) : (
         <span aria-hidden />
@@ -272,7 +271,7 @@ export function Pager({
       {next ? (
         <ArchiveLink href={next.href} className={cn(linkClass, 'sm:items-end sm:text-right')}>
           <span className="text-xs text-muted-foreground">{next.label} →</span>
-          <span className="font-medium tabular-nums">{next.detail}</span>
+          <span className="font-condensed text-xl font-semibold tabular-nums">{next.detail}</span>
         </ArchiveLink>
       ) : null}
     </nav>

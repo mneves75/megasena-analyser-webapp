@@ -18,8 +18,8 @@ module.exports = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
-          glow: 'hsl(var(--primary-glow))',
         },
+        tint: 'hsl(var(--tint))',
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
@@ -56,24 +56,18 @@ module.exports = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['var(--font-geist)', 'system-ui', '-apple-system', 'sans-serif'],
-        title: ['var(--font-title)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-archivo)', 'system-ui', '-apple-system', 'sans-serif'],
+        title: ['var(--font-archivo)', 'system-ui', '-apple-system', 'sans-serif'],
       },
       letterSpacing: {
         tighter: '-0.05em',
         tight: '-0.02em',
-      },
-      boxShadow: {
-        elegant: 'var(--shadow-elegant)',
-        glow: 'var(--shadow-glow)',
-        ball: 'var(--shadow-ball)',
       },
       transitionTimingFunction: {
         smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
         'out-quint': 'cubic-bezier(0.23, 1, 0.32, 1)',
         'out-cubic': 'cubic-bezier(0.33, 1, 0.68, 1)',
         'in-out-cubic': 'cubic-bezier(0.645, 0.045, 0.355, 1)',
-        'out-back': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
     },
   },

@@ -65,16 +65,21 @@ export function SiteHeader(): React.JSX.Element {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
+    <header className="sticky top-0 z-40 border-b border-border bg-background">
+      <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
         <Link
           href="/"
-          className="rounded-md font-title text-lg font-bold tracking-tight text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex items-center gap-2.5 rounded-sm font-title text-lg font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
         >
+          <span aria-hidden className="grid grid-cols-3 gap-0.5">
+            {[0, 1, 2, 3, 4, 5].map((dot) => (
+              <span key={dot} className="h-1.5 w-1.5 rounded-full bg-primary" />
+            ))}
+          </span>
           Mega-Sena Analyzer
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação principal">
+        <nav className="hidden h-full items-stretch gap-1 lg:flex" aria-label="Navegação principal">
           {NAV_LINKS.map((link) => {
             const active = isLinkActive(pathname, link);
             return (
@@ -84,7 +89,7 @@ export function SiteHeader(): React.JSX.Element {
                 prefetch={link.prefetch ?? null}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                  'relative flex items-center px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -92,7 +97,7 @@ export function SiteHeader(): React.JSX.Element {
                 {active && (
                   <span
                     aria-hidden
-                    className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary"
+                    className="absolute inset-x-3 -bottom-px h-0.5 bg-primary"
                   />
                 )}
               </Link>
@@ -108,7 +113,7 @@ export function SiteHeader(): React.JSX.Element {
             aria-expanded={menuOpen}
             aria-controls="site-header-mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -132,10 +137,10 @@ export function SiteHeader(): React.JSX.Element {
                     aria-current={active ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     className={cn(
-                      'flex rounded-md px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      'flex border-l-2 px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       active
-                        ? 'bg-accent text-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                        ? 'border-primary bg-tint text-foreground'
+                        : 'border-transparent text-muted-foreground hover:bg-accent hover:text-foreground'
                     )}
                   >
                     {link.label}

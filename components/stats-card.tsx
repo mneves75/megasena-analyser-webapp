@@ -23,11 +23,11 @@ export function StatsCard({
   const compact = variant === 'compact';
 
   return (
-    <Card className={cn('hover-lift', className)}>
+    <Card className={className}>
       <CardHeader
         className={cn(
           'flex flex-row items-center justify-between space-y-0',
-          compact ? 'p-4 pb-1' : 'pb-2'
+          compact ? 'px-4 pb-1 pt-3' : 'pb-1'
         )}
       >
         <CardTitle
@@ -38,7 +38,7 @@ export function StatsCard({
         {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
       </CardHeader>
       <CardContent className={cn(compact && 'p-4 pt-0')}>
-        <div className={cn('font-bold tabular-nums', compact ? 'text-xl' : 'text-2xl')}>{value}</div>
+        <div className={cn('font-condensed font-semibold tabular-nums', compact ? 'text-2xl' : 'text-3xl')}>{value}</div>
         {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
       </CardContent>
     </Card>

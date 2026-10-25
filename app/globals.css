@@ -1,103 +1,84 @@
 @import "tailwindcss";
 @config "../tailwind.config.cjs";
 
+/*
+ * The site is set like a statistical yearbook: a cool white page, near-black
+ * text and one printing ink (petrol teal) for rules, table heads and the drawn
+ * numbers. Every pair below was measured at 4.5:1 or better in both themes,
+ * including `--primary` and `--destructive` as text on every ground they sit on
+ * and as a surface under their `-foreground`.
+ */
 @layer base {
   :root {
-    /* Off-white with a faint cool tint, never pure #fff (keeps surface depth) */
-    --background: 200 24% 99%;
-    --foreground: 210 16% 12%;
+    --background: 200 25% 98.5%;
+    --foreground: 205 32% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 210 16% 12%;
+    --card-foreground: 205 32% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 16% 12%;
-    /* Deep, desaturated teal. White text on this needs 4.5:1 for WCAG AA:
-       L=38% measured 3.98 and Lighthouse flagged the CTA and the privacy-banner
-       button. L=34% gives 4.81 against white text and 4.71 against the page
-       background, so both the label and the button edge stay compliant. */
-    --primary: 192 72% 34%;
+    --popover-foreground: 205 32% 11%;
+    /* The ink. 6.9:1 as text on the page, 7.2:1 under white text. */
+    --primary: 190 86% 24%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 192 64% 34%;
-    --secondary: 200 14% 95.5%;
-    --secondary-foreground: 210 12% 18%;
-    --muted: 200 14% 95.5%;
-    --muted-foreground: 210 8% 42%;
-    --accent: 200 14% 95.5%;
-    --accent-foreground: 210 12% 18%;
-    --destructive: 0 72% 46%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 210 14% 90%;
-    --input: 210 14% 90%;
-    --ring: 192 72% 38%;
-    --radius: 0.5rem;
+    --secondary: 195 22% 94%;
+    --secondary-foreground: 205 32% 11%;
+    --muted: 195 22% 94%;
+    --muted-foreground: 205 12% 36%;
+    --accent: 195 22% 94%;
+    --accent-foreground: 205 32% 11%;
+    /* Table head bands and the shaded cells of the number field. */
+    --tint: 190 45% 93%;
+    --destructive: 2 70% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 200 14% 80%;
+    --input: 200 14% 72%;
+    --ring: 190 86% 30%;
+    --radius: 0.125rem;
 
-    /* Height of the sticky app-shell header (components/site-header.tsx: h-16).
-       Exposed so sticky sub-navs and anchor scroll-margins can offset against it. */
-    --app-header-height: 4rem;
+    /* Height of the sticky header (components/site-header.tsx). Sticky sub-navs
+       and anchor scroll-margins offset against it. */
+    --app-header-height: 3.5rem;
 
-    --chart-1: 192 72% 42%;
-    --chart-2: 168 58% 40%;
-    --chart-3: 142 52% 42%;
-    --chart-4: 248 42% 56%;
-    --chart-5: 344 58% 52%;
+    /* Sequential ramp of the one ink, lightest to darkest, for charts. */
+    --chart-1: 190 86% 24%;
+    --chart-2: 190 60% 38%;
+    --chart-3: 190 44% 54%;
+    --chart-4: 190 36% 70%;
+    --chart-5: 200 14% 62%;
 
-    /* Tinted elevation, not a neon halo */
-    --shadow-elegant: 0 10px 30px -14px hsl(200 30% 20% / 0.12);
-    --shadow-glow: 0 8px 24px -10px hsl(192 56% 36% / 0.22);
-    /* Lottery ball: inset specular ring + tinted drop, theme-aware */
-    --shadow-ball: inset 0 0 0 1px hsl(0 0% 100% / 0.2), 0 2px 5px -1px hsl(192 56% 22% / 0.45);
-
-    --transition-smooth: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-
-    /* Curated easing curves (Emil Kowalski animation principles) */
     --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
     --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
-    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dark {
-    --background: 210 16% 6%;
-    --foreground: 200 12% 96%;
-    --card: 210 14% 9%;
-    --card-foreground: 200 12% 96%;
-    --popover: 210 14% 9%;
-    --popover-foreground: 200 12% 96%;
-    /* Like --destructive below, this is both a surface (`bg-primary`) and a text
-       colour (`text-primary` on cards). Darkening it to satisfy white-on-primary
-       broke the text usage instead (3.42 on #162126). On a dark theme the
-       resolution is to go LIGHTER and pair it with a dark foreground:
-       L=52% reads 6.42 as text on the lightest card and 6.73 as a surface under
-       the dark foreground below. */
-    --primary: 192 58% 52%;
-    --primary-foreground: 200 40% 10%;
-    --primary-glow: 192 54% 60%;
-    --secondary: 210 12% 16%;
-    --secondary-foreground: 200 12% 96%;
-    --muted: 210 12% 16%;
-    --muted-foreground: 200 8% 64%;
-    --accent: 210 12% 16%;
-    --accent-foreground: 200 12% 96%;
-    /* This token is used BOTH as text (`text-destructive`, e.g. the footer
-       notice) and as a surface (`bg-destructive` on badges), which pull in
-       opposite directions on a dark background. At L=44% the text failed at
-       2.88. Raising it to L=60% gives 5.08 as text, and the surface stays
-       compliant by pairing it with a DARK foreground (4.83) instead of the
-       near-white one, which would have dropped the badge to 3.62. */
-    --destructive: 0 58% 60%;
-    --destructive-foreground: 0 40% 10%;
-    --border: 210 12% 17%;
-    --input: 210 12% 17%;
-    --ring: 192 58% 44%;
+    --background: 200 24% 7%;
+    --foreground: 190 14% 93%;
+    --card: 200 20% 10%;
+    --card-foreground: 190 14% 93%;
+    --popover: 200 20% 10%;
+    --popover-foreground: 190 14% 93%;
+    /* On the dark page the ink goes light and pairs with a dark foreground:
+       8.9:1 as text, 8.5:1 as a surface. */
+    --primary: 186 58% 56%;
+    --primary-foreground: 195 60% 8%;
+    --secondary: 200 18% 14%;
+    --secondary-foreground: 190 14% 93%;
+    --muted: 200 18% 14%;
+    --muted-foreground: 195 10% 68%;
+    --accent: 200 18% 14%;
+    --accent-foreground: 190 14% 93%;
+    --tint: 190 40% 15%;
+    --destructive: 2 70% 66%;
+    --destructive-foreground: 0 50% 10%;
+    --border: 200 14% 24%;
+    --input: 200 14% 32%;
+    --ring: 186 58% 56%;
 
-    --chart-1: 192 60% 54%;
-    --chart-2: 168 52% 50%;
-    --chart-3: 142 46% 52%;
-    --chart-4: 248 46% 64%;
-    --chart-5: 344 56% 58%;
-
-    --shadow-elegant: 0 10px 30px -14px hsl(210 40% 2% / 0.5);
-    --shadow-glow: 0 8px 24px -10px hsl(192 50% 30% / 0.4);
-    --shadow-ball: inset 0 0 0 1px hsl(0 0% 100% / 0.14), 0 2px 6px -1px hsl(210 40% 2% / 0.55);
+    --chart-1: 186 58% 56%;
+    --chart-2: 188 44% 44%;
+    --chart-3: 190 36% 34%;
+    --chart-4: 192 30% 26%;
+    --chart-5: 200 10% 46%;
   }
 }
 
@@ -105,16 +86,43 @@
   * {
     @apply border-border;
   }
-  
+
+  html {
+    scroll-padding-top: calc(var(--app-header-height) + 1rem);
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: 'rlig' 1, 'calt' 1;
-    letter-spacing: 0;
+    font-size: 1rem;
+    line-height: 1.6;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-title;
-    letter-spacing: 0;
+    font-stretch: 88%;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  :focus-visible {
+    outline-color: hsl(var(--ring));
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  input,
+  textarea {
+    caret-color: hsl(var(--primary));
   }
 
   button,
@@ -122,6 +130,14 @@
   select,
   textarea {
     font: inherit;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  html {
+    scrollbar-color: hsl(var(--border)) transparent;
   }
 }
 
@@ -134,36 +150,30 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Numerals and table heads use the family's condensed width. */
+  .font-condensed {
+    font-stretch: 75%;
+  }
+
   .transition-smooth {
-    transition: var(--transition-smooth);
-  }
-
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  .shadow-elegant {
-    box-shadow: var(--shadow-elegant);
-  }
-
-  .hover\:shadow-glow:hover {
-    box-shadow: var(--shadow-glow);
-  }
-
-  /* GPU-friendly hover elevation: transform + shadow only, premium easing */
-  .hover-lift {
-    transition:
-      transform 220ms var(--ease-out-quint),
-      box-shadow 220ms var(--ease-out-quint);
-  }
-
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-glow);
+    transition-property: color, background-color, border-color, text-decoration-color, opacity, transform;
+    transition-duration: 180ms;
+    transition-timing-function: var(--ease-out-quint);
   }
 }
 
-/* Respect the user's reduced-motion preference (accessibility golden rule) */@media (prefers-reduced-motion: reduce) {
+/* The number field's one authored moment: struck discs press in, already visible. */
+@keyframes number-field-strike {
+  from {
+    transform: scale(0.72);
+  }
+}
+
+.number-field-strike {
+  animation: number-field-strike 320ms var(--ease-out-quint) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
@@ -171,9 +181,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-
-  .hover-lift:hover {
-    transform: none;
   }
 }

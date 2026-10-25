@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
-import type { ElementType } from 'react';
-import { Activity, AlertTriangle, BarChart3, ChevronDown, Flame, Sparkles } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
 import { logger } from '@/lib/logger';
-import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { buildPageMetadata } from '@/lib/seo/metadata';
-import { ArchiveLink, NumberBallLink, inlineLinkClass } from '@/app/_components/archive-ui';
+import { ArchiveLink, RandomnessNote, textLinkClass } from '@/app/_components/archive-ui';
+import { NumberField } from '@/components/number-field';
 
 const homeFaqs = [
   {
@@ -75,11 +75,6 @@ interface HomeSnapshot {
   lastContestNumber: number | null;
 }
 
-const secondaryFeatures: readonly { icon: ElementType; title: string; description: string }[] = [
-  { icon: Flame, title: pt.home.features[1].title, description: pt.home.features[1].description },
-  { icon: Sparkles, title: pt.home.features[2].title, description: pt.home.features[2].description },
-  { icon: Activity, title: pt.home.features[3].title, description: pt.home.features[3].description },
-];
 
 async function getHomeSnapshot(): Promise<HomeSnapshot> {
   try {
@@ -124,127 +119,92 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         description={pt.meta.home.description}
         extra={[generateFAQSchema(homeFaqs)]}
       />
-      <div className="container mx-auto px-4 py-12 sm:py-16">
-        {/* Hero */}
-        <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            {lastContestNumber !== null && (
-              <FreshnessBadge contestNumber={lastContestNumber} />
-            )}
-            <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
-              {pt.home.heroTitle}
-            </h1>
-            <p className="max-w-[46ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="container mx-auto px-4 pb-20 pt-10 sm:pt-14">
+        <section className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_1fr] lg:gap-x-16">
+          <div className="flex flex-col gap-6 lg:pt-4">
+            <h1 className="text-5xl font-semibold sm:text-6xl">{pt.home.heroTitle}</h1>
+            <p className="max-w-[44ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg">
                 <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
               </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/dashboard/generator">Gerar apostas</Link>
+              </Button>
             </div>
-            <p className="max-w-[52ch] text-sm text-muted-foreground">
-              A Mega-Sena é aleatória: nenhuma análise prevê resultados. Esta ferramenta é
-              educacional e recreativa.
+          </div>
+
+          <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
+            <LatestDrawFigure draw={latestDraw} contestNumber={lastContestNumber} />
+          </div>
+
+          <div className="lg:col-start-1 lg:row-start-2 lg:self-end">
+            <RandomnessNote>{pt.home.disclaimer.text}</RandomnessNote>
+          </div>
+        </section>
+
+        <section aria-labelledby="home-contents" className="mt-20">
+          <h2 id="home-contents" className="text-3xl font-semibold">
+            {pt.home.contentsTitle}
+          </h2>
+          <ol className="mt-6 border-t-2 border-primary">
+            {pt.home.contents.map((entry) => {
+              const LinkComponent = entry.archive ? ArchiveLink : Link;
+              return (
+                <li
+                  key={entry.href}
+                  className="grid gap-1 border-b border-border py-5 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-8"
+                >
+                  <LinkComponent
+                    href={entry.href}
+                    className="w-fit rounded-sm font-title text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
+                  >
+                    {entry.title}
+                  </LinkComponent>
+                  <p className="max-w-[60ch] text-muted-foreground">{entry.description}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <section aria-labelledby="home-about" className="mt-20 grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+          <div>
+            <h2 id="home-about" className="text-3xl font-semibold">
+              O que é o Mega-Sena Analyzer?
+            </h2>
+            <p className="mt-4 max-w-[60ch] text-muted-foreground">
+              O Mega-Sena Analyzer é uma ferramenta gratuita que analisa todos os sorteios
+              históricos da Mega-Sena utilizando dados oficiais da API pública da CAIXA Econômica
+              Federal. A plataforma oferece estatísticas de frequência, análise de padrões,
+              distribuições numéricas e um gerador de apostas baseado em programação dinâmica.
+            </p>
+            <p className="mt-4 max-w-[60ch] text-muted-foreground">
+              Desenvolvido para fins educacionais e recreativos, o sistema não possui nenhuma
+              capacidade preditiva. A Mega-Sena é um jogo puramente aleatório onde cada sorteio é um
+              evento independente.{' '}
+              <Link href="/terms" className={textLinkClass}>
+                {pt.home.disclaimer.termsLinkLabel}
+              </Link>
             </p>
           </div>
 
-          <LatestDrawPanel draw={latestDraw} contestNumber={lastContestNumber} />
-        </section>
-
-        {/* Features (highlight + list) */}
-        <section className="mt-20">
-          <h2 className="text-balance text-2xl font-bold tracking-tight">
-            O que você encontra
-          </h2>
-          <div className="mt-6 grid gap-6 md:grid-cols-5 md:items-stretch">
-            <div className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 sm:p-8 md:col-span-2">
-              <div>
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <BarChart3 className="h-6 w-6" />
-                </span>
-                <h3 className="mt-5 text-xl font-semibold">{pt.home.features[0].title}</h3>
-                <p className="mt-2 max-w-[34ch] text-muted-foreground">
-                  {pt.home.features[0].description}
-                </p>
-              </div>
-              <Link
-                href="/dashboard/statistics"
-                className="mt-6 inline-flex items-center text-sm font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                Ver estatísticas detalhadas
-              </Link>
-            </div>
-
-            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card md:col-span-3">
-              {secondaryFeatures.map(({ icon: Icon, title, description }) => (
-                <li key={title} className="flex items-start gap-4 p-5 sm:p-6">
-                  <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-medium">{title}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-                  </div>
-                </li>
+          <div>
+            <h2 className="text-3xl font-semibold">Perguntas frequentes</h2>
+            <div className="mt-6 border-t-2 border-primary">
+              {homeFaqs.map((faq) => (
+                <details key={faq.question} className="group border-b border-border">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                    {faq.question}
+                    <ChevronDown
+                      aria-hidden
+                      className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
+                    />
+                  </summary>
+                  <p className="max-w-[65ch] pb-5 text-muted-foreground">{faq.answer}</p>
+                </details>
               ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Responsibility notice (compact) */}
-        <section className="mt-16 max-w-[75ch]">
-          <div className="rounded-xl border border-border bg-muted/40 p-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle
-                aria-hidden
-                className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
-              />
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{pt.home.disclaimer.title}: </span>
-                {pt.home.disclaimer.text}{' '}
-                <Link
-                  href="/terms"
-                  className="underline underline-offset-4 hover:text-foreground"
-                >
-                  {pt.home.disclaimer.termsLinkLabel}
-                </Link>
-              </p>
             </div>
-          </div>
-        </section>
-
-        {/* About + FAQ */}
-        <section className="mt-20 max-w-[70ch]">
-          <h2 className="text-balance text-2xl font-bold tracking-tight">
-            O que é o Mega-Sena Analyzer?
-          </h2>
-          <p className="mt-4 text-muted-foreground">
-            O Mega-Sena Analyzer é uma ferramenta gratuita que analisa todos os sorteios
-            históricos da Mega-Sena utilizando dados oficiais da API pública da CAIXA Econômica
-            Federal. A plataforma oferece estatísticas de frequência, análise de padrões,
-            distribuições numéricas e um gerador inteligente de apostas baseado em programação
-            dinâmica.
-          </p>
-          <p className="mt-4 text-muted-foreground">
-            Desenvolvido para fins educacionais e recreativos, o sistema não possui nenhuma
-            capacidade preditiva. A Mega-Sena é um jogo puramente aleatório onde cada sorteio é um
-            evento independente.
-          </p>
-
-          <h2 className="mt-12 text-balance text-2xl font-bold tracking-tight">
-            Perguntas Frequentes
-          </h2>
-          <div className="mt-4 space-y-3">
-            {homeFaqs.map((faq) => (
-              <details key={faq.question} className="group rounded-lg border border-border bg-card p-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-                  {faq.question}
-                  <ChevronDown
-                    aria-hidden
-                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-out-quint group-open:rotate-180"
-                  />
-                </summary>
-                <p className="mt-3 text-sm text-muted-foreground">{faq.answer}</p>
-              </details>
-            ))}
           </div>
         </section>
       </div>
@@ -252,18 +212,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   );
 }
 
-function FreshnessBadge({ contestNumber }: { contestNumber: number }): React.JSX.Element {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
-      <span>
-        Dados até o concurso <span className="tabular-nums">#{contestNumber}</span>
-      </span>
-    </span>
-  );
-}
-
-function LatestDrawPanel({
+function LatestDrawFigure({
   draw,
   contestNumber,
 }: {
@@ -272,57 +221,56 @@ function LatestDrawPanel({
 }): React.JSX.Element {
   if (!draw) {
     return (
-      <aside className="rounded-2xl border border-border bg-card p-6 shadow-elegant sm:p-8">
-        <p className="text-sm font-medium text-muted-foreground">Último sorteio</p>
-        <p className="mt-3 text-muted-foreground">
-          Os dados do último sorteio estão temporariamente indisponíveis. Acesse o dashboard para
-          ver o histórico completo.
+      <figure className="border-t-2 border-primary pt-5">
+        <figcaption className="font-title text-3xl font-semibold [font-stretch:88%]">
+          Último concurso
+        </figcaption>
+        <NumberField struck={[]} label="Dezenas de 01 a 60" className="mt-5" />
+        <p className="mt-4 text-muted-foreground">
+          Os dados do último sorteio estão temporariamente indisponíveis. Os resultados de todos os
+          concursos continuam em{' '}
+          <ArchiveLink href="/resultados" className={textLinkClass}>
+            Resultados
+          </ArchiveLink>
+          .
         </p>
-        <Button asChild variant="outline" size="sm" className="mt-6">
-          <Link href="/dashboard">Ir para o dashboard</Link>
-        </Button>
-      </aside>
+      </figure>
     );
   }
 
+  const prize =
+    draw.accumulated || draw.prizeSena <= 0 ? 'Acumulou' : formatCurrency(draw.prizeSena);
+
   return (
-    <aside className="rounded-2xl border border-border bg-card p-6 shadow-elegant sm:p-8">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-muted-foreground">Último sorteio</p>
-        {contestNumber !== null && (
-          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-            #<span className="tabular-nums">{contestNumber}</span>
-          </span>
-        )}
-      </div>
-
-      <p className="mt-1 font-title text-lg font-semibold tracking-tight">
-        Concurso <span className="tabular-nums">#{draw.contestNumber}</span> ·{' '}
-        <span className="tabular-nums">{formatDate(draw.drawDate)}</span>
-      </p>
-
-      <div className="mt-5 flex flex-wrap gap-2">
-        {draw.numbers.map((number) => (
-          <NumberBallLink key={number} number={number} size="md" />
-        ))}
-      </div>
-
-      <div className="mt-6 border-t border-border pt-4">
-        <p className="text-xs text-muted-foreground">Prêmio (sena)</p>
-        {draw.accumulated || draw.prizeSena <= 0 ? (
-          <p className="font-title text-lg font-semibold">Acumulou</p>
-        ) : (
-          <p className="font-title text-lg font-semibold tabular-nums">
-            {formatCurrency(draw.prizeSena)}
-          </p>
-        )}
-        <ArchiveLink
-          href={`/concurso/${draw.contestNumber}`}
-          className={cn('mt-4 inline-flex text-sm', inlineLinkClass)}
-        >
-          Ver ganhadores e análise do concurso {draw.contestNumber}
+    <figure className="border-t-2 border-primary pt-5">
+      <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <span className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl">
+          Concurso {draw.contestNumber}
+        </span>
+        <span className="text-muted-foreground tabular-nums">
+          Sorteio de {formatDate(draw.drawDate)}
+        </span>
+      </figcaption>
+      <NumberField
+        struck={draw.numbers}
+        linked
+        size="lg"
+        label={`Dezenas sorteadas no concurso ${draw.contestNumber}`}
+        className="mt-5"
+      />
+      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+        <dl className="flex items-baseline gap-3">
+          <dt className="text-muted-foreground">Prêmio da sena</dt>
+          <dd className="font-condensed text-2xl font-semibold tabular-nums">{prize}</dd>
+        </dl>
+        <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={textLinkClass}>
+          Ganhadores e rateio do concurso {draw.contestNumber}
         </ArchiveLink>
       </div>
-    </aside>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Fonte: CAIXA Econômica Federal
+        {contestNumber !== null ? `, concursos 1 a ${contestNumber}` : ''}.
+      </p>
+    </figure>
   );
 }

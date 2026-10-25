@@ -112,23 +112,38 @@ export const pt = {
   home: {
     heroTitle: 'Mega-Sena Analyzer',
     heroSubtitle:
-      'Análise estatística avançada e gerador inteligente de apostas baseado em ciência de dados',
-    features: [
+      'Todos os concursos desde 1996 com os dados oficiais da CAIXA: resultados, frequência das dezenas e um gerador de apostas que distribui o seu orçamento.',
+    contentsTitle: 'Neste site',
+    contents: [
       {
-        title: 'Estatísticas Completas',
-        description: 'Análise de frequência, padrões e tendências históricas',
+        title: 'Resultados',
+        description: 'Todos os concursos por ano, com as dezenas, os ganhadores e o prêmio de cada faixa.',
+        href: '/resultados',
+        archive: true,
       },
       {
-        title: 'Números Quentes',
-        description: 'Identifique os números mais sorteados',
+        title: 'Números de 01 a 60',
+        description: 'Quantas vezes cada dezena saiu, há quantos concursos não sai e com quais outras costuma sair.',
+        href: '/numeros',
+        archive: true,
       },
       {
-        title: 'Gerador Inteligente',
-        description: 'Crie apostas baseadas em estratégias avançadas',
+        title: 'Estatísticas',
+        description: 'Frequência, atraso, pares, paridade, primos e soma das dezenas em todo o histórico.',
+        href: '/dashboard/statistics',
+        archive: false,
       },
       {
-        title: 'Análise do Histórico',
-        description: 'Estatísticas dos concursos disponíveis na base',
+        title: 'Gerador de apostas',
+        description: 'Distribui um orçamento entre apostas simples e múltiplas com o menor desperdício.',
+        href: '/dashboard/generator',
+        archive: false,
+      },
+      {
+        title: 'Mega da Virada',
+        description: 'As edições de fim de ano, com as dezenas sorteadas e os prêmios pagos.',
+        href: '/mega-da-virada',
+        archive: true,
       },
     ],
     disclaimer: {

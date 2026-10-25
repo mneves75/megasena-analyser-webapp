@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { APP_INFO } from '@/lib/constants';
-import { AlertTriangle } from 'lucide-react';
 import { pt } from '@/lib/i18n';
 
 export function Footer(): React.JSX.Element {
@@ -10,13 +9,13 @@ export function Footer(): React.JSX.Element {
     'text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm';
 
   return (
-    <footer className="border-t border-border bg-background">
+    <footer className="border-t-2 border-primary bg-background">
       <div className="container mx-auto px-4 py-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
           {/* About Section */}
           <div className="space-y-3">
-            <p className="font-title text-base font-bold tracking-tight text-foreground">
+            <p className="font-title text-base font-semibold text-foreground [font-stretch:88%]">
               {APP_INFO.NAME}
             </p>
             <p className="max-w-[38ch] text-sm leading-relaxed text-muted-foreground">
@@ -26,7 +25,7 @@ export function Footer(): React.JSX.Element {
 
           {/* Legal Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               {pt.footer.legalTitle}
             </h3>
             <ul className="space-y-2.5 text-sm">
@@ -55,7 +54,7 @@ export function Footer(): React.JSX.Element {
 
           {/* Resources Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               {pt.footer.resourcesTitle}
             </h3>
             <ul className="space-y-2.5 text-sm">
@@ -94,7 +93,7 @@ export function Footer(): React.JSX.Element {
 
           {/* Responsible Gaming Section */}
           <div className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <h3 className="text-sm font-semibold text-foreground">
               {pt.footer.responsibleGamingTitle}
             </h3>
             <div className="space-y-3 text-sm text-muted-foreground">
@@ -130,11 +129,8 @@ export function Footer(): React.JSX.Element {
 
         {/* Disclaimer */}
         <div className="mt-12 border-t border-border pt-8">
-          <div className="space-y-3 text-xs leading-relaxed text-muted-foreground">
-            <p className="flex items-center gap-2 font-medium text-destructive">
-              <AlertTriangle aria-hidden className="h-4 w-4 shrink-0 text-destructive" />
-              {pt.footer.disclaimerTitle}
-            </p>
+          <div className="max-w-[80ch] space-y-2 border-l-2 border-primary pl-4 text-xs leading-relaxed text-muted-foreground">
+            <p className="text-sm font-semibold text-foreground">{pt.footer.disclaimerTitle}</p>
             <p className="max-w-[80ch]">{pt.footer.disclaimerBody}</p>
             <p className="max-w-[80ch]">{pt.footer.disclaimerSource}</p>
           </div>
