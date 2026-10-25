@@ -22,6 +22,8 @@ describe('StatisticsPage', () => {
     render(await StatisticsPage());
     expect(screen.getByRole('heading', { name: pt.statistics.streaks.coldTitle })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Sequências' })).toHaveAttribute('href', '#sequencias');
+    expect(screen.getByRole('table', { name: pt.statistics.streaks.coldTitle })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '07' })).toHaveAttribute('href', '/numeros/7');
     expect(screen.queryByRole('heading', { name: pt.statistics.streaks.hotTitle })).not.toBeInTheDocument();
   });
 });

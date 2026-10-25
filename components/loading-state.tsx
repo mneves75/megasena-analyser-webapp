@@ -1,54 +1,21 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface LoadingStateProps {
-  title: string;
-  description: string;
-  cardCount?: number;
-  lineCount?: number;
-  className?: string;
-}
+const ROWS = [0, 1, 2, 3, 4, 5, 6, 7];
 
-export function LoadingState({
-  title,
-  description,
-  cardCount = 3,
-  lineCount = 3,
-  className,
-}: LoadingStateProps) {
-  const cards = Array.from({ length: cardCount }, (_, index) => index);
-  const lines = Array.from({ length: lineCount }, (_, index) => index);
-
+/** Streaming placeholder: the page's ruled table shape, pulsing until the data lands. */
+export function LoadingState({ title, className }: { title: string; className?: string }) {
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      className={cn('space-y-6', className)}
-    >
-      <div className="space-y-2">
-        {/* Not a heading: a placeholder must not become the page's h1 in the
-            streamed HTML that non-rendering crawlers read. */}
-        <p className="text-3xl font-bold">{title}</p>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {cards.map((cardIndex) => (
-          <Card key={cardIndex} className="animate-pulse">
-            <CardHeader>
-              <CardTitle className="h-5 w-2/3 rounded-md bg-muted/60" />
-              <CardDescription className="h-3 w-3/4 rounded-md bg-muted/40" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {lines.map((lineIndex) => (
-                <div
-                  key={`${cardIndex}-${lineIndex}`}
-                  className="h-3 w-full rounded-md bg-muted/40"
-                />
-              ))}
-            </CardContent>
-          </Card>
+    <div role="status" aria-live="polite" aria-busy="true" className={cn('space-y-6', className)}>
+      {/* Not a heading: a placeholder must not become the page's h1 in the
+          streamed HTML that non-rendering crawlers read. */}
+      <p className="font-title text-4xl font-semibold [font-stretch:88%] sm:text-5xl">{title}</p>
+      <div className="animate-pulse divide-y divide-border border-y-2 border-y-primary">
+        {ROWS.map((row) => (
+          <div key={row} className="flex items-center gap-4 py-3">
+            <div className="h-3 w-8 bg-muted" />
+            <div className="h-3 w-1/3 bg-muted" />
+            <div className="ml-auto h-3 w-16 bg-muted" />
+          </div>
         ))}
       </div>
     </div>

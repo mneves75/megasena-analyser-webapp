@@ -229,8 +229,60 @@ export function DrawsTable({
   );
 }
 
+/** All sixty numbers as a linked cartogram, darker for numbers drawn more often. */
+export function FrequencyGrid({
+  entries,
+  label,
+  through,
+}: {
+  entries: readonly { number: number; frequency: number }[];
+  label: string;
+  through?: number | null | undefined;
+}): React.JSX.Element {
+  const frequencies = entries.map((entry) => entry.frequency);
+  const min = Math.min(...frequencies);
+  const max = Math.max(...frequencies);
+  return (
+    <figure className="space-y-3">
+      <ul
+        aria-label={label}
+        className="grid grid-cols-5 border-l border-t border-border sm:grid-cols-10"
+      >
+        {entries.map((entry) => (
+          <li key={entry.number} className="border-b border-r border-border">
+            <ArchiveLink
+              href={`/numeros/${entry.number}`}
+              className={cn(
+                'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                frequencyShadeClass(entry.frequency, min, max)
+              )}
+            >
+              <span className="font-condensed text-xl font-semibold tabular-nums">
+                {dezena(entry.number)}
+              </span>
+              <span className="text-xs tabular-nums">
+                {countLabel(entry.frequency, 'vez', 'vezes')}
+              </span>
+            </ArchiveLink>
+          </li>
+        ))}
+      </ul>
+      <figcaption className="space-y-1">
+        <p className="text-sm text-muted-foreground">
+          Quanto mais escura a casa, mais vezes a dezena foi sorteada.
+        </p>
+        <SourceLine through={through} />
+      </figcaption>
+    </figure>
+  );
+}
+
 /** The yearbook's source line under a table or figure. */
-export function SourceLine({ through }: { through?: number | null }): React.JSX.Element {
+export function SourceLine({
+  through,
+}: {
+  through?: number | null | undefined;
+}): React.JSX.Element {
   return (
     <p className="text-xs text-muted-foreground">
       Fonte: CAIXA Econômica Federal{through ? `, concursos 1 a ${through}` : ''}.

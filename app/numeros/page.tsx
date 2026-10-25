@@ -3,13 +3,14 @@ import type { NumberSummary } from '@/lib/api/archive-contract';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { cn, formatNumber } from '@/lib/utils';
+import { formatNumber } from '@/lib/utils';
 import { loadNumbersIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
 import {
   AnswerSummary,
   ArchiveFreshness,
   ArchiveLink,
+  FrequencyGrid,
   Breadcrumbs,
   PageTitle,
   RandomnessNote,
@@ -19,7 +20,6 @@ import {
   SourceLine,
   TableFrame,
   cellClass,
-  frequencyShadeClass,
   inlineLinkClass,
   tableClass,
   thClass,
@@ -133,32 +133,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
 
       <section aria-labelledby="grade" className="space-y-4">
         <SectionHeading id="grade">Escolha um número</SectionHeading>
-        <figure className="space-y-3">
-          <ul className="grid grid-cols-5 border-l border-t border-border sm:grid-cols-10">
-            {numbers.map((summary) => (
-              <li key={summary.number} className="border-b border-r border-border">
-                <ArchiveLink
-                  href={`/numeros/${summary.number}`}
-                  className={cn(
-                    'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-                    frequencyShadeClass(summary.frequency, minFrequency, maxFrequency)
-                  )}
-                >
-                  <span className="font-condensed text-xl font-semibold tabular-nums">
-                    {dezena(summary.number)}
-                  </span>
-                  <span className="text-xs tabular-nums">
-                    {countLabel(summary.frequency, 'vez', 'vezes')}
-                  </span>
-                </ArchiveLink>
-              </li>
-            ))}
-          </ul>
-          <figcaption className="text-sm text-muted-foreground">
-            Quanto mais escura a casa, mais vezes a dezena foi sorteada. Fonte: CAIXA Econômica
-            Federal.
-          </figcaption>
-        </figure>
+        <FrequencyGrid entries={numbers} label="Frequência de cada número de 01 a 60" />
       </section>
 
       <section aria-labelledby="tabela" className="space-y-4">

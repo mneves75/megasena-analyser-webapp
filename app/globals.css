@@ -38,13 +38,6 @@
        and anchor scroll-margins offset against it. */
     --app-header-height: 3.5rem;
 
-    /* Sequential ramp of the one ink, lightest to darkest, for charts. */
-    --chart-1: 190 86% 24%;
-    --chart-2: 190 60% 38%;
-    --chart-3: 190 44% 54%;
-    --chart-4: 190 36% 70%;
-    --chart-5: 200 14% 62%;
-
     --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
     --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
@@ -74,11 +67,6 @@
     --input: 200 14% 32%;
     --ring: 186 58% 56%;
 
-    --chart-1: 186 58% 56%;
-    --chart-2: 188 44% 44%;
-    --chart-3: 190 36% 34%;
-    --chart-4: 192 30% 26%;
-    --chart-5: 200 10% 46%;
   }
 }
 

@@ -1,8 +1,4 @@
 export const pt = {
-  app: {
-    name: 'Mega-Sena Analyzer',
-    shortDescription: 'Análise estatística avançada e gerador inteligente de apostas',
-  },
   meta: {
     home: {
       title: 'Mega-Sena Analyzer: resultados, estatísticas e gerador de apostas',
@@ -60,8 +56,6 @@ export const pt = {
     statistics: 'Estatísticas',
     generator: 'Gerar Apostas',
     back: 'Voltar',
-    backToDashboard: 'Voltar ao Dashboard',
-    backToPrivacy: 'Voltar à Política de Privacidade',
     accessDashboard: 'Acessar Dashboard',
   },
   theme: {
@@ -70,10 +64,7 @@ export const pt = {
     switchToDark: 'Mudar para tema escuro',
   },
   common: {
-    importantNotice: 'Aviso importante',
-    errorLabel: 'Erro',
     lastUpdated: 'Última atualização',
-    occurrences: 'ocorrências',
   },
   errors: {
     notFound: {
@@ -91,19 +82,15 @@ export const pt = {
   loading: {
     app: {
       title: 'Carregando aplicação',
-      description: 'Preparando dados e configurações iniciais.',
     },
     dashboard: {
       title: 'Carregando dashboard',
-      description: 'Atualizando estatísticas e últimos sorteios.',
     },
     generator: {
       title: 'Carregando gerador',
-      description: 'Preparando estratégias e controles de apostas.',
     },
     statistics: {
       title: 'Carregando estatísticas',
-      description: 'Processando indicadores e análises completas.',
     },
   },
   home: {
@@ -148,7 +135,6 @@ export const pt = {
       },
     ],
     disclaimer: {
-      title: 'Aviso importante',
       text: 'Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória. Jogue com responsabilidade.',
       termsLinkLabel: 'Termos de uso',
     },
@@ -298,23 +284,14 @@ export const pt = {
   },
   statistics: {
     title: 'Estatísticas Detalhadas',
-    subtitle: 'Análise completa de frequências e padrões dos sorteios',
     freshness: {
-      title: 'Base de referência',
       descriptionPrefix: 'Dados atualizados até o concurso',
-      onDatePrefix: 'em',
-      totalDrawsLabel: 'Total de sorteios processados',
     },
     hotNumbersTitle: 'Números Quentes (Top 20)',
-    hotNumbersDescription: 'Números mais sorteados historicamente',
     coldNumbersTitle: 'Números Frios (Top 20)',
-    coldNumbersDescription: 'Números menos sorteados historicamente',
     patterns: {
       title: 'Padrões Detectados',
-      description: 'Análise de padrões nos sorteios históricos',
-      typeLabel: 'Tipo',
       lastSeenLabel: 'Última ocorrência',
-      occurrencesLabel: 'ocorrências',
       descriptions: {
         consecutive: 'Números consecutivos no sorteio',
         all_even: 'Todos os números pares',
@@ -322,8 +299,6 @@ export const pt = {
     },
     delays: {
       title: 'Análise de Atraso',
-      description: 'Quantos sorteios desde a última aparição de cada número',
-      drawsLabel: 'sorteios',
       distributionTitle: 'Distribuição de Atrasos',
     },
     delayCategories: {
@@ -334,28 +309,19 @@ export const pt = {
     },
     decades: {
       title: 'Distribuição por Dezena',
-      description: 'Análise de frequência por faixas de números',
-      occurrencesLabel: 'Ocorrências',
-      percentageLabel: 'Percentual',
-      topNumbersLabel: 'Top números',
     },
     pairs: {
       title: 'Pares Mais Frequentes',
-      description: 'Números que aparecem juntos com maior frequência',
       correlationLabel: 'Correlação',
     },
     parity: {
       title: 'Distribuição Par/Ímpar',
-      description: 'Análise da quantidade de números pares vs ímpares',
-      evenLabel: 'Pares',
-      oddLabel: 'Ímpares',
       mostCommonLabel: 'Mais Comum',
       balancedLabel: 'Distribuições Balanceadas (2-4, 3-3, 4-2)',
       drawsLabel: 'dos sorteios',
     },
     primes: {
       title: 'Análise de Números Primos',
-      description: 'Distribuição e frequência de números primos (2, 3, 5, 7, 11, 13, ...)',
       totalLabel: 'Total de Primos',
       totalSuffix: 'de 60 números',
       averageLabel: 'Média por Sorteio',
@@ -367,18 +333,13 @@ export const pt = {
     },
     sum: {
       title: 'Distribuição de Soma',
-      description: 'Análise estatística da soma dos 6 números sorteados',
       meanLabel: 'Média',
       medianLabel: 'Mediana',
       modeLabel: 'Moda',
       stdDevLabel: 'Desvio Padrão',
-      percentileLabel: 'Percentil',
-      rangeLabel: 'Intervalo',
     },
     streaks: {
       title: 'Números em Sequência (Últimos 10 Sorteios)',
-      description: 'Números com maior e menor intensidade de aparição recente',
-      disclaimerTitle: 'Nota estatística',
       disclaimerBody:
         'Cada sorteio é um evento independente. A frequência recente de um número não influencia sua probabilidade em sorteios futuros. Esta análise é apenas histórica e não possui valor preditivo.',
       hotTitle: 'Números Quentes (Alta Intensidade)',
@@ -386,8 +347,6 @@ export const pt = {
     },
     prizeCorrelation: {
       title: 'Correlação com Prêmios',
-      description: 'Números que historicamente aparecem em sorteios com maiores prêmios',
-      disclaimerTitle: 'Nota estatística',
       disclaimerBody:
         'Os valores dos prêmios dependem do acúmulo do jackpot e do número de ganhadores, não dos números sorteados. Esta correlação é coincidência estatística, não indica causalidade.',
       luckyTitle: 'Números "Sortudos" (Prêmios Acima da Média)',
@@ -397,7 +356,6 @@ export const pt = {
     },
     allNumbers: {
       title: 'Todos os Números (1-60)',
-      description: 'Frequência completa de todos os números possíveis',
     },
   },
   terms: {
@@ -476,28 +434,6 @@ export const pt = {
     },
     closingNote:
       'Ao utilizar o Mega-Sena Analyzer, você confirma ter lido e concordado com estes termos.',
-    faqs: [
-      {
-        question: 'O Mega-Sena Analyzer aumenta minhas chances de ganhar?',
-        answer:
-          'Não. Esta ferramenta NÃO aumenta suas chances de ganhar na loteria. A Mega-Sena é um jogo puramente aleatório e cada sorteio é independente.',
-      },
-      {
-        question: 'O que é o Mega-Sena Analyzer?',
-        answer:
-          'É uma ferramenta de visualização de dados históricos da Mega-Sena para fins educacionais e recreativos. Oferece estatísticas de frequência, visualização de padrões e geração de combinações aleatórias.',
-      },
-      {
-        question: 'O serviço é gratuito?',
-        answer:
-          'Sim, o Mega-Sena Analyzer é totalmente gratuito. Não cobramos por nenhuma funcionalidade.',
-      },
-      {
-        question: 'Posso usar as estatísticas para prever números?',
-        answer:
-          'Não. Padrões históricos não predizem resultados futuros. Todas as combinações têm exatamente a mesma probabilidade de serem sorteadas.',
-      },
-    ],
   },
   privacy: {
     title: 'Política de Privacidade',
@@ -625,36 +561,6 @@ export const pt = {
     ],
     notice:
       'Esta política pode ser atualizada. A data da última revisão fica no topo do documento.',
-    faqs: [
-      {
-        question: 'O Mega-Sena Analyzer coleta meus dados pessoais?',
-        answer:
-          'Coletamos apenas telemetria técnica mínima: rota, método, status, duração, user-agent truncado, identificador da requisição e um pseudônimo HMAC do seu IP. Não coletamos cadastro, documentos, dados financeiros nem analytics de marketing.',
-      },
-      {
-        question: 'O Mega-Sena Analyzer usa cookies?',
-        answer:
-          'Não usamos cookies HTTP. Usamos apenas duas chaves no localStorage do seu navegador: megasena-theme (preferência de tema) e megasena-privacy-ack (versão do aviso de privacidade já visualizado).',
-      },
-      {
-        question: 'O Mega-Sena Analyzer tem login, JWT ou MFA?',
-        answer: 'Não. Não há cadastro nem autenticação. Sem login, sem token, sem MFA.',
-      },
-      {
-        question: 'Onde ficam armazenadas minhas apostas geradas?',
-        answer: 'As apostas geradas não são persistidas no navegador nem no servidor por padrão.',
-      },
-      {
-        question: 'O Mega-Sena Analyzer vende meus dados?',
-        answer:
-          'Não. Não vendemos, alugamos ou compartilhamos dados com terceiros para fins comerciais.',
-      },
-      {
-        question: 'Posso apagar meus dados?',
-        answer:
-          'Sim. Para dados no servidor, envie e-mail para privacidade@megasena-analyzer.com.br. Para dados no navegador, limpe os dados do site nas configurações do navegador.',
-      },
-    ],
   },
   privacyRights: {
     title: 'Direitos do Titular (LGPD)',
@@ -739,7 +645,6 @@ export const pt = {
     ariaLabel: 'Aviso de privacidade e armazenamento local',
   },
   footer: {
-    aboutTitle: 'Sobre o Projeto',
     aboutText:
       'Ferramenta de análise estatística da Mega-Sena para visualização de padrões e geração de sugestões de apostas baseadas em dados históricos.',
     legalTitle: 'Legal',

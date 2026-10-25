@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LotteryBall } from '@/components/lottery-ball';
-import { Flame, Snowflake } from 'lucide-react';
-import { formatCurrency, formatDate, formatDecimal, formatNumber } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatDecimal, formatNumber } from '@/lib/utils';
 import { SectionNav, type StatisticsSection } from '@/components/statistics/section-nav';
 import { STATISTICS_DISPLAY } from '@/lib/constants';
 import type { DrawStatistics, NumberFrequency, Pattern } from '@/lib/analytics/statistics';
@@ -15,7 +13,22 @@ import type { PrimeStats } from '@/lib/analytics/prime-analysis';
 import type { SumStats } from '@/lib/analytics/sum-analysis';
 import type { StreakStats } from '@/lib/analytics/streak-analysis';
 import type { PrizeCorrelation } from '@/lib/analytics/prize-correlation';
-import { BarChart, DonutChart } from '@/components/charts';
+import { countLabel, dezena, formatDecimal as fixedDecimal } from '@/app/_lib/format';
+import {
+  ArchiveLink,
+  FrequencyGrid,
+  FactList,
+  RandomnessNote,
+  RankedList,
+  SectionHeading,
+  SourceLine,
+  TableFrame,
+  cellClass,
+  inlineLinkClass,
+  rankBy,
+  tableClass,
+  thClass,
+} from '@/app/_components/archive-ui';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -119,6 +132,152 @@ async function getStatisticsData(): Promise<StatisticsApiResponse> {
   }
 }
 
+// Clears the sticky site header plus the section nav when jumping to a section.
+const SECTION_SCROLL_MARGIN = 'scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]';
+
+function StatSection({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+}): React.JSX.Element {
+  return (
+    <section
+      id={id}
+      aria-labelledby={`${id}-titulo`}
+      className={cn(SECTION_SCROLL_MARGIN, 'space-y-4')}
+    >
+      <SectionHeading id={`${id}-titulo`}>{title}</SectionHeading>
+      {children}
+    </section>
+  );
+}
+
+function SubHeading({ id, children }: { id: string; children: ReactNode }): React.JSX.Element {
+  return (
+    <h3 id={id} className="font-medium">
+      {children}
+    </h3>
+  );
+}
+
+function DezenaLink({ number }: { number: number }): React.JSX.Element {
+  return (
+    <ArchiveLink
+      href={`/numeros/${number}`}
+      className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
+    >
+      {dezena(number)}
+    </ArchiveLink>
+  );
+}
+
+function StreakTable({
+  labelId,
+  streaks,
+}: {
+  labelId: string;
+  streaks: readonly StreakStats[];
+}): React.JSX.Element {
+  return (
+    <TableFrame>
+      <table aria-labelledby={labelId} className={tableClass}>
+        <thead>
+          <tr>
+            <th scope="col" className={thClass}>
+              Dezena
+            </th>
+            <th scope="col" className={thClass}>
+              Saídas nos últimos 10
+            </th>
+            <th scope="col" className={thClass}>
+              Em relação à média
+            </th>
+            <th scope="col" className={thClass}>
+              Última vez
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {streaks.map((streak) => (
+            <tr key={streak.number}>
+              <th scope="row" className={cellClass}>
+                <DezenaLink number={streak.number} />
+              </th>
+              <td className={cellClass}>{streak.recentOccurrences}</td>
+              <td className={cellClass}>{fixedDecimal(streak.streakIntensity, 2)}×</td>
+              <td className={cellClass}>
+                {streak.lastDrawnContest ? (
+                  <ArchiveLink
+                    href={`/concurso/${streak.lastDrawnContest}`}
+                    className={inlineLinkClass}
+                  >
+                    {streak.lastDrawnContest}
+                  </ArchiveLink>
+                ) : (
+                  '—'
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
+  );
+}
+
+function PrizeTable({
+  labelId,
+  rows,
+}: {
+  labelId: string;
+  rows: readonly PrizeCorrelation[];
+}): React.JSX.Element {
+  return (
+    <TableFrame>
+      <table aria-labelledby={labelId} className={tableClass}>
+        <thead>
+          <tr>
+            <th scope="col" className={thClass}>
+              Dezena
+            </th>
+            <th scope="col" className={cn(thClass, 'text-right')}>
+              {pt.statistics.prizeCorrelation.averagePrizeLabel}
+            </th>
+            <th scope="col" className={cn(thClass, 'text-right')}>
+              {pt.statistics.prizeCorrelation.correlationLabel}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.number}>
+              <th scope="row" className={cellClass}>
+                <DezenaLink number={row.number} />
+              </th>
+              <td className={cn(cellClass, 'text-right')}>
+                {formatCurrency(row.averagePrizeSena)}
+              </td>
+              <td className={cn(cellClass, 'text-right')}>
+                {fixedDecimal(row.correlationScore, 2)}×
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </TableFrame>
+  );
+}
+
+/** Signed with a true minus: the deviation reads by its mark, not by a hue. */
+function signedPoints(value: number): string {
+  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
+  return `${sign}${fixedDecimal(Math.abs(value), 2)} p.p.`;
+}
+
 export default async function StatisticsPage() {
   const {
     summary,
@@ -138,24 +297,13 @@ export default async function StatisticsPage() {
     unluckyNumbers,
   } = await getStatisticsData();
 
-  const topHot = frequencies.slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
-  const topCold = [...frequencies].reverse().slice(0, STATISTICS_DISPLAY.TOP_NUMBERS_COUNT);
-
-  // Get delay category color helper
-  const getDelayColor = (category: DelayStats['delayCategory']) => {
-    switch (category) {
-      case 'recent':
-        return 'bg-primary/10 text-primary';
-      case 'normal':
-        return 'bg-secondary/50 text-secondary-foreground';
-      case 'overdue':
-        return 'bg-accent/40 text-accent-foreground';
-      case 'critical':
-        return 'bg-destructive/15 text-destructive';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
-  };
+  const through = summary.lastContestNumber;
+  const topCount = STATISTICS_DISPLAY.TOP_NUMBERS_COUNT;
+  const frequencyDetail = (entry: NumberFrequency): string =>
+    entry.lastDrawnContest
+      ? `${countLabel(entry.frequency, 'vez', 'vezes')} · último no ${entry.lastDrawnContest}`
+      : countLabel(entry.frequency, 'vez', 'vezes');
+  const byNumber = [...frequencies].sort((a, b) => a.number - b.number);
 
   const patternDescriptions = pt.statistics.patterns.descriptions;
   const getPatternDescription = (pattern: Pattern) => {
@@ -165,9 +313,6 @@ export default async function StatisticsPage() {
 
   const getDelayCategoryLabel = (category: DelayStats['delayCategory']) =>
     pt.statistics.delayCategories[category] ?? category;
-
-  const decadeOccurrencesKey = pt.statistics.decades.occurrencesLabel;
-  const decadePercentageKey = pt.statistics.decades.percentageLabel;
 
   const sections: StatisticsSection[] = [
     { id: 'frequencia', label: 'Frequência' },
@@ -186,7 +331,7 @@ export default async function StatisticsPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto max-w-6xl px-4 py-8">
       <PageJsonLd
         path="/dashboard/statistics"
         name={pt.meta.statistics.title}
@@ -198,696 +343,466 @@ export default async function StatisticsPage() {
         ]}
       />
 
-      <header className="mb-3">
-        <h1 className="mb-2 text-4xl font-semibold sm:text-5xl">{pt.statistics.title}</h1>
-        <p className="text-muted-foreground">{pt.statistics.subtitle}</p>
+      <header className="mb-6 space-y-3">
+        <h1 className="text-4xl font-semibold sm:text-5xl">{pt.statistics.title}</h1>
+        {through ? (
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {pt.statistics.freshness.descriptionPrefix} {through}
+            {summary.lastDrawDate ? ` (${formatDate(summary.lastDrawDate)})` : ''},{' '}
+            {countLabel(summary.totalDraws, 'concurso processado', 'concursos processados')}.
+          </p>
+        ) : null}
       </header>
-
-      {/* Base de referência: linha discreta obrigatória (concurso/data da análise) */}
-      <p className="mb-4 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{pt.statistics.freshness.title}:</span>
-        <span className="tabular-nums">
-          {pt.statistics.freshness.descriptionPrefix} #{summary.lastContestNumber}{' '}
-          {pt.statistics.freshness.onDatePrefix}{' '}
-          {summary.lastDrawDate ? formatDate(summary.lastDrawDate) : '-'}
-        </span>
-        <span aria-hidden>·</span>
-        <span className="tabular-nums">
-          {pt.statistics.freshness.totalDrawsLabel}: {formatNumber(summary.totalDraws)}
-        </span>
-      </p>
 
       <SectionNav sections={sections} />
 
-      <div className="mt-8 space-y-8">
-        <section className="space-y-6">
-          <h2
-            id="frequencia"
-            className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)] text-2xl font-semibold sm:text-3xl"
-          >
-            Análise de Frequência
-          </h2>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.hotNumbersTitle}</CardTitle>
-                <CardDescription>{pt.statistics.hotNumbersDescription}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-5 gap-3 sm:gap-4">
-                  {topHot.map((num: NumberFrequency, index: number) => (
-                    <div key={num.number} className="flex flex-col items-center gap-1.5">
-                      <div className="text-xs font-semibold text-primary tabular-nums">
-                        #{index + 1}
-                      </div>
-                      <LotteryBall number={num.number} size="md" />
-                      <div className="text-center">
-                        <div className="text-xs font-medium tabular-nums">
-                          {formatNumber(num.frequency)}x
-                        </div>
-                        {num.lastDrawnContest && (
-                          <div className="text-xs text-muted-foreground tabular-nums">
-                            #{num.lastDrawnContest}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.coldNumbersTitle}</CardTitle>
-                <CardDescription>{pt.statistics.coldNumbersDescription}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-5 gap-3 sm:gap-4">
-                  {topCold.map((num: NumberFrequency, index: number) => (
-                    <div key={num.number} className="flex flex-col items-center gap-1.5">
-                      <div className="text-xs font-semibold text-muted-foreground tabular-nums">
-                        #{index + 1}
-                      </div>
-                      <LotteryBall number={num.number} size="md" />
-                      <div className="text-center">
-                        <div className="text-xs font-medium tabular-nums">
-                          {formatNumber(num.frequency)}x
-                        </div>
-                        {num.lastDrawnContest && (
-                          <div className="text-xs text-muted-foreground tabular-nums">
-                            #{num.lastDrawnContest}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <h2
-            id="padroes"
-            className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)] text-2xl font-semibold sm:text-3xl"
-          >
-            Padrões e Tendências
-          </h2>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{pt.statistics.patterns.title}</CardTitle>
-              <CardDescription>{pt.statistics.patterns.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {patterns.map((pattern: Pattern, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 p-4"
-                  >
-                    <div className="min-w-0">
-                      <div className="mb-1 font-semibold">{getPatternDescription(pattern)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {pt.statistics.patterns.typeLabel}: {pattern.type}
-                        {pattern.lastSeen &&
-                          ` | ${pt.statistics.patterns.lastSeenLabel}: ${formatDate(pattern.lastSeen)}`}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold tabular-nums">{pattern.occurrences}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {pt.statistics.patterns.occurrencesLabel}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {delays && delays.length > 0 && (
-            <Card id="atraso" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.delays.title}</CardTitle>
-                <CardDescription>{pt.statistics.delays.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 grid grid-cols-4 gap-2 sm:grid-cols-10 md:grid-cols-12">
-                  {delays.slice(0, 30).map((delay) => (
-                    <div key={delay.number} className="flex flex-col items-center gap-1">
-                      <LotteryBall number={delay.number} size="sm" />
-                      <div className="text-center text-xs">
-                        <div
-                          className={`rounded px-1.5 py-0.5 text-xs font-medium tabular-nums ${getDelayColor(delay.delayCategory)}`}
-                        >
-                          {delay.delayDraws}
-                        </div>
-                        <div className="mt-0.5 text-muted-foreground">
-                          {pt.statistics.delays.drawsLabel}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {delayDistribution && (
-                  <div className="mt-4 pt-4 border-t">
-                    <h3 className="text-sm font-semibold mb-3">
-                      {pt.statistics.delays.distributionTitle}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                      {delayDistribution.map((dist) => (
-                        <div key={dist.category} className="rounded-lg border bg-card/50 p-3">
-                          <div className="text-2xl font-bold tabular-nums">{dist.count}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {getDelayCategoryLabel(dist.category as DelayStats['delayCategory'])}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {decades && decades.length > 0 && (
-            <Card id="dezenas" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.decades.title}</CardTitle>
-                <CardDescription>{pt.statistics.decades.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BarChart
-                  title={pt.statistics.decades.title}
-                  data={decades.map((d) => ({
-                    decade: d.decade,
-                    [decadeOccurrencesKey]: d.totalOccurrences,
-                    [decadePercentageKey]: d.percentage,
-                  }))}
-                  xKey="decade"
-                  yKey={decadeOccurrencesKey}
-                  color="hsl(var(--primary))"
-                />
-
-                <div className="mt-6 space-y-3">
-                  {decades.map((decade) => (
-                    <div key={decade.decade} className="rounded-lg border bg-card/50 p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="font-semibold tabular-nums">{decade.decade}</span>
-                        <div className="text-right tabular-nums">
-                          <span className="text-lg font-bold tabular-nums">
-                            {formatDecimal(decade.percentage, 2)}%
-                          </span>
-                          <span
-                            className={`ml-2 text-sm ${decade.deviation > 0 ? 'text-primary' : 'text-destructive'}`}
-                          >
-                            {decade.deviation > 0 ? '+' : ''}
-                            {formatDecimal(decade.deviation, 2)}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {pt.statistics.decades.topNumbersLabel}:
-                        </span>
-                        {decade.topNumbers.slice(0, 3).map((n) => (
-                          <div key={n.number} className="flex items-center gap-1">
-                            <LotteryBall number={n.number} size="xs" />
-                            <span className="text-xs tabular-nums">({n.frequency})</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {pairs && pairs.length > 0 && (
-            <Card id="pares" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.pairs.title}</CardTitle>
-                <CardDescription>{pt.statistics.pairs.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {pairs.slice(0, 20).map((pair, index) => (
-                    <div
-                      key={`${pair.pair[0]}-${pair.pair[1]}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-muted-foreground tabular-nums">
-                          #{index + 1}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <LotteryBall number={pair.pair[0]} size="sm" />
-                          <span className="text-muted-foreground">+</span>
-                          <LotteryBall number={pair.pair[1]} size="sm" />
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold tabular-nums">{pair.frequency}x</div>
-                        <div className="text-xs text-muted-foreground tabular-nums">
-                          {pt.statistics.pairs.correlationLabel}: {formatDecimal(pair.correlation)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </section>
-
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Distribuições Numéricas</h2>
-
-          {parity && parity.length > 0 && (
-            <Card
-              id="paridade"
-              className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]"
-            >
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.parity.title}</CardTitle>
-                <CardDescription>{pt.statistics.parity.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <DonutChart
-                    title={pt.statistics.parity.title}
-                    data={parity
-                      .filter((p) => p.occurrences > 0)
-                      .map((p) => ({
-                        name: `${p.evenCount} ${pt.statistics.parity.evenLabel}`,
-                        value: p.occurrences,
-                        color: p.isBalanced ? 'hsl(var(--chart-1))' : 'hsl(var(--chart-3))',
-                      }))}
-                  />
-                  <div className="space-y-3">
-                    {parityStats && (
-                      <>
-                        <div className="p-4 rounded-lg border bg-card/50">
-                          <div className="text-sm font-semibold text-muted-foreground mb-2">
-                            {pt.statistics.parity.mostCommonLabel}
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-lg font-bold tabular-nums">
-                              {parityStats.mostCommon.evenCount} {pt.statistics.parity.evenLabel} /{' '}
-                              {parityStats.mostCommon.oddCount} {pt.statistics.parity.oddLabel}
-                            </span>
-                            <span className="text-2xl font-bold text-primary tabular-nums">
-                              {formatDecimal(parityStats.mostCommon.percentage, 2)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div className="p-4 rounded-lg border bg-card/50">
-                          <div className="text-sm font-semibold text-muted-foreground mb-2">
-                            {pt.statistics.parity.balancedLabel}
-                          </div>
-                          <div className="text-2xl font-bold text-primary tabular-nums">
-                            {formatDecimal(parityStats.balancedPercentage, 2)}%
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {pt.statistics.parity.drawsLabel}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {primes && (
-            <Card id="primos" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.primes.title}</CardTitle>
-                <CardDescription>{pt.statistics.primes.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.primes.totalLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">{primes.totalPrimes}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {pt.statistics.primes.totalSuffix}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.primes.averageLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {formatDecimal(primes.averagePrimesPerDraw, 2)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {pt.statistics.primes.averageSuffix}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.primes.mostCommonLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">{primes.mostCommonCount}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {pt.statistics.primes.mostCommonSuffix}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-6">
-                  <h3 className="mb-3 text-sm font-semibold">
-                    {pt.statistics.primes.distributionTitle}
-                  </h3>
-                  <div className="grid grid-cols-4 gap-2 md:grid-cols-7">
-                    {primes.distribution.map((dist) => (
-                      <div
-                        key={dist.primeCount}
-                        className="rounded-lg border bg-card/50 p-2 text-center"
-                      >
-                        <div className="text-lg font-bold tabular-nums">{dist.primeCount}</div>
-                        <div className="text-xs text-muted-foreground tabular-nums">
-                          {formatDecimal(dist.percentage, 2)}%
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold">{pt.statistics.primes.topTitle}</h3>
-                  <div className="flex flex-wrap gap-3">
-                    {primes.primeFrequencies.map((prime) => (
-                      <div key={prime.number} className="flex flex-col items-center gap-1">
-                        <LotteryBall number={prime.number} size="md" />
-                        <span className="text-xs text-muted-foreground tabular-nums">
-                          {prime.frequency}x
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {sumStats && (
-            <Card id="soma" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.sum.title}</CardTitle>
-                <CardDescription>{pt.statistics.sum.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.sum.meanLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.mean)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.sum.medianLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.median)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.sum.modeLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.mode)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-4">
-                    <div className="text-sm text-muted-foreground">
-                      {pt.statistics.sum.stdDevLabel}
-                    </div>
-                    <div className="text-3xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.stdDev)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                  <div className="rounded-lg border bg-card/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      5o {pt.statistics.sum.percentileLabel}
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.percentiles.p5)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      25o {pt.statistics.sum.percentileLabel}
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.percentiles.p25)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-primary/15 p-3 text-center">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      50o {pt.statistics.sum.percentileLabel}
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.percentiles.p50)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      75o {pt.statistics.sum.percentileLabel}
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.percentiles.p75)}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border bg-card/50 p-3 text-center">
-                    <div className="text-xs text-muted-foreground tabular-nums">
-                      95o {pt.statistics.sum.percentileLabel}
-                    </div>
-                    <div className="text-xl font-bold tabular-nums">
-                      {formatDecimal(sumStats.percentiles.p95)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-center text-xs text-muted-foreground tabular-nums">
-                  {pt.statistics.sum.rangeLabel}: {formatNumber(sumStats.minSum)} -{' '}
-                  {formatNumber(sumStats.maxSum)}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </section>
-
-        <section className="space-y-6">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Análise Temporal</h2>
-
-          {Boolean(hotNumbers?.length || coldNumbers?.length) && (
-            <Card
-              id="sequencias"
-              className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]"
-            >
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.streaks.title}</CardTitle>
-                <CardDescription>{pt.statistics.streaks.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Statistical disclaimer: Gambler's Fallacy warning */}
-                <div className="mb-4 max-w-[68ch] border-l-2 border-primary pl-4 text-sm text-muted-foreground">
-                  <p>
-                    <strong className="text-foreground">
-                      {pt.statistics.streaks.disclaimerTitle}:
-                    </strong>{' '}
-                    {pt.statistics.streaks.disclaimerBody}
-                  </p>
-                </div>
-                <div className="space-y-6">
-                  {hotNumbers && hotNumbers.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        {pt.statistics.streaks.hotTitle}
-                      </h3>
-                      <div className="grid grid-cols-6 gap-3 sm:grid-cols-8 md:grid-cols-10">
-                        {hotNumbers.map((hot) => (
-                          <div key={hot.number} className="flex flex-col items-center gap-1">
-                            <div className="relative">
-                              <LotteryBall number={hot.number} size="sm" />
-                              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                                <Flame className="h-2.5 w-2.5" aria-hidden />
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-sm font-semibold tabular-nums">
-                                {formatDecimal(hot.streakIntensity)}×
-                              </div>
-                              <div className="text-xs text-muted-foreground tabular-nums">
-                                {hot.recentOccurrences} de 10
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {coldNumbers && coldNumbers.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                        {pt.statistics.streaks.coldTitle}
-                      </h3>
-                      <div className="grid grid-cols-6 gap-3 sm:grid-cols-8 md:grid-cols-10">
-                        {coldNumbers.map((cold) => (
-                          <div key={cold.number} className="flex flex-col items-center gap-1">
-                            <div className="relative">
-                              <LotteryBall number={cold.number} size="sm" />
-                              <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-                                <Snowflake className="h-2.5 w-2.5" aria-hidden />
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-sm font-semibold tabular-nums">
-                                {formatDecimal(cold.streakIntensity)}×
-                              </div>
-                              <div className="text-xs text-muted-foreground tabular-nums">
-                                {cold.recentOccurrences} de 10
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {luckyNumbers && luckyNumbers.length > 0 && (
-            <Card id="premios" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-              <CardHeader>
-                <CardTitle className="text-lg">{pt.statistics.prizeCorrelation.title}</CardTitle>
-                <CardDescription>{pt.statistics.prizeCorrelation.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Statistical disclaimer: Correlation vs Causation */}
-                <div className="mb-4 max-w-[68ch] border-l-2 border-primary pl-4 text-sm text-muted-foreground">
-                  <p>
-                    <strong className="text-foreground">
-                      {pt.statistics.prizeCorrelation.disclaimerTitle}:
-                    </strong>{' '}
-                    {pt.statistics.prizeCorrelation.disclaimerBody}
-                  </p>
-                </div>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-semibold mb-3">
-                      {pt.statistics.prizeCorrelation.luckyTitle}
-                    </h3>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {luckyNumbers.slice(0, 10).map((lucky) => (
-                        <div
-                          key={lucky.number}
-                          className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 p-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <LotteryBall number={lucky.number} size="sm" />
-                            <div>
-                              <div className="text-xs text-muted-foreground">
-                                {pt.statistics.prizeCorrelation.averagePrizeLabel}
-                              </div>
-                              <div className="font-semibold tabular-nums">
-                                {formatCurrency(lucky.averagePrizeSena)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-muted-foreground">
-                              {pt.statistics.prizeCorrelation.correlationLabel}
-                            </div>
-                            <div className="text-lg font-bold text-primary tabular-nums">
-                              {formatDecimal(lucky.correlationScore)}×
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {unluckyNumbers && unluckyNumbers.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-semibold mb-3">
-                        {pt.statistics.prizeCorrelation.unluckyTitle}
-                      </h3>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {unluckyNumbers.slice(0, 10).map((unlucky) => (
-                          <div
-                            key={unlucky.number}
-                            className="flex items-center justify-between gap-3 rounded-lg border bg-card/50 p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              <LotteryBall number={unlucky.number} size="sm" />
-                              <div>
-                                <div className="text-xs text-muted-foreground">
-                                  {pt.statistics.prizeCorrelation.averagePrizeLabel}
-                                </div>
-                                <div className="font-semibold tabular-nums">
-                                  {formatCurrency(unlucky.averagePrizeSena)}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs text-muted-foreground">
-                                {pt.statistics.prizeCorrelation.correlationLabel}
-                              </div>
-                              <div className="text-lg font-bold text-destructive tabular-nums">
-                                {formatDecimal(unlucky.correlationScore)}×
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </section>
-
-        <Card id="todos" className="scroll-mt-[calc(var(--app-header-height,4rem)_+_3.5rem)]">
-          <CardHeader>
-            <CardTitle className="text-lg">{pt.statistics.allNumbers.title}</CardTitle>
-            <CardDescription>{pt.statistics.allNumbers.description}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-6 gap-3 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
-              {frequencies.map((num: NumberFrequency) => (
-                <div key={num.number} className="flex flex-col items-center gap-1">
-                  <LotteryBall number={num.number} size="sm" />
-                  <div className="text-center text-xs">
-                    <div className="font-medium tabular-nums">{num.frequency}x</div>
-                  </div>
-                </div>
-              ))}
+      <div className="mt-10 space-y-14">
+        <StatSection id="frequencia" title="Análise de Frequência">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="space-y-2">
+              <SubHeading id="frequencia-mais">{pt.statistics.hotNumbersTitle}</SubHeading>
+              <RankedList
+                labelId="frequencia-mais"
+                entries={rankBy(topCount, frequencies, (entry) => entry.frequency, frequencyDetail)}
+              />
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <SubHeading id="frequencia-menos">{pt.statistics.coldNumbersTitle}</SubHeading>
+              <RankedList
+                labelId="frequencia-menos"
+                entries={rankBy(
+                  topCount,
+                  frequencies,
+                  (entry) => -entry.frequency,
+                  frequencyDetail
+                )}
+              />
+            </div>
+          </div>
+          <SourceLine through={through} />
+        </StatSection>
+
+        <StatSection id="padroes" title={pt.statistics.patterns.title}>
+          <TableFrame>
+            <table className={tableClass}>
+              <caption className="sr-only">{pt.statistics.patterns.title}</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className={thClass}>
+                    Padrão
+                  </th>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
+                    Concursos
+                  </th>
+                  <th scope="col" className={thClass}>
+                    {pt.statistics.patterns.lastSeenLabel}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {patterns.map((pattern) => (
+                  <tr key={pattern.type}>
+                    <th scope="row" className={cn(cellClass, 'font-medium')}>
+                      {getPatternDescription(pattern)}
+                    </th>
+                    <td className={cn(cellClass, 'text-right')}>
+                      {formatNumber(pattern.occurrences)}
+                    </td>
+                    <td className={cellClass}>
+                      {pattern.lastSeen ? formatDate(pattern.lastSeen) : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+          <SourceLine through={through} />
+        </StatSection>
+
+        {delays && delays.length > 0 && (
+          <StatSection id="atraso" title={pt.statistics.delays.title}>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="space-y-2">
+                <SubHeading id="atraso-maiores">Números mais atrasados</SubHeading>
+                <RankedList
+                  labelId="atraso-maiores"
+                  entries={rankBy(
+                    topCount,
+                    delays,
+                    (delay) => delay.delayDraws,
+                    (delay) =>
+                      `${countLabel(delay.delayDraws, 'concurso', 'concursos')} · ${getDelayCategoryLabel(delay.delayCategory)}`
+                  )}
+                />
+              </div>
+              {delayDistribution && delayDistribution.length > 0 && (
+                <div className="space-y-2">
+                  <SubHeading id="atraso-distribuicao">
+                    {pt.statistics.delays.distributionTitle}
+                  </SubHeading>
+                  <TableFrame>
+                    <table aria-labelledby="atraso-distribuicao" className={tableClass}>
+                      <thead>
+                        <tr>
+                          <th scope="col" className={thClass}>
+                            Situação
+                          </th>
+                          <th scope="col" className={cn(thClass, 'text-right')}>
+                            Números
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {delayDistribution.map((dist) => (
+                          <tr key={dist.category}>
+                            <th scope="row" className={cn(cellClass, 'font-medium')}>
+                              {dist.category}
+                            </th>
+                            <td className={cn(cellClass, 'text-right')}>{dist.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </TableFrame>
+                </div>
+              )}
+            </div>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {decades && decades.length > 0 && (
+          <StatSection id="dezenas" title={pt.statistics.decades.title}>
+            <TableFrame>
+              <table className={tableClass}>
+                <caption className="sr-only">{pt.statistics.decades.title}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className={thClass}>
+                      Faixa
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Ocorrências
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      % das dezenas
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Desvio
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Mais sorteadas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {decades.map((decade) => (
+                    <tr key={decade.decade}>
+                      <th scope="row" className={cn(cellClass, 'font-medium')}>
+                        {decade.decade}
+                      </th>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {formatNumber(decade.totalOccurrences)}
+                      </td>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {fixedDecimal(decade.percentage, 2)}%
+                      </td>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {signedPoints(decade.deviation)}
+                      </td>
+                      <td className={cellClass}>
+                        <span className="flex flex-wrap gap-x-3 gap-y-1">
+                          {decade.topNumbers.slice(0, 3).map((top) => (
+                            <span key={top.number} className="whitespace-nowrap">
+                              <DezenaLink number={top.number} />{' '}
+                              <span className="text-muted-foreground">({top.frequency})</span>
+                            </span>
+                          ))}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {pairs && pairs.length > 0 && (
+          <StatSection id="pares" title={pt.statistics.pairs.title}>
+            <TableFrame>
+              <table className={tableClass}>
+                <caption className="sr-only">{pt.statistics.pairs.title}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className={thClass}>
+                      Posição
+                    </th>
+                    <th scope="col" className={thClass}>
+                      Par
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Vezes juntos
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      {pt.statistics.pairs.correlationLabel}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pairs.slice(0, 20).map((pair, index) => (
+                    <tr key={`${pair.pair[0]}-${pair.pair[1]}`}>
+                      <td className={cn(cellClass, 'text-muted-foreground')}>{index + 1}º</td>
+                      <th scope="row" className={cellClass}>
+                        <DezenaLink number={pair.pair[0]} />
+                        <span className="text-muted-foreground"> e </span>
+                        <DezenaLink number={pair.pair[1]} />
+                      </th>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {formatNumber(pair.frequency)}
+                      </td>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {fixedDecimal(pair.correlation, 2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {parity && parity.length > 0 && (
+          <StatSection id="paridade" title={pt.statistics.parity.title}>
+            {parityStats && (
+              <FactList
+                facts={[
+                  {
+                    term: pt.statistics.parity.mostCommonLabel,
+                    value: `${parityStats.mostCommon.evenCount} pares / ${parityStats.mostCommon.oddCount} ímpares`,
+                    hint: `${formatDecimal(parityStats.mostCommon.percentage, 2)}% dos concursos`,
+                  },
+                  {
+                    term: pt.statistics.parity.balancedLabel,
+                    value: `${formatDecimal(parityStats.balancedPercentage, 2)}%`,
+                    hint: pt.statistics.parity.drawsLabel,
+                  },
+                ]}
+              />
+            )}
+            <TableFrame>
+              <table className={tableClass}>
+                <caption className="sr-only">{pt.statistics.parity.title}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className={thClass}>
+                      Pares / ímpares
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Concursos
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      % dos concursos
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parity.map((row) => (
+                    <tr key={row.evenCount}>
+                      <th scope="row" className={cn(cellClass, 'font-medium')}>
+                        {row.evenCount} / {row.oddCount}
+                      </th>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {formatNumber(row.occurrences)}
+                      </td>
+                      <td className={cn(cellClass, 'text-right')}>
+                        {fixedDecimal(row.percentage, 2)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {primes && (
+          <StatSection id="primos" title={pt.statistics.primes.title}>
+            <FactList
+              facts={[
+                {
+                  term: pt.statistics.primes.totalLabel,
+                  value: primes.totalPrimes,
+                  hint: pt.statistics.primes.totalSuffix,
+                },
+                {
+                  term: pt.statistics.primes.averageLabel,
+                  value: formatDecimal(primes.averagePrimesPerDraw, 2),
+                  hint: pt.statistics.primes.averageSuffix,
+                },
+                {
+                  term: pt.statistics.primes.mostCommonLabel,
+                  value: primes.mostCommonCount,
+                  hint: pt.statistics.primes.mostCommonSuffix,
+                },
+              ]}
+            />
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="space-y-2">
+                <SubHeading id="primos-distribuicao">
+                  {pt.statistics.primes.distributionTitle}
+                </SubHeading>
+                <TableFrame>
+                  <table aria-labelledby="primos-distribuicao" className={tableClass}>
+                    <thead>
+                      <tr>
+                        <th scope="col" className={thClass}>
+                          Primos no sorteio
+                        </th>
+                        <th scope="col" className={cn(thClass, 'text-right')}>
+                          Concursos
+                        </th>
+                        <th scope="col" className={cn(thClass, 'text-right')}>
+                          % dos concursos
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {primes.distribution.map((dist) => (
+                        <tr key={dist.primeCount}>
+                          <th scope="row" className={cn(cellClass, 'font-medium')}>
+                            {dist.primeCount}
+                          </th>
+                          <td className={cn(cellClass, 'text-right')}>
+                            {formatNumber(dist.occurrences)}
+                          </td>
+                          <td className={cn(cellClass, 'text-right')}>
+                            {fixedDecimal(dist.percentage, 2)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableFrame>
+              </div>
+              <div className="space-y-2">
+                <SubHeading id="primos-mais">{pt.statistics.primes.topTitle}</SubHeading>
+                <RankedList
+                  labelId="primos-mais"
+                  entries={rankBy(
+                    10,
+                    primes.primeFrequencies,
+                    (prime) => prime.frequency,
+                    (prime) => countLabel(prime.frequency, 'vez', 'vezes')
+                  )}
+                />
+              </div>
+            </div>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {sumStats && (
+          <StatSection id="soma" title={pt.statistics.sum.title}>
+            <FactList
+              facts={[
+                { term: pt.statistics.sum.meanLabel, value: formatDecimal(sumStats.mean) },
+                { term: pt.statistics.sum.medianLabel, value: formatDecimal(sumStats.median) },
+                { term: pt.statistics.sum.modeLabel, value: formatDecimal(sumStats.mode) },
+                { term: pt.statistics.sum.stdDevLabel, value: formatDecimal(sumStats.stdDev) },
+              ]}
+            />
+            <TableFrame>
+              <table className={tableClass}>
+                <caption className="sr-only">Percentis da soma das seis dezenas</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className={thClass}>
+                      Medida
+                    </th>
+                    <th scope="col" className={cn(thClass, 'text-right')}>
+                      Soma das seis dezenas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Mínima', formatNumber(sumStats.minSum)],
+                    ['5º percentil', formatDecimal(sumStats.percentiles.p5)],
+                    ['25º percentil', formatDecimal(sumStats.percentiles.p25)],
+                    ['50º percentil', formatDecimal(sumStats.percentiles.p50)],
+                    ['75º percentil', formatDecimal(sumStats.percentiles.p75)],
+                    ['95º percentil', formatDecimal(sumStats.percentiles.p95)],
+                    ['Máxima', formatNumber(sumStats.maxSum)],
+                  ].map(([measure, value]) => (
+                    <tr key={measure}>
+                      <th scope="row" className={cn(cellClass, 'font-medium')}>
+                        {measure}
+                      </th>
+                      <td className={cn(cellClass, 'text-right')}>{value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+            <SourceLine through={through} />
+          </StatSection>
+        )}
+
+        {Boolean(hotNumbers?.length || coldNumbers?.length) && (
+          <StatSection id="sequencias" title={pt.statistics.streaks.title}>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              {hotNumbers && hotNumbers.length > 0 && (
+                <div className="space-y-2">
+                  <SubHeading id="sequencias-quentes">{pt.statistics.streaks.hotTitle}</SubHeading>
+                  <StreakTable labelId="sequencias-quentes" streaks={hotNumbers} />
+                </div>
+              )}
+              {coldNumbers && coldNumbers.length > 0 && (
+                <div className="space-y-2">
+                  <SubHeading id="sequencias-frias">{pt.statistics.streaks.coldTitle}</SubHeading>
+                  <StreakTable labelId="sequencias-frias" streaks={coldNumbers} />
+                </div>
+              )}
+            </div>
+            <SourceLine through={through} />
+            <RandomnessNote>{pt.statistics.streaks.disclaimerBody}</RandomnessNote>
+          </StatSection>
+        )}
+
+        {luckyNumbers && luckyNumbers.length > 0 && (
+          <StatSection id="premios" title={pt.statistics.prizeCorrelation.title}>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="space-y-2">
+                <SubHeading id="premios-acima">
+                  {pt.statistics.prizeCorrelation.luckyTitle}
+                </SubHeading>
+                <PrizeTable labelId="premios-acima" rows={luckyNumbers.slice(0, 10)} />
+              </div>
+              {unluckyNumbers && unluckyNumbers.length > 0 && (
+                <div className="space-y-2">
+                  <SubHeading id="premios-abaixo">
+                    {pt.statistics.prizeCorrelation.unluckyTitle}
+                  </SubHeading>
+                  <PrizeTable labelId="premios-abaixo" rows={unluckyNumbers.slice(0, 10)} />
+                </div>
+              )}
+            </div>
+            <SourceLine through={through} />
+            <RandomnessNote>{pt.statistics.prizeCorrelation.disclaimerBody}</RandomnessNote>
+          </StatSection>
+        )}
+
+        <StatSection id="todos" title={pt.statistics.allNumbers.title}>
+          <FrequencyGrid
+            entries={byNumber}
+            label="Frequência de cada número de 01 a 60"
+            through={through}
+          />
+        </StatSection>
       </div>
     </div>
   );
