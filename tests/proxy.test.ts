@@ -17,7 +17,7 @@ describe('proxy', () => {
     expect(requestNonce).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
     expect(scriptSrc).toBe(`script-src 'self' 'nonce-${requestNonce}' 'strict-dynamic'`);
     expect(scriptSrc).not.toContain("'unsafe-inline'");
-    expect(styleSrc).toBe(`style-src 'self' 'nonce-${requestNonce}' https://fonts.googleapis.com`);
+    expect(styleSrc).toBe(`style-src 'self' 'nonce-${requestNonce}'`);
     expect(styleSrc).not.toContain("'unsafe-inline'");
     expect(response.headers.get('strict-transport-security')).toBeNull();
     expect(response.headers.get('x-nonce')).toBeNull();

@@ -14,10 +14,10 @@ import {
   formatPercentPtBr,
   joinPtBr,
   longestComeback,
-  resolveIntegerParam,
   senaOutcome,
   weekdayPtBr,
 } from '@/app/_lib/format';
+import { resolveIntegerParam } from '@/app/_lib/route-params';
 import {
   AnswerSummary,
   ArchiveLink,

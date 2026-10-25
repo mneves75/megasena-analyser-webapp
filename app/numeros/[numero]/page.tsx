@@ -11,8 +11,8 @@ import {
   dezena,
   formatDecimal,
   formatPercentPtBr,
-  resolveIntegerParam,
 } from '@/app/_lib/format';
+import { resolveIntegerParam } from '@/app/_lib/route-params';
 import {
   AnswerSummary,
   ArchiveFreshness,

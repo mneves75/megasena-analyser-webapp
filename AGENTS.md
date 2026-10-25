@@ -44,7 +44,7 @@ See docs/DEPLOY.md for per-environment build inputs and architecture alternative
 
 The official CAIXA portal now publishes `servicebus3.caixa.gov.br` in its
 `Style Library/json/params.txt` configuration. `API_CONFIG.CAIXA_BASE_URL` owns
-that URL; the CSP derives its origin. If ingestion fails, verify the portal's
+that URL; only the server calls it, so the CSP lists no CAIXA origin. If ingestion fails, verify the portal's
 current configuration before attributing the failure to an upstream outage.
 
 `lib/site-domains.json` owns the canonical hostname and its five existing aliases.
@@ -242,7 +242,8 @@ README.md for the isolated local production fixture and two-pass replay.
   switch to a static/SRI CSP (breaks App Router streaming hydration) without E2E proof.
   There is no `unsafe-inline` anywhere in production, including `style` attributes:
   render no `style=` prop in server HTML (React's client-side style props go through
-  CSSOM and are allowed). Public edge/proxy must not define its own CSP — run `security:csp:edge` after
+  CSSOM and are allowed). Client modules never import `zod`: v4 probes `eval` on load and
+  the CSP reports it (`tests/components/client-bundle-boundary.test.tsx`). Public edge/proxy must not define its own CSP — run `security:csp:edge` after
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting

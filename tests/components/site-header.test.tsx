@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 /**
  * SiteHeader active-link tests.
@@ -95,5 +95,21 @@ describe('SiteHeader active link rendering', () => {
     render(<SiteHeader />);
 
     expect(currentPageHrefs()).toEqual([]);
+  });
+});
+
+describe('SiteHeader mobile menu', () => {
+  it('returns focus to the toggle when Escape closes the menu from inside it', () => {
+    mockUsePathname.mockReturnValue('/');
+    render(<SiteHeader />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menu' }));
+    const [firstMenuLink] = screen.getAllByRole('link', { name: 'Resultados' }).slice(-1);
+    firstMenuLink!.focus();
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    const toggle = screen.getByRole('button', { name: 'Abrir menu' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(document.activeElement).toBe(toggle);
   });
 });

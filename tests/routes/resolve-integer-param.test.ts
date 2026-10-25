@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 
-import { resolveIntegerParam } from '@/app/_lib/format';
+import { resolveIntegerParam } from '@/app/_lib/route-params';
 
 const toContest = (value: number) => `/concurso/${value}`;
 

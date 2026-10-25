@@ -18,15 +18,16 @@ describe('buildCsp', () => {
     expect(scriptSrcElem).toBe("script-src-elem 'self' 'nonce-abc123' 'strict-dynamic'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain('upgrade-insecure-requests');
-    expect(csp).toMatch(/connect-src[^;]*servicebus3\.caixa\.gov\.br/);
-    expect(csp).not.toContain('servicebus2.caixa.gov.br');
+    // Only the server talks to CAIXA; the browser connects to its own origin.
+    expect(csp).toContain("connect-src 'self'; ");
+    expect(csp).not.toContain('caixa.gov.br');
   });
 
   it('usa nonce em style-src de produção sem unsafe-inline', () => {
     const csp = buildCsp({ isDev: false, nonce: 'abc123' });
     const styleSrc = csp.split('; ').find((directive) => directive.startsWith('style-src'));
 
-    expect(styleSrc).toBe("style-src 'self' 'nonce-abc123' https://fonts.googleapis.com");
+    expect(styleSrc).toBe("style-src 'self' 'nonce-abc123'");
     expect(styleSrc).not.toContain("'unsafe-inline'");
     // No style attribute exception: the nonce-bearing style-src also governs attributes.
     expect(csp).not.toContain('style-src-attr');
@@ -71,14 +72,11 @@ describe('buildCsp', () => {
     expect(csp).toContain("frame-ancestors 'none'");
   });
 
-  it('allows Google Fonts in style-src', () => {
+  it('serves fonts from its own origin only (next/font self-hosts them)', () => {
     const csp = buildCsp({ isDev: false });
-    expect(csp).toContain('https://fonts.googleapis.com');
-  });
-
-  it('allows Google Fonts in font-src', () => {
-    const csp = buildCsp({ isDev: false });
-    expect(csp).toContain('https://fonts.gstatic.com');
+    expect(csp).toContain("font-src 'self' data:");
+    expect(csp).not.toContain('fonts.googleapis.com');
+    expect(csp).not.toContain('fonts.gstatic.com');
   });
 });
 
@@ -119,6 +117,8 @@ describe('buildSecurityHeaders', () => {
     expect(headers['Permissions-Policy']).toContain('geolocation=()');
     expect(headers['Permissions-Policy']).toContain('camera=()');
     expect(headers['Permissions-Policy']).toContain('microphone=()');
+    // FLoC was withdrawn; browsers warn on the unknown feature name.
+    expect(headers['Permissions-Policy']).not.toContain('interest-cohort');
   });
 
   it('includes Referrer-Policy', () => {

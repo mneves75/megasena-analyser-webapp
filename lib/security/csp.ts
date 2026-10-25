@@ -1,6 +1,3 @@
-import { API_CONFIG } from '@/lib/constants';
-
-const CAIXA_API_ORIGIN = new URL(API_CONFIG.CAIXA_BASE_URL).origin;
 export const HSTS_HEADER_VALUE = 'max-age=31536000; includeSubDomains; preload';
 
 export interface CspOptions {
@@ -14,8 +11,8 @@ export function buildCsp({ isDev, nonce, isSecure = true }: CspOptions): string 
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : `script-src 'self'${nonce ? ` 'nonce-${nonce}' 'strict-dynamic'` : ''}`;
   const styleSrc = isDev
-    ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
-    : `style-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''} https://fonts.googleapis.com`;
+    ? "style-src 'self' 'unsafe-inline'"
+    : `style-src 'self'${nonce ? ` 'nonce-${nonce}'` : ''}`;
 
   const directives = [
     // Fetch directives - control where resources can be loaded from
@@ -29,8 +26,8 @@ export function buildCsp({ isDev, nonce, isSecure = true }: CspOptions): string 
     !isDev && nonce ? `script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic'` : null,
     styleSrc,
     "img-src 'self' data: blob:",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    `connect-src 'self' ${CAIXA_API_ORIGIN}${
+    "font-src 'self' data:",
+    `connect-src 'self'${
       isDev ? ' http://localhost:* https://localhost:* ws://localhost:*' : ''
     }`,
     "object-src 'none'",
@@ -58,7 +55,7 @@ export function buildSecurityHeaders(csp: string, isDev: boolean, isSecure = tru
     'Cross-Origin-Embedder-Policy': 'require-corp',
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Cross-Origin-Resource-Policy': 'same-origin',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=()',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -80,7 +77,7 @@ export function buildApiSecurityHeaders(isDev: boolean, isSecure = true): Record
     'Content-Security-Policy': "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Cross-Origin-Resource-Policy': 'same-origin',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=()',
     'Referrer-Policy': 'no-referrer',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',

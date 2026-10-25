@@ -1,9 +1,6 @@
-import { notFound, permanentRedirect } from 'next/navigation';
-import {
-  parseCanonicalInteger,
-  type DrawNumberHistory,
-  type DrawRecord,
-} from '@/lib/api/archive-contract';
+// Client components import this module: keep it free of zod and next/navigation
+// (zod v4 probes eval on load, which the production CSP reports).
+import type { DrawNumberHistory, DrawRecord } from '@/lib/api/archive-contract';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 
 /** Mega-Sena numbers are always written with two digits ("dezenas"). */
@@ -67,32 +64,6 @@ export function weekdayPtBr(isoDate: string): string {
   return new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(
     new Date(`${isoDate}T12:00:00Z`)
   );
-}
-
-/**
- * Resolves an integer route segment. Zero-padded aliases ("03006") redirect
- * permanently to the canonical form; anything else invalid is a hard 404.
- * The status stays settable because archive routes have no Suspense boundary
- * above them (see app/(home)/loading.tsx); keep it that way.
- */
-export function resolveIntegerParam(
-  raw: string,
-  min: number,
-  max: number,
-  canonicalPath: (value: number) => string
-): number {
-  const value = parseCanonicalInteger(raw, min, max);
-  if (value !== null) {
-    return value;
-  }
-  // `0+` and `[1-9]` cannot overlap, so a long zero run fails in linear time.
-  if (/^0+[1-9]\d*$/.test(raw)) {
-    const unpadded = parseCanonicalInteger(raw.replace(/^0+/, ''), min, max);
-    if (unpadded !== null) {
-      permanentRedirect(canonicalPath(unpadded));
-    }
-  }
-  notFound();
 }
 
 /** The drawn number that had been absent the longest before this draw, if any returned. */

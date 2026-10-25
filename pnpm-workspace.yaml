@@ -13,10 +13,7 @@ trustPolicy: no-downgrade
 # provenance/attestation mudou no registry; são pacotes amplamente auditados e
 # mantidos. Reavalie a cada atualização major de dependências.
 trustPolicyExclude:
-  - '@reduxjs/toolkit@2.9.0'
   - 'eslint-import-resolver-typescript@3.10.1'
-  - 'react-redux@9.2.0'
-  - 'reselect@5.1.1'
   - 'semver@6.3.1'
   - 'tailwind-merge@2.6.1'
   - 'undici-types@6.21.0'

@@ -23,6 +23,11 @@ Redesenho completo do site como um anuário estatístico da Mega-Sena.
 - O teste de "resposta antiga" do gerador não verificava nada: o botão fica desabilitado durante a geração, então o segundo pedido nunca saía. Agora ele afirma que o segundo clique é bloqueado.
 - Removidos `LotteryBall`, `NumberBallLink`, `StatsCard`, o `BetCard` em cartão, os componentes de gráfico, a dependência `recharts`, os tokens `--chart-*` e 39 chaves de tradução sem uso. As quatro telas de carregamento compartilham um esqueleto de linhas.
 - Segurança: a CSP de produção deixa de liberar `style-src-attr 'unsafe-inline'`. A exceção existia para os atributos de estilo dos gráficos, que saíram; o HTML do servidor não tem `style=` em nenhuma rota e um navegador real não registrou violação em rotas nem interações (com controle positivo). `security:csp:edge` passa a reprovar a exceção se a borda a acrescentar.
+- Segurança: `connect-src` e `font-src` aceitam só a própria origem. O navegador nunca falou com a CAIXA e a fonte já era servida pelo site, então os hosts da CAIXA e do Google Fonts saíram da CSP; `interest-cohort` saiu do `Permissions-Policy`.
+- Segurança: o gerador registrava uma violação de CSP a cada visita porque os componentes do navegador importavam o zod, que testa `eval` ao carregar. A validação de parâmetros de rota foi para `app/_lib/route-params.ts`, só do servidor, e um teste reprova o zod no grafo de módulos do cliente.
+- Acessibilidade: fechar o menu móvel com Esc devolve o foco ao botão do menu em vez de deixá-lo no `<body>`.
+- Segurança: `security:secrets:history` varria 0 commits dentro de um worktree e passava. Agora varre o repositório dono do diretório git comum e falha quando o gitleaks não informa commits varridos.
+- Cadeia de suprimentos: saem de `trustPolicyExclude` as três exceções de pacotes que deixaram o lockfile com o Recharts; o workflow do React Doctor usa o mesmo `actions/checkout` v6 fixado dos demais.
 - A documentação do banco de testes descreve o SQLite real em memória (`node:sqlite`) que substituiu o emulador na 1.18.2.
 
 ## [1.18.2] - 2026-10-25

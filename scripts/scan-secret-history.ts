@@ -104,6 +104,21 @@ export function buildReachabilitySummary(
   });
 }
 
+/**
+ * gitleaks reads history through `.git`; a worktree's `.git` is a pointer file
+ * to a path outside the mount, so it would scan nothing. The repository that
+ * owns the common git dir shares every ref, so scanning it covers the same history.
+ */
+export function historySourceRoot(gitCommonDir: string): string {
+  return path.dirname(gitCommonDir);
+}
+
+/** The "N commits scanned." count gitleaks logs, or null when it logged none. */
+export function scannedCommitCount(log: string): number | null {
+  const match = /(\d+) commits scanned/.exec(log.replace(/\u001b\[[0-9;]*m/g, ''));
+  return match ? Number(match[1]) : null;
+}
+
 function refsContainingCommit(repoRoot: string, commit: string): string[] {
   const result = run(
     ['git', 'for-each-ref', '--contains', commit, '--format=%(refname)', 'refs/heads', 'refs/remotes', 'refs/tags'],
@@ -121,6 +136,9 @@ async function main(): Promise<void> {
   requireSuccess(rootResult, 'git rev-parse');
 
   const repoRoot = rootResult.stdout.trim();
+  const commonDirResult = run(['git', 'rev-parse', '--path-format=absolute', '--git-common-dir'], repoRoot);
+  requireSuccess(commonDirResult, 'git rev-parse --git-common-dir');
+  const sourceRoot = historySourceRoot(commonDirResult.stdout.trim());
   const reportDir = path.join(repoRoot, REPORT_DIR);
   const reportPath = path.join(reportDir, REPORT_FILE);
   await mkdir(reportDir, { recursive: true });
@@ -132,7 +150,7 @@ async function main(): Promise<void> {
       '--rm',
       '--network=none',
       '-v',
-      `${repoRoot}:/repo:ro`,
+      `${sourceRoot}:/repo:ro`,
       '-v',
       `${reportDir}:/out`,
       GITLEAKS_IMAGE,
@@ -148,12 +166,19 @@ async function main(): Promise<void> {
       '--exit-code',
       '0',
     ],
-    { stdout: 'inherit', stderr: 'inherit' }
+    { stdout: 'inherit', stderr: 'pipe' }
   );
+  const scanLog = scan.stderr.toString();
+  process.stderr.write(scanLog);
 
   if (scan.exitCode !== 0) {
     process.exitCode = scan.exitCode;
     return;
+  }
+
+  const commits = scannedCommitCount(scanLog);
+  if (!commits) {
+    throw new Error(`gitleaks varreu ${commits ?? 'um número desconhecido de'} commits: o scan não cobriu o histórico.`);
   }
 
   const reportFile = Bun.file(reportPath);

@@ -13,7 +13,9 @@ Banco e sinks de log são selecionados por contexto, sem reutilizar um banco glo
 O projeto usa CSP nonce-based em `proxy.ts` e `lib/security/csp.ts`.
 
 - `script-src` de produção usa `nonce` + `strict-dynamic` e não usa `unsafe-inline`.
-- `style-src` de produção usa o mesmo `nonce`, não usa `unsafe-inline` e permite `https://fonts.googleapis.com`. Não há exceção `style-src-attr`: sem diretiva própria, os atributos `style` seguem `style-src`, que não aceita `unsafe-inline`. O HTML do servidor não renderiza `style=`.
+- `style-src` de produção usa o mesmo `nonce`, não usa `unsafe-inline` e não libera hosts externos. Não há exceção `style-src-attr`: sem diretiva própria, os atributos `style` seguem `style-src`, que não aceita `unsafe-inline`. O HTML do servidor não renderiza `style=`.
+- `font-src` e `connect-src` aceitam só a própria origem (`font-src` também `data:`): `next/font` hospeda a fonte no site e só o servidor fala com a CAIXA.
+- O código do navegador não importa `zod`: o zod v4 testa `eval` ao carregar e a CSP, sem `unsafe-eval`, registra violação. Validação com zod fica no servidor (`app/_lib/route-params.ts`, `lib/api/`); `tests/components/client-bundle-boundary.test.tsx` guarda essa fronteira.
 - `proxy.ts` não emite `upgrade-insecure-requests` nem HSTS, porque o standalone do Next pode derivar `request.url` de headers encaminhados antes do middleware validar o peer; aplique HSTS no reverse proxy que termina TLS.
 - JSON-LD deve passar pelos componentes em `components/seo/json-ld.tsx`, que aplicam nonce e escapam `<`.
 

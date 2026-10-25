@@ -11,7 +11,8 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadYearArchive } from '@/app/_lib/archive';
-import { countLabel, dezena, joinPtBr, resolveIntegerParam } from '@/app/_lib/format';
+import { countLabel, dezena, joinPtBr } from '@/app/_lib/format';
+import { resolveIntegerParam } from '@/app/_lib/route-params';
 import {
   AnswerSummary,
   Breadcrumbs,

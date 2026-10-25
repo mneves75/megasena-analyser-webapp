@@ -26,10 +26,10 @@ export default defineConfig({
       // the measured 80.21 / 76.97 / 74.35 / 79.68 (lines / functions / branches /
       // statements), keeping a small buffer below it.
       thresholds: {
-        lines: 79,
-        functions: 76,
-        branches: 73,
-        statements: 78,
+        lines: 80,
+        functions: 78,
+        branches: 75,
+        statements: 80,
       },
       exclude: [
         'node_modules/',

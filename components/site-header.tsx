@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
@@ -46,6 +46,7 @@ export function isActivePath(pathname: string, href: string): boolean {
 export function SiteHeader(): React.JSX.Element {
   const pathname = usePathname() ?? '/';
   const [menuOpen, setMenuOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   // The mobile menu is a disclosure, not a modal, so the expected escape is a
   // keyboard dismissal and a reset when the route changes by any means.
@@ -57,6 +58,8 @@ export function SiteHeader(): React.JSX.Element {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         setMenuOpen(false);
+        // Focus inside the menu would fall to <body> when it unmounts.
+        toggleRef.current?.focus();
       }
     };
 
@@ -105,6 +108,7 @@ export function SiteHeader(): React.JSX.Element {
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <button
+            ref={toggleRef}
             type="button"
             aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
             aria-expanded={menuOpen}

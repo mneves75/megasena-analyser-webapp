@@ -3,6 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildReachabilitySummary,
+  historySourceRoot,
+  scannedCommitCount,
   summarizeFindings,
   type GitleaksFinding,
 } from '../../scripts/scan-secret-history';
@@ -62,5 +64,17 @@ describe('scripts/scan-secret-history.ts', () => {
         publicRefCount: 0,
       },
     ]);
+  });
+});
+
+describe('scan coverage', () => {
+  it('lê a contagem de commits do log do gitleaks, com cores ANSI', () => {
+    expect(scannedCommitCount('\u001b[32mINF\u001b[0m \u001b[1m122 commits scanned.\u001b[0m\n')).toBe(122);
+    expect(scannedCommitCount('INF 0 commits scanned.')).toBe(0);
+    expect(scannedCommitCount('INF scanned ~0 bytes')).toBeNull();
+  });
+
+  it('varre o repositório dono do diretório git comum, também a partir de um worktree', () => {
+    expect(historySourceRoot('/work/repo/.git')).toBe('/work/repo');
   });
 });
