@@ -7,6 +7,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.18.2] - 2026-10-25
+
+Fecha o gate `Cloudflare Runtime` que estava vermelho desde a 1.18.0 e conclui os itens 101–105 do plano de auditoria.
+
+- O teste de persistência do Durable Object volta a passar: a fixture liga um `IP_HASH_SECRET` estável, como produção faz. Sem ele, o sal aleatório por processo re-chaveava a quota a cada reinício — comportamento correto, premissa errada no teste.
+- A suíte roda em SQLite real (`node:sqlite` em memória com as migrações reais) no lugar do emulador de SQL escrito à mão, que respondia `undefined` a consultas que não reconhecia. 737 linhas de máquina de teste saíram de `lib/db.ts`.
+- Arquivo público e `lastmod`: testes com SQLite real cobrem `getDrawPage`, `getYearArchive` e `getSitemapData`; a listagem por ano, o índice, a Mega da Virada e o sitemap passam a ser cacheados por revisão de sorteios.
+- `db:pull --limit` também recusa uma janela que deixaria buraco interno, exceto no primeiro carregamento sobre base vazia.
+- Registros de log e auditoria passam a gravar o estágio real (`DEPLOYMENT_STAGE`), então linhas de staging deixam de se declarar produção.
+- Política de privacidade e registro LGPD descrevem a produção em Workers e divulgam a janela de 30 dias de recuperação PITR do Durable Object, encerrando o CMP-06 antes do fim do waiver.
+- Revisão de código: removidos `line-chart`, a rota `manifest` (substituída pelo `public/manifest.json`), exports não usados do logger e do gerador, e o agrupamento de presets de orçamento ganhou semântica de grupo acessível.
+
 ## [1.18.1] - 2026-10-24
 
 Correções da revisão de release feita em outro modelo sobre a 1.18.0.
