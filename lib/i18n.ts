@@ -29,8 +29,7 @@ export const pt = {
       title: 'Estatísticas da Mega-Sena: frequências e atrasos',
       description:
         'Estatísticas completas da Mega-Sena: frequências, padrões, atrasos, dezenas, pares frequentes, paridade, primos, soma e correlação com prêmios.',
-      openGraphDescription:
-        'Análise completa de frequências e padrões dos sorteios da Mega-Sena.',
+      openGraphDescription: 'Análise completa de frequências e padrões dos sorteios da Mega-Sena.',
     },
     privacy: {
       title: 'Política de Privacidade',
@@ -86,8 +85,7 @@ export const pt = {
     },
     generic: {
       title: 'Algo deu errado',
-      description:
-        'Ocorreu um erro inesperado. Tente novamente em alguns instantes.',
+      description: 'Ocorreu um erro inesperado. Tente novamente em alguns instantes.',
       action: 'Tentar novamente',
     },
   },
@@ -117,25 +115,29 @@ export const pt = {
     contents: [
       {
         title: 'Resultados',
-        description: 'Todos os concursos por ano, com as dezenas, os ganhadores e o prêmio de cada faixa.',
+        description:
+          'Todos os concursos por ano, com as dezenas, os ganhadores e o prêmio de cada faixa.',
         href: '/resultados',
         archive: true,
       },
       {
         title: 'Números de 01 a 60',
-        description: 'Quantas vezes cada dezena saiu, há quantos concursos não sai e com quais outras costuma sair.',
+        description:
+          'Quantas vezes cada dezena saiu, há quantos concursos não sai e com quais outras costuma sair.',
         href: '/numeros',
         archive: true,
       },
       {
         title: 'Estatísticas',
-        description: 'Frequência, atraso, pares, paridade, primos e soma das dezenas em todo o histórico.',
+        description:
+          'Frequência, atraso, pares, paridade, primos e soma das dezenas em todo o histórico.',
         href: '/dashboard/statistics',
         archive: false,
       },
       {
         title: 'Gerador de apostas',
-        description: 'Distribui um orçamento entre apostas simples e múltiplas com o menor desperdício.',
+        description:
+          'Distribui um orçamento entre apostas simples e múltiplas com o menor desperdício.',
         href: '/dashboard/generator',
         archive: false,
       },
@@ -148,50 +150,45 @@ export const pt = {
     ],
     disclaimer: {
       title: 'Aviso importante',
-      text:
-        'Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória. Jogue com responsabilidade.',
+      text: 'Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória. Jogue com responsabilidade.',
       termsLinkLabel: 'Termos de uso',
     },
   },
   dashboard: {
     title: 'Dashboard',
-    subtitle: 'Visão geral das estatísticas e últimos sorteios da Mega-Sena',
-    stats: {
-      totalDraws: 'Total de Sorteios',
-      totalDrawsDescription: 'Sorteios registrados',
-      lastDraw: 'Último Sorteio',
-      accumulationRate: 'Taxa de Acumulação',
-      accumulationDescriptionSuffix: 'sorteios acumulados',
-      averagePrizeSena: 'Prêmio Médio Sena',
-      averagePrizeDescription: 'Média de prêmios pagos',
-    },
-    sections: {
-      mostFrequent: 'Números Mais Sorteados',
-      mostFrequentDescription: 'Top 10 números com maior frequência',
-      leastFrequent: 'Números Menos Sorteados',
-      leastFrequentDescription: 'Top 10 números com menor frequência',
-      recentDraws: 'Últimos Sorteios',
-      recentDrawsDescription: 'Histórico recente da Mega-Sena',
-      hotNumbersTitle: 'Números em Alta (Últimos 10 Sorteios)',
-      hotNumbersDescription: 'Números com maior intensidade de aparição recente',
-      accumulated: 'Acumulado',
-      notAccumulated: 'Não acumulado',
-      prizeLabel: 'Prêmio',
-      contestLabel: 'Concurso',
-    },
-    actions: {
-      statisticsTitle: 'Estatísticas Detalhadas',
-      statisticsDescription: 'Análise completa de frequências, padrões e tendências',
-      generatorTitle: 'Gerador de Apostas',
-      generatorDescription: 'Crie apostas inteligentes baseadas em estratégias avançadas',
-    },
+    lastDraw: 'Último concurso',
+    archiveTitle: 'O arquivo em números',
+    totalDraws: 'Concursos registrados',
+    accumulationRate: 'Concursos que acumularam',
+    averagePrizeSena: 'Prêmio médio da sena',
+    averagePrizeHint: 'Média dos concursos com ganhador.',
+    mostFrequent: 'Mais sorteados',
+    leastFrequent: 'Menos sorteados',
+    recentDraws: 'Últimos concursos',
+    hotNumbersTitle: 'Em alta nos últimos 10 concursos',
+    hotNumbersCaption:
+      'Saídas de cada dezena nos últimos 10 concursos, comparadas com a média histórica da própria dezena.',
+    toolsTitle: 'Ferramentas',
+    tools: [
+      {
+        title: 'Estatísticas',
+        description:
+          'Frequência, atraso, pares, paridade, soma e distribuição de todas as dezenas.',
+        href: '/dashboard/statistics',
+      },
+      {
+        title: 'Gerador de apostas',
+        description: 'Distribui o seu orçamento entre apostas simples e múltiplas.',
+        href: '/dashboard/generator',
+      },
+    ],
   },
   generatorPage: {
     title: 'Gerador de Apostas Otimizado',
-    subtitle: 'Distribui o seu orçamento entre apostas simples e múltiplas com o menor desperdício.',
+    subtitle:
+      'Distribui o seu orçamento entre apostas simples e múltiplas com o menor desperdício.',
     disclaimer: {
-      text:
-        'Sorteios de loteria são eventos aleatórios e independentes. Nenhuma estratégia pode prever resultados futuros. Este sistema oferece ferramentas de seleção baseadas em heurísticas estatísticas, não garantias de ganho. O valor esperado de qualquer aposta é negativo devido à margem da casa.',
+      text: 'Sorteios de loteria são eventos aleatórios e independentes. Nenhuma estratégia pode prever resultados futuros. Este sistema oferece ferramentas de seleção baseadas em heurísticas estatísticas, não garantias de ganho. O valor esperado de qualquer aposta é negativo devido à margem da casa.',
     },
   },
   generatorForm: {
@@ -212,7 +209,8 @@ export const pt = {
         },
         {
           title: '2. Configure a Estratégia',
-          description: 'Escolha como os números serão selecionados: aleatório, quentes, frios, etc.',
+          description:
+            'Escolha como os números serão selecionados: aleatório, quentes, frios, etc.',
         },
         {
           title: '3. Selecione o Modo',
@@ -242,8 +240,7 @@ export const pt = {
       strategyLabel: 'Estratégia de Números',
       modeLabel: 'Modo de Geração',
       infoTitle: 'Dica',
-      infoOptimized:
-        'O modo Otimizado é recomendado para maximizar o uso do seu orçamento.',
+      infoOptimized: 'O modo Otimizado é recomendado para maximizar o uso do seu orçamento.',
       infoBalanced:
         'A estratégia Balanceada combina análise histórica para resultados equilibrados.',
       generate: 'Gerar Apostas',
@@ -504,8 +501,7 @@ export const pt = {
     },
     changes: {
       title: '6. Alterações',
-      body:
-        'Estes termos podem ser alterados a qualquer momento. O uso continuado da plataforma após alterações constitui aceitação dos novos termos.',
+      body: 'Estes termos podem ser alterados a qualquer momento. O uso continuado da plataforma após alterações constitui aceitação dos novos termos.',
     },
     law: {
       title: '7. Lei aplicável',
@@ -545,7 +541,10 @@ export const pt = {
     controllerTitle: 'Controlador e Encarregado (DPO)',
     controllerRows: [
       { label: 'Controlador', value: 'Equipe Mega-Sena Analyzer (projeto independente)' },
-      { label: 'Encarregado (DPO)', value: 'Encarregado de Proteção de Dados — Mega-Sena Analyzer' },
+      {
+        label: 'Encarregado (DPO)',
+        value: 'Encarregado de Proteção de Dados — Mega-Sena Analyzer',
+      },
       { label: 'Canal de privacidade', value: 'privacidade@megasena-analyzer.com.br' },
       { label: 'Site', value: 'https://megasena-analyzer.com.br' },
     ],
@@ -576,8 +575,7 @@ export const pt = {
           'Chave: megasena-theme — valor light, dark ou system (preferência de aparência)',
           'Chave: megasena-privacy-ack — versão do aviso de privacidade já visualizado (ex.: 2026-05-20)',
         ],
-        note:
-          'Esses dados nunca saem do seu dispositivo. Para apagar, limpe os dados do site nas configurações do navegador.',
+        note: 'Esses dados nunca saem do seu dispositivo. Para apagar, limpe os dados do site nas configurações do navegador.',
       },
       {
         title: '3. Dados operacionais processados no servidor',
@@ -658,7 +656,8 @@ export const pt = {
         ],
       },
     ],
-    notice: 'Esta política pode ser atualizada. A data da última revisão fica no topo do documento.',
+    notice:
+      'Esta política pode ser atualizada. A data da última revisão fica no topo do documento.',
     faqs: [
       {
         question: 'O Mega-Sena Analyzer coleta meus dados pessoais?',
@@ -672,13 +671,11 @@ export const pt = {
       },
       {
         question: 'O Mega-Sena Analyzer tem login, JWT ou MFA?',
-        answer:
-          'Não. Não há cadastro nem autenticação. Sem login, sem token, sem MFA.',
+        answer: 'Não. Não há cadastro nem autenticação. Sem login, sem token, sem MFA.',
       },
       {
         question: 'Onde ficam armazenadas minhas apostas geradas?',
-        answer:
-          'As apostas geradas não são persistidas no navegador nem no servidor por padrão.',
+        answer: 'As apostas geradas não são persistidas no navegador nem no servidor por padrão.',
       },
       {
         question: 'O Mega-Sena Analyzer vende meus dados?',
@@ -722,7 +719,8 @@ export const pt = {
       {
         legalRef: 'Art. 18, IV',
         title: 'Anonimização, bloqueio ou eliminação',
-        description: 'Pedir a eliminação de dados desnecessários, excessivos ou tratados em desconformidade.',
+        description:
+          'Pedir a eliminação de dados desnecessários, excessivos ou tratados em desconformidade.',
       },
       {
         legalRef: 'Art. 18, V',
@@ -737,7 +735,8 @@ export const pt = {
       {
         legalRef: 'Art. 55-K',
         title: 'Petição à ANPD',
-        description: 'Apresentar reclamação à Autoridade Nacional de Proteção de Dados quando entender necessário.',
+        description:
+          'Apresentar reclamação à Autoridade Nacional de Proteção de Dados quando entender necessário.',
       },
     ],
     howTitle: 'Como solicitar',
@@ -764,8 +763,7 @@ export const pt = {
   },
   storageBanner: {
     title: 'Aviso de privacidade',
-    body:
-      'O Mega-Sena Analyzer não usa cookies HTTP nem autenticação. Apenas dois valores funcionais ficam no localStorage do seu navegador: megasena-theme (preferência de tema) e, ao confirmar este aviso, megasena-privacy-ack (versão deste aviso já visualizada, para não exibi-lo novamente).',
+    body: 'O Mega-Sena Analyzer não usa cookies HTTP nem autenticação. Apenas dois valores funcionais ficam no localStorage do seu navegador: megasena-theme (preferência de tema) e, ao confirmar este aviso, megasena-privacy-ack (versão deste aviso já visualizada, para não exibi-lo novamente).',
     accept: 'Entendi',
     learnMore: 'Política de Privacidade',
     learnMoreHref: '/privacy',
@@ -791,7 +789,7 @@ export const pt = {
     officialHelpLabel: 'Jogo Responsável (governo federal)',
     officialHelpUrl:
       'https://www.gov.br/fazenda/pt-br/composicao/orgaos/secretaria-de-premios-e-apostas/jogo-responsavel',
-    disclaimerTitle: 'AVISO IMPORTANTE',
+    disclaimerTitle: 'Aviso',
     disclaimerBody:
       'Esta ferramenta tem finalidade educacional e recreativa. As análises estatísticas são baseadas em resultados históricos e não garantem resultados futuros. A Mega-Sena é um jogo de sorte completamente aleatório. Todas as combinações têm a mesma probabilidade matemática de serem sorteadas. O uso desta ferramenta não aumenta suas chances de ganhar.',
     disclaimerSource:

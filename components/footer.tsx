@@ -125,7 +125,7 @@ export function Footer(): React.JSX.Element {
 
         {/* Disclaimer */}
         <div className="mt-12 border-t border-border pt-8">
-          <div className="max-w-prose space-y-2 border-l-2 border-primary pl-4 text-xs leading-relaxed text-muted-foreground">
+          <div className="max-w-prose space-y-2 text-xs leading-relaxed text-muted-foreground">
             <p className="text-sm font-semibold text-foreground">{pt.footer.disclaimerTitle}</p>
             <p>{pt.footer.disclaimerBody}</p>
             <p>{pt.footer.disclaimerSource}</p>

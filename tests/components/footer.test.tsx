@@ -91,7 +91,7 @@ describe('Footer - Core Sections', () => {
   it('should render disclaimer', () => {
     render(<Footer />);
 
-    expect(screen.getByText(/aviso importante/i)).toBeInTheDocument();
+    expect(screen.getByText('Aviso')).toBeInTheDocument();
     // Text is split across multiple elements, use partial match
     expect(screen.getByText(/educacional e recreativa/i)).toBeInTheDocument();
   });
