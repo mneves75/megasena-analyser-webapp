@@ -22,6 +22,7 @@ Redesenho completo do site como um anuário estatístico da Mega-Sena.
 - Acessibilidade: o dashboard deixa de pular de h1 para h3, as opções do gerador seguem como grupo de rádio com navegação por setas, e o texto corrido quebra linhas com `text-wrap: pretty`.
 - O teste de "resposta antiga" do gerador não verificava nada: o botão fica desabilitado durante a geração, então o segundo pedido nunca saía. Agora ele afirma que o segundo clique é bloqueado.
 - Removidos `LotteryBall`, `NumberBallLink`, `StatsCard`, o `BetCard` em cartão, os componentes de gráfico, a dependência `recharts`, os tokens `--chart-*` e 39 chaves de tradução sem uso. As quatro telas de carregamento compartilham um esqueleto de linhas.
+- Segurança: a CSP de produção deixa de liberar `style-src-attr 'unsafe-inline'`. A exceção existia para os atributos de estilo dos gráficos, que saíram; o HTML do servidor não tem `style=` em nenhuma rota e um navegador real não registrou violação em rotas nem interações (com controle positivo). `security:csp:edge` passa a reprovar a exceção se a borda a acrescentar.
 - A documentação do banco de testes descreve o SQLite real em memória (`node:sqlite`) que substituiu o emulador na 1.18.2.
 
 ## [1.18.2] - 2026-10-25

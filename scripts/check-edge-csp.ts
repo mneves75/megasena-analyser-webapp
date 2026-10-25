@@ -32,10 +32,7 @@ type CspSummary = {
 };
 
 type EdgeOverrideOwner =
-  | 'shared_response_headers'
-  | 'cloudflare_client_side_security'
-  | 'origin_or_app'
-  | 'inconclusive';
+  'shared_response_headers' | 'cloudflare_client_side_security' | 'origin_or_app' | 'inconclusive';
 
 export type EdgeOverrideDiagnosis = {
   owner: EdgeOverrideOwner;
@@ -164,8 +161,9 @@ export function summarizeCsp(csp: string | null): CspSummary | null {
   const parsed = parseCsp(normalized);
   const directives = [...parsed.keys()];
   const highlightedSources = [
-    parsed.get('script-src')?.includes("'unsafe-inline'") === true ||
-    parsed.get('style-src')?.includes("'unsafe-inline'") === true
+    ['script-src', 'style-src', 'style-src-attr'].some(
+      (name) => parsed.get(name)?.includes("'unsafe-inline'") === true
+    )
       ? "'unsafe-inline'"
       : null,
     parsed.get('script-src')?.includes("'unsafe-eval'") === true ? "'unsafe-eval'" : null,
@@ -204,7 +202,10 @@ export function validatePageCsp(csp: string | null): CspCheck {
     if (seen.has(name)) problems.push(`Diretiva CSP duplicada: ${name}.`);
     seen.add(name);
   }
-  for (const [name, base] of [['script-src-elem', scriptSrc], ['style-src-elem', styleSrc]]) {
+  for (const [name, base] of [
+    ['script-src-elem', scriptSrc],
+    ['style-src-elem', styleSrc],
+  ]) {
     if (!name || base === undefined) continue;
     const override = directives.get(name);
     if (override === undefined) continue;
@@ -212,8 +213,10 @@ export function validatePageCsp(csp: string | null): CspCheck {
     if (override.split(/\s+/).some((source) => !expectedSources.has(source))) {
       problems.push(`${name} amplia as fontes permitidas pela diretiva base.`);
     }
-    if (!/'nonce-[^']+'/.test(override) ||
-        (name === 'script-src-elem' && !override.includes("'strict-dynamic'"))) {
+    if (
+      !/'nonce-[^']+'/.test(override) ||
+      (name === 'script-src-elem' && !override.includes("'strict-dynamic'"))
+    ) {
       problems.push(`${name} substitui a proteção por nonce da diretiva base.`);
     }
     evidence.push(`${name}=${override}`);
@@ -236,6 +239,9 @@ export function validatePageCsp(csp: string | null): CspCheck {
   }
   if (styleSrc.includes("'unsafe-inline'")) {
     problems.push("style-src contém 'unsafe-inline'.");
+  }
+  if (styleSrcAttr.includes("'unsafe-inline'")) {
+    problems.push("style-src-attr contém 'unsafe-inline'.");
   }
 
   const thirdPartyScripts = THIRD_PARTY_SCRIPT_HINTS.filter((origin) => scriptSrc.includes(origin));

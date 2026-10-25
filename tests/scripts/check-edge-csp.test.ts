@@ -27,14 +27,16 @@ function headers(values: Record<string, string>): Headers {
 
 describe('scripts/check-edge-csp.ts', () => {
   it.each(['script-src-elem', 'style-src-elem'])(
-    'rejects a permissive %s overriding nonce-protected elements', (directive) => {
+    'rejects a permissive %s overriding nonce-protected elements',
+    (directive) => {
       const safe = "script-src 'nonce-abc' 'strict-dynamic'; style-src 'nonce-abc'";
       expect(validatePageCsp(`${safe}; ${directive} 'unsafe-inline' https:`).ok).toBe(false);
     }
   );
 
   it('uses the first duplicate CSP directive, like the browser', () => {
-    const csp = "script-src 'unsafe-inline'; script-src 'nonce-abc' 'strict-dynamic'; style-src 'nonce-abc'";
+    const csp =
+      "script-src 'unsafe-inline'; script-src 'nonce-abc' 'strict-dynamic'; style-src 'nonce-abc'";
     expect(parseCsp(csp).get('script-src')).toBe("'unsafe-inline'");
     expect(validatePageCsp(csp).ok).toBe(false);
   });
@@ -63,22 +65,24 @@ describe('scripts/check-edge-csp.ts', () => {
     });
   });
 
-  it('não destaca unsafe-inline quando aparece apenas em style-src-attr permitido', () => {
+  it('destaca unsafe-inline também em style-src-attr', () => {
     expect(
       summarizeCsp(
         "default-src 'self'; script-src 'self' 'nonce-abc' 'strict-dynamic'; style-src 'self' 'nonce-abc'; style-src-attr 'unsafe-inline'"
       )
     ).toMatchObject({
-      highlightedSources: [],
+      highlightedSources: ["'unsafe-inline'"],
     });
   });
 
-  it('aceita a CSP de página nonce-based esperada', () => {
+  // The app sends no style-src-attr: one on the public response was added by the edge.
+  it('rejeita style-src-attr com unsafe-inline', () => {
     const result = validatePageCsp(
       "default-src 'self'; script-src 'self' 'nonce-abc' 'strict-dynamic'; style-src 'self' 'nonce-abc' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'"
     );
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.problems).toContain("style-src-attr contém 'unsafe-inline'.");
     expect(result.evidence).toContain("style-src-attr='unsafe-inline'");
   });
 

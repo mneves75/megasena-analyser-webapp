@@ -340,7 +340,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
 Não aplique HSTS em respostas HTTP. Se `preload` for mantido, confirme antes que todos os subdomínios cobertos por `includeSubDomains` suportam HTTPS permanente.
 
-Não sobrescreva a CSP gerada pela aplicação sem validar `tests/app/security.spec.ts`. A CSP do app depende de nonce por request para hidratação correta do App Router e para remover `unsafe-inline` de `script-src` e `style-src`; somente `style-src-attr 'unsafe-inline'` é permitido para atributos `style` gerados por bibliotecas de visualização.
+Não sobrescreva a CSP gerada pela aplicação sem validar `tests/app/security.spec.ts`. A CSP do app depende de nonce por request para hidratação correta do App Router e para remover `unsafe-inline` de `script-src` e `style-src`; não há exceção para atributos `style`.
 Se a resposta pública exibir `unsafe-inline` em `script-src`/`style-src`, `unsafe-eval`, domínios como `cdn.tailwindcss.com`/`aistudiocdn.com` ou headers obsoletos como `X-XSS-Protection`, investigue Cloudflare Response Header Transform Rules, Snippets/Workers e o middleware de headers do Traefik. Quando a mesma CSP aparecer em HTML e `/api/health`, trate como regra global de response headers até prova em contrário; Client-Side Security/Page Shield é hipótese secundária. O proxy reverso deve aplicar HSTS, não `Content-Security-Policy`. Com token Cloudflare read-only, diferencie zona inacessível de zona acessível sem regra candidata antes de encerrar a investigação.
 
 ## Nginx

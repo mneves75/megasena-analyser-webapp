@@ -240,8 +240,9 @@ README.md for the isolated local production fixture and two-pass replay.
   `DATABASE_PATH`; symlink directories/files and non-regular entries are rejected.
 - **CSP:** production uses per-request nonces for `script-src` and `style-src`. Do not
   switch to a static/SRI CSP (breaks App Router streaming hydration) without E2E proof.
-  Only the narrow `style-src-attr 'unsafe-inline'` exception is allowed (chart style
-  attrs). Public edge/proxy must not define its own CSP — run `security:csp:edge` after
+  There is no `unsafe-inline` anywhere in production, including `style` attributes:
+  render no `style=` prop in server HTML (React's client-side style props go through
+  CSSOM and are allowed). Public edge/proxy must not define its own CSP — run `security:csp:edge` after
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting

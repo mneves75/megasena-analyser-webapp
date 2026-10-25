@@ -28,7 +28,9 @@ describe('buildCsp', () => {
 
     expect(styleSrc).toBe("style-src 'self' 'nonce-abc123' https://fonts.googleapis.com");
     expect(styleSrc).not.toContain("'unsafe-inline'");
-    expect(csp).toContain("style-src-attr 'unsafe-inline'");
+    // No style attribute exception: the nonce-bearing style-src also governs attributes.
+    expect(csp).not.toContain('style-src-attr');
+    expect(csp).not.toContain("'unsafe-inline'");
   });
 
   it('allows dev conveniences (unsafe-eval/inline) in development', () => {

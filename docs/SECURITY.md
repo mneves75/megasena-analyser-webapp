@@ -13,7 +13,7 @@ Banco e sinks de log são selecionados por contexto, sem reutilizar um banco glo
 O projeto usa CSP nonce-based em `proxy.ts` e `lib/security/csp.ts`.
 
 - `script-src` de produção usa `nonce` + `strict-dynamic` e não usa `unsafe-inline`.
-- `style-src` de produção usa o mesmo `nonce`, não usa `unsafe-inline` e permite `https://fonts.googleapis.com`. A exceção estreita `style-src-attr 'unsafe-inline'` é mantida somente para atributos `style` gerados por bibliotecas de visualização.
+- `style-src` de produção usa o mesmo `nonce`, não usa `unsafe-inline` e permite `https://fonts.googleapis.com`. Não há exceção `style-src-attr`: sem diretiva própria, os atributos `style` seguem `style-src`, que não aceita `unsafe-inline`. O HTML do servidor não renderiza `style=`.
 - `proxy.ts` não emite `upgrade-insecure-requests` nem HSTS, porque o standalone do Next pode derivar `request.url` de headers encaminhados antes do middleware validar o peer; aplique HSTS no reverse proxy que termina TLS.
 - JSON-LD deve passar pelos componentes em `components/seo/json-ld.tsx`, que aplicam nonce e escapam `<`.
 

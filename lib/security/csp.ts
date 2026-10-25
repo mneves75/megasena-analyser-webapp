@@ -28,7 +28,6 @@ export function buildCsp({ isDev, nonce, isSecure = true }: CspOptions): string 
     // 'strict-dynamic' makes 'self' inert and keeps one effective policy.
     !isDev && nonce ? `script-src-elem 'self' 'nonce-${nonce}' 'strict-dynamic'` : null,
     styleSrc,
-    !isDev ? "style-src-attr 'unsafe-inline'" : null,
     "img-src 'self' data: blob:",
     "font-src 'self' https://fonts.gstatic.com data:",
     `connect-src 'self' ${CAIXA_API_ORIGIN}${

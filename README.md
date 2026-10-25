@@ -451,7 +451,7 @@ Esta aplicação implementa medidas de segurança seguindo OWASP e melhores prá
 
 - **CSP compatível com App Router/standalone**: política por origem, tipos de recurso e headers restritivos gerados no `proxy.ts`
 - **Nonce por request**: scripts de produção usam `nonce` + `strict-dynamic`, sem `unsafe-inline` em `script-src`
-- **Estilos com nonce**: produção remove `unsafe-inline` de `style-src`; Google Fonts continua permitido por origem. A exceção estreita `style-src-attr 'unsafe-inline'` é mantida para atributos `style` gerados por bibliotecas de visualização, sem liberar blocos `<style>` inline.
+- **Estilos com nonce**: produção remove `unsafe-inline` de `style-src`; Google Fonts continua permitido por origem. Não há exceção para atributos `style`: o HTML do servidor não usa `style=`.
 - **Renderização dinâmica**: páginas protegidas por nonce são renderizadas por request, como esperado para CSP nonce-based no Next.js. A alternativa CSP estática/SRI preserva cache estático, mas não é compatível com a hidratação atual do App Router neste projeto.
 - **JSON-LD seguro**: dados estruturados recebem nonce e escapam `<` antes da injeção no `<script>`
 - **Proteção de Frame**: frame-src, frame-ancestors definidos como 'none'
@@ -516,7 +516,7 @@ O `docker-compose.yml` local publica as portas apenas em `127.0.0.1`. Em produç
 
 Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
 
-Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação permite apenas a exceção estreita `style-src-attr 'unsafe-inline'` para atributos de estilo. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
+Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação não usa `unsafe-inline` em nenhuma diretiva de produção. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
 
 ## Licença
 
