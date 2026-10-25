@@ -165,8 +165,8 @@ Pense em três camadas:
 ### Vitest (`4.1.11`) + coverage v8 + Testing Library + jsdom — testes unitários
 
 - **Onde:** `vitest.config.ts`, `tests/**`, `tests/setup.ts` (cleanup + `stopLogWriter`).
-  Os limites atuais são 71% de linhas/instruções, 72% de funções e 67% de branches;
-  a meta de 80% sobe gradualmente (ver `vitest.config.ts`). `bun run test:sqlite`
+  Os limites ficam em `vitest.config.ts` e sobem com a cobertura medida, rumo
+  a 80%; nunca descem. `bun run test:sqlite`
   executa os 12 casos de atraso com Bun/SQLite real, após preparar uma fixture
   descartável com a proteção contra caminhos externos e links simbólicos.
 

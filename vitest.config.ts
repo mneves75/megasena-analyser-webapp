@@ -22,13 +22,14 @@ export default defineConfig({
       // Ratchet at the measured baseline; the target is 80%. The gate had once
       // silently measured 0/0: an `app/**` exclude matched every path because the
       // checkout folder ends in "...webapp/". `include` already limits coverage to
-      // components/ and lib/, so app/ needs no exclude. Raised on 2026-10-24 from
-      // the measured 76.55 / 73.05 / 75.05 / 76.9, keeping a small buffer below it.
+      // components/ and lib/, so app/ needs no exclude. Raised on 2026-10-25 from
+      // the measured 80.21 / 76.97 / 74.35 / 79.68 (lines / functions / branches /
+      // statements), keeping a small buffer below it.
       thresholds: {
-        lines: 75,
-        functions: 73,
-        branches: 71,
-        statements: 75,
+        lines: 79,
+        functions: 76,
+        branches: 73,
+        statements: 78,
       },
       exclude: [
         'node_modules/',
