@@ -143,7 +143,7 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
 
 /** Long-form reading pages (about, privacy, terms): measure, rhythm and hairline-ruled section heads. */
 export const proseClass =
-  'max-w-[60ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:font-title [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
+  'max-w-[60ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:font-title [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_li]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
 
 export interface TermRow {
   term: string;

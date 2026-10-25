@@ -59,7 +59,7 @@ export default function PrivacyRightsPage(): React.JSX.Element {
 
         <section className="space-y-3">
           <h2>{pt.privacyRights.howTitle}</h2>
-          <ol className="text-muted-foreground">
+          <ol>
             {pt.privacyRights.howSteps.map((step) => (
               <li key={step}>{step}</li>
             ))}

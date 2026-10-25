@@ -46,9 +46,9 @@ export default function TermsPage(): React.JSX.Element {
 
           <section
             aria-labelledby="terms-warning"
-            className="space-y-2 border-t-2 border-destructive pt-4"
+            className="space-y-2 border-t border-border pt-4"
           >
-            <p id="terms-warning" className="font-title text-xl font-semibold !text-destructive">
+            <p id="terms-warning" className="font-title text-xl font-semibold !text-foreground">
               {pt.terms.warningTitle}
             </p>
             <p className="!text-foreground">{pt.terms.warningIntro}</p>
@@ -75,7 +75,7 @@ export default function TermsPage(): React.JSX.Element {
             <h2>{pt.terms.liability.title}</h2>
             <p className="!text-foreground">{pt.terms.liability.subtitle}</p>
             <p>{pt.terms.liability.intro}</p>
-            <ul className="text-muted-foreground">
+            <ul>
               {pt.terms.liability.items.map((item) => (
                 <li key={item}>{item}</li>
               ))}
