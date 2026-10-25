@@ -3,9 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { BudgetSelector, GenerationControls, BetList } from '@/components/bet-generator';
 import { type BetGenerationResult, type BetStrategy } from '@/lib/analytics/bet-generator.types';
-import { BET_GENERATION_LIMITS, BET_GENERATION_MODE, type BetGenerationMode } from '@/lib/constants';
+import {
+  BET_GENERATION_LIMITS,
+  BET_GENERATION_MODE,
+  type BetGenerationMode,
+} from '@/lib/constants';
 import { generateBets } from './actions';
 import { pt } from '@/lib/i18n';
+import { NumberField } from '@/components/number-field';
 
 export function GeneratorForm() {
   const [budget, setBudget] = useState<number>(50);
@@ -14,7 +19,7 @@ export function GeneratorForm() {
   const [result, setResult] = useState<BetGenerationResult | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Guard async state updates after unmount.
   const isMountedRef = useRef(true);
   const activeRequestIdRef = useRef(0);
@@ -23,7 +28,7 @@ export function GeneratorForm() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     return () => {
       isMountedRef.current = false;
       activeRequestIdRef.current += 1;
@@ -48,7 +53,7 @@ export function GeneratorForm() {
 
     try {
       const data = await generateBets(budget, strategy, mode);
-      
+
       if (isMountedRef.current && requestId === activeRequestIdRef.current) {
         if ('error' in data) {
           setError(data.error);
@@ -83,7 +88,7 @@ export function GeneratorForm() {
           role="alert"
           aria-live="assertive"
           tabIndex={-1}
-          className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/50 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mb-6 border-l-2 border-destructive py-2 pl-4 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <strong className="font-semibold">{pt.generatorForm.errorPrefix}:</strong> {error}
         </div>
@@ -125,61 +130,47 @@ export function GeneratorForm() {
         className="mt-8 focus-visible:outline-none"
       >
         {result ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <BetList
-              key={result.bets.map((bet) => bet.id).join('|')}
-              result={result}
-            />
+          <div>
+            <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center min-h-[400px] p-8 rounded-2xl border-2 border-dashed border-border/50 bg-card/30">
-            <div className="text-center space-y-4">
-              <div className="w-24 h-24 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  className="w-12 h-12 text-primary"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-foreground">
-                  {pt.generatorForm.emptyState.title}
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  {pt.generatorForm.emptyState.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <span>{pt.generatorForm.emptyState.helper}</span>
-              </div>
+          <div className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
+            <div className="space-y-2">
+              <h3 className="text-2xl font-semibold text-foreground">
+                {pt.generatorForm.emptyState.title}
+              </h3>
+              <p className="max-w-md text-muted-foreground">
+                {pt.generatorForm.emptyState.description}
+              </p>
+              <p className="text-sm text-muted-foreground">{pt.generatorForm.emptyState.helper}</p>
             </div>
+            <NumberField struck={[]} label="Volante vazio, de 01 a 60" />
           </div>
         )}
       </div>
 
       {/* Help Section */}
-      <div className="mt-12 p-6 rounded-lg bg-muted/30 border border-border/50">
-        <h3 className="font-semibold text-foreground mb-3">{pt.generatorForm.help.title}</h3>
+      <div className="mt-12 border-t-2 border-primary pt-5">
+        <h3 className="mb-3 text-xl font-semibold text-foreground">
+          {pt.generatorForm.help.title}
+        </h3>
         <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
           <div className="space-y-1">
-            <div className="font-medium text-foreground">{pt.generatorForm.help.steps[0].title}</div>
+            <div className="font-medium text-foreground">
+              {pt.generatorForm.help.steps[0].title}
+            </div>
             <p>{pt.generatorForm.help.steps[0].description}</p>
           </div>
           <div className="space-y-1">
-            <div className="font-medium text-foreground">{pt.generatorForm.help.steps[1].title}</div>
+            <div className="font-medium text-foreground">
+              {pt.generatorForm.help.steps[1].title}
+            </div>
             <p>{pt.generatorForm.help.steps[1].description}</p>
           </div>
           <div className="space-y-1">
-            <div className="font-medium text-foreground">{pt.generatorForm.help.steps[2].title}</div>
+            <div className="font-medium text-foreground">
+              {pt.generatorForm.help.steps[2].title}
+            </div>
             <p>{pt.generatorForm.help.steps[2].description}</p>
           </div>
         </div>

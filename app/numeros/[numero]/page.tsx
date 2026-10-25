@@ -4,7 +4,8 @@ import { PageJsonLd } from '@/components/seo/page-json-ld';
 import type { NumberProfile } from '@/lib/api/archive-contract';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatDate, formatNumber } from '@/lib/utils';
+import { cn, formatDate, formatNumber } from '@/lib/utils';
+import { NumberField } from '@/components/number-field';
 import { loadNumberProfile } from '@/app/_lib/archive';
 import {
   countLabel,
@@ -19,7 +20,6 @@ import {
   ArchiveLink,
   Breadcrumbs,
   FactList,
-  NumberBallLink,
   PageTitle,
   Pager,
   RandomnessNote,
@@ -184,8 +184,12 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
               <caption className="sr-only">Últimas vezes que o {number} saiu</caption>
               <thead>
                 <tr>
-                  <th scope="col" className={thClass}>Concurso</th>
-                  <th scope="col" className={thClass}>Data</th>
+                  <th scope="col" className={thClass}>
+                    Concurso
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Data
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -213,16 +217,38 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
           <SectionHeading id="parceiras">
             Dezenas que mais saíram junto com o {dezena(number)}
           </SectionHeading>
-          <ul className="flex flex-wrap gap-4">
-            {companions.map((companion) => (
-              <li key={companion.number} className="flex flex-col items-center gap-1">
-                <NumberBallLink number={companion.number} />
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {countLabel(companion.count, 'vez', 'vezes')}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-12">
+            <figure className="space-y-3">
+              <NumberField
+                struck={companions.map((companion) => companion.number)}
+                ringed={number}
+                linked
+                label={`Dezenas que mais saíram junto com o ${dezena(number)}`}
+              />
+              <figcaption className="text-sm text-muted-foreground">
+                O {dezena(number)} aparece com anel; as dezenas preenchidas são as que mais saíram
+                no mesmo concurso que ele.
+              </figcaption>
+            </figure>
+            <ol className="self-start border-t-2 border-primary">
+              {companions.map((companion) => (
+                <li
+                  key={companion.number}
+                  className="flex items-baseline justify-between gap-4 border-b border-border py-2.5"
+                >
+                  <ArchiveLink
+                    href={`/numeros/${companion.number}`}
+                    className={cn(inlineLinkClass, 'font-condensed text-lg tabular-nums')}
+                  >
+                    {dezena(companion.number)}
+                  </ArchiveLink>
+                  <span className="tabular-nums text-muted-foreground">
+                    {countLabel(companion.count, 'vez', 'vezes')}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </section>
       ) : null}
 
@@ -230,12 +256,20 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
         label="Números vizinhos"
         previous={
           number > 1
-            ? { href: `/numeros/${number - 1}`, label: 'Número anterior', detail: `Número ${number - 1}` }
+            ? {
+                href: `/numeros/${number - 1}`,
+                label: 'Número anterior',
+                detail: `Número ${number - 1}`,
+              }
             : null
         }
         next={
           number < 60
-            ? { href: `/numeros/${number + 1}`, label: 'Próximo número', detail: `Número ${number + 1}` }
+            ? {
+                href: `/numeros/${number + 1}`,
+                label: 'Próximo número',
+                detail: `Número ${number + 1}`,
+              }
             : null
         }
       />

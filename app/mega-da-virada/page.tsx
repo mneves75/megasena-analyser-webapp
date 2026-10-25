@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { NumberField } from '@/components/number-field';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { countNumbers, groupByCount } from '@/lib/analytics/mega-da-virada';
 import type { MegaDaViradaArchive } from '@/lib/api/archive-contract';
@@ -13,7 +14,6 @@ import {
   Breadcrumbs,
   DezenaChips,
   FactList,
-  NumberBallLink,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -53,7 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** The edition with the highest value; the newest one wins a tie. */
-function highest(editions: readonly Edition[], value: (edition: Edition) => number): Edition | undefined {
+function highest(
+  editions: readonly Edition[],
+  value: (edition: Edition) => number
+): Edition | undefined {
   return editions.reduce<Edition | undefined>(
     (best, edition) => (best === undefined || value(edition) > value(best) ? edition : best),
     undefined
@@ -134,7 +137,9 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
     groupByCount(counts),
     counts.filter((entry) => entry.count === 0).map((entry) => entry.number)
   );
-  const postponed = editions.filter((edition) => edition.draw.drawDate.slice(0, 4) !== String(edition.edition));
+  const postponed = editions.filter(
+    (edition) => edition.draw.drawDate.slice(0, 4) !== String(edition.edition)
+  );
 
   return (
     <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
@@ -153,39 +158,48 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         {latest ? (
           <AnswerSummary>
             A Mega da Virada mais recente do arquivo é a de {latest.edition}: concurso{' '}
-            {latest.draw.contestNumber}, sorteado em {formatDate(latest.draw.drawDate)}, com as dezenas{' '}
-            {joinPtBr(latest.draw.numbers.map(dezena))}. {senaOutcome(latest.draw)}
+            {latest.draw.contestNumber}, sorteado em {formatDate(latest.draw.drawDate)}, com as
+            dezenas {joinPtBr(latest.draw.numbers.map(dezena))}. {senaOutcome(latest.draw)}
             {first && editions.length > 1
               ? ` O arquivo reúne ${editions.length} edições, de ${first.edition} a ${latest.edition}${
-                  everyEditionHadWinners ? ', e todas tiveram apostas que acertaram as seis dezenas' : ''
+                  everyEditionHadWinners
+                    ? ', e todas tiveram apostas que acertaram as seis dezenas'
+                    : ''
                 }.`
               : ''}
           </AnswerSummary>
         ) : (
-          <AnswerSummary>Nenhuma edição da Mega da Virada está no arquivo no momento.</AnswerSummary>
+          <AnswerSummary>
+            Nenhuma edição da Mega da Virada está no arquivo no momento.
+          </AnswerSummary>
         )}
-        <p className="text-sm text-muted-foreground">Resultados oficiais publicados pela CAIXA.</p>
+        <p className="text-sm text-muted-foreground">Fonte: CAIXA Econômica Federal.</p>
       </header>
 
       {latest ? (
         <section
           aria-labelledby="ultima"
-          className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-elegant sm:p-8"
+          className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
         >
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>
-            <span className="text-sm tabular-nums text-muted-foreground">
-              Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
-            </span>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
+              </span>
+            </div>
+            <ArchiveLink
+              href={`/concurso/${latest.draw.contestNumber}`}
+              className={inlineLinkClass}
+            >
+              Ver prêmios e análise do concurso {latest.draw.contestNumber}
+            </ArchiveLink>
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            {latest.draw.numbers.map((number) => (
-              <NumberBallLink key={number} number={number} size="md" />
-            ))}
-          </div>
-          <ArchiveLink href={`/concurso/${latest.draw.contestNumber}`} className={inlineLinkClass}>
-            Ver prêmios e análise do concurso {latest.draw.contestNumber}
-          </ArchiveLink>
+          <NumberField
+            struck={latest.draw.numbers}
+            linked
+            label={`Dezenas sorteadas na Mega da Virada ${latest.edition}`}
+          />
         </section>
       ) : null}
 
@@ -196,23 +210,42 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
           <SectionHeading id="edicoes">Resultados de todas as edições</SectionHeading>
           <TableFrame>
             <table className={cn(tableClass, 'min-w-[46rem]')}>
-              <caption className="sr-only">Resultados de todas as edições da Mega da Virada</caption>
+              <caption className="sr-only">
+                Resultados de todas as edições da Mega da Virada
+              </caption>
               <thead>
                 <tr>
-                  <th scope="col" className={thClass}>Edição</th>
-                  <th scope="col" className={thClass}>Concurso</th>
-                  <th scope="col" className={thClass}>Data</th>
-                  <th scope="col" className={thClass}>Dezenas</th>
-                  <th scope="col" className={thClass}>Apostas ganhadoras</th>
-                  <th scope="col" className={thClass}>Prêmio por aposta</th>
+                  <th scope="col" className={thClass}>
+                    Edição
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Concurso
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Data
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Dezenas
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Apostas ganhadoras
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Prêmio por aposta
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {editions.map(({ edition, draw }) => (
                   <tr key={draw.contestNumber}>
-                    <th scope="row" className={`${cellClass} font-medium`}>{edition}</th>
+                    <th scope="row" className={`${cellClass} font-medium`}>
+                      {edition}
+                    </th>
                     <td className={cellClass}>
-                      <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
+                      <ArchiveLink
+                        href={`/concurso/${draw.contestNumber}`}
+                        className={inlineLinkClass}
+                      >
                         {draw.contestNumber}
                       </ArchiveLink>
                     </td>
@@ -261,8 +294,8 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
             ))}
           </ul>
           <RandomnessNote>
-            São só {countLabel(editions.length, 'sorteio', 'sorteios')}: uma dezena que saiu mais vezes na
-            Virada não tem mais chance na próxima edição, e cada sorteio é independente.
+            São só {countLabel(editions.length, 'sorteio', 'sorteios')}: uma dezena que saiu mais
+            vezes na Virada não tem mais chance na próxima edição, e cada sorteio é independente.
           </RandomnessNote>
         </section>
       ) : null}
@@ -270,22 +303,28 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
       <section aria-labelledby="regras" className="max-w-[75ch] space-y-3">
         <SectionHeading id="regras">Como funciona a Mega da Virada</SectionHeading>
         <p>
-          Pelas regras da CAIXA, a Mega da Virada é o último concurso do ano com final 0 ou 5, sorteado
-          em 31 de dezembro, com apostas próprias vendidas em novembro e dezembro. O prêmio principal
-          não acumula: se ninguém acertar as seis dezenas, ele é dividido entre as apostas que
-          acertaram cinco; sem quina, vai para a quadra.
+          Pelas regras da CAIXA, a Mega da Virada é o último concurso do ano com final 0 ou 5,
+          sorteado em 31 de dezembro, com apostas próprias vendidas em novembro e dezembro. O prêmio
+          principal não acumula: se ninguém acertar as seis dezenas, ele é dividido entre as apostas
+          que acertaram cinco; sem quina, vai para a quadra.
         </p>
         <p>
-          A sena da Virada recebe 90% do prêmio do próprio concurso e uma reserva formada ao longo do
-          ano com 10% do prêmio bruto de cada concurso regular (
-          <a href={CAIXA_RULES_URL} target="_blank" rel="noopener noreferrer" className={textLinkClass}>
+          A sena da Virada recebe 90% do prêmio do próprio concurso e uma reserva formada ao longo
+          do ano com 10% do prêmio bruto de cada concurso regular (
+          <a
+            href={CAIXA_RULES_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={textLinkClass}
+          >
             regras da Mega-Sena na CAIXA
           </a>
           ).
         </p>
         {postponed.map(({ edition, draw }) => (
           <p key={draw.contestNumber}>
-            A edição de {edition} foi sorteada em {formatDate(draw.drawDate)}, e não em 31 de dezembro.
+            A edição de {edition} foi sorteada em {formatDate(draw.drawDate)}, e não em 31 de
+            dezembro.
           </p>
         ))}
         <p>
@@ -293,8 +332,8 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
           <ArchiveLink href="/concurso/1035" className={inlineLinkClass}>
             concurso 1035
           </ArchiveLink>
-          , em 31/12/2008) não entra nesta lista: ninguém acertou as seis dezenas e o prêmio acumulou
-          para o concurso 1036, como em um concurso comum.
+          , em 31/12/2008) não entra nesta lista: ninguém acertou as seis dezenas e o prêmio
+          acumulou para o concurso 1036, como em um concurso comum.
         </p>
       </section>
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { BetCard } from './bet-card';
 import { type BetGenerationResult } from '@/lib/analytics/bet-generator.types';
 import { cn, formatCurrency, formatPercentage } from '@/lib/utils';
-import { TrendingUp, Target, PieChart, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, Target, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pt } from '@/lib/i18n';
 
 interface BetListProps {
@@ -65,10 +65,9 @@ export function BetList({ result, className }: BetListProps) {
   return (
     <div className={cn('space-y-6', className)}>
       {/* Summary Card */}
-      <Card className="transition-smooth hover:shadow-glow">
+      <Card className="transition-smooth">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PieChart className="w-5 h-5" />
+          <CardTitle>
             {pt.betGenerator.summary.title}
           </CardTitle>
           <CardDescription>
@@ -168,7 +167,7 @@ export function BetList({ result, className }: BetListProps) {
             size="sm"
             onClick={handlePreviousPage}
             disabled={currentPage === 1}
-            className="transition-smooth hover:scale-105"
+            className="transition-smooth"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             {pt.betGenerator.summary.previous}
@@ -207,7 +206,7 @@ export function BetList({ result, className }: BetListProps) {
                   aria-current={currentPage === page ? 'page' : undefined}
                   className={cn(
                     'min-w-[2.5rem] tabular-nums transition-smooth',
-                    currentPage === page ? 'shadow-glow' : 'hover:scale-105'
+                    currentPage !== page && 'hover:bg-tint'
                   )}
                 >
                   {page}
@@ -221,7 +220,7 @@ export function BetList({ result, className }: BetListProps) {
             size="sm"
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className="transition-smooth hover:scale-105"
+            className="transition-smooth"
           >
             {pt.betGenerator.summary.next}
             <ChevronRight className="w-4 h-4 ml-1" />

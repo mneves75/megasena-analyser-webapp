@@ -55,7 +55,7 @@ export function BudgetSelector({
   };
 
   return (
-    <Card className={cn('transition-smooth hover:shadow-glow', className)}>
+    <Card className={cn('transition-smooth', className)}>
       <CardHeader>
         <CardTitle>{pt.betGenerator.budget.title}</CardTitle>
         <CardDescription>{pt.betGenerator.budget.description}</CardDescription>

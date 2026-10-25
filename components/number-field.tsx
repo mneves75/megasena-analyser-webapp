@@ -47,8 +47,8 @@ export function NumberField({
     <ol
       aria-label={label}
       className={cn(
-        'grid grid-cols-10 border-l border-t border-border font-condensed tabular-nums',
-        size === 'lg' ? 'text-base sm:text-lg' : 'text-sm',
+        '@container grid grid-cols-10 border-l border-t border-border font-condensed tabular-nums',
+        size === 'lg' ? 'max-w-3xl' : 'max-w-xl',
         className
       )}
     >
@@ -79,7 +79,8 @@ export function NumberField({
           <li
             key={number}
             aria-hidden={exposed ? undefined : true}
-            className="border-b border-r border-border bg-card p-[12%]"
+            // Figures scale with the cell: a tenth of the field's width.
+            className="border-b border-r border-border bg-card p-[12%] text-[clamp(0.75rem,3.4cqw,1.375rem)]"
           >
             {isStruck && linked ? (
               <Link

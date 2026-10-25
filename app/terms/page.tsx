@@ -47,7 +47,7 @@ export default function TermsPage(): React.JSX.Element {
           </p>
 
           {/* AVISO PRINCIPAL - O MAIS IMPORTANTE */}
-          <div className="not-prose my-8 rounded-xl border-2 border-destructive/30 bg-destructive/10 p-6 dark:bg-destructive/15">
+          <div className="not-prose my-8 rounded-sm border-2 border-destructive/30 bg-destructive/10 p-6 dark:bg-destructive/15">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
               <div>
@@ -81,7 +81,7 @@ export default function TermsPage(): React.JSX.Element {
           ))}
 
           {/* ISENCAO DE RESPONSABILIDADE */}
-          <div className="not-prose my-8 rounded-xl border border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
+          <div className="not-prose my-8 rounded-sm border border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
             <h3 className="font-bold text-foreground text-lg mb-4">
               {pt.terms.liability.title}
             </h3>

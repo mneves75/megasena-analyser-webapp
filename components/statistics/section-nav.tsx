@@ -21,33 +21,29 @@ export function SectionNav({ sections }: SectionNavProps): React.ReactNode {
   const [activeId, setActiveId] = useState<string>(sections[0]?.id ?? '');
 
   useEffect(() => {
-    let observer: IntersectionObserver | undefined;
-
-    if (typeof IntersectionObserver !== 'undefined') {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-          if (visible[0]?.target.id) {
-            setActiveId(visible[0].target.id);
-          }
-        },
-        // Bias the active line toward the section crossing the upper third.
-        { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
-      );
-
-      sections
-        .map((section) => document.getElementById(section.id))
-        .filter((element): element is HTMLElement => element !== null)
-        .forEach((element) => observer!.observe(element));
+    if (typeof IntersectionObserver === 'undefined') {
+      return undefined;
     }
 
-    return () => {
-      if (observer) {
-        observer.disconnect();
-      }
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]?.target.id) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      // Bias the active line toward the section crossing the upper third.
+      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+    );
+
+    sections
+      .map((section) => document.getElementById(section.id))
+      .filter((element): element is HTMLElement => element !== null)
+      .forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
   }, [sections]);
 
   if (sections.length === 0) return null;
@@ -55,9 +51,9 @@ export function SectionNav({ sections }: SectionNavProps): React.ReactNode {
   return (
     <nav
       aria-label="Seções da análise"
-      className="sticky top-[var(--app-header-height,4rem)] z-30 -mx-4 border-b border-border/60 bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70"
+      className="sticky top-[var(--app-header-height,4rem)] z-30 -mx-4 border-b border-border bg-background px-4"
     >
-      <ul className="flex gap-1 overflow-x-auto py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sections.map((section) => {
           const isActive = section.id === activeId;
           return (
@@ -66,10 +62,10 @@ export function SectionNav({ sections }: SectionNavProps): React.ReactNode {
                 href={`#${section.id}`}
                 aria-current={isActive ? 'true' : undefined}
                 className={cn(
-                  'inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-smooth',
+                  'inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   isActive
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 )}
               >
                 {section.label}

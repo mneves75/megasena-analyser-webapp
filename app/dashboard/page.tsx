@@ -2,26 +2,28 @@ import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
 import { StatsCard } from '@/components/stats-card';
-import { cn, formatCurrency, formatDate, formatDecimal, formatNumber, formatPercentage } from '@/lib/utils';
-import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics';
 import {
-  BarChart3,
-  TrendingUp,
-  Trophy,
-  Calculator,
-  Database,
-  Calendar,
-  Activity,
-} from 'lucide-react';
-import { LotteryBall } from '@/components/lottery-ball';
-import { ArchiveLink, NumberBallLink, inlineLinkClass } from '@/app/_components/archive-ui';
+  cn,
+  formatCurrency,
+  formatDate,
+  formatDecimal,
+  formatNumber,
+  formatPercentage,
+} from '@/lib/utils';
+import type { DrawStatistics, NumberFrequency } from '@/lib/analytics/statistics';
+import { NumberField } from '@/components/number-field';
+import {
+  ArchiveLink,
+  DezenaChips,
+  NumberBallLink,
+  inlineLinkClass,
+} from '@/app/_components/archive-ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { buildApiUrl, fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
-
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard',
@@ -68,7 +70,7 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
       next: { revalidate: 0 },
       timeoutMs: 12000,
     });
-    
+
     if (!response.ok) {
       const text = await response.text();
       logger.error('dashboard.api_response_error', new Error('Dashboard API error'), {
@@ -79,9 +81,11 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
         responseBodySnippet: text.slice(0, 120),
       });
       responseErrorLogged = true;
-      throw new Error(`Não foi possível carregar os dados do painel: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Não foi possível carregar os dados do painel: ${response.status} ${response.statusText}`
+      );
     }
-    
+
     const data = (await response.json()) as DashboardApiResponse;
     cachedDashboard = { data, fetchedAt: Date.now() };
     return data;
@@ -126,64 +130,66 @@ export default async function DashboardPage() {
 
       <div className="space-y-8">
         <header>
-          <h1 className="mb-1.5 text-3xl font-bold tracking-tight sm:text-4xl">{pt.dashboard.title}</h1>
+          <h1 className="mb-2 text-4xl font-semibold sm:text-5xl">{pt.dashboard.title}</h1>
           <p className="text-muted-foreground">{pt.dashboard.subtitle}</p>
         </header>
 
         {/* KPI: primary last-draw panel + three compact secondary metrics */}
         <section className="grid gap-4 lg:grid-cols-3">
           {lastDraw ? (
-            <Card className="hover-lift flex flex-col lg:col-span-2">
+            <Card className="flex flex-col lg:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {pt.dashboard.stats.lastDraw}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col justify-between gap-6">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <span className="text-3xl font-bold tabular-nums sm:text-4xl">#{lastDraw.contestNumber}</span>
-                  <span className="text-sm text-muted-foreground tabular-nums">{formatDate(lastDraw.drawDate)}</span>
+                  <span className="font-condensed text-4xl font-semibold tabular-nums">
+                    Concurso {lastDraw.contestNumber}
+                  </span>
+                  <span className="text-sm text-muted-foreground tabular-nums">
+                    {formatDate(lastDraw.drawDate)}
+                  </span>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
-                  {lastDraw.numbers.map((num: number) => (
-                    <LotteryBall key={num} number={num} size="lg" />
-                  ))}
-                </div>
+                <NumberField
+                  struck={lastDraw.numbers}
+                  linked
+                  label={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
+                />
                 <div className="flex items-center gap-2 border-t pt-4">
-                  <span className="text-sm text-muted-foreground">{pt.dashboard.sections.prizeLabel}:</span>
+                  <span className="text-sm text-muted-foreground">
+                    {pt.dashboard.sections.prizeLabel}:
+                  </span>
                   {lastDraw.accumulated ? (
-                    <span className="inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
-                      {pt.dashboard.sections.accumulated}
-                    </span>
+                    <span className="font-semibold">{pt.dashboard.sections.accumulated}</span>
                   ) : (
-                    <span className="font-semibold tabular-nums">{formatCurrency(lastDraw.prizeSena)}</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatCurrency(lastDraw.prizeSena)}
+                    </span>
                   )}
                 </div>
               </CardContent>
             </Card>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1 lg:content-start">
             <StatsCard
               variant="compact"
               title={pt.dashboard.stats.totalDraws}
               value={formatNumber(statistics.totalDraws)}
-              icon={<Database className="h-4 w-4" />}
               description={pt.dashboard.stats.totalDrawsDescription}
             />
             <StatsCard
               variant="compact"
               title={pt.dashboard.stats.accumulationRate}
               value={formatPercentage(statistics.accumulationRate)}
-              icon={<TrendingUp className="h-4 w-4" />}
               description={`${formatNumber(statistics.accumulatedCount)} ${pt.dashboard.stats.accumulationDescriptionSuffix}`}
             />
             <StatsCard
               variant="compact"
               title={pt.dashboard.stats.averagePrizeSena}
               value={formatCurrency(statistics.averagePrizeSena)}
-              icon={<Trophy className="h-4 w-4" />}
               description={pt.dashboard.stats.averagePrizeDescription}
             />
           </div>
@@ -192,10 +198,7 @@ export default async function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                {pt.dashboard.sections.mostFrequent}
-              </CardTitle>
+              <CardTitle className="text-lg">{pt.dashboard.sections.mostFrequent}</CardTitle>
               <CardDescription>{pt.dashboard.sections.mostFrequentDescription}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -203,7 +206,9 @@ export default async function DashboardPage() {
                 {statistics.mostFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
                     <NumberBallLink number={num.number} size="md" />
-                    <span className="text-xs text-muted-foreground tabular-nums">{num.frequency}x</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {num.frequency}x
+                    </span>
                   </div>
                 ))}
               </div>
@@ -212,10 +217,7 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Activity className="h-4 w-4 text-muted-foreground" />
-                {pt.dashboard.sections.leastFrequent}
-              </CardTitle>
+              <CardTitle className="text-lg">{pt.dashboard.sections.leastFrequent}</CardTitle>
               <CardDescription>{pt.dashboard.sections.leastFrequentDescription}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -223,7 +225,9 @@ export default async function DashboardPage() {
                 {statistics.leastFrequentNumbers.slice(0, 10).map((num: NumberFrequency) => (
                   <div key={num.number} className="flex flex-col items-center gap-1">
                     <NumberBallLink number={num.number} size="md" />
-                    <span className="text-xs text-muted-foreground tabular-nums">{num.frequency}x</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {num.frequency}x
+                    </span>
                   </div>
                 ))}
               </div>
@@ -237,11 +241,11 @@ export default async function DashboardPage() {
             <CardDescription>{pt.dashboard.sections.recentDrawsDescription}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="divide-y divide-border">
               {recentDraws.map((draw: RecentDraw) => (
                 <div
                   key={draw.contestNumber}
-                  className="flex flex-col gap-3 rounded-lg border bg-card/50 p-4 transition-smooth hover:bg-card sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -249,24 +253,24 @@ export default async function DashboardPage() {
                         href={`/concurso/${draw.contestNumber}`}
                         className={cn('tabular-nums', inlineLinkClass)}
                       >
-                        {pt.dashboard.sections.contestLabel} #{draw.contestNumber}
+                        {pt.dashboard.sections.contestLabel} {draw.contestNumber}
                       </ArchiveLink>
-                      <span className="text-sm text-muted-foreground tabular-nums">{formatDate(draw.drawDate)}</span>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        {formatDate(draw.drawDate)}
+                      </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {draw.numbers.map((num: number) => (
-                        <LotteryBall key={num} number={num} size="sm" />
-                      ))}
-                    </div>
+                    <DezenaChips numbers={draw.numbers} />
                   </div>
                   <div className="min-w-0 text-left sm:text-right">
-                    <div className="text-sm text-muted-foreground">{pt.dashboard.sections.prizeLabel}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {pt.dashboard.sections.prizeLabel}
+                    </div>
                     {draw.accumulated ? (
-                      <span className="mt-0.5 inline-flex items-center rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-medium text-primary">
-                        {pt.dashboard.sections.accumulated}
-                      </span>
+                      <div className="font-semibold">{pt.dashboard.sections.accumulated}</div>
                     ) : (
-                      <div className="font-semibold tabular-nums">{formatCurrency(draw.prizeSena)}</div>
+                      <div className="font-semibold tabular-nums">
+                        {formatCurrency(draw.prizeSena)}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -278,13 +282,8 @@ export default async function DashboardPage() {
         {hotNumbers && hotNumbers.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                {pt.dashboard.sections.hotNumbersTitle}
-              </CardTitle>
-              <CardDescription>
-                {pt.dashboard.sections.hotNumbersDescription}
-              </CardDescription>
+              <CardTitle className="text-lg">{pt.dashboard.sections.hotNumbersTitle}</CardTitle>
+              <CardDescription>{pt.dashboard.sections.hotNumbersDescription}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-5 gap-3 md:grid-cols-10">
@@ -308,29 +307,19 @@ export default async function DashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <Link href="/dashboard/statistics" className="group">
-            <Card className="hover-lift h-full">
+            <Card className="h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <BarChart3 className="h-4 w-4 text-primary" />
-                  {pt.dashboard.actions.statisticsTitle}
-                </CardTitle>
-                <CardDescription>
-                  {pt.dashboard.actions.statisticsDescription}
-                </CardDescription>
+                <CardTitle className="text-lg">{pt.dashboard.actions.statisticsTitle}</CardTitle>
+                <CardDescription>{pt.dashboard.actions.statisticsDescription}</CardDescription>
               </CardHeader>
             </Card>
           </Link>
 
           <Link href="/dashboard/generator" className="group">
-            <Card className="hover-lift h-full">
+            <Card className="h-full">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Calculator className="h-4 w-4 text-primary" />
-                  {pt.dashboard.actions.generatorTitle}
-                </CardTitle>
-                <CardDescription>
-                  {pt.dashboard.actions.generatorDescription}
-                </CardDescription>
+                <CardTitle className="text-lg">{pt.dashboard.actions.generatorTitle}</CardTitle>
+                <CardDescription>{pt.dashboard.actions.generatorDescription}</CardDescription>
               </CardHeader>
             </Card>
           </Link>

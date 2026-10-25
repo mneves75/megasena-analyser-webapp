@@ -26,7 +26,7 @@ export default async function GlobalNotFound(): Promise<React.JSX.Element> {
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="pt-BR" className={fontVariables} suppressHydrationWarning>
-      <body className="antialiased min-h-screen font-sans bg-gradient-to-br from-background via-background to-primary/5">
+      <body className="antialiased min-h-screen font-sans bg-background">
         <ThemeScript nonce={nonce} />
         <main className="container mx-auto px-4 py-12">
           <div className="mx-auto max-w-2xl text-center space-y-6">

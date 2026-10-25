@@ -46,7 +46,7 @@ export default function PrivacyPage(): React.JSX.Element {
             {pt.common.lastUpdated}: {pt.privacy.updatedAt}
           </p>
 
-          <div className="not-prose my-8 rounded-xl border-2 border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
+          <div className="not-prose my-8 rounded-sm border-2 border-primary/30 bg-primary/5 p-6 dark:bg-primary/10">
             <p className="font-bold text-primary text-lg mb-2">
               {pt.privacy.summaryTitle}
             </p>

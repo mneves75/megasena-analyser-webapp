@@ -11,6 +11,14 @@ export function dezena(number: number): string {
   return String(number).padStart(2, '0');
 }
 
+/** Which of four equal bands of [min, max] a frequency falls in: 0 (rarest) to 3. */
+export function frequencyBand(value: number, min: number, max: number): 0 | 1 | 2 | 3 {
+  if (max <= min) {
+    return 0;
+  }
+  return Math.min(3, Math.floor(((value - min) / (max - min)) * 4)) as 0 | 1 | 2 | 3;
+}
+
 /** "a", "a e b", "a, b e c" */
 export function joinPtBr(items: readonly string[]): string {
   if (items.length <= 1) {

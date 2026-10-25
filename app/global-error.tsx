@@ -22,7 +22,7 @@ export default function GlobalError({
 
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <body className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-12">
           <div className="mx-auto max-w-2xl text-center space-y-6">
             <h1 className="text-4xl font-bold">{pt.errors.generic.title}</h1>

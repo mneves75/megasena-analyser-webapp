@@ -6,6 +6,7 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadDrawPage } from '@/app/_lib/archive';
+import { NumberField } from '@/components/number-field';
 import {
   countLabel,
   describeDraw,
@@ -22,7 +23,6 @@ import {
   ArchiveLink,
   Breadcrumbs,
   FactList,
-  NumberBallLink,
   PageTitle,
   Pager,
   RandomnessNote,
@@ -41,7 +41,12 @@ interface DrawRouteProps {
 
 async function getDrawPage(params: DrawRouteProps['params']): Promise<DrawPage> {
   const { numero } = await params;
-  const contest = resolveIntegerParam(numero, 1, MAX_CONTEST_NUMBER, (value) => `/concurso/${value}`);
+  const contest = resolveIntegerParam(
+    numero,
+    1,
+    MAX_CONTEST_NUMBER,
+    (value) => `/concurso/${value}`
+  );
   const page = await loadDrawPage(contest);
   if (!page) {
     notFound();
@@ -93,7 +98,9 @@ export async function generateMetadata({ params }: DrawRouteProps): Promise<Meta
   });
 }
 
-export default async function DrawResultPage({ params }: DrawRouteProps): Promise<React.JSX.Element> {
+export default async function DrawResultPage({
+  params,
+}: DrawRouteProps): Promise<React.JSX.Element> {
   const page = await getDrawPage(params);
   const { draw, previous, next, numberHistory, sumContext, megaDaViradaEdition } = page;
   const contest = draw.contestNumber;
@@ -112,10 +119,20 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
       ? [{ term: 'Arrecadação total', value: formatCurrency(draw.totalCollection) }]
       : []),
     ...(draw.accumulated && draw.accumulatedValue !== null
-      ? [{ term: `Acumulado para o concurso ${contest + 1}`, value: formatCurrency(draw.accumulatedValue) }]
+      ? [
+          {
+            term: `Acumulado para o concurso ${contest + 1}`,
+            value: formatCurrency(draw.accumulatedValue),
+          },
+        ]
       : []),
     ...(draw.nextEstimatedPrize !== null
-      ? [{ term: `Estimativa para o concurso ${contest + 1}`, value: formatCurrency(draw.nextEstimatedPrize) }]
+      ? [
+          {
+            term: `Estimativa para o concurso ${contest + 1}`,
+            value: formatCurrency(draw.nextEstimatedPrize),
+          },
+        ]
       : []),
   ];
 
@@ -157,7 +174,9 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
           : insights.repeatedFromPrevious.length === 0
             ? 'Nenhuma'
             : joinPtBr(insights.repeatedFromPrevious.map(dezena)),
-      ...(insights.repeatedFromPrevious === null ? { hint: 'Este é o primeiro concurso do arquivo.' } : {}),
+      ...(insights.repeatedFromPrevious === null
+        ? { hint: 'Este é o primeiro concurso do arquivo.' }
+        : {}),
     },
     {
       term: 'Dezenas consecutivas',
@@ -175,7 +194,7 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
   ] as const;
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="container mx-auto max-w-6xl space-y-14 px-4 py-8">
       <PageJsonLd
         path={path}
         name={heading}
@@ -185,35 +204,40 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
         dateModified={page.lastModified}
       />
 
-      <header className="space-y-5">
+      <header className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
-        <div className="space-y-2">
-          <PageTitle>{heading}</PageTitle>
-          <p className="text-muted-foreground">
-            Sorteio de {weekdayPtBr(draw.drawDate)}, <span className="tabular-nums">{date}</span> ·
-            resultado oficial publicado pela CAIXA
-          </p>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <PageTitle>{heading}</PageTitle>
+              <p className="text-muted-foreground">
+                Sorteio de {weekdayPtBr(draw.drawDate)},{' '}
+                <span className="tabular-nums">{date}</span>. Fonte: CAIXA Econômica Federal.
+              </p>
+            </div>
+            <AnswerSummary>
+              {megaDaViradaEdition === null
+                ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
+                : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
+              As dezenas sorteadas foram {joinPtBr(dezenas)}. {senaOutcome(draw)}
+              {comeback
+                ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
+                : ''}
+              {draw.nextEstimatedPrize !== null
+                ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
+                    draw.nextEstimatedPrize
+                  )}.`
+                : ''}
+            </AnswerSummary>
+          </div>
+          <NumberField
+            struck={draw.numbers}
+            linked
+            size="lg"
+            label={`Dezenas sorteadas no concurso ${contest}`}
+            className="self-start"
+          />
         </div>
-        <div className="flex flex-wrap gap-2.5">
-          {draw.numbers.map((number) => (
-            <NumberBallLink key={number} number={number} size="lg" />
-          ))}
-        </div>
-        <AnswerSummary>
-          {megaDaViradaEdition === null
-            ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
-            : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
-          As dezenas sorteadas foram{' '}
-          {joinPtBr(dezenas)}. {senaOutcome(draw)}
-          {comeback
-            ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
-            : ''}
-          {draw.nextEstimatedPrize !== null
-            ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
-                draw.nextEstimatedPrize
-              )}.`
-            : ''}
-        </AnswerSummary>
       </header>
 
       <section aria-labelledby="premiacao" className="space-y-4">
@@ -223,18 +247,27 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
             <caption className="sr-only">Premiação do concurso {contest}</caption>
             <thead>
               <tr>
-                <th scope="col" className={thClass}>Faixa</th>
-                <th scope="col" className={thClass}>Apostas ganhadoras</th>
-                <th scope="col" className={thClass}>Prêmio por aposta</th>
+                <th scope="col" className={thClass}>
+                  Faixa
+                </th>
+                <th scope="col" className={thClass}>
+                  Apostas ganhadoras
+                </th>
+                <th scope="col" className={thClass}>
+                  Prêmio por aposta
+                </th>
               </tr>
             </thead>
             <tbody>
               {prizeRows.map(({ label, hits, tier }) => (
                 <tr key={label}>
                   <th scope="row" className={`${cellClass} font-medium`}>
-                    {label} <span className="font-normal text-muted-foreground">({hits} acertos)</span>
+                    {label}{' '}
+                    <span className="font-normal text-muted-foreground">({hits} acertos)</span>
                   </th>
-                  <td className={cellClass}>{tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}</td>
+                  <td className={cellClass}>
+                    {tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}
+                  </td>
                   <td className={cellClass}>
                     {tier.winners > 0
                       ? formatCurrency(tier.prize)
@@ -266,10 +299,18 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
             <caption className="sr-only">Histórico das dezenas até o concurso {contest}</caption>
             <thead>
               <tr>
-                <th scope="col" className={thClass}>Dezena</th>
-                <th scope="col" className={thClass}>Vezes sorteada</th>
-                <th scope="col" className={thClass}>Aparição anterior</th>
-                <th scope="col" className={thClass}>Concursos sem sair</th>
+                <th scope="col" className={thClass}>
+                  Dezena
+                </th>
+                <th scope="col" className={thClass}>
+                  Vezes sorteada
+                </th>
+                <th scope="col" className={thClass}>
+                  Aparição anterior
+                </th>
+                <th scope="col" className={thClass}>
+                  Concursos sem sair
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -312,12 +353,20 @@ export default async function DrawResultPage({ params }: DrawRouteProps): Promis
         label="Concursos vizinhos"
         previous={
           previous
-            ? { href: `/concurso/${previous.contestNumber}`, label: 'Concurso anterior', detail: `#${previous.contestNumber}` }
+            ? {
+                href: `/concurso/${previous.contestNumber}`,
+                label: 'Concurso anterior',
+                detail: String(previous.contestNumber),
+              }
             : null
         }
         next={
           next
-            ? { href: `/concurso/${next.contestNumber}`, label: 'Próximo concurso', detail: `#${next.contestNumber}` }
+            ? {
+                href: `/concurso/${next.contestNumber}`,
+                label: 'Próximo concurso',
+                detail: String(next.contestNumber),
+              }
             : null
         }
       />

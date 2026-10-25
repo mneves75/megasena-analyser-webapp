@@ -188,9 +188,8 @@ export const pt = {
   },
   generatorPage: {
     title: 'Gerador de Apostas Otimizado',
-    subtitle: 'Sistema inteligente de geração de apostas que minimiza desperdício de orçamento',
+    subtitle: 'Distribui o seu orçamento entre apostas simples e múltiplas com o menor desperdício.',
     disclaimer: {
-      title: 'Aviso Estatístico',
       text:
         'Sorteios de loteria são eventos aleatórios e independentes. Nenhuma estratégia pode prever resultados futuros. Este sistema oferece ferramentas de seleção baseadas em heurísticas estatísticas, não garantias de ganho. O valor esperado de qualquer aposta é negativo devido à margem da casa.',
     },

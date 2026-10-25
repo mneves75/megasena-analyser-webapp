@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { NumberField } from '@/components/number-field';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
@@ -12,7 +13,6 @@ import {
   Breadcrumbs,
   DrawsTable,
   FactList,
-  NumberBallLink,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -74,8 +74,9 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
         {latest ? (
           <AnswerSummary>
             O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado em{' '}
-            {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}. {senaOutcome(latest)} O
-            arquivo reúne {countLabel(archive.totalDraws, 'concurso', 'concursos')}
+            {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}.{' '}
+            {senaOutcome(latest)} O arquivo reúne{' '}
+            {countLabel(archive.totalDraws, 'concurso', 'concursos')}
             {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
           </AnswerSummary>
         ) : (
@@ -87,30 +88,31 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       {latest ? (
         <section
           aria-labelledby="ultimo"
-          className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-elegant sm:p-8"
+          className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
         >
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>
-            <span className="text-sm tabular-nums text-muted-foreground">{formatDate(latest.drawDate)}</span>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {formatDate(latest.drawDate)}
+              </span>
+            </div>
+            <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
+              Ver prêmios e análise do concurso {latest.contestNumber}
+            </ArchiveLink>
           </div>
-          <div className="flex flex-wrap gap-2.5">
-            {latest.numbers.map((number) => (
-              <NumberBallLink key={number} number={number} size="md" />
-            ))}
-          </div>
-          <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
-            Ver prêmios e análise do concurso {latest.contestNumber}
-          </ArchiveLink>
+          <NumberField
+            struck={latest.numbers}
+            linked
+            label={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
+          />
         </section>
       ) : null}
 
       {latest && latest.nextEstimatedPrize !== null ? (
-        <section
-          aria-labelledby="proximo"
-          className="space-y-3 rounded-2xl border border-border bg-card p-6 sm:p-8"
-        >
+        <section aria-labelledby="proximo" className="space-y-4 border-t-2 border-primary pt-5">
           <SectionHeading id="proximo">Próximo concurso</SectionHeading>
-          <p className="font-title text-2xl font-semibold tabular-nums">
+          <p className="font-condensed text-3xl font-semibold tabular-nums">
             Concurso {latest.contestNumber + 1}
           </p>
           <FactList
@@ -153,10 +155,18 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
               <caption className="sr-only">Resultados da Mega-Sena por ano</caption>
               <thead>
                 <tr>
-                  <th scope="col" className={thClass}>Ano</th>
-                  <th scope="col" className={thClass}>Concursos</th>
-                  <th scope="col" className={thClass}>Primeiro</th>
-                  <th scope="col" className={thClass}>Último</th>
+                  <th scope="col" className={thClass}>
+                    Ano
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Concursos
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Primeiro
+                  </th>
+                  <th scope="col" className={thClass}>
+                    Último
+                  </th>
                 </tr>
               </thead>
               <tbody>

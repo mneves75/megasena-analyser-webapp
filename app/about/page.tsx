@@ -163,7 +163,7 @@ export default function AboutPage() {
               <Shield aria-hidden className="h-5 w-5 text-primary" />
               Aviso importante
             </h2>
-            <div className="not-prose rounded-xl border-2 border-destructive/30 bg-destructive/5 p-6 dark:bg-destructive/10">
+            <div className="not-prose rounded-sm border-2 border-destructive/30 bg-destructive/5 p-6 dark:bg-destructive/10">
               <p className="mb-2 text-lg font-bold text-destructive">
                 Previsão de loteria é estatisticamente impossível
               </p>

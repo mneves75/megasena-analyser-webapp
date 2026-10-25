@@ -3,15 +3,14 @@ import type { NumberSummary } from '@/lib/api/archive-contract';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatNumber } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
 import { loadNumbersIndex } from '@/app/_lib/archive';
-import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
+import { countLabel, dezena, formatPercentPtBr, frequencyBand, joinPtBr } from '@/app/_lib/format';
 import {
   AnswerSummary,
   ArchiveFreshness,
   ArchiveLink,
   Breadcrumbs,
-  NumberBallLink,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -31,6 +30,8 @@ const BREADCRUMBS: BreadcrumbItem[] = [
   { name: 'Números', url: PATH },
 ];
 const TIES_LISTED = 5;
+/** Cartogram shades by frequency band, lightest to darkest. */
+const FREQUENCY_SHADES = ['bg-card', 'bg-primary/10', 'bg-primary/20', 'bg-primary/35'] as const;
 const RANKED_SHOWN = 10;
 
 interface RankedEntry {
@@ -54,11 +55,17 @@ function rankBy<T extends { number: number }>(
   }));
 }
 
-function RankedList({ labelId, entries }: { labelId: string; entries: RankedEntry[] }): React.JSX.Element {
+function RankedList({
+  labelId,
+  entries,
+}: {
+  labelId: string;
+  entries: RankedEntry[];
+}): React.JSX.Element {
   return (
-    <ol aria-labelledby={labelId} className="divide-y divide-border rounded-xl border border-border bg-card">
+    <ol aria-labelledby={labelId} className="divide-y divide-border border-y-2 border-y-primary">
       {entries.map((entry) => (
-        <li key={entry.number} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+        <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
           <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
           <ArchiveLink href={`/numeros/${entry.number}`} className={inlineLinkClass}>
             {dezena(entry.number)}
@@ -165,17 +172,32 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
 
       <section aria-labelledby="grade" className="space-y-4">
         <SectionHeading id="grade">Escolha um número</SectionHeading>
-        <ul className="grid grid-cols-5 gap-x-2 gap-y-4 sm:grid-cols-10">
-          {numbers.map((summary) => (
-            <li key={summary.number} className="flex flex-col items-center gap-1">
-              <NumberBallLink number={summary.number} size="sm" />
-              <span aria-hidden className="text-xs tabular-nums text-muted-foreground">
-                {formatNumber(summary.frequency)}x
-              </span>
-              <span className="sr-only">{countLabel(summary.frequency, 'vez', 'vezes')}</span>
-            </li>
-          ))}
-        </ul>
+        <figure className="space-y-3">
+          <ul className="grid grid-cols-5 border-l border-t border-border sm:grid-cols-10">
+            {numbers.map((summary) => (
+              <li key={summary.number} className="border-b border-r border-border">
+                <ArchiveLink
+                  href={`/numeros/${summary.number}`}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                    FREQUENCY_SHADES[frequencyBand(summary.frequency, minFrequency, maxFrequency)]
+                  )}
+                >
+                  <span className="font-condensed text-xl font-semibold tabular-nums">
+                    {dezena(summary.number)}
+                  </span>
+                  <span className="text-xs tabular-nums">
+                    {countLabel(summary.frequency, 'vez', 'vezes')}
+                  </span>
+                </ArchiveLink>
+              </li>
+            ))}
+          </ul>
+          <figcaption className="text-sm text-muted-foreground">
+            Quanto mais escura a casa, mais vezes a dezena foi sorteada. Fonte: CAIXA Econômica
+            Federal.
+          </figcaption>
+        </figure>
       </section>
 
       <section aria-labelledby="tabela" className="space-y-4">
@@ -185,12 +207,24 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             <caption className="sr-only">Frequência e atraso dos números de 1 a 60</caption>
             <thead>
               <tr>
-                <th scope="col" className={thClass}>Número</th>
-                <th scope="col" className={thClass}>Vezes</th>
-                <th scope="col" className={thClass}>% dos concursos</th>
-                <th scope="col" className={thClass}>Ranking</th>
-                <th scope="col" className={thClass}>Atraso</th>
-                <th scope="col" className={thClass}>Última vez</th>
+                <th scope="col" className={thClass}>
+                  Número
+                </th>
+                <th scope="col" className={thClass}>
+                  Vezes
+                </th>
+                <th scope="col" className={thClass}>
+                  % dos concursos
+                </th>
+                <th scope="col" className={thClass}>
+                  Ranking
+                </th>
+                <th scope="col" className={thClass}>
+                  Atraso
+                </th>
+                <th scope="col" className={thClass}>
+                  Última vez
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -202,7 +236,9 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                     </ArchiveLink>
                   </th>
                   <td className={cellClass}>{formatNumber(summary.frequency)}</td>
-                  <td className={cellClass}>{formatPercentPtBr(summary.frequency, archive.totalDraws)}</td>
+                  <td className={cellClass}>
+                    {formatPercentPtBr(summary.frequency, archive.totalDraws)}
+                  </td>
                   <td className={cellClass}>{summary.rank}º</td>
                   <td className={cellClass}>
                     {summary.lastAppearance ? formatNumber(summary.lastAppearance.drawsSince) : '—'}

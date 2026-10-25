@@ -19,7 +19,6 @@ import {
   Scale,
   Shuffle,
   Snowflake,
-  Sparkles,
   Target,
   Play,
 } from 'lucide-react';
@@ -98,10 +97,10 @@ function rovingKeyDown<T extends string>(
   refs.current[nextIndex]?.focus();
 }
 
-const SELECTED_TILE = 'border-primary bg-primary/10';
-const IDLE_TILE = 'border-border bg-card hover:border-primary/60 hover:bg-accent/40';
+const SELECTED_TILE = 'border-primary bg-tint';
+const IDLE_TILE = 'border-border bg-card hover:border-primary';
 const TILE_BASE =
-  'relative rounded-lg border-2 transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  'relative rounded-sm border-2 transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
 function SelectedCheck() {
   return (
@@ -128,10 +127,9 @@ export function GenerationControls({
   const modeValues = pt.betGenerator.modes.map((m) => m.value as BetGenerationMode);
 
   return (
-    <Card className={cn('transition-smooth hover:shadow-glow', className)}>
+    <Card className={cn('transition-smooth', className)}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles aria-hidden className="h-5 w-5" />
+        <CardTitle>
           {pt.betGenerator.controls.title}
         </CardTitle>
         <CardDescription>{pt.betGenerator.controls.description}</CardDescription>
@@ -243,7 +241,7 @@ export function GenerationControls({
           disabled={disabled || isGenerating}
           aria-busy={isGenerating}
           size="lg"
-          className="h-14 w-full text-lg font-semibold transition-smooth hover:shadow-glow"
+          className="h-14 w-full text-lg font-semibold transition-smooth"
         >
           {isGenerating ? (
             <>

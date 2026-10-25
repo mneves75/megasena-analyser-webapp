@@ -37,7 +37,7 @@ export function BetCard({ bet, index, className }: BetCardProps) {
   };
 
   return (
-    <Card className={cn('group transition-smooth hover:shadow-glow hover:border-primary/50', className)}>
+    <Card className={cn('group transition-smooth hover:border-primary/50', className)}>
       <CardContent className="p-6 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
