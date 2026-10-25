@@ -238,5 +238,3 @@ class Logger {
 // Singleton instance
 export const logger = new Logger();
 
-// Convenience exports
-export const { debug, info, warn, error } = logger;

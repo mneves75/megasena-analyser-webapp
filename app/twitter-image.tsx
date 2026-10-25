@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { BASE_URL } from '@/lib/constants';
 
 export const alt = 'Mega-Sena Analyzer - Análise Estatística';
 export const size = {
@@ -115,7 +116,7 @@ export default async function Image() {
             color: '#71717a',
           }}
         >
-          megasena-analyzer.com.br
+          {new URL(BASE_URL).host}
         </p>
       </div>
     ),

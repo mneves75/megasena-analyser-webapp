@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +36,7 @@ export function BudgetSelector({
   className
 }: BudgetSelectorProps) {
   const [inputValue, setInputValue] = useState(value.toString().replace('.', ','));
+  const presetsLabelId = useId();
   const numericInputValue = parseBudget(inputValue);
   const isBelowMin = inputValue.length > 0 && numericInputValue < min;
   const isAboveMax = inputValue.length > 0 && numericInputValue > max;
@@ -97,8 +98,10 @@ export function BudgetSelector({
 
         {/* Presets */}
         <div className="space-y-2">
-          <Label>{pt.betGenerator.budget.quickValues}</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <p id={presetsLabelId} className="text-sm font-medium leading-none">
+            {pt.betGenerator.budget.quickValues}
+          </p>
+          <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-3 gap-2">
             {BUDGET_PRESETS.slice(0, 9).map((preset) => (
               <Button
                 key={preset}

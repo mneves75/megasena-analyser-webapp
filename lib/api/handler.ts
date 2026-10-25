@@ -3,6 +3,7 @@ import { StatisticsEngine } from '../analytics/statistics';
 import { BetGenerator } from '../analytics/bet-generator';
 import { BetGenerationInputError } from '../analytics/bet-generator';
 import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from '../constants';
+import siteDomains from '../site-domains.json';
 import { DelayAnalysisEngine } from '../analytics/delay-analysis';
 import { DecadeAnalysisEngine } from '../analytics/decade-analysis';
 import { TimeSeriesEngine } from '../analytics/time-series';
@@ -77,7 +78,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
         'http://localhost:3002',
         'http://localhost:3201',
       ]
-    : (options.allowedOrigins ?? 'https://megasena-analyzer.com.br')
+    : (options.allowedOrigins ?? `https://${siteDomains.primaryDomain}`)
         .split(',')
         .map((origin) => origin.trim())
         .filter((origin) => {

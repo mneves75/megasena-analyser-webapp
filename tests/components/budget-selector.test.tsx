@@ -16,4 +16,11 @@ describe('BudgetSelector', () => {
     fireEvent.change(screen.getByLabelText(/Valor Personalizado/i), { target: { value: input } });
     expect(onChange).toHaveBeenLastCalledWith(expected);
   });
+
+  it('names the preset buttons as a group instead of an orphan label', () => {
+    const { container } = render(<BudgetSelector value={50} onChange={vi.fn()} />);
+    const group = screen.getByRole('group', { name: 'Valores Rápidos' });
+    expect(group.querySelectorAll('button').length).toBe(9);
+    expect([...container.querySelectorAll('label')].every(label => label.htmlFor || label.control)).toBe(true);
+  });
 });
