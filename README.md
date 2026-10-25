@@ -103,7 +103,7 @@ O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no base
 - `bun run lint:fix` - Corrigir problemas de lint automaticamente
 - `bun run format` - Formatar código com Prettier
 - `bun run test` - Executar testes com Vitest (usa fallback de banco em memória)
-- `bun run test:sqlite` - Executar os 12 testes de atraso com SQLite real no Bun; limpa apenas a fixture descartável `.tmp/e2e/delay-analysis-test.db`
+- `bun run test:sqlite` - Executar os testes de atraso no `bun:sqlite` em arquivo; limpa apenas a fixture descartável `.tmp/e2e/delay-analysis-test.db`
 - `bun run test:argent` - Reproduzir a geração de 200 apostas e a página 4 em Chromium de 375 px, usando Argent
 - O fluxo `.argent/flows/qa-generator-ptbr-budget.yaml` verifica `50,50` como R$ 50,50 e oito apostas, sem inflar o orçamento. Reproduza-o duas vezes com `argent flow run qa-generator-ptbr-budget --platform chromium` na mesma fixture de produção.
 - `bun run doctor` - Executar o React Doctor instalado pelo lockfile

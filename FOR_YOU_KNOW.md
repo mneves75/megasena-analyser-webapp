@@ -27,7 +27,7 @@ Bun é o runtime: a aplicação depende de `bun:sqlite` e não roda sob Node.js.
 
 - Datas da CAIXA chegam em formato brasileiro; normalize antes de persistir ou agrupar no SQLite.
 - Atualizar `draws` exige reconstruir derivados dentro da mesma transação, ou leituras podem misturar dados novos com índices antigos.
-- O banco de teste padrão é em memória e não cobre todos os detalhes do SQLite real. Use `VITEST_FORCE_FILE_DB=1` para migrations e SQL sensível.
+- O banco de teste padrão é SQLite real em memória (`node:sqlite`) com as migrações reais. Use `VITEST_FORCE_FILE_DB=1` para exercitar o `bun:sqlite` em arquivo.
 - Redes de datacenter podem ser bloqueadas pela CAIXA; atualização de dados e deploy de código são responsabilidades separadas.
 - A Cloudflare pode alterar métricas e headers. Meça primeiro o build local de produção e use `security:csp:edge` depois de mudanças na borda.
 

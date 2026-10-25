@@ -104,7 +104,7 @@ bun run lint                 # eslint --max-warnings=0
 bun run lint:ast             # ast-grep structural supply-chain rules
 bun run typecheck            # tsc --noEmit
 bun run test -- --run        # vitest once (omit -- --run for watch; add --coverage for the gate)
-bun run test:sqlite          # real Bun SQLite delay analytics, isolated disposable DB
+bun run test:sqlite          # delay analytics on bun:sqlite, isolated disposable DB
 bun x vitest tests/lib/bet-generator.test.ts --run   # single test file
 bun run test:e2e             # playwright
 bun run test:argent          # Argent Chromium mobile generator regression
@@ -218,10 +218,10 @@ README.md for the isolated local production fixture and two-pass replay.
 
 ## Conventions & constraints (project-specific)
 
-- **Test DB is in-memory:** `lib/db.ts` swaps to `InMemoryDatabase` under Vitest
-  (checks `process.env.VITEST`). Force real file DB with `VITEST_FORCE_FILE_DB=1`.
-  `test:sqlite` runs the 12 delay-analysis cases skipped by the fallback against
-  an isolated disposable `.tmp/e2e/delay-analysis-test.db`; it clears that fixture's draws.
+- **Test DB is real SQLite in memory:** under Vitest (Node), `lib/db.ts` opens a fresh
+  `node:sqlite` `:memory:` database and applies the real migrations. Force the Bun file DB
+  with `VITEST_FORCE_FILE_DB=1`. `test:sqlite` runs the delay-analysis suite on `bun:sqlite`
+  against an isolated disposable `.tmp/e2e/delay-analysis-test.db`; it clears that fixture's draws.
   Coverage thresholds live in `vitest.config.ts` and ratchet from the measured
   baseline (2026-09-25) toward the 80% target: raise them as coverage grows, never
   lower them.

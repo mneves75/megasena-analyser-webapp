@@ -8,8 +8,8 @@ description: Testing layout, tools, and coverage expectations
   jsdom). CLI coverage lives in `tests/scripts/`.
 - UI flows: `tests/app/**/*.spec.ts` (Playwright). `vitest.config.ts` excludes
   `tests/app/**`, so Vitest and Playwright cover disjoint sets.
-- The DB is swapped for `InMemoryDatabase` under Vitest (`lib/db.ts` checks
-  `process.env.VITEST`). Force the real file DB with `VITEST_FORCE_FILE_DB=1`.
+- Under Vitest, `lib/db.ts` opens a fresh `node:sqlite` `:memory:` database with the
+  real migrations (`process.env.VITEST`). Force the Bun file DB with `VITEST_FORCE_FILE_DB=1`.
 - Coverage: thresholds over `components/**` and `lib/**` ratchet from the measured
   baseline toward 80% (see AGENTS.md); CI runs `--coverage`. A new `lib/` file falls
   inside the gate unless it is added to the exclusion list in `vitest.config.ts`.

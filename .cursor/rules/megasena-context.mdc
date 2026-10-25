@@ -37,7 +37,7 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 ### Database (`lib/db.ts`)
 
 - Connection management with WAL mode, migration runner, prepared statements
-- Swaps to `InMemoryDatabase` under Vitest (`process.env.VITEST`)
+- Under Vitest, opens an in-memory `node:sqlite` database with the real migrations
 
 ### Analytics Engine (`lib/analytics/`)
 
