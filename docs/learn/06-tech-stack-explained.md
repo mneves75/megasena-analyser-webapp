@@ -80,8 +80,8 @@ Pense em três camadas:
 - **O que é:** biblioteca de componentes. Versão 19 com Server Components.
 - **Por que aparece:** define a fronteira servidor/cliente. Tudo é Server Component a
   menos que precise de interatividade.
-- **Onde:** `'use client'` aparece em `components/ui/*`, `components/charts/*`,
-  `components/bet-generator/*`, `components/theme-provider.tsx`,
+- **Onde:** `'use client'` aparece em `components/ui/*`,
+  `components/bet-generator/*`, `components/site-header.tsx`, `components/theme-provider.tsx`,
   `components/storage-disclosure.tsx`, `app/dashboard/generator/generator-form.tsx`,
   e nos `error.tsx` (error boundaries exigem cliente).
 - **Júnior precisa saber:** só marque `'use client'` quando houver `useState`,
@@ -120,7 +120,7 @@ Pense em três camadas:
 
 - **O que é:** CSS utilitário. Versão 4 via `@tailwindcss/postcss`.
 - **Onde:** `app/globals.css` (`@import "tailwindcss"`, `@config "../tailwind.config.cjs"`),
-  tokens HSL em `:root` e `.dark` (`--background`, `--primary`, `--chart-1..5`, etc.),
+  tokens HSL em `:root` e `.dark` (`--background`, `--primary`, `--tint`, etc.),
   `tailwind.config.cjs` (`darkMode: 'class'`, mapeia tokens para classes utilitárias).
 - **Regra do projeto:** nunca cores fixas (`text-white`); só tokens (`text-foreground`,
   `bg-background`).
@@ -129,19 +129,21 @@ Pense em três camadas:
 
 - **O que é:** componentes copiados para o repo (não um pacote), construídos com `cva`
   para variantes.
-- **Onde:** `components/ui/*` (button, card, input, badge, label). O helper `cn`
+- **Onde:** `components/ui/*` (button, input, label). O helper `cn`
   (`lib/utils.ts`) combina `clsx` + `tailwind-merge` para resolver conflitos de classe.
 
-### Recharts (`^3.8.1`) — gráficos
+### Sem biblioteca de gráficos
 
-- **Onde:** `components/charts/bar-chart.tsx`, `donut-chart.tsx`, `line-chart.tsx`
-  (todos `'use client'`). `bar-chart` e `donut-chart` incluem uma lista `sr-only` para
-  acessibilidade; `line-chart` não tem esse fallback (ver Mal-entendidos).
+- **Onde:** desde a 1.19.0 as estatísticas são tabelas e listas ranqueadas
+  (`app/_components/archive-ui.tsx`) e o volante de 60 (`components/number-field.tsx`);
+  `recharts` saiu das dependências. Tabelas são acessíveis por natureza, sem fallback
+  `sr-only`.
 
 ### lucide-react (`^0.462.0`) — ícones
 
-- **Onde:** importado em ~15 arquivos de `app/` e `components/` (ex.: ícone `Info` no
-  card de "atualização" da página de estatísticas).
+- **Onde:** só em controles: o menu e o tema (`components/site-header.tsx`,
+  `components/theme-toggle.tsx`) e as setas de abrir/fechar (`app/(home)/page.tsx`,
+  `app/dashboard/generator/page.tsx`). Títulos não levam ícones.
 
 ### Intl API (nativa) — formatação pt-BR (NÃO `date-fns`)
 
@@ -217,8 +219,6 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 - **"`overrides` no `package.json` são preferências."** O pnpm ignora esse campo.
   Os **gates de segurança temporários** efetivos ficam em `pnpm-workspace.yaml`;
   só removê-los quando `pnpm audit` continuar limpo sem eles (`AGENTS.md`).
-- **"Os gráficos são todos acessíveis igualmente."** `line-chart.tsx` não tem o
-  fallback `sr-only` que `bar-chart`/`donut-chart` têm.
 
 ## Exercícios
 
@@ -247,7 +247,7 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 - **Verificado no código:** versões e flags em `package.json`; `bun:sqlite` em
   `lib/db.ts`; Zod em `server.ts`; tokens em `globals.css`/`tailwind.config.cjs`;
   `Intl` em `lib/utils.ts`; ausência de imports de `framer-motion`/`date-fns` (grep);
-  `server-only` em `log-sink.server.ts`; charts em `components/charts/*`.
+  `server-only` em `log-sink.server.ts`; ausência de `recharts` em `package.json`.
 - **Inferido do código:** papel do Vite como infraestrutura do Vitest (deduzido de
   `vitest.config.ts` + ausência de uso em runtime).
 - **Conhecimento externo:** descrições gerais de cada biblioteca e links oficiais.

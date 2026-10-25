@@ -35,7 +35,7 @@ Três zonas:
 | `proxy.ts` | Middleware Next.js: nonce + CSP + headers de segurança |
 | `next.config.js` | `output: standalone`, rewrite `/api/*`, exclusões de tracing |
 | `app/` | Rotas do App Router (páginas, route handlers de metadados, ícones OG) |
-| `components/` | UI reutilizável (`ui/`, `charts/`, `bet-generator/`, `privacy/`, `seo/`) |
+| `components/` | UI reutilizável (`ui/`, `bet-generator/`, `privacy/`, `seo/`, `statistics/`, e `number-field.tsx`, o volante de 60) |
 | `lib/` | Lógica de negócio e utilidades |
 | `lib/analytics/` | Engines estatísticos + gerador de apostas |
 | `lib/api/` | Cliente CAIXA e helper de fetch RSC→API |
