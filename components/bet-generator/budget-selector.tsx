@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,7 @@ export function BudgetSelector({
   min = BET_GENERATION_LIMITS.MIN_BUDGET,
   max = BET_GENERATION_LIMITS.MAX_BUDGET,
   isOptimizedMode = false,
-  className
+  className,
 }: BudgetSelectorProps) {
   const [inputValue, setInputValue] = useState(value.toString().replace('.', ','));
   const presetsLabelId = useId();
@@ -55,82 +54,73 @@ export function BudgetSelector({
   };
 
   return (
-    <Card className={cn('transition-smooth', className)}>
-      <CardHeader>
-        <CardTitle>{pt.betGenerator.budget.title}</CardTitle>
-        <CardDescription>{pt.betGenerator.budget.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Custom Input */}
-        <div className="space-y-2">
-          <Label htmlFor="budget-input">{pt.betGenerator.budget.customValue}</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              {pt.betGenerator.budget.currencyPrefix}
-            </span>
-            <Input
-              id="budget-input"
-              type="text"
-              value={inputValue}
-              onChange={handleInputChange}
-              inputMode="decimal"
-              aria-invalid={hasBudgetError ? 'true' : undefined}
-              aria-errormessage={hasBudgetError ? errorId : undefined}
-              className="pl-10 text-lg font-semibold tabular-nums"
-              placeholder={pt.betGenerator.budget.placeholder}
-            />
-          </div>
-          {hasBudgetError && (
-            <p id={errorId} className="text-sm text-destructive">
-              {isAboveMax ? (
-                <>
-                  {pt.betGenerator.budget.maxValueLabel} {formatCurrency(max)}
-                  {isOptimizedMode ? ` — ${pt.betGenerator.budget.optimizedLimitHint}` : ''}
-                </>
-              ) : (
-                <>
-                  {pt.betGenerator.budget.minValueLabel} {formatCurrency(min)}
-                </>
-              )}
-            </p>
-          )}
+    <div className={cn('space-y-6', className)}>
+      <h3 className="text-lg font-semibold leading-tight">{pt.betGenerator.budget.title}</h3>
+      {/* Custom Input */}
+      <div className="space-y-2">
+        <Label htmlFor="budget-input">{pt.betGenerator.budget.customValue}</Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+            {pt.betGenerator.budget.currencyPrefix}
+          </span>
+          <Input
+            id="budget-input"
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            inputMode="decimal"
+            aria-invalid={hasBudgetError ? 'true' : undefined}
+            aria-errormessage={hasBudgetError ? errorId : undefined}
+            className="pl-10 text-lg font-semibold tabular-nums"
+            placeholder={pt.betGenerator.budget.placeholder}
+          />
         </div>
-
-        {/* Presets */}
-        <div className="space-y-2">
-          <p id={presetsLabelId} className="text-sm font-medium leading-none">
-            {pt.betGenerator.budget.quickValues}
+        {hasBudgetError && (
+          <p id={errorId} className="text-sm text-destructive">
+            {isAboveMax ? (
+              <>
+                {pt.betGenerator.budget.maxValueLabel} {formatCurrency(max)}
+                {isOptimizedMode ? ` — ${pt.betGenerator.budget.optimizedLimitHint}` : ''}
+              </>
+            ) : (
+              <>
+                {pt.betGenerator.budget.minValueLabel} {formatCurrency(min)}
+              </>
+            )}
           </p>
-          <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-3 gap-2">
-            {BUDGET_PRESETS.slice(0, 9).map((preset) => (
-              <Button
-                key={preset}
-                variant={value === preset ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handlePresetClick(preset)}
-                aria-pressed={value === preset}
-                className="tabular-nums transition-smooth"
-              >
-                {formatCurrency(preset)}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Display Selected */}
-        {value >= min && (
-          <div className="p-4 rounded-lg bg-muted/50 border border-border">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                {pt.betGenerator.budget.selectedBudget}
-              </span>
-              <span className="text-xl font-bold tabular-nums text-foreground">
-                {formatCurrency(value)}
-              </span>
-            </div>
-          </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Presets */}
+      <div className="space-y-2">
+        <p id={presetsLabelId} className="text-sm font-medium leading-none">
+          {pt.betGenerator.budget.quickValues}
+        </p>
+        <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-3 gap-2">
+          {BUDGET_PRESETS.slice(0, 9).map((preset) => (
+            <Button
+              key={preset}
+              variant={value === preset ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handlePresetClick(preset)}
+              aria-pressed={value === preset}
+              className="tabular-nums transition-smooth"
+            >
+              {formatCurrency(preset)}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Display Selected */}
+      {value >= min && (
+        <dl className="flex items-baseline justify-between border-y-2 border-y-primary py-3">
+          <dt className="text-sm text-muted-foreground">{pt.betGenerator.budget.selectedBudget}</dt>
+          <dd className="font-condensed text-2xl font-semibold tabular-nums text-foreground">
+            {formatCurrency(value)}
+          </dd>
+        </dl>
+      )}
+    </div>
   );
 }

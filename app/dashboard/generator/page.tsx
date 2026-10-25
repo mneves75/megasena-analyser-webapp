@@ -33,8 +33,8 @@ export default function GeneratorPage() {
         <p className="mt-2 text-muted-foreground">{pt.generatorPage.subtitle}</p>
       </header>
 
-      <details className="group mb-8 max-w-3xl border-l-2 border-primary">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 text-sm font-medium text-foreground transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+      <details className="group mb-8 max-w-3xl border-y border-border">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 text-sm font-medium text-foreground transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
           <span>
             <span className="font-semibold">Nota.</span> Prever o resultado da loteria é
             estatisticamente impossível.
@@ -44,7 +44,7 @@ export default function GeneratorPage() {
             className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
           />
         </summary>
-        <p className="px-4 pb-3 text-sm leading-6 text-muted-foreground">
+        <p className="pb-3 text-sm leading-6 text-muted-foreground">
           {pt.generatorPage.disclaimer.text}
         </p>
       </details>

@@ -90,7 +90,7 @@ describe('GeneratorForm', () => {
   it('renderiza o estado inicial com os controles principais', () => {
     render(<GeneratorForm />);
 
-    expect(screen.getByText(/Pronto para gerar apostas\?/i)).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Volante vazio, de 01 a 60' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Gerar Apostas/i })).toBeInTheDocument();
     expect(screen.getByText(/Configurações de Geração/i)).toBeInTheDocument();
   });
@@ -158,27 +158,23 @@ describe('GeneratorForm', () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('ignora a resposta antiga quando duas gerações são disparadas em sequência', async () => {
-    const firstRequest = createDeferred();
-    const secondRequest = createDeferred();
-    vi.mocked(generateBets)
-      .mockReturnValueOnce(firstRequest.promise as ReturnType<typeof generateBets>)
-      .mockReturnValueOnce(secondRequest.promise as ReturnType<typeof generateBets>);
+  it('bloqueia uma segunda geração enquanto a primeira está pendente', async () => {
+    const request = createDeferred();
+    vi.mocked(generateBets).mockReturnValueOnce(request.promise as ReturnType<typeof generateBets>);
 
     render(<GeneratorForm />);
 
     const generateButton = screen.getByRole('button', { name: /Gerar Apostas/i });
     fireEvent.click(generateButton);
-    fireEvent.click(generateButton);
+    fireEvent.click(screen.getByRole('button', { busy: true }));
 
-    firstRequest.resolve(createResultWithId('bet-old', [1, 2, 3, 4, 5, 6]));
-    secondRequest.resolve(createResultWithId('bet-new', [7, 8, 9, 10, 11, 12]));
+    expect(generateBets).toHaveBeenCalledTimes(1);
+
+    request.resolve(createResultWithId('bet-only', [7, 8, 9, 10, 11, 12]));
 
     await waitFor(() => {
-      expect(screen.getByText(/Aposta #1/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /copiar aposta 1/i })).toBeInTheDocument();
     });
-
-    expect(screen.getByText(/7/)).toBeInTheDocument();
-    expect(screen.queryByText(/bet-old/i)).not.toBeInTheDocument();
+    expect(screen.getByText('07')).toBeInTheDocument();
   });
 });

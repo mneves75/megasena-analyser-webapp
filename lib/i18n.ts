@@ -72,7 +72,6 @@ export const pt = {
   common: {
     importantNotice: 'Aviso importante',
     errorLabel: 'Erro',
-    tipLabel: 'Dica',
     lastUpdated: 'Última atualização',
     occurrences: 'ocorrências',
   },
@@ -194,36 +193,10 @@ export const pt = {
   generatorForm: {
     errorPrefix: 'Erro',
     errorFallback: 'Erro ao gerar apostas. Tente novamente.',
-    emptyState: {
-      title: 'Pronto para gerar apostas?',
-      description:
-        'Configure seu orçamento, escolha uma estratégia e um modo de geração, depois clique em "Gerar Apostas" para começar.',
-      helper: 'Sistema otimizado minimiza desperdício do seu orçamento',
-    },
-    help: {
-      title: 'Como funciona?',
-      steps: [
-        {
-          title: '1. Defina o Orçamento',
-          description: 'Escolha quanto deseja investir nas apostas. Mínimo de R$ 6,00.',
-        },
-        {
-          title: '2. Configure a Estratégia',
-          description:
-            'Escolha como os números serão selecionados: aleatório, quentes, frios, etc.',
-        },
-        {
-          title: '3. Selecione o Modo',
-          description:
-            'Otimizado minimiza desperdício. Simples, Mista ou Múltipla para preferências específicas.',
-        },
-      ],
-    },
   },
   betGenerator: {
     budget: {
       title: 'Orçamento',
-      description: 'Defina o valor disponível para suas apostas',
       customValue: 'Valor Personalizado',
       quickValues: 'Valores Rápidos',
       selectedBudget: 'Orçamento selecionado:',
@@ -236,13 +209,8 @@ export const pt = {
     },
     controls: {
       title: 'Configurações de Geração',
-      description: 'Escolha a estratégia e o modo de geração das apostas',
       strategyLabel: 'Estratégia de Números',
       modeLabel: 'Modo de Geração',
-      infoTitle: 'Dica',
-      infoOptimized: 'O modo Otimizado é recomendado para maximizar o uso do seu orçamento.',
-      infoBalanced:
-        'A estratégia Balanceada combina análise histórica para resultados equilibrados.',
       generate: 'Gerar Apostas',
       generating: 'Gerando apostas...',
     },
@@ -319,7 +287,6 @@ export const pt = {
     },
     betCard: {
       betLabel: 'Aposta',
-      costLabel: 'Custo',
       copy: 'Copiar',
       copied: 'Copiado',
       strategyLabel: 'Estratégia',

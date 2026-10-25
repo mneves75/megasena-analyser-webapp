@@ -88,7 +88,7 @@ export function GeneratorForm() {
           role="alert"
           aria-live="assertive"
           tabIndex={-1}
-          className="mb-6 border-l-2 border-destructive py-2 pl-4 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mb-6 border-t-2 border-destructive pt-3 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <strong className="font-semibold">{pt.generatorForm.errorPrefix}:</strong> {error}
         </div>
@@ -134,46 +134,10 @@ export function GeneratorForm() {
             <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
           </div>
         ) : (
-          <div className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
-            <div className="space-y-2">
-              <h3 className="text-2xl font-semibold text-foreground">
-                {pt.generatorForm.emptyState.title}
-              </h3>
-              <p className="max-w-md text-muted-foreground">
-                {pt.generatorForm.emptyState.description}
-              </p>
-              <p className="text-sm text-muted-foreground">{pt.generatorForm.emptyState.helper}</p>
-            </div>
+          <div className="border-t-2 border-primary pt-5">
             <NumberField struck={[]} label="Volante vazio, de 01 a 60" />
           </div>
         )}
-      </div>
-
-      {/* Help Section */}
-      <div className="mt-12 border-t-2 border-primary pt-5">
-        <h3 className="mb-3 text-xl font-semibold text-foreground">
-          {pt.generatorForm.help.title}
-        </h3>
-        <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-          <div className="space-y-1">
-            <div className="font-medium text-foreground">
-              {pt.generatorForm.help.steps[0].title}
-            </div>
-            <p>{pt.generatorForm.help.steps[0].description}</p>
-          </div>
-          <div className="space-y-1">
-            <div className="font-medium text-foreground">
-              {pt.generatorForm.help.steps[1].title}
-            </div>
-            <p>{pt.generatorForm.help.steps[1].description}</p>
-          </div>
-          <div className="space-y-1">
-            <div className="font-medium text-foreground">
-              {pt.generatorForm.help.steps[2].title}
-            </div>
-            <p>{pt.generatorForm.help.steps[2].description}</p>
-          </div>
-        </div>
       </div>
     </section>
   );
