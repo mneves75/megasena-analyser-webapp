@@ -43,7 +43,8 @@ export function DonutChart({ data, title = 'Gráfico de distribuição' }: Donut
               dataKey="value"
             >
               {data.map((entry, index) => {
-                const fallbackColor = DEFAULT_COLORS[index % DEFAULT_COLORS.length] ?? 'hsl(var(--chart-1))';
+                const fallbackColor =
+                  DEFAULT_COLORS[index % DEFAULT_COLORS.length] ?? 'hsl(var(--chart-1))';
                 return <Cell key={`cell-${index}`} fill={entry.color ?? fallbackColor} />;
               })}
             </Pie>
@@ -55,7 +56,7 @@ export function DonutChart({ data, title = 'Gráfico de distribuição' }: Donut
                 color: 'hsl(var(--foreground))',
               }}
             />
-            <Legend />
+            <Legend formatter={(value) => <span className="text-foreground">{value}</span>} />
           </PieChart>
         </ResponsiveContainer>
       </div>

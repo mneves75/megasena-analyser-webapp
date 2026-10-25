@@ -25,9 +25,7 @@ export function Footer(): React.JSX.Element {
 
           {/* Legal Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">
-              {pt.footer.legalTitle}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">{pt.footer.legalTitle}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link href="/terms" className={linkClass}>
@@ -54,9 +52,7 @@ export function Footer(): React.JSX.Element {
 
           {/* Resources Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">
-              {pt.footer.resourcesTitle}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">{pt.footer.resourcesTitle}</h3>
             <ul className="space-y-2.5 text-sm">
               <li>
                 <Link href="/resultados" prefetch={false} className={linkClass}>
@@ -129,10 +125,10 @@ export function Footer(): React.JSX.Element {
 
         {/* Disclaimer */}
         <div className="mt-12 border-t border-border pt-8">
-          <div className="max-w-[80ch] space-y-2 border-l-2 border-primary pl-4 text-xs leading-relaxed text-muted-foreground">
+          <div className="max-w-prose space-y-2 border-l-2 border-primary pl-4 text-xs leading-relaxed text-muted-foreground">
             <p className="text-sm font-semibold text-foreground">{pt.footer.disclaimerTitle}</p>
-            <p className="max-w-[80ch]">{pt.footer.disclaimerBody}</p>
-            <p className="max-w-[80ch]">{pt.footer.disclaimerSource}</p>
+            <p>{pt.footer.disclaimerBody}</p>
+            <p>{pt.footer.disclaimerSource}</p>
           </div>
         </div>
 

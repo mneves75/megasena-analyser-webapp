@@ -18,7 +18,7 @@ import {
   NumberBallLink,
   inlineLinkClass,
 } from '@/app/_components/archive-ui';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -139,9 +139,9 @@ export default async function DashboardPage() {
           {lastDraw ? (
             <Card className="flex flex-col lg:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <p className="text-sm font-medium text-muted-foreground">
                   {pt.dashboard.stats.lastDraw}
-                </CardTitle>
+                </p>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col justify-between gap-6">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -198,7 +198,9 @@ export default async function DashboardPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{pt.dashboard.sections.mostFrequent}</CardTitle>
+              <h2 className="text-lg font-semibold leading-tight">
+                {pt.dashboard.sections.mostFrequent}
+              </h2>
               <CardDescription>{pt.dashboard.sections.mostFrequentDescription}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -217,7 +219,9 @@ export default async function DashboardPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{pt.dashboard.sections.leastFrequent}</CardTitle>
+              <h2 className="text-lg font-semibold leading-tight">
+                {pt.dashboard.sections.leastFrequent}
+              </h2>
               <CardDescription>{pt.dashboard.sections.leastFrequentDescription}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -237,7 +241,9 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{pt.dashboard.sections.recentDraws}</CardTitle>
+            <h2 className="text-lg font-semibold leading-tight">
+              {pt.dashboard.sections.recentDraws}
+            </h2>
             <CardDescription>{pt.dashboard.sections.recentDrawsDescription}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -282,7 +288,9 @@ export default async function DashboardPage() {
         {hotNumbers && hotNumbers.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{pt.dashboard.sections.hotNumbersTitle}</CardTitle>
+              <h2 className="text-lg font-semibold leading-tight">
+                {pt.dashboard.sections.hotNumbersTitle}
+              </h2>
               <CardDescription>{pt.dashboard.sections.hotNumbersDescription}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -309,7 +317,9 @@ export default async function DashboardPage() {
           <Link href="/dashboard/statistics" className="group">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle className="text-lg">{pt.dashboard.actions.statisticsTitle}</CardTitle>
+                <h2 className="text-lg font-semibold leading-tight">
+                  {pt.dashboard.actions.statisticsTitle}
+                </h2>
                 <CardDescription>{pt.dashboard.actions.statisticsDescription}</CardDescription>
               </CardHeader>
             </Card>
@@ -318,7 +328,9 @@ export default async function DashboardPage() {
           <Link href="/dashboard/generator" className="group">
             <Card className="h-full">
               <CardHeader>
-                <CardTitle className="text-lg">{pt.dashboard.actions.generatorTitle}</CardTitle>
+                <h2 className="text-lg font-semibold leading-tight">
+                  {pt.dashboard.actions.generatorTitle}
+                </h2>
                 <CardDescription>{pt.dashboard.actions.generatorDescription}</CardDescription>
               </CardHeader>
             </Card>

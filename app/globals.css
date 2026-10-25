@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "../tailwind.config.cjs";
 
 /*
@@ -93,17 +93,31 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
     font-size: 1rem;
     line-height: 1.6;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-title;
     font-stretch: 88%;
     letter-spacing: -0.01em;
     line-height: 1.15;
     text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd,
+  figcaption {
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -156,7 +170,8 @@
   }
 
   .transition-smooth {
-    transition-property: color, background-color, border-color, text-decoration-color, opacity, transform;
+    transition-property:
+      color, background-color, border-color, text-decoration-color, opacity, transform;
     transition-duration: 180ms;
     transition-timing-function: var(--ease-out-quint);
   }

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -30,15 +30,20 @@ export function StatsCard({
           compact ? 'px-4 pb-1 pt-3' : 'pb-1'
         )}
       >
-        <CardTitle
-          className={cn('font-medium text-muted-foreground', compact ? 'text-xs' : 'text-sm')}
-        >
+        <p className={cn('font-medium text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>
           {title}
-        </CardTitle>
+        </p>
         {icon ? <span className="shrink-0 text-muted-foreground">{icon}</span> : null}
       </CardHeader>
       <CardContent className={cn(compact && 'p-4 pt-0')}>
-        <div className={cn('font-condensed font-semibold tabular-nums', compact ? 'text-2xl' : 'text-3xl')}>{value}</div>
+        <div
+          className={cn(
+            'font-condensed font-semibold tabular-nums',
+            compact ? 'text-2xl' : 'text-3xl'
+          )}
+        >
+          {value}
+        </div>
         {description ? <p className="mt-1 text-xs text-muted-foreground">{description}</p> : null}
       </CardContent>
     </Card>

@@ -307,7 +307,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         </section>
       ) : null}
 
-      <section aria-labelledby="regras" className="max-w-[75ch] space-y-3">
+      <section aria-labelledby="regras" className="max-w-prose space-y-3">
         <SectionHeading id="regras">Como funciona a Mega da Virada</SectionHeading>
         <p>
           Pelas regras da CAIXA, a Mega da Virada é o último concurso do ano com final 0 ou 5,
