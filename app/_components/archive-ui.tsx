@@ -4,7 +4,7 @@ import { LotteryBall } from '@/components/lottery-ball';
 import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
-import { countLabel, dezena, formatDateInBrasilia } from '@/app/_lib/format';
+import { countLabel, dezena, formatDateInBrasilia, frequencyBand } from '@/app/_lib/format';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -14,7 +14,9 @@ const focusRing =
  * these pages have no loading boundary, so a viewport prefetch renders the whole
  * page and spends one API call of the visitor's quota per visible link.
  */
-export function ArchiveLink(props: Omit<ComponentProps<typeof Link>, 'prefetch'>): React.JSX.Element {
+export function ArchiveLink(
+  props: Omit<ComponentProps<typeof Link>, 'prefetch'>
+): React.JSX.Element {
   return <Link {...props} prefetch={false} />;
 }
 
@@ -29,6 +31,13 @@ export const textLinkClass = cn(
   'rounded-sm font-medium text-primary underline underline-offset-4',
   focusRing
 );
+
+const FREQUENCY_SHADES = ['bg-card', 'bg-primary/10', 'bg-primary/20', 'bg-primary/35'] as const;
+
+/** Cartogram cell shade: darker for numbers drawn more often within [min, max]. */
+export function frequencyShadeClass(value: number, min: number, max: number): string {
+  return FREQUENCY_SHADES[frequencyBand(value, min, max)];
+}
 
 /** Visible trail; the same items feed the BreadcrumbList JSON-LD. */
 export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): React.JSX.Element {
@@ -54,7 +63,9 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
                   >
                     {item.name}
                   </ArchiveLink>
-                  <span aria-hidden className="text-border">/</span>
+                  <span aria-hidden className="text-border">
+                    /
+                  </span>
                 </>
               )}
             </li>
@@ -66,11 +77,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
 }
 
 export function PageTitle({ children }: { children: ReactNode }): React.JSX.Element {
-  return (
-    <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">
-      {children}
-    </h1>
-  );
+  return <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">{children}</h1>;
 }
 
 export function NumberBallLink({
@@ -111,8 +118,12 @@ export function ArchiveFreshness({ archive }: { archive: ArchiveState }): React.
   }
   return (
     <p className="text-sm text-muted-foreground">
-      Fonte: CAIXA Econômica Federal. Dados até o concurso {archive.lastContestNumber} ({formatDate(archive.lastDrawDate)})
-      {archive.lastModified ? `, base atualizada em ${formatDateInBrasilia(archive.lastModified)}` : ''}.
+      Fonte: CAIXA Econômica Federal. Dados até o concurso {archive.lastContestNumber} (
+      {formatDate(archive.lastDrawDate)})
+      {archive.lastModified
+        ? `, base atualizada em ${formatDateInBrasilia(archive.lastModified)}`
+        : ''}
+      .
     </p>
   );
 }
@@ -131,12 +142,7 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
     facts.length % 3 === 0 && 'lg:grid-cols-3'
   );
   return (
-    <dl
-      className={cn(
-        'grid gap-px border-y-2 border-y-primary bg-border',
-        columns
-      )}
-    >
+    <dl className={cn('grid gap-px border-y-2 border-y-primary bg-border', columns)}>
       {facts.map((fact) => (
         <div key={fact.term} className="flex flex-col gap-1 bg-background px-1 py-4 sm:px-4">
           <dt className="text-sm text-muted-foreground">{fact.term}</dt>
@@ -148,7 +154,13 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
   );
 }
 
-export function SectionHeading({ id, children }: { id: string; children: ReactNode }): React.JSX.Element {
+export function SectionHeading({
+  id,
+  children,
+}: {
+  id: string;
+  children: ReactNode;
+}): React.JSX.Element {
   return (
     <h2 id={id} className="text-balance font-title text-2xl font-semibold sm:text-3xl">
       {children}
@@ -193,10 +205,18 @@ export function DrawsTable({
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
-            <th scope="col" className={thClass}>Concurso</th>
-            <th scope="col" className={thClass}>Data</th>
-            <th scope="col" className={thClass}>Dezenas</th>
-            <th scope="col" className={thClass}>Sena</th>
+            <th scope="col" className={thClass}>
+              Concurso
+            </th>
+            <th scope="col" className={thClass}>
+              Data
+            </th>
+            <th scope="col" className={thClass}>
+              Dezenas
+            </th>
+            <th scope="col" className={thClass}>
+              Sena
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -263,7 +283,9 @@ export function Pager({
       {previous ? (
         <ArchiveLink href={previous.href} className={linkClass}>
           <span className="text-xs text-muted-foreground">← {previous.label}</span>
-          <span className="font-condensed text-xl font-semibold tabular-nums">{previous.detail}</span>
+          <span className="font-condensed text-xl font-semibold tabular-nums">
+            {previous.detail}
+          </span>
         </ArchiveLink>
       ) : (
         <span aria-hidden />

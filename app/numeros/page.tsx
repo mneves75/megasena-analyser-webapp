@@ -5,7 +5,7 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatNumber } from '@/lib/utils';
 import { loadNumbersIndex } from '@/app/_lib/archive';
-import { countLabel, dezena, formatPercentPtBr, frequencyBand, joinPtBr } from '@/app/_lib/format';
+import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
 import {
   AnswerSummary,
   ArchiveFreshness,
@@ -16,6 +16,7 @@ import {
   SectionHeading,
   TableFrame,
   cellClass,
+  frequencyShadeClass,
   inlineLinkClass,
   tableClass,
   thClass,
@@ -30,8 +31,6 @@ const BREADCRUMBS: BreadcrumbItem[] = [
   { name: 'Números', url: PATH },
 ];
 const TIES_LISTED = 5;
-/** Cartogram shades by frequency band, lightest to darkest. */
-const FREQUENCY_SHADES = ['bg-card', 'bg-primary/10', 'bg-primary/20', 'bg-primary/35'] as const;
 const RANKED_SHOWN = 10;
 
 interface RankedEntry {
@@ -180,7 +179,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                   href={`/numeros/${summary.number}`}
                   className={cn(
                     'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-                    FREQUENCY_SHADES[frequencyBand(summary.frequency, minFrequency, maxFrequency)]
+                    frequencyShadeClass(summary.frequency, minFrequency, maxFrequency)
                   )}
                 >
                   <span className="font-condensed text-xl font-semibold tabular-nums">

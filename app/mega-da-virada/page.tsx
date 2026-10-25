@@ -19,6 +19,7 @@ import {
   SectionHeading,
   TableFrame,
   cellClass,
+  frequencyShadeClass,
   inlineLinkClass,
   tableClass,
   textLinkClass,
@@ -133,6 +134,9 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
   const first = editions.at(-1) ?? null;
   const everyEditionHadWinners = editions.every((edition) => edition.draw.sena.winners > 0);
   const counts = countNumbers(editions.map((edition) => edition.draw));
+  const countValues = counts.map((entry) => entry.count);
+  const minCount = Math.min(...countValues);
+  const maxCount = Math.max(...countValues);
   const mostDrawn = frequencySentence(
     groupByCount(counts),
     counts.filter((entry) => entry.count === 0).map((entry) => entry.number)
@@ -273,21 +277,24 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
           {mostDrawn ? <p className="max-w-[70ch]">{mostDrawn}</p> : null}
           <ul
             aria-label="Vezes que cada dezena saiu na Mega da Virada"
-            className="grid grid-cols-5 gap-2 sm:grid-cols-10"
+            className="grid grid-cols-5 border-l border-t border-border sm:grid-cols-10"
           >
             {counts.map(({ number, count }) => (
               <li
                 key={number}
-                className="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-card px-1 py-2"
+                className={cn(
+                  'flex flex-col items-center gap-0.5 border-b border-r border-border py-3',
+                  frequencyShadeClass(count, minCount, maxCount)
+                )}
               >
                 <ArchiveLink
                   href={`/numeros/${number}`}
-                  className="font-semibold tabular-nums text-foreground underline-offset-4 hover:underline"
+                  className="rounded-sm font-condensed text-xl font-semibold tabular-nums text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={`Dezena ${dezena(number)}: saiu ${timesLabel(count)} na Mega da Virada`}
                 >
                   {dezena(number)}
                 </ArchiveLink>
-                <span aria-hidden className="text-xs tabular-nums text-muted-foreground">
+                <span aria-hidden className="text-xs tabular-nums">
                   {count}×
                 </span>
               </li>
