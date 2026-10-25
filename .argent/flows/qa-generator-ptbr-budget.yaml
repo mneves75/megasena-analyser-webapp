@@ -44,7 +44,7 @@ steps:
       condition: visible
       selector:
         text: R$ 50,50
-        role: span
+        role: dd
   - scroll-to: { target: { text: Gerar Apostas, role: button } }
   - tap:
       text: Gerar Apostas

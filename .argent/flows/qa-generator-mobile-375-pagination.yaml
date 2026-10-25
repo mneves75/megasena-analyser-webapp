@@ -42,7 +42,7 @@ steps:
       condition: visible
       selector:
         text: Resumo das Apostas
-        role: h3
+        role: h2
   - tool: await-ui-element
     args:
       condition: visible
@@ -58,7 +58,7 @@ steps:
       condition: visible
       selector:
         text: Exibindo 21 a 40 de 200 apostas
-        role: div
+        role: p
   - tap:
       text: Próxima
   - tap:
@@ -68,4 +68,4 @@ steps:
       condition: visible
       selector:
         text: Exibindo 61 a 80 de 200 apostas
-        role: div
+        role: p

@@ -116,7 +116,9 @@ export function BetList({ result, className }: BetListProps) {
 
       {totalPages > 1 && (
         <nav aria-label="Páginas de apostas" className="space-y-3">
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          {/* Mobile: Anterior/Próxima share the first row and the page numbers take a
+              full row, so the pager keeps one height on every page. */}
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:flex-nowrap sm:justify-center">
             <Button
               variant="outline"
               size="sm"
@@ -126,7 +128,7 @@ export function BetList({ result, className }: BetListProps) {
               {pt.betGenerator.summary.previous}
             </Button>
 
-            <div className="flex flex-wrap items-center justify-center gap-1">
+            <div className="order-last flex w-full items-center justify-center gap-1 sm:order-none sm:w-auto">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                 // Show first, last, current, and pages around current
                 const showPage =
