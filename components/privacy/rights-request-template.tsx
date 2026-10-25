@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface RightsRequestTemplateProps {
   title: string;
@@ -38,18 +39,18 @@ export function RightsRequestTemplate({
   return (
     <section className="min-w-0 space-y-3">
       <h2>{title}</h2>
-      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words border-y border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+      <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words border-y border-border py-3 text-xs text-muted-foreground">
         {body}
       </pre>
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => void handleCopy()}
           aria-live="polite"
-          className="inline-flex min-h-11 items-center rounded-md border border-input bg-background px-4 font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {copied ? copiedLabel : copyLabel}
-        </button>
+        </Button>
         <a href={mailtoHref} className="min-w-0 break-all">
           {channel}
         </a>

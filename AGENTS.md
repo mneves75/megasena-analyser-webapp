@@ -298,8 +298,8 @@ README.md for the isolated local production fixture and two-pass replay.
   color classes. Edit the design system (`app/globals.css`, `tailwind.config.cjs`)
   before components. `lang="pt-BR"` in `app/layout.tsx`.
 - **`--primary` and `--destructive` are dual-purpose tokens**: each is used as a
-  surface (`bg-*` with its `-foreground`) *and* as text (`text-primary` on cards,
-  `text-destructive` in the footer). Those two uses pull contrast in opposite
+  surface (`bg-*` with its `-foreground`) *and* as text (`text-primary` in links and
+  ranked figures, `text-destructive` in form errors). Those two uses pull contrast in opposite
   directions, so changing lightness to fix one silently breaks the other. Check both
   against 4.5:1 before touching them, and prefer adjusting the paired `-foreground`
   over flattening the hue.

@@ -41,7 +41,7 @@ export default function GeneratorPage() {
           </span>
           <ChevronDown
             aria-hidden
-            className="ml-auto h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+            className="ml-auto h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
           />
         </summary>
         <p className="pb-3 text-sm leading-6 text-muted-foreground">

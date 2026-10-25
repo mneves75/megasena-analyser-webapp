@@ -10,7 +10,12 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { pt } from '@/lib/i18n';
 import { generateFAQSchema } from '@/lib/seo/schemas';
 import { buildPageMetadata } from '@/lib/seo/metadata';
-import { ArchiveLink, RandomnessNote, textLinkClass } from '@/app/_components/archive-ui';
+import {
+  ArchiveLink,
+  RandomnessNote,
+  SourceLine,
+  textLinkClass,
+} from '@/app/_components/archive-ui';
 import { NumberField } from '@/components/number-field';
 
 const homeFaqs = [
@@ -272,10 +277,9 @@ function LatestDrawFigure({
           Ganhadores e rateio do concurso {draw.contestNumber}
         </ArchiveLink>
       </div>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Fonte: CAIXA Econômica Federal
-        {contestNumber !== null ? `, concursos 1 a ${contestNumber}` : ''}.
-      </p>
+      <div className="mt-3">
+        <SourceLine through={contestNumber} />
+      </div>
     </figure>
   );
 }
