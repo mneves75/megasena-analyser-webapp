@@ -45,13 +45,13 @@ function unique(values: Array<string | undefined>): string[] {
 
 export function summarizeFindings(findings: GitleaksFinding[]): {
   findings: number;
-  commits: number;
+  commitsWithFindings: number;
   rules: string[];
   files: string[];
 } {
   return {
     findings: findings.length,
-    commits: unique(findings.map((finding) => finding.Commit)).length,
+    commitsWithFindings: unique(findings.map((finding) => finding.Commit)).length,
     rules: unique(findings.map((finding) => finding.RuleID)),
     files: unique(findings.map((finding) => finding.File)),
   };
@@ -195,6 +195,7 @@ async function main(): Promise<void> {
     ])
   );
   const summary = {
+    commitsScanned: commits,
     ...summarizeFindings(findings),
     reachability: buildReachabilitySummary(findings, refsByCommit),
   };

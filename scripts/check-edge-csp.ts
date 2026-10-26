@@ -584,6 +584,22 @@ export async function checkEdgeCsp(options: EdgeCspOptions): Promise<CspCheck[]>
     false
   );
 
+  // An edge rate-limit answers with its own HTML 429 and none of the app's headers;
+  // judging its CSP would report a missing policy that the app never failed to send.
+  const limited = [page, api].find((snapshot) => snapshot.status === 429);
+  if (limited) {
+    const retryAfter = limited.headers.get('retry-after');
+    return [
+      {
+        ok: false,
+        title: 'Borda limitou a requisição',
+        problems: ['A borda respondeu HTTP 429; a CSP não foi avaliada.'],
+        evidence: [`server=${limited.headers.get('server') ?? '(ausente)'}`],
+        actions: [`repita depois de ${retryAfter ? `${retryAfter} s` : 'alguns segundos'}, sem rajadas de requisições.`],
+      },
+    ];
+  }
+
   const checks = [
     validatePageCsp(page.headers.get('content-security-policy')),
     validateApiCsp(api.headers.get('content-security-policy')),
