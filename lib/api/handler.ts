@@ -445,7 +445,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     '/api/dashboard': async (_req, ctx) => {
       ctx.audit = { event: 'api.dashboard_read' };
       try {
-        const cacheKey = buildResponseCacheKey(ctx.route);
+        const cacheKey = buildResponseCacheKey(ctx.route, {}, options.appVersion);
         const drawsVersion = getDrawsVersion();
         const body = analyticsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
           const stats = new StatisticsEngine();
@@ -507,7 +507,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
           sum: includeSum,
           streaks: includeStreaks,
           prize: includePrizeCorr,
-        });
+        }, options.appVersion);
         const drawsVersion = getDrawsVersion();
         const body = analyticsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
           const stats = new StatisticsEngine();
@@ -653,7 +653,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
         const cacheKey = buildResponseCacheKey(ctx.route, {
           period,
           numbers: canonicalNumbers.join(','),
-        });
+        }, options.appVersion);
         const drawsVersion = getDrawsVersion();
         const body = trendsResponseCache.getOrCompute(cacheKey, drawsVersion, () => {
           const timeSeriesEngine = new TimeSeriesEngine();
@@ -692,7 +692,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
           query.kind === 'contest'
             ? JSON.stringify(engine.getDrawPage(query.contest))
             : archiveResponseCache.getOrCompute(
-                buildResponseCacheKey(ctx.route, query.kind === 'year' ? { year: query.year } : { view: query.kind }),
+                buildResponseCacheKey(ctx.route, query.kind === 'year' ? { year: query.year } : { view: query.kind }, options.appVersion),
                 getDrawsVersion(),
                 () => query.kind === 'year'
                   ? engine.getYearArchive(query.year)
@@ -729,7 +729,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
 
         const cacheKey = buildResponseCacheKey(
           ctx.route,
-          query.kind === 'number' ? { n: query.number } : {}
+          query.kind === 'number' ? { n: query.number } : {},
+          options.appVersion
         );
         const body = archiveResponseCache.getOrCompute(cacheKey, getDrawsVersion(), () => {
           const engine = new DrawArchiveEngine();
@@ -754,8 +755,11 @@ export function createApiHandler(options: ApiHandlerOptions) {
     '/api/sitemap': (_req, ctx) => {
       ctx.audit = { event: 'api.sitemap_read' };
       try {
-        const body = archiveResponseCache.getOrCompute(ctx.route, getDrawsVersion(),
-          () => new DrawArchiveEngine().getSitemapData());
+        const body = archiveResponseCache.getOrCompute(
+          buildResponseCacheKey(ctx.route, {}, options.appVersion),
+          getDrawsVersion(),
+          () => new DrawArchiveEngine().getSitemapData()
+        );
         return new Response(body, {
           headers: { 'Content-Type': 'application/json' },
         });
