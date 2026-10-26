@@ -51,10 +51,12 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 - `caixa-client.ts`: CAIXA integration with retry and progressive rate limiting
 - `response-cache.ts`: contest-response cache keyed by app version and draws revision
 - `lib/cloudflare/edge-cache.ts`: Worker Cache API layer for social images,
-  `sitemap.xml` and `llms.txt`, keyed by `APP_VERSION` and the draws revision;
-  requests with `Authorization` or `Cookie` bypass reads and writes. Bump
-  `APP_VERSION` (from `package.json`'s version) whenever renderers change. HTML is
-  never cached (per-request CSP nonce).
+  `sitemap.xml`, `llms.txt` and canonical archive HTML, keyed by `APP_VERSION` and
+  the draws revision. HTML HITs rewrite the CSP nonce in headers and body; clients
+  receive `no-store`. Compressed HTML and unkeyed `Vary` responses are not stored.
+  Authorization, cookies, framework navigation, range/conditional headers and
+  `_rsc` bypass reads and writes. Bump `APP_VERSION` (from `package.json`'s version)
+  whenever renderers change.
 
 ### Security (`lib/security/`)
 

@@ -27,11 +27,15 @@ API contract; `server.ts` is the local/VPS Bun adapter. New API routes belong in
 the shared handler. Database and log contexts are scoped per operation.
 `lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
 in the Worker Cache API keyed by `APP_VERSION` and the draws revision
-(`MegaSenaData.drawsVersion`), only for public 200 responses. Requests carrying
-`Authorization` or `Cookie` bypass cache reads and writes. The API response cache
+(`MegaSenaData.drawsVersion`), only for public 200 responses. Canonical archive HTML
+at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` also uses this cache;
+each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
+sent to clients remains `no-store`. Compressed HTML and unkeyed `Vary` responses
+are not stored. Requests carrying `Authorization`, `Cookie`, framework navigation,
+range or conditional headers, or `_rsc`, bypass reads and writes. The API response cache
 also includes the handler's app version in its keys. **Bump `APP_VERSION` whenever
 renderers change**, even if draw data is unchanged; the Worker binding comes from
-`package.json`'s version. Never cache HTML: it carries the per-request CSP nonce.
+`package.json`'s version. Never replay a stored HTML nonce to a client.
 
 `vite.config.ts` selects the Durable Object database and private server-side API
 transport. Public headers cannot authorize internal RPC. `cloudflare.config.ts`
