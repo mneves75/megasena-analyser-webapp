@@ -96,6 +96,7 @@ export async function withDrawsEdgeCache(
   const url = new URL(request.url);
   const htmlArchive = isHtmlArchiveRoute(url);
   if (request.method !== 'GET' || (!htmlArchive && !isDeterministicRoute(url))
+    || (htmlArchive && url.search !== '')
     || request.headers.has('Authorization') || request.headers.has('Cookie')
     || [...request.headers.keys()].some(name => FRAMEWORK_HEADER.test(name) || /^(?:range$|if-)/i.test(name))
     || url.searchParams.has('_rsc')) return render();
@@ -104,7 +105,7 @@ export async function withDrawsEdgeCache(
   try {
     const version = await drawsVersion();
     if (version === null) return render();
-    // Path only: these routes ignore the query, so arbitrary parameters cannot add entries.
+    // HTML is queryless here; deterministic image/index routes ignore query parameters.
     const search = new URLSearchParams({ build: buildVersion, draws: version });
     key = new Request(`${url.origin}${url.pathname}?${search}`);
     const cached = await cache.match(key);

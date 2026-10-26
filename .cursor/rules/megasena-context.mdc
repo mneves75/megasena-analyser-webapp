@@ -55,7 +55,9 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 - `response-cache.ts`: contest-response cache keyed by app version and draws revision
 - `lib/cloudflare/edge-cache.ts`: Worker Cache API layer for social images,
   `sitemap.xml`, `llms.txt` and canonical archive HTML, keyed by `APP_VERSION` and
-  the draws revision. HTML HITs rewrite the CSP nonce in headers and body; clients
+  the draws revision. HTML requests with any nonempty query bypass reads and writes;
+  query-independent image/index routes retain path-only keys.
+  HTML HITs rewrite the CSP nonce in headers and body; clients
   receive `no-store`. Compressed HTML and unkeyed `Vary` responses are not stored.
   Authorization, cookies, framework navigation, range/conditional headers and
   `_rsc` bypass reads and writes. Bump `APP_VERSION` (from `package.json`'s version)

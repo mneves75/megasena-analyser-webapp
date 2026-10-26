@@ -168,16 +168,19 @@ describe('Worker edge cache for deterministic draw-derived routes', () => {
     expect(cache.entries.size).toBe(0);
   });
 
-  it('ignores query strings so cache-busting parameters cannot multiply entries', async () => {
-    const { cache, deps, flush } = setup();
-    const render = image();
-    await withDrawsEdgeCache(new Request('https://example.com/opengraph-image?a=1'), render, deps);
-    await flush();
-    const hit = await withDrawsEdgeCache(new Request('https://example.com/opengraph-image?b=2'), render, deps);
-    expect(render).toHaveBeenCalledTimes(1);
-    expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
-    expect(cache.entries.size).toBe(1);
-  });
+  it.each(['/opengraph-image', '/sitemap.xml', '/llms.txt'])(
+    '%s ignores query strings so cache-busting parameters cannot multiply entries', async (path) => {
+      const { cache, deps, flush } = setup();
+      const render = image();
+      await withDrawsEdgeCache(new Request(`https://example.com${path}?a=1`), render, deps);
+      await flush();
+      const hit = await withDrawsEdgeCache(new Request(`https://example.com${path}?b=2`), render, deps);
+      expect(render).toHaveBeenCalledTimes(1);
+      expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+      expect(await hit.text()).toBe('png-1');
+      expect(cache.entries.size).toBe(1);
+    }
+  );
 
   it('never stores private, no-store, cookie-bearing or unsuccessful responses', async () => {
     const responses = [
@@ -346,12 +349,12 @@ describe('Worker edge cache for archive HTML', () => {
     expect(cache.entries.size).toBe(2);
   });
 
-  it('keys HTML by path, build and revision while ignoring query strings', async () => {
+  it('keys queryless HTML by path, build and revision', async () => {
     const { cache, deps, flush } = setup();
     const render = html();
-    await withDrawsEdgeCache(new Request('https://example.com/resultados/2025?a=1'), render, deps);
+    await withDrawsEdgeCache(new Request('https://example.com/resultados/2025'), render, deps);
     await flush();
-    const hit = await withDrawsEdgeCache(new Request('https://example.com/resultados/2025?b=2'), render, deps);
+    const hit = await withDrawsEdgeCache(new Request('https://example.com/resultados/2025'), render, deps);
     expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
     const miss = await withDrawsEdgeCache(new Request('https://example.com/resultados/2025'), render, { ...deps, buildVersion: 'next-build' });
     await flush();
@@ -359,6 +362,43 @@ describe('Worker edge cache for archive HTML', () => {
     expect(render).toHaveBeenCalledTimes(2);
     expect(cache.entries.size).toBe(2);
   });
+
+  it.each(['/concurso/3005', '/numeros/10', '/resultados/2025'])(
+    'renders each query navigation state at %s without reading or writing the HTML cache', async (path) => {
+      for (const warm of [false, true]) {
+        const { cache, deps, flush } = setup();
+        const base = `https://example.com${path}`;
+        if (warm) {
+          await withDrawsEdgeCache(new Request(base), html(), deps);
+          await flush();
+        }
+        deps.drawsVersion.mockClear();
+        const match = vi.spyOn(cache, 'match');
+        const put = vi.spyOn(cache, 'put');
+        // Mirrors the navigation payload serialized by vinext's buildHeadInjectionHtml.
+        const render = vi.fn(async (url: URL) => new Response(`${HTML_BODY}<script nonce="${STORED_NONCE}">self.bootstrap=${JSON.stringify({
+          nav: { pathname: url.pathname, searchParams: [...url.searchParams.entries()] },
+        })};</script>`, { headers: HTML_HEADERS }));
+        const results = [];
+        for (const query of ['?qa=first', '?qa=second', '?qa=', '?qa', '?=empty-key', '?=', '?&']) {
+          const url = new URL(base + query);
+          const response = await withDrawsEdgeCache(new Request(url), () => render(url), deps);
+          await flush();
+          results.push({
+            body: await response.text(), cacheStatus: response.headers.get('X-Megasena-Cache'),
+            nav: { pathname: url.pathname, searchParams: [...url.searchParams.entries()] },
+          });
+        }
+        for (const result of results) expect(result.body).toContain(JSON.stringify({ nav: result.nav }));
+        for (const result of results) expect(result.cacheStatus).toBeNull();
+        expect(render).toHaveBeenCalledTimes(results.length);
+        expect(deps.drawsVersion).not.toHaveBeenCalled();
+        expect(match).not.toHaveBeenCalled();
+        expect(put).not.toHaveBeenCalled();
+        expect(cache.entries.size).toBe(warm ? 1 : 0);
+      }
+    }
+  );
 
   it.each(['Cookie', 'Authorization', 'rsc', 'next-router-prefetch', 'next-router-state-tree',
     'next-router-segment-prefetch', 'next-url', 'x-vinext-rsc-render-mode', 'x-vinext-interception-context',

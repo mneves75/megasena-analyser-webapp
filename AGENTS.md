@@ -28,8 +28,9 @@ the shared handler. Database and log contexts are scoped per operation.
 `lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
 in the Worker Cache API keyed by `APP_VERSION` and the draws revision
 (`MegaSenaData.drawsVersion`), only for public 200 responses. Canonical archive HTML
-at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` also uses this cache;
-each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
+at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` uses this cache only
+without a query string; any nonempty HTML query bypasses reads and writes.
+Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
 sent to clients remains `no-store`. Compressed HTML and unkeyed `Vary` responses
 are not stored. Requests carrying `Authorization`, `Cookie`, framework navigation,
 range or conditional headers, or `_rsc`, bypass reads and writes. The API response cache
