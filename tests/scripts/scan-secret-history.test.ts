@@ -19,7 +19,7 @@ describe('scripts/scan-secret-history.ts', () => {
   it('resume achados sem expor valores de segredo', () => {
     expect(summarizeFindings(findings)).toEqual({
       findings: 3,
-      commits: 2,
+      commitsWithFindings: 2,
       rules: ['generic-api-key', 'private-key'],
       files: ['.secrets.baseline', 'docs/setup.md'],
     });

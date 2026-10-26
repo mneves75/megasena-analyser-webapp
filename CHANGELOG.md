@@ -7,6 +7,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+- Ferramentas: `security:csp:edge` reconhece o HTTP 429 de rate limit da borda e pede nova tentativa, em vez de reportar "CSP da página ausente".
+- Ferramentas: o resumo de `security:secrets:history` mostra `commitsScanned` e renomeia `commits` para `commitsWithFindings`, que era lido como commits varridos.
+
 ## [1.19.0] - 2026-10-25
 
 Redesenho completo do site como um anuário estatístico da Mega-Sena.

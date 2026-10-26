@@ -711,4 +711,24 @@ describe('scripts/check-edge-csp.ts', () => {
       evidence: [],
     });
   });
+
+  it('reporta o 429 da borda como limitação, não como CSP ausente', async () => {
+    const fetchImpl: typeof fetch = async () =>
+      new Response('<html>rate limited</html>', {
+        status: 429,
+        headers: { 'content-type': 'text/html', 'retry-after': '10' },
+      });
+
+    const checks = await checkEdgeCsp({ baseUrl: 'https://edge.example', timeoutMs: 1000, fetchImpl });
+
+    expect(checks).toEqual([
+      expect.objectContaining({
+        ok: false,
+        title: 'Borda limitou a requisição',
+        problems: [expect.stringContaining('HTTP 429')],
+      }),
+    ]);
+    expect(JSON.stringify(checks)).not.toContain('CSP da página ausente');
+    expect(checks[0]?.actions?.join(' ')).toContain('10 s');
+  });
 });
