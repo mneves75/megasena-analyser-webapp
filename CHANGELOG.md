@@ -7,6 +7,18 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.19.2] - Não lançado
+
+Integra as branches pendentes de cache e dependências, preservando as correções mais recentes de `main`.
+
+- Cache Worker de imagens sociais, sitemap, `llms.txt` e páginas canônicas de concurso, número e ano, invalidado pela versão do aplicativo e pela revisão dos sorteios.
+- HTML em cache recebe nonce CSP novo nos headers e no corpo completo, incluindo o texto RSC inline. O cliente continua recebendo `no-store`; headers de tamanho e validação do corpo anterior saem após a reescrita.
+- Proteção de variantes de query: páginas HTML com qualquer query string ignoram o cache; páginas sem query continuam elegíveis. Imagens e índices independentes de query mantêm suas chaves por caminho.
+- Requisições com cookies, autenticação, seletores de navegação do framework, range/condicionais ou `_rsc` ignoram o cache. HTML comprimido e respostas com variantes `Vary` fora da chave também ficam fora dele.
+- A API mantém o cache limitado das listagens compartilhadas e os concursos individuais sem cache; as chaves passam a incluir a versão do aplicativo. O merge de Dependabot preserva `baseline-browser-mapping` em `2.11.30` e os controles do pnpm.
+- Staging usa `DAILY_REFRESH_ENABLED=0`, com Crons explicitamente vazios. A ativação cancela alarmes nativos existentes; entregas atrasadas não consultam a CAIXA, não gravam nem reagendam. O RPC privado de refresh manual permanece disponível, sem retries autônomos quando desabilitado.
+- Regressões cobrem compressão, headers após reescrita, variantes de navegação, cancelamento de alarmes, entregas atrasadas e refresh manual, preservando as provas de retry e recuperação do agendador de produção.
+
 ## [1.19.1] - 2026-10-26
 
 Ferramentas de verificação: os dois alarmes falsos que atrapalharam os releases 1.18 e 1.19.

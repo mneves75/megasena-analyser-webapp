@@ -94,7 +94,14 @@ export class TestData extends DurableObject {
 }
 
 export class TestRetryData extends MegaSenaData {
-  async retryAlarm(): Promise<void> { await this.alarm(); }
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    super(ctx, { ...env, DAILY_REFRESH_ENABLED: '1' });
+  }
+  private makeDue(): void {
+    this.ctx.storage.sql.exec('UPDATE ingestion_schedule SET next_due_at = ? WHERE id = 1', Date.now() - 1);
+  }
+  async refreshDue() { this.makeDue(); return this.refresh(); }
+  async retryAlarm(): Promise<void> { this.makeDue(); await this.alarm(); }
   async failNextAlarmWrite(): Promise<void> {
     await this.ctx.storage.deleteAlarm();
     const setAlarm = this.ctx.storage.setAlarm.bind(this.ctx.storage);
@@ -147,16 +154,17 @@ const worker = {
       const retry = env.RETRY.getByName('retries');
       await retry.insertExpiredEvents();
       let rejected = false;
-      try { await retry.refresh(); } catch { rejected = true; }
+      try { await retry.refreshDue(); } catch { rejected = true; }
       assert(rejected, 'refresh outage must reject');
       assert((await retry.status()).ingestion?.['status'] === 'failed', 'persisted failure status');
       assert((await retry.status()).auditRows === 0 && (await retry.status()).logRows === 0, 'retention runs during CAIXA outages');
       assert((await retry.status()).ingestion?.['retry_count'] === 1 && await retry.alarmTime() !== null, 'first persisted alarm retry');
       for (let attempt = 0; attempt < 3; attempt++) await retry.retryAlarm();
       assert((await retry.status()).ingestion?.['retry_count'] === 3, 'bounded retry count');
-      assert(await retry.alarmTime() === null, 'no alarm after retry budget exhaustion');
+      const afterExhaustion = await retry.alarmTime();
+      assert(afterExhaustion !== null && afterExhaustion > Date.now(), 'enabled scheduler preserves its next daily alarm after retry budget exhaustion');
       const schedulingFailure = env.RETRY.getByName('scheduling-failure');
-      try { await schedulingFailure.refresh(); } catch { /* Upstream outage schedules the first retry. */ }
+      try { await schedulingFailure.refreshDue(); } catch { /* Upstream outage schedules the first retry. */ }
       await schedulingFailure.failNextAlarmWrite();
       rejected = false;
       try { await schedulingFailure.retryAlarm(); } catch { rejected = true; }
@@ -166,12 +174,12 @@ const worker = {
       assert((await schedulingFailure.status()).ingestion?.['retry_count'] === 2 && await schedulingFailure.alarmTime() !== null, 'platform retry recovers alarm scheduling');
       const retention = env.RETENTION.getByName('configured');
       await retention.insertRetainedEvents();
-      try { await retention.refresh(); } catch { /* Retention also runs during an upstream outage. */ }
+      try { await retention.refreshDue(); } catch { /* Retention also runs during an upstream outage. */ }
       const retained = await retention.status();
       assert(retained.auditRows === 1 && retained.logRows === 1, 'configured retention preserves eligible history and deletes expired rows');
       const disabled = env.DISABLED_RETENTION.getByName('disabled');
       await disabled.insertRetainedEvents();
-      try { await disabled.refresh(); } catch { /* Invalid/disabled settings must never trigger fallback deletion. */ }
+      try { await disabled.refreshDue(); } catch { /* Invalid/disabled settings must never trigger fallback deletion. */ }
       const unpruned = await disabled.status();
       assert(unpruned.auditRows === 2 && unpruned.logRows === 2, 'disabled or invalid retention preserves records like Bun');
       return Response.json({ pass: true, ...result, objectIsolation: true, publicSeedDraws: initial.draws,

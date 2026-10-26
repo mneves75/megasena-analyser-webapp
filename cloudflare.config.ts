@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
         ALLOWED_ORIGINS: bindings.text(allowedOrigins ?? ''),
       }),
       BOOTSTRAP_PUBLIC_SEED: bindings.text('1'),
-      DAILY_REFRESH_ENABLED: bindings.text('1'),
+      DAILY_REFRESH_ENABLED: bindings.text(isProduction ? '1' : '0'),
       AUDIT_RETENTION_DAYS: bindings.text(process.env[isProduction ? 'CLOUDFLARE_PRODUCTION_AUDIT_RETENTION_DAYS' : 'CLOUDFLARE_STAGING_AUDIT_RETENTION_DAYS'] ?? '400'),
       LOG_RETENTION_DAYS: bindings.text(process.env[isProduction ? 'CLOUDFLARE_PRODUCTION_LOG_RETENTION_DAYS' : 'CLOUDFLARE_STAGING_LOG_RETENTION_DAYS'] ?? '30'),
       TRUSTED_CLIENT_IP_HEADER: bindings.text('cf-connecting-ip'),

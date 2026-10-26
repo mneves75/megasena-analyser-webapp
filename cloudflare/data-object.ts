@@ -8,6 +8,7 @@ import {
   RATE_LIMIT_WINDOW_MS,
   type ApiPeer,
 } from '@/lib/api/handler';
+import { getDrawsVersion } from '@/lib/api/response-cache';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { runWithLogSink } from '@/lib/logger';
@@ -117,9 +118,9 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
     });
-    if (this.dailyRefreshEnabled) {
-      void ctx.blockConcurrencyWhile(() => this.initializeSchedule());
-    }
+    void ctx.blockConcurrencyWhile(() => this.dailyRefreshEnabled
+      ? this.initializeSchedule()
+      : ctx.storage.deleteAlarm());
   }
 
   private schedule(): RefreshSchedule | undefined {
@@ -172,6 +173,11 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     }));
   }
 
+  /** Cache key component for the Worker's edge cache; no request or visitor data. */
+  drawsVersion(): string | null {
+    return runWithDatabase(this.database, () => getDrawsVersion());
+  }
+
   importDraws(input: unknown): number {
     return runWithDatabase(this.database, () => importSeedDraws(this.database, input));
   }
@@ -205,7 +211,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
         this.database.prepare(`INSERT INTO ingestion_status (id, status, attempted_at) VALUES (1, 'running', CURRENT_TIMESTAMP)
           ON CONFLICT(id) DO UPDATE SET status = 'running', attempted_at = CURRENT_TIMESTAMP, error_message = NULL`).run();
         // Persist the next wake-up before network I/O, including the final daily successor.
-        await this.reserveSuccessor();
+        if (this.dailyRefreshEnabled) await this.reserveSuccessor();
         return this.schedule()?.revision;
       });
       let result: RefreshResult;
@@ -227,7 +233,6 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
         if (result.status === 'success') {
           this.database.prepare('UPDATE ingestion_status SET retry_count = 0 WHERE id = 1').run();
           if (this.dailyRefreshEnabled) await this.writeSchedule(nextDailyRefresh(Date.now()), 'daily');
-          else await this.ctx.storage.deleteAlarm();
         }
       });
       return result;
@@ -238,26 +243,23 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   private async reserveSuccessor(): Promise<void> {
     const row = this.database.prepare('SELECT retry_count FROM ingestion_status WHERE id = 1').get() as { retry_count: number };
     if (row.retry_count >= 3) {
-      if (this.dailyRefreshEnabled) await this.writeSchedule(nextDailyRefresh(Date.now()), 'daily');
-      else await this.ctx.storage.deleteAlarm();
+      await this.writeSchedule(nextDailyRefresh(Date.now()), 'daily');
       return;
     }
     this.database.prepare('UPDATE ingestion_status SET retry_count = retry_count + 1 WHERE id = 1').run();
     const due = Date.now() + 5 * 60 * 1000 * 2 ** row.retry_count;
-    if (this.dailyRefreshEnabled) await this.writeSchedule(due, 'retry');
-    else await this.ctx.storage.setAlarm(due);
+    await this.writeSchedule(due, 'retry');
   }
 
   override async alarm(): Promise<void> {
-    if (this.dailyRefreshEnabled) {
-      const schedule = this.schedule();
-      if (schedule && schedule.next_due_at > Date.now()) {
-        await this.ctx.storage.setAlarm(schedule.next_due_at);
-        return;
-      }
+    if (!this.dailyRefreshEnabled) return;
+    const schedule = this.schedule();
+    if (schedule && schedule.next_due_at > Date.now()) {
+      await this.ctx.storage.setAlarm(schedule.next_due_at);
+      return;
     }
     try {
-      const result = await (this.dailyRefreshEnabled ? this.refresh() : this.refreshWithRetry(false));
+      const result = await this.refresh();
       console.info('caixa.daily_refresh', result);
     }
     catch (error) {

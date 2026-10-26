@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { closeDatabase, getDatabase } from '@/lib/db';
+import { APP_INFO } from '@/lib/constants';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
@@ -19,7 +20,19 @@ describe('ContestResponseCache', () => {
     expect(buildResponseCacheKey('/api/statistics', { pairs: true })).not.toBe(
       buildResponseCacheKey('/api/statistics', { pairs: false })
     );
-    expect(buildResponseCacheKey('/api/dashboard')).toBe('/api/dashboard');
+    const key = new URL(buildResponseCacheKey('/api/dashboard'), 'https://example.com');
+    expect(key.pathname).toBe('/api/dashboard');
+    expect(key.searchParams.get('build')).toBe(APP_INFO.VERSION);
+  });
+
+  it('invalidates response entries when the release changes without a draws revision change', () => {
+    const cache = new ContestResponseCache();
+    const previous = buildResponseCacheKey('/api/dashboard', {}, 'release-1');
+    const current = buildResponseCacheKey('/api/dashboard', {}, 'release-2');
+
+    expect(cache.getOrCompute(previous, '3065', () => ({ renderer: 'old' }))).toBe('{"renderer":"old"}');
+    expect(cache.getOrCompute(current, '3065', () => ({ renderer: 'new' }))).toBe('{"renderer":"new"}');
+    expect(previous).not.toBe(current);
   });
 
   it('expires entries after the TTL even when the data version is unchanged', () => {

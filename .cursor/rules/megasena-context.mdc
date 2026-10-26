@@ -10,6 +10,9 @@ UI must say so. User-facing copy is pt-BR.
 
 `AGENTS.md` at the repo root is the canonical agent contract; this file is a summary.
 Worker retry count and alarm scheduling share one storage transaction. Preserve
+`DAILY_REFRESH_ENABLED=1` only in production; staging uses `0` and empty Crons.
+Disabled objects cancel existing native alarms, ignore stale deliveries and allow
+private one-off refresh without scheduling retries. Preserve
 configured audit/log retention per environment before migrating retained rows;
 defaults remain 400/30 days. See `docs/DEPLOY.md` for build inputs and acceptance.
 `lib/site-domains.json` owns canonical/alias hostnames. The Worker preserves alias
@@ -49,7 +52,16 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 ### API Layer (`lib/api/`)
 
 - `caixa-client.ts`: CAIXA integration with retry and progressive rate limiting
-- `response-cache.ts`: contest-response cache keyed by draws version
+- `response-cache.ts`: contest-response cache keyed by app version and draws revision
+- `lib/cloudflare/edge-cache.ts`: Worker Cache API layer for social images,
+  `sitemap.xml`, `llms.txt` and canonical archive HTML, keyed by `APP_VERSION` and
+  the draws revision. HTML requests with any nonempty query bypass reads and writes;
+  query-independent image/index routes retain path-only keys.
+  HTML HITs rewrite the CSP nonce in headers and body; clients
+  receive `no-store`. Compressed HTML and unkeyed `Vary` responses are not stored.
+  Authorization, cookies, framework navigation, range/conditional headers and
+  `_rsc` bypass reads and writes. Bump `APP_VERSION` (from `package.json`'s version)
+  whenever renderers change.
 
 ### Security (`lib/security/`)
 

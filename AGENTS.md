@@ -25,12 +25,27 @@ pages through vinext and routes `/api/*` through private binding `DATA` to
 `MegaSenaData` (`cloudflare/data-object.ts`). `lib/api/handler.ts` is the shared
 API contract; `server.ts` is the local/VPS Bun adapter. New API routes belong in
 the shared handler. Database and log contexts are scoped per operation.
+`lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
+in the Worker Cache API keyed by `APP_VERSION` and the draws revision
+(`MegaSenaData.drawsVersion`), only for public 200 responses. Canonical archive HTML
+at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` uses this cache only
+without a query string; any nonempty HTML query bypasses reads and writes.
+Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
+sent to clients remains `no-store`. Compressed HTML and unkeyed `Vary` responses
+are not stored. Requests carrying `Authorization`, `Cookie`, framework navigation,
+range or conditional headers, or `_rsc`, bypass reads and writes. The API response cache
+also includes the handler's app version in its keys. **Bump `APP_VERSION` whenever
+renderers change**, even if draw data is unchanged; the Worker binding comes from
+`package.json`'s version. Never replay a stored HTML nonce to a client.
 
 `vite.config.ts` selects the Durable Object database and private server-side API
 transport. Public headers cannot authorize internal RPC. `cloudflare.config.ts`
 defines distinct staging/production Worker names, required `IP_HASH_SECRET`, and
-`DAILY_REFRESH_ENABLED=1`. `MegaSenaData` owns the daily 06:00 UTC (03:00 Brasília)
-alarm. Seed bootstrap through contest 3065 is
+`DAILY_REFRESH_ENABLED=1` only in production (`0` in staging). Both targets declare
+empty Cron triggers. Disabling refresh cancels any native alarm at activation;
+stale alarm deliveries do no work. Private manual `refresh()` remains available
+without autonomous retries when disabled. `MegaSenaData` owns the production daily
+06:00 UTC (03:00 Brasília) alarm. Seed bootstrap through contest 3065 is
 empty-DB-only, not proof of current CAIXA data. Refresh validates before atomic
 append/cache updates, with at most three persisted alarm retries per daily cycle.
 The schedule journal, retry budget and native alarm commit together before network
