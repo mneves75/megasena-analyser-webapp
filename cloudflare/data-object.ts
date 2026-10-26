@@ -117,6 +117,10 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       ipHashSecret: env.IP_HASH_SECRET, allowedOrigins: env.ALLOWED_ORIGINS,
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
+      schedulerStatus: async () => ({
+        enabled: this.dailyRefreshEnabled,
+        nextAlarmAt: await ctx.storage.getAlarm(),
+      }),
     });
     void ctx.blockConcurrencyWhile(() => this.dailyRefreshEnabled
       ? this.initializeSchedule()

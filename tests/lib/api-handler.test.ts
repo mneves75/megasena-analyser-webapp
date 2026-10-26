@@ -31,11 +31,84 @@ describe('runtime-neutral API handler', () => {
     expect(health.status).toBe(503);
     expect(health.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
     expect(health.headers.get('Cache-Control')).toBe('no-store');
-    expect(await health.json()).toMatchObject({ status: 'unhealthy', version: 'test', database: { connected: true, totalDraws: 0 } });
+    const body = await health.json();
+    expect(body).toMatchObject({ status: 'unhealthy', version: 'test', database: { connected: true, totalDraws: 0 } });
+    expect(body).not.toHaveProperty('scheduler');
     expect(audit).toHaveBeenCalledWith(expect.objectContaining({ event: 'api.health_read', statusCode: 503, clientIdHash: expect.stringMatching(/^hmac-sha256:/) }));
     const invalidMethod = await handler.fetch(new Request('https://example.com/api/health', { method: 'POST' }));
     expect(invalidMethod.status).toBe(405);
     expect(invalidMethod.headers.get('Allow')).toBe('GET');
+  });
+  it('adds only the approved scheduler fields without changing healthy data status', async () => {
+    closeDatabase();
+    getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const handler = createApiHandler({
+      ...options,
+      schedulerStatus: async () => ({ enabled: true, nextAlarmAt: 1893477600000, extra: 'must stay private' }),
+    });
+
+    const response = await handler.fetch(new Request('https://example.com/api/health'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    const body = await response.json();
+    expect(body.status).toBe('healthy');
+    expect(body.scheduler).toStrictEqual({ enabled: true, nextAlarmAt: 1893477600000 });
+  });
+  it('rereads scheduler snapshots even when disabled or when the native alarm is null', async () => {
+    closeDatabase();
+    getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const snapshots = [
+      { enabled: true, nextAlarmAt: 1893477600000 },
+      { enabled: true, nextAlarmAt: 1893564000000 },
+      { enabled: false, nextAlarmAt: 1893564000000 },
+      { enabled: true, nextAlarmAt: null },
+      { enabled: false, nextAlarmAt: null },
+    ];
+    const schedulerStatus = vi.fn<() => Promise<(typeof snapshots)[number]>>();
+    for (const snapshot of snapshots) schedulerStatus.mockResolvedValueOnce(snapshot);
+    const audit = vi.fn();
+    const handler = createApiHandler({ ...options, audit, schedulerStatus, allowedOrigins: 'https://example.com' });
+    for (const snapshot of snapshots) {
+      const response = await handler.fetch(new Request('https://example.com/api/health', {
+        headers: { origin: 'https://example.com' },
+      }));
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+      expect((await response.json()).scheduler).toStrictEqual(snapshot);
+    }
+    expect(audit).toHaveBeenCalledWith(expect.objectContaining({ event: 'api.health_read', statusCode: 200 }));
+    const invalidMethod = await handler.fetch(new Request('https://example.com/api/health', { method: 'POST' }));
+    expect(invalidMethod.status).toBe(405);
+    expect(invalidMethod.headers.get('Allow')).toBe('GET');
+    const preflight = await handler.fetch(new Request('https://example.com/api/health', {
+      method: 'OPTIONS', headers: { origin: 'https://example.com' },
+    }));
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe('https://example.com');
+    expect(schedulerStatus).toHaveBeenCalledTimes(snapshots.length);
+  });
+  it('returns a sanitized no-store 503 when scheduler lookup fails despite healthy data', async () => {
+    closeDatabase();
+    getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const audit = vi.fn();
+    const schedulerStatus = vi.fn()
+      .mockResolvedValueOnce({ enabled: true, nextAlarmAt: 1893477600000 })
+      .mockRejectedValueOnce(new Error('Injected native alarm read failure'));
+    const handler = createApiHandler({ ...options, audit, schedulerStatus });
+    expect((await handler.fetch(new Request('https://example.com/api/health'))).status).toBe(200);
+
+    const response = await handler.fetch(new Request('https://example.com/api/health'));
+    expect(response.status).toBe(503);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(await response.json()).toStrictEqual({
+      status: 'unhealthy', error: 'Health check failed',
+      timestamp: expect.any(String), requestId: expect.any(String),
+    });
+    expect(audit).toHaveBeenLastCalledWith(expect.objectContaining({ event: 'api.health_read', statusCode: 503, success: false }));
   });
   it('logs the deployment stage, not the fail-closed security environment, on every entry', async () => {
     const previous = process.env['DEPLOYMENT_STAGE'];
@@ -69,7 +142,8 @@ describe('runtime-neutral API handler', () => {
     closeDatabase();
     getDatabase();
     const audit = vi.fn();
-    const handler = createApiHandler({ ...options, audit, minHealthTotalDraws: 0 });
+    const schedulerStatus = vi.fn(async () => ({ enabled: false, nextAlarmAt: null }));
+    const handler = createApiHandler({ ...options, audit, minHealthTotalDraws: 0, schedulerStatus });
     const clientIp = '198.51.100.77';
     for (let i = 0; i < 100; i++) {
       await handler.fetch(new Request('https://example.com/api/health'), { clientIp });
@@ -79,6 +153,7 @@ describe('runtime-neutral API handler', () => {
     const limited = await handler.fetch(new Request('https://example.com/api/health'), { clientIp });
 
     expect(limited.status).toBe(429);
+    expect(schedulerStatus).toHaveBeenCalledTimes(100);
     expect(audit).toHaveBeenCalledWith(
       expect.objectContaining({
         event: 'api.health_read',

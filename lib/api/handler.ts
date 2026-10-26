@@ -54,6 +54,7 @@ export interface ApiHandlerOptions {
   allowedOrigins?: string | undefined;
   minHealthTotalDraws?: number;
   uptime?: () => number;
+  schedulerStatus?: () => Promise<{ enabled: boolean; nextAlarmAt: number | null }>;
   audit: (event: AuditEventInput) => void | Promise<void>;
   checkRateLimit?: (clientId: string) => { allowed: boolean; remaining: number; resetAt: number };
 }
@@ -397,6 +398,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
           Number.isFinite(MIN_HEALTH_TOTAL_DRAWS) &&
           MIN_HEALTH_TOTAL_DRAWS > 0 &&
           drawCount >= MIN_HEALTH_TOTAL_DRAWS;
+        const scheduler = await options.schedulerStatus?.();
 
         const health = {
           status: dataReady ? 'healthy' : 'unhealthy',
@@ -411,6 +413,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
             dataReady,
           },
           version: options.appVersion,
+          ...(scheduler === undefined ? {} : {
+            scheduler: { enabled: scheduler.enabled, nextAlarmAt: scheduler.nextAlarmAt },
+          }),
         };
 
         return new Response(JSON.stringify(health), {
