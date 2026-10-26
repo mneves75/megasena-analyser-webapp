@@ -378,6 +378,15 @@ Todos os design tokens estão definidos em `app/globals.css` e `tailwind.config.
 
 ## Endpoints da API
 
+### `/api/health` (GET)
+
+No Worker, inclui `scheduler: { enabled, nextAlarmAt }`: habilitação do agendador e
+próximo alarme nativo em milissegundos Unix, ou `null`. O Bun omite `scheduler`.
+Falhas de leitura retornam `503`; em produção, a mensagem é sanitizada. A resposta
+mantém `no-store` e os critérios existentes de saúde dos dados. É um retrato do
+instante, sem comprovar ausência de escritas anteriores; a própria consulta grava
+auditoria/log. Veja os limites em [docs/DEPLOY.md](docs/DEPLOY.md#dados-e-atualização-diária).
+
 ### Arquivo de resultados (GET, somente leitura)
 
 Usados pelas páginas `/resultados`, `/concurso`, `/numeros` e `/mega-da-virada`. Parâmetros inválidos,

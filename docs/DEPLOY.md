@@ -44,6 +44,18 @@ Obtenha autorização específica para arquivar e retirar o ambiente anterior. M
 
 ### Dados e atualização diária
 
+No Worker, `GET /api/health` acrescenta somente `scheduler.enabled` (booleano) e
+`scheduler.nextAlarmAt` (milissegundos desde a época Unix, ou `null`). Cada consulta
+lê o alarme nativo, inclusive quando o agendador está desabilitado; não usa o diário
+como substituto nem deduz `null` a partir de `enabled`. Um alarme em execução pode
+ter `getAlarm()` igual a `null`, mesmo habilitado. O Bun não fornece esse diagnóstico
+e omite `scheduler`. Falha no callback de leitura usa a resposta `503` existente,
+com erro sanitizado em produção, sem campos de sucesso e com `Cache-Control: no-store`.
+Os critérios de saúde dos dados, CORS, quota e auditoria permanecem os mesmos.
+Esse retrato não comprova execuções anteriores nem ausência de escritas autônomas
+no passado. As próprias consultas de health gravam auditoria/log; diferencie-as
+das execuções agendadas ao coletar evidências privadas.
+
 O build recebe `CLOUDFLARE_STAGING_ALLOWED_ORIGINS` ou `CLOUDFLARE_PRODUCTION_ALLOWED_ORIGINS` como lista de origens HTTPS separadas por vírgula. Staging usa lista vazia por padrão (sem acesso CORS entre origens); produção mantém a origem canônica. `ENVIRONMENT=production` preserva os controles de segurança nos dois alvos, enquanto `DEPLOYMENT_STAGE` distingue a indexação: staging envia `X-Robots-Tag: noindex, nofollow` e `robots.txt` com `Disallow: /`. Produção preserva a política pública atual.
 
 O seed versionado contém concursos até **3065** e só é importado quando o banco do objeto está vazio (`BOOTSTRAP_PUBLIC_SEED=1`). Em 02/10/2026, o cliente local consultou o endpoint oficial `servicebus3`, importou o concurso de 01/10 e preservou todos os registros anteriores. O endpoint antigo `servicebus2` falhou; a configuração publicada pelo portal identifica o endereço atual. Essa prova local não substitui a execução agendada remota, que permanece um gate de aceite separado.

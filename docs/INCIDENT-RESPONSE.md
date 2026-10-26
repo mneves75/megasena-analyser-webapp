@@ -84,7 +84,7 @@ Prevenção: todo dispositivo com acesso de produção usa criptografia de disco
 Quando o incidente envolver dado pessoal com risco ou dano relevante:
 
 1. Comunicar internamente o encarregado em até 24 h após confirmação.
-2. Notificar a ANPD em prazo razoável — referência: até 5 dias úteis para incidentes de severidade Alta ou Crítica.
+2. Quando a obrigação de comunicação for aplicável, notificar a ANPD e os titulares afetados em até **3 dias úteis**, contados do conhecimento pelo controlador de que o incidente afetou dados pessoais, ressalvadas as regras específicas aplicáveis. A obrigação não depende apenas da severidade interna Alta/Crítica. Fonte: [orientação da ANPD sobre comunicação de incidentes](https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis).
 3. Conteúdo mínimo da notificação (Art. 48, §1º):
    - Descrição da natureza dos dados afetados.
    - Informações sobre os titulares envolvidos.
@@ -96,7 +96,7 @@ Quando o incidente envolver dado pessoal com risco ou dano relevante:
 
 ### Fase 6 — Comunicação aos titulares
 
-Quando o incidente puder gerar risco ou dano relevante aos titulares:
+Quando o incidente puder gerar risco ou dano relevante aos titulares, comunicar no mesmo prazo indicado na fase 5:
 
 1. Publicar aviso público no site (página /privacy ou banner do site).
 2. Linguagem clara, sem termos técnicos opacos.
@@ -133,8 +133,8 @@ Não notificar quando:
 
 | Destinatário | Quando | Canal |
 |--------------|--------|-------|
-| ANPD | Severidade Alta/Crítica em dados pessoais | Peticionamento eletrônico no `gov.br/anpd` |
-| Titulares afetados | Quando houver risco ou dano relevante | Banner no site + nota em `/privacy` |
+| ANPD | Quando houver risco ou dano relevante aos titulares, no prazo da fase 5 | Peticionamento eletrônico no `gov.br/anpd` |
+| Titulares afetados | Quando houver risco ou dano relevante, no mesmo prazo da fase 5 | Banner no site + nota em `/privacy` |
 | Provedor VPS | Quando houver indício de comprometimento da infraestrutura | Canal de suporte do provedor |
 | Cloudflare | Quando houver evidência de comprometimento de TLS, DNS ou WAF | Painel Cloudflare e ticket de suporte |
 

@@ -51,7 +51,16 @@ append/cache updates, with at most three persisted alarm retries per daily cycle
 The schedule journal, retry budget and native alarm commit together before network
 I/O. Success and retry exhaustion preserve the next calendar 06:00 UTC. Initialization
 preserves an existing schedule; early duplicate delivery cannot spend another attempt.
-Infrastructure errors must escape the alarm handler. Existing remote Cron registrations
+Infrastructure errors must escape the alarm handler.
+
+`GET /api/health` exposes only `scheduler.enabled` and `scheduler.nextAlarmAt` in the
+Worker. The optional shared handler callback reads the native `getAlarm()` every
+request, including when disabled; Bun omits the field. Keep native epoch milliseconds
+or `null`, never infer it from enablement or the schedule journal. Read failures use
+the existing sanitized production 503/no-store path. This snapshot does not prove
+past inactivity; health probes themselves write audit/log records.
+
+Existing remote Cron registrations
 must be explicitly removed and read back: `cf` beta5 preserves them for `triggers: []`.
 Retention bindings keep Bun's 400/30-day defaults
 and configurable semantics; copy the source settings before migrating retained rows.

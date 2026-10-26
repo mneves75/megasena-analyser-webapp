@@ -233,14 +233,14 @@ Incidente de segurança é qualquer evento que afete (a) confidencialidade, (b) 
    - Restaurar serviço sem reintroduzir vulnerabilidade.
    - Validar com `bun run lint`, `bun run test -- --run`, `bun run build`, `bun run deploy:verify`.
 4. **Notificação à ANPD** (Art. 48, §1º):
-   - Em **prazo razoável**, considerando a gravidade. Para incidentes que envolvam dado pessoal com risco relevante: comunicar **em até 3 dias úteis** ao DPO interno (registro em changelog) e **em até 5 dias úteis** à ANPD (canal oficial), incluindo:
+   - Acionar o encarregado conforme o [plano de resposta](INCIDENT-RESPONSE.md). Quando houver obrigação de comunicação por risco ou dano relevante aos titulares, comunicar à ANPD e aos titulares afetados **em até 3 dias úteis**, contados do conhecimento pelo controlador de que o incidente afetou dados pessoais, ressalvadas as regras específicas aplicáveis. A obrigação não depende apenas da classificação interna de severidade. Fonte: [orientação da ANPD sobre comunicação de incidentes](https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis). Incluir:
      - descrição da natureza dos dados afetados;
      - informação sobre os titulares envolvidos;
      - indicação das medidas técnicas de proteção;
      - riscos relacionados;
      - razões da demora, se houver;
      - medidas adotadas para reverter/mitigar os efeitos.
-5. **Comunicação aos titulares** quando o incidente puder gerar risco ou dano relevante.
+5. **Comunicação aos titulares** quando o incidente puder gerar risco ou dano relevante, no mesmo prazo do item 4.
 6. **Pós-incidente** (até 30 dias):
    - Post-mortem público sem dado sensível.
    - Atualização deste documento.

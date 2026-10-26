@@ -17,6 +17,8 @@ Integra as branches pendentes de cache e dependências, preservando as correçõ
 - Requisições com cookies, autenticação, seletores de navegação do framework, range/condicionais ou `_rsc` ignoram o cache. HTML comprimido e respostas com variantes `Vary` fora da chave também ficam fora dele.
 - A API mantém o cache limitado das listagens compartilhadas e os concursos individuais sem cache; as chaves passam a incluir a versão do aplicativo. O merge de Dependabot preserva `baseline-browser-mapping` em `2.11.30` e os controles do pnpm.
 - Staging usa `DAILY_REFRESH_ENABLED=0`, com Crons explicitamente vazios. A ativação cancela alarmes nativos existentes; entregas atrasadas não consultam a CAIXA, não gravam nem reagendam. O RPC privado de refresh manual permanece disponível, sem retries autônomos quando desabilitado.
+- `/api/health` no Worker informa somente `scheduler.enabled` e `scheduler.nextAlarmAt`, lendo o alarme nativo a cada consulta (milissegundos Unix ou `null`). O Bun omite o campo; falhas de leitura usam o `503` existente, sanitizado em produção e sem cache. Testes cobrem os limites do contrato e o alarme real no workerd.
+- Documentos de resposta a incidentes corrigem o prazo padrão de comunicação à ANPD e aos titulares para três dias úteis, contado do conhecimento de que dados pessoais foram afetados, quando a obrigação for aplicável e ressalvadas regras específicas; a severidade interna não é o único critério.
 - Regressões cobrem compressão, headers após reescrita, variantes de navegação, cancelamento de alarmes, entregas atrasadas e refresh manual, preservando as provas de retry e recuperação do agendador de produção.
 
 ## [1.19.1] - 2026-10-26
