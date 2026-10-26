@@ -29,10 +29,10 @@ let sourceCalls = 0;
 let failSource = false;
 let networkGate: Promise<void> | undefined;
 let reportNetworkStart: (() => void) | undefined;
-const options = { ...convertV4MiniflareOptions({ workers: [{
+const options = (dailyRefreshEnabled = '1') => ({ ...convertV4MiniflareOptions({ workers: [{
   name: 'scheduler-test', modules: true, script: compiled.outputFiles[0]!.text,
   compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'],
-  bindings: { ENVIRONMENT: 'development', BOOTSTRAP_PUBLIC_SEED: '1' },
+  bindings: { ENVIRONMENT: 'development', BOOTSTRAP_PUBLIC_SEED: '1', DAILY_REFRESH_ENABLED: dailyRefreshEnabled },
   durableObjects: { DATA: { className: 'ScheduledData', useSQLite: true } },
   outboundService: async () => {
     sourceCalls++;
@@ -42,8 +42,8 @@ const options = { ...convertV4MiniflareOptions({ workers: [{
       numero: seed.length + 1, dataApuracao: '02/10/2026', listaDezenas: ['01', '02', '03', '04', '05', '06'],
     });
   },
-}] }), resourcePersistencePath: path.join(directory, 'storage') };
-let runtime = new Miniflare(options);
+}] }), resourcePersistencePath: path.join(directory, 'storage') });
+let runtime = new Miniflare(options());
 async function state(route = '/status'): Promise<State> {
   const response = await runtime.dispatchFetch('https://example.com' + route);
   const result = await response.json();
@@ -72,7 +72,7 @@ try {
   assert(failed.ingestion?.status === 'failed' && failed.ingestion.retry_count === 1 && failed.schedule?.next_kind === 'retry', 'first failure keeps a persisted retry');
   const retryState = JSON.stringify(failed);
   await runtime.dispose();
-  runtime = new Miniflare(options);
+  runtime = new Miniflare(options());
   assert(JSON.stringify(await state()) === retryState, 'runtime restart must preserve retry, budget, data and alarm');
   for (let retry = 0; retry < 3; retry++) { await state('/due'); failed = await state('/run'); }
   assert(failed.ingestion?.retry_count === 3 && failed.draws === seed.length + 1, 'bounded retries preserve data');
@@ -118,7 +118,7 @@ try {
     releaseNetwork(); networkGate = undefined; reportNetworkStart = undefined;
   }
   assert(await interrupted >= 500, 'runtime interruption must not report successful completion');
-  runtime = new Miniflare(options);
+  runtime = new Miniflare(options());
   const afterInterruption = await state();
   assert(JSON.stringify(afterInterruption) === JSON.stringify(inFlight), 'interruption must retain the prearmed successor and in-flight status');
   await state('/due');
@@ -129,9 +129,32 @@ try {
     await state('/due?now=' + now);
     assertDaily(await state('/run?now=' + now), now);
   }
+  await state('/due');
+  const beforeDisable = await state();
+  const callsBeforeDisable = sourceCalls;
+  await runtime.dispose();
+  runtime = new Miniflare(options('0'));
+  const disabled = await state();
+  assert(disabled.alarm === null, 'disabling daily refresh must cancel a pre-existing native alarm');
+  assert(JSON.stringify(disabled) === JSON.stringify({ ...beforeDisable, alarm: null }), 'disabling preserves data, retry budget and schedule journal');
+  await state('/run');
+  assert(sourceCalls === callsBeforeDisable && JSON.stringify(await state()) === JSON.stringify(disabled), 'stale disabled alarm must not fetch, write or rearm');
+  const cold = await state('/status?object=cold-disabled');
+  assert(cold.alarm === null && cold.schedule === null && cold.ingestion === null, 'disabled cold object must not initialize a schedule');
+  assert(JSON.stringify(await state('/run?object=cold-disabled')) === JSON.stringify(cold) && sourceCalls === callsBeforeDisable, 'cold disabled alarm must be inert');
+  const manual = await state('/refresh');
+  assert(sourceCalls === callsBeforeDisable + 1 && manual.ingestion?.status === 'success' && manual.alarm === null, 'private manual refresh works without arming an alarm');
+  failSource = true;
+  assert((await runtime.dispatchFetch('https://example.com/refresh')).status === 500, 'manual refresh source failure stays observable');
+  const manualFailure = await state();
+  assert(manualFailure.ingestion?.status === 'failed' && manualFailure.ingestion.retry_count === 0 && manualFailure.alarm === null, 'disabled manual failure must not schedule an autonomous retry');
+  const callsAfterManual = sourceCalls;
+  await state('/run');
+  assert(sourceCalls === callsAfterManual && JSON.stringify(await state()) === JSON.stringify(manualFailure), 'stale delivery after manual failure remains inert');
   const evidence = { pass: true, autonomousAlarm: true, dailyAfterSuccess: true, dailyAfterExhaustion: true,
     restartPreservesRetry: true, interruptedNetworkRecovery: true, duplicateControl: true,
-    storageFailureRollback: true, sqliteFailureEscapes: true, utcDayBoundaries: true, sourceCalls };
+    storageFailureRollback: true, sqliteFailureEscapes: true, utcDayBoundaries: true,
+    disabledCancelsAlarm: true, disabledAlarmInert: true, disabledManualRefresh: true, sourceCalls };
   await mkdir('.scratch/cloudflare-database', { recursive: true });
   await writeFile('.scratch/cloudflare-database/scheduler-runtime-result.json', JSON.stringify(evidence));
   console.log(JSON.stringify(evidence));

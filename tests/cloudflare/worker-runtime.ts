@@ -29,7 +29,8 @@ try {
   assert(staging.env.IP_HASH_SECRET.type === 'secret' && production.env.IP_HASH_SECRET.type === 'secret', 'required secret remains declared');
   for (const target of [staging, production]) {
     const daily = target.env['DAILY_REFRESH_ENABLED' as keyof typeof target.env];
-    assert(daily && 'value' in daily && daily.value === '1', 'every deployed target enables the durable daily scheduler');
+    assert(daily && 'value' in daily && daily.value === (target === production ? '1' : '0'), 'only production enables the durable daily scheduler');
+    assert(target.triggers?.length === 0, 'every target explicitly declares empty Cron triggers');
     assert(!target.triggers?.some(trigger => trigger.type === 'scheduled'), 'daily alarm is the sole recurring scheduler');
   }
   assert(staging.env.AUDIT_RETENTION_DAYS?.value === '400' && production.env.LOG_RETENTION_DAYS?.value === '30', 'default retention bindings preserve existing policy');

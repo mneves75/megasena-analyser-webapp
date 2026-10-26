@@ -40,8 +40,11 @@ renderers change**, even if draw data is unchanged; the Worker binding comes fro
 `vite.config.ts` selects the Durable Object database and private server-side API
 transport. Public headers cannot authorize internal RPC. `cloudflare.config.ts`
 defines distinct staging/production Worker names, required `IP_HASH_SECRET`, and
-`DAILY_REFRESH_ENABLED=1`. `MegaSenaData` owns the daily 06:00 UTC (03:00 Brasília)
-alarm. Seed bootstrap through contest 3065 is
+`DAILY_REFRESH_ENABLED=1` only in production (`0` in staging). Both targets declare
+empty Cron triggers. Disabling refresh cancels any native alarm at activation;
+stale alarm deliveries do no work. Private manual `refresh()` remains available
+without autonomous retries when disabled. `MegaSenaData` owns the production daily
+06:00 UTC (03:00 Brasília) alarm. Seed bootstrap through contest 3065 is
 empty-DB-only, not proof of current CAIXA data. Refresh validates before atomic
 append/cache updates, with at most three persisted alarm retries per daily cycle.
 The schedule journal, retry budget and native alarm commit together before network

@@ -1,13 +1,9 @@
-import { MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
+import { MegaSenaData } from '../../cloudflare/data-object';
 
 export class ScheduledData extends MegaSenaData {
-  constructor(ctx: DurableObjectState, env: DataEnvironment) {
-    super(ctx, { ...env, DAILY_REFRESH_ENABLED: '1' });
-  }
-
   async inspect() {
     const exists = this.ctx.storage.sql.exec("SELECT 1 FROM sqlite_master WHERE name = 'ingestion_schedule'").toArray().length;
-    const schedule = exists ? this.ctx.storage.sql.exec('SELECT * FROM ingestion_schedule WHERE id = 1').toArray()[0] : null;
+    const schedule = exists ? this.ctx.storage.sql.exec('SELECT * FROM ingestion_schedule WHERE id = 1').toArray()[0] ?? null : null;
     return { ...this.status(), schedule, alarm: await this.ctx.storage.getAlarm() };
   }
 
@@ -46,12 +42,13 @@ export class ScheduledData extends MegaSenaData {
 
 const worker = {
   async fetch(request: Request, env: { DATA: DurableObjectNamespace<ScheduledData> }) {
-    const object = env.DATA.getByName('scheduler-fixture');
     const url = new URL(request.url);
+    const object = env.DATA.getByName(url.searchParams.get('object') ?? 'scheduler-fixture');
     const now = url.searchParams.has('now') ? Number(url.searchParams.get('now')) : undefined;
     try {
       if (url.pathname === '/due') await object.makeDue(now);
       if (url.pathname === '/run') await object.run(now);
+      if (url.pathname === '/refresh') await object.refresh();
       if (url.pathname === '/fail-write') await object.failNextAlarmWrite();
       if (url.pathname === '/fail-retention') await object.failNextRetentionWrite();
       return Response.json(await object.inspect());
