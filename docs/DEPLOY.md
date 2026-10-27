@@ -78,6 +78,64 @@ Antes da migração, confira os valores efetivos `AUDIT_RETENTION_DAYS` e `LOG_R
 
 O contador de tentativas e o próximo alarme são gravados numa transação de armazenamento. A falha da CAIXA só é tratada no handler depois que a política de retry foi persistida. Falhas de agendamento/armazenamento continuam sendo lançadas para permitir a recuperação da plataforma. Os testes workerd injetam uma falha de `setAlarm`, verificam rollback do contador e comprovam o agendamento no próximo processamento. Isso não substitui prova de uma execução diária no ambiente publicado.
 
+### Desligamento isolado de staging
+
+`cloudflare/staging-off/` é uma unidade operacional separada do build da aplicação.
+Ela substitui somente o Worker de staging existente por uma resposta `410` em texto
+pt-BR, com `Cache-Control: no-store` e `X-Robots-Tag: noindex, nofollow`. Não importa
+a aplicação, não declara `DATA` nem assets e não acessa armazenamento. Mantém o
+domínio de staging de `lib/site-domains.json`, a observabilidade e somente a
+declaração do segredo existente `IP_HASH_SECRET`, sem ler ou trocar seu valor.
+
+**O deploy desta unidade é destrutivo:** o export `MegaSenaData` tem
+`state: 'deleted'`, removendo o namespace e seus objetos. Não é uma forma de
+pausar o banco. Antes de executá-lo, o responsável pela operação deve:
+
+1. Obter aceite e verificação independente da produção no commit publicado, incluindo dados atuais, segurança, UI e agendamento nativo. Rodar o gate `mneves-security` no commit exato da unidade antes de qualquer deploy, inclusive deste desligamento.
+2. Confirmar novamente conta, nome e ID do Worker/namespace de staging e distinguir os de produção. Inventariar **todos** os objetos, com todas as páginas da listagem; não presumir que só existe o objeto conhecido pelo aplicativo. Guardar o inventário e os recibos em armazenamento privado.
+3. Cancelar e reler os agendamentos de staging, incluindo Crons remotos e alarmes de cada objeto, e confirmar ausência de escritores. `triggers: []` não remove Crons antigos no `cf` beta5; usar a operação de schedules descrita acima. Não consultar a API da aplicação durante a janela de prova de ausência de escritas, pois ela própria registra auditoria/log.
+4. Exportar consistentemente cada objeto com dados, incluindo esquema e todas as tabelas, preservar checksums e exercitar restauração em destino isolado autorizado. Comparar integralmente o conteúdo restaurado com a exportação e reconciliar os registros com produção. Se houver dados que produção não contém, preservar o banco e resolver a diferença antes da exclusão. Backup sem restauração verificada não libera o gate.
+5. Revisar o artefato recém-gerado: conta no recibo superior, modo `staging-off`, somente o nome/domínio de staging, segredo declarado, `triggers: []` e export deletado sem `storage`. O bundle deve exportar apenas o handler `fetch`, sem classe `MegaSenaData`, imports da aplicação, `DATA` ou assets. Reconfirmar a autorização para o namespace identificado imediatamente antes da escrita.
+
+Com o Node de `.nvmrc` ativo, os testes e o smoke build local não precisam de
+credenciais nem acesso ao provedor:
+
+```bash
+bun run test -- --run tests/cloudflare/staging-off.test.ts
+cd cloudflare/staging-off
+CLOUDFLARE_ACCOUNT_ID=00000000000000000000000000000000 node ../../node_modules/vite/bin/vite.js build --config vite.config.ts --mode staging-off
+```
+
+O Vite fixa a raiz nesta unidade, desabilita `publicDir` e usa somente o plugin
+instalado `@cloudflare/vite-plugin`, sem vinext nem geração de tipos de runtime. O output fica em
+`cloudflare/staging-off/.cloudflare/output/v0/`: conferir `config.json`,
+`workers/default/worker.config.json` e `workers/default/bundle/index.js`.
+Outros modos e conta ausente/vazia são rejeitados.
+
+**Nunca publicar o smoke build.** Depois dos gates, o operador obtém a conta pelo
+fluxo normal privado do `cf`, a fornece explicitamente em `CLOUDFLARE_ACCOUNT_ID`
+e refaz o build. `cf deploy --prebuilt` prioriza a conta gravada no output; mudar
+apenas o ambiente depois do build não corrige o recibo. Ainda dentro da unidade:
+
+```bash
+: "${CLOUDFLARE_ACCOUNT_ID:?confirme a conta de staging pelo fluxo privado}"
+node ../../node_modules/vite/bin/vite.js build --config vite.config.ts --mode staging-off
+node ../../node_modules/cf/bin/cf deploy --prebuilt --mode staging-off --worker megasena-analyser-staging --dry-run
+# Somente após revisar o preview e concluir todos os gates acima:
+node ../../node_modules/cf/bin/cf deploy --prebuilt --mode staging-off --worker megasena-analyser-staging
+```
+
+Depois, comprovar `410`/headers pelo domínio de staging, preservação do segredo,
+ausência do namespace antigo, Crons vazios e zero execuções agendadas/escritas na
+janela de observação. Revalidar produção e registrar tudo privadamente. Build e
+dry-run não comprovam exclusão nem inatividade remota.
+
+Na próxima release, o deploy normal da aplicação a partir da raiz recria um
+**novo namespace vazio**. Redescobrir os IDs e carregar/restaurar os dados atuais
+antes do aceite; o seed versionado sozinho não prova atualização. Nunca reutilizar
+cegamente um artefato antigo de `staging-off`: ele poderia apagar o banco futuro.
+Cada novo desligamento exige build, inventário, backup/restauração e gates novos.
+
 ### CI e evidência local
 
 O workflow `Cloudflare Runtime` executa automaticamente os gates de código, auditoria, cobertura, SQLite Bun, seis runtimes workerd, build standalone e builds Cloudflare staging/produção, sem credenciais de deploy. O runtime do agendador inclui interrupção durante uma chamada de rede e retomada em outro processo. Ele não publica automaticamente. Os builds devem rodar em sequência: geram tipos de rotas em `.next`. A verificação visual desta migração usa Argent. O workflow Docker legado contém Playwright e agora só pode ser iniciado manualmente; não substitui o aceite visual exigido.
