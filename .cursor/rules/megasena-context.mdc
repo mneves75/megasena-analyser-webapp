@@ -13,6 +13,10 @@ Worker retry count and alarm scheduling share one storage transaction. Preserve
 `DAILY_REFRESH_ENABLED=1` only in production; staging uses `0` and empty Crons.
 Disabled objects cancel existing native alarms, ignore stale deliveries and allow
 private one-off refresh without scheduling retries.
+After production acceptance and verified backup/restoration, the isolated
+`cloudflare/staging-off/` unit returns `410` and deletes the staging namespace.
+Its explicit account/mode guards and fresh deletion preflight are required;
+the next release provisions a new namespace. See `docs/DEPLOY.md`.
 Worker `/api/health` reports only `scheduler.enabled` and native `scheduler.nextAlarmAt`
 (epoch milliseconds or null), reread even when disabled. Bun omits it; lookup failures
 use the existing 503/no-store path. A snapshot is not proof of past inactivity, and

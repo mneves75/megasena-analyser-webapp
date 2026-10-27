@@ -2,7 +2,7 @@
 
 ## Hospedagem Worker e migração
 
-A versão 1.17.4 executa a aplicação em um Worker vinext/App Router, com SQLite
+A aplicação executa em um Worker vinext/App Router, com SQLite
 no Durable Object `MegaSenaData` pelo binding privado `DATA`. Não há API
 administrativa pública do banco. O caminho Docker abaixo permite execução local
 e recuperação durante a migração.
@@ -94,7 +94,7 @@ pausar o banco. Antes de executá-lo, o responsável pela operação deve:
 1. Obter aceite e verificação independente da produção no commit publicado, incluindo dados atuais, segurança, UI e agendamento nativo. Rodar o gate `mneves-security` no commit exato da unidade antes de qualquer deploy, inclusive deste desligamento.
 2. Confirmar novamente conta, nome e ID do Worker/namespace de staging e distinguir os de produção. Inventariar **todos** os objetos, com todas as páginas da listagem; não presumir que só existe o objeto conhecido pelo aplicativo. Guardar o inventário e os recibos em armazenamento privado.
 3. Cancelar e reler os agendamentos de staging, incluindo Crons remotos e alarmes de cada objeto, e confirmar ausência de escritores. `triggers: []` não remove Crons antigos no `cf` beta5; usar a operação de schedules descrita acima. Não consultar a API da aplicação durante a janela de prova de ausência de escritas, pois ela própria registra auditoria/log.
-4. Exportar consistentemente cada objeto com dados, incluindo esquema e todas as tabelas, preservar checksums e exercitar restauração em destino isolado autorizado. Comparar integralmente o conteúdo restaurado com a exportação e reconciliar os registros com produção. Se houver dados que produção não contém, preservar o banco e resolver a diferença antes da exclusão. Backup sem restauração verificada não libera o gate.
+4. Exportar consistentemente cada objeto com dados, incluindo esquema completo (tabelas, índices e triggers) e sequências SQLite, preservar checksums e exercitar restauração em destino isolado autorizado. Comparar integralmente o conteúdo restaurado com a exportação e reconciliar os registros com produção. Se houver dados que produção não contém, preservar o banco e resolver a diferença antes da exclusão, salvo autorização expressa para excluí-los após backup/restauração verificados. Backup sem restauração verificada não libera o gate.
 5. Revisar o artefato recém-gerado: conta no recibo superior, modo `staging-off`, somente o nome/domínio de staging, segredo declarado, `triggers: []` e export deletado sem `storage`. O bundle deve exportar apenas o handler `fetch`, sem classe `MegaSenaData`, imports da aplicação, `DATA` ou assets. Reconfirmar a autorização para o namespace identificado imediatamente antes da escrita.
 
 Com o Node de `.nvmrc` ativo, os testes e o smoke build local não precisam de

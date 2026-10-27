@@ -7,7 +7,9 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
-## [1.19.2] - Não lançado
+- Unidade operacional isolada para desligar staging após aceite de produção e backup/restauração verificados, com resposta `410`, preservação do segredo e exclusão declarativa do namespace.
+
+## [1.19.2] - 2026-10-27
 
 Integra as branches pendentes de cache e dependências, preservando as correções mais recentes de `main`.
 

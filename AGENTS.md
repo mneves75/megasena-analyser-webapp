@@ -62,6 +62,10 @@ past inactivity; health probes themselves write audit/log records.
 
 Existing remote Cron registrations
 must be explicitly removed and read back: `cf` beta5 preserves them for `triggers: []`.
+`cloudflare/staging-off/` is a separate operational unit, restricted to the
+`staging-off` mode and an explicit account. Its deployment returns `410` and
+permanently deletes the staging namespace after production acceptance and verified
+backup/restoration. Follow `docs/DEPLOY.md`; the next release creates a new namespace.
 Retention bindings keep Bun's 400/30-day defaults
 and configurable semantics; copy the source settings before migrating retained rows.
 See docs/DEPLOY.md for per-environment build inputs and architecture alternatives.
