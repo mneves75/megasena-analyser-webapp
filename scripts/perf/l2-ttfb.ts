@@ -13,13 +13,14 @@
  *
  * The zone has a rate-limiting rule (observed: a 429 block after ~20 requests in a
  * few seconds). Requests are paced at --rate per minute (default 80) on both paths,
- * and any 429 aborts the run: a block page is not a timing sample.
+ * and any status other than the route's own (429, 403, 5xx...) aborts the run:
+ * a block or error page is not a timing sample.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
 import {
-  HARNESS_USER_AGENT, MAX_REQUESTS_PER_RUN, PAGE_MATRIX, resolveBaseUrl, stringArg,
+  HARNESS_USER_AGENT, MAX_REQUESTS_PER_RUN, PAGE_MATRIX, assertExpectedStatus, resolveBaseUrl, stringArg,
 } from './matrix';
 import { round, summarize } from './stats';
 
@@ -98,11 +99,7 @@ async function curl(args: string[]): Promise<string[]> {
     new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited,
   ]);
   if (code !== 0) throw new Error(`curl saiu com ${code}: ${err.trim()}`);
-  const lines = out.split('\n').filter(Boolean);
-  if (lines.some(line => line.startsWith('429\t'))) {
-    throw new Error('HTTP 429 da regra de rate limit da zona; execução inválida. Reduza --rate e repita.');
-  }
-  return lines;
+  return out.split('\n').filter(Boolean);
 }
 
 async function main(): Promise<void> {
@@ -129,7 +126,9 @@ async function main(): Promise<void> {
         reserve(1);
         await pace();
         const [line] = await curl(curlArgs(url, arm, script, 1));
-        samples.push(parseWriteOut(line!, { path: entry.path, arm: armIds[index]!, mode: 'new' }));
+        const sample = parseWriteOut(line!, { path: entry.path, arm: armIds[index]!, mode: 'new' });
+        assertExpectedStatus(entry, sample.code);
+        samples.push(sample);
       }
     }
     // Reused connection: one process per arm; the first transfer opens it and is discarded.
@@ -139,8 +138,10 @@ async function main(): Promise<void> {
       await pace();
       const lines = await curl(curlArgs(url, arm, script, runs + 1));
       lastRequestAt = Date.now();
-      for (const line of lines.slice(1)) {
+      for (const [position, line] of lines.entries()) {
         const sample = parseWriteOut(line, { path: entry.path, arm: armIds[index]!, mode: 'warm' });
+        assertExpectedStatus(entry, sample.code);
+        if (position === 0) continue;
         if (sample.connects !== 0) throw new Error(`Conexão não reutilizada em ${entry.path}`);
         samples.push(sample);
       }

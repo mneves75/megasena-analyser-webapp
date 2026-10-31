@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { brotliDecompressSync, gunzipSync } from 'node:zlib';
 import { parsePositiveIntegerArg } from '../cli-args';
-import { HARNESS_USER_AGENT, MAX_REQUESTS_PER_RUN, PAGE_MATRIX, resolveBaseUrl, stringArg } from './matrix';
+import { HARNESS_USER_AGENT, MAX_REQUESTS_PER_RUN, PAGE_MATRIX, assertExpectedStatus, resolveBaseUrl, stringArg } from './matrix';
 
 export type AssetKind = 'css' | 'js' | 'font' | 'image' | 'other';
 
@@ -89,7 +89,6 @@ async function get(url: string, scratch: string): Promise<Fetched> {
   const [out, err, code] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited]);
   if (code !== 0) throw new Error(`curl ${url}: ${err.trim()}`);
   const [status, size, encoding, link] = out.split('\t');
-  if (status === '429') throw new Error('HTTP 429 da regra de rate limit da zona; execução inválida.');
   const raw = Buffer.from(await Bun.file(bodyFile).arrayBuffer());
   const decoded = encoding === 'br' ? brotliDecompressSync(raw) : encoding === 'gzip' ? gunzipSync(raw) : raw;
   return { status: Number(status), transferBytes: Number(size), decodedBytes: decoded.length,
@@ -112,12 +111,14 @@ async function main(): Promise<void> {
   for (const entry of PAGE_MATRIX) {
     const url = `${base}${entry.path}`;
     const page = await get(url, scratch);
+    assertExpectedStatus(entry, page.status);
     const isHtml = /<html[\s>]/i.test(page.body);
     const refs = isHtml ? extractAssets(page.body, page.link, url).filter(ref => ref.url.startsWith(base)) : [];
     const assets: (AssetRef & { path: string } & Omit<Fetched, 'body' | 'link'>)[] = [];
     for (const ref of refs) {
       if (!assetCache.has(ref.url)) {
         const { body: _body, link: _link, ...meta } = await get(ref.url, scratch);
+        if (meta.status !== 200) throw new Error(`HTTP ${meta.status} no asset ${ref.url}; execução inválida.`);
         assetCache.set(ref.url, meta);
       }
       assets.push({ ...ref, path: ref.url.slice(base.length), ...assetCache.get(ref.url)! });

@@ -7,14 +7,15 @@
  *
  * Each page is captured at 375 px DPR 2 and 1440 px DPR 1, light scheme and
  * reduced motion, after the network is idle and document.fonts.ready resolved.
- * Arms run interleaved in one browser session, so the two `current` arms give
- * the A/A noise floor under the same cache state. Images go to
+ * Arms run interleaved, each in its own browser session, so one arm's cached
+ * fonts or assets cannot mask a loading failure in another; two `current` arms
+ * give the A/A noise floor. Images go to
  * .scratch/perf/<run>/pixels/; compare them with scripts/perf/pixel_diff.py.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
-import { HARNESS_USER_AGENT, PAGE_MATRIX, resolveBaseUrl, stringArg } from './matrix';
+import { HARNESS_USER_AGENT, PAGE_MATRIX, assertExpectedStatus, resolveBaseUrl, stringArg } from './matrix';
 
 const VIEWPORTS = [
   { name: 'm375x2', width: 375, height: 812, scale: 2 },
@@ -40,22 +41,26 @@ async function main(): Promise<void> {
   const entries = PAGE_MATRIX.filter(entry => (only ? only.includes(entry.path) : entry.lab));
   const outDir = path.join('.scratch/perf', label, 'pixels');
   mkdirSync(outDir, { recursive: true });
-  const session = `perf-pixels-${label}`;
+  const sessions = arms.map((_arm, index) => `perf-pixels-${label}-${index}`);
   const captures = [];
   try {
-    await browser(session, 'set', 'media', 'light', 'reduced-motion');
+    for (const session of sessions) await browser(session, 'set', 'media', 'light', 'reduced-motion');
     for (const viewport of VIEWPORTS) {
-      await browser(session, 'set', 'viewport', String(viewport.width), String(viewport.height), String(viewport.scale));
+      for (const session of sessions) {
+        await browser(session, 'set', 'viewport', String(viewport.width), String(viewport.height), String(viewport.scale));
+      }
       for (const entry of entries) {
         for (const [index, arm] of arms.entries()) {
+          const session = sessions[index]!;
           const headers: Record<string, string> = { 'X-Perf-Harness': HARNESS_USER_AGENT };
           if (arm !== 'current') headers['Cloudflare-Workers-Version-Overrides'] = `${script}="${arm}"`;
           await browser(session, 'set', 'headers', JSON.stringify(headers));
           await browser(session, 'open', `${base}${entry.path}`);
           await browser(session, 'wait', '--load', 'networkidle');
           await browser(session, 'wait', '--fn', 'document.fonts.status === "loaded"');
-          const status = await browser(session, 'eval', 'document.title.includes("429") || document.body.innerText.includes("rate limited") ? "blocked" : "ok"');
-          if (status.includes('blocked')) throw new Error(`Bloqueio da regra de rate limit em ${entry.path}; aumente --gap-ms.`);
+          // Status of the document itself, so a block or error page is never captured as a sample.
+          const status = await browser(session, 'eval', 'performance.getEntriesByType("navigation")[0]?.responseStatus ?? 0');
+          assertExpectedStatus(entry, Number(status.replace(/\D/g, '')));
           const file = path.join(outDir, `${viewport.name}${entry.path.replace(/\W+/g, '_') || '_root'}-${index}.png`);
           await browser(session, 'screenshot', '--full', file);
           captures.push({ viewport: viewport.name, path: entry.path, arm: `${index}:${arm}`, file });
@@ -65,7 +70,7 @@ async function main(): Promise<void> {
       }
     }
   } finally {
-    await browser(session, 'close').catch(() => '');
+    for (const session of sessions) await browser(session, 'close').catch(() => '');
   }
   writeFileSync(path.join(outDir, 'captures.json'), `${JSON.stringify({ base, arms, captures }, null, 1)}\n`);
 }

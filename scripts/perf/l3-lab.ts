@@ -14,7 +14,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
-import { HARNESS_USER_AGENT, PAGE_MATRIX, RUM_BLOCK_PATTERNS, resolveBaseUrl, stringArg } from './matrix';
+import { HARNESS_USER_AGENT, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, resolveBaseUrl, stringArg } from './matrix';
 import { round, summarize } from './stats';
 
 interface NetworkRequest { url: string; resourceType?: string; transferSize?: number; resourceSize?: number; statusCode?: number }
@@ -39,6 +39,7 @@ function extract(lhrFile: string, base: string) {
   const observed = audit('metrics')?.details?.items?.[0] ?? {};
   const bytes = (type: string) => requests.filter(r => r.resourceType === type).reduce((sum, r) => sum + (r.transferSize ?? 0), 0);
   const blocked = requests.filter(r => r.statusCode === 429).length;
+  const documentStatus = requests.find(r => r.resourceType === 'Document')?.statusCode ?? 0;
   return {
     runWarnings: lhr.runWarnings,
     lighthouseVersion: lhr.lighthouseVersion,
@@ -46,6 +47,7 @@ function extract(lhrFile: string, base: string) {
     benchmarkIndex: lhr.environment?.benchmarkIndex,
     finalUrl: lhr.finalDisplayedUrl,
     rateLimited: blocked,
+    documentStatus,
     simulated: {
       fcpMs: audit('first-contentful-paint').numericValue,
       lcpMs: audit('largest-contentful-paint').numericValue,
@@ -97,6 +99,7 @@ async function main(): Promise<void> {
         await lighthouse(`${base}${entry.path}`, file, arm, script);
         const result = extract(file, base);
         if (result.rateLimited > 0) throw new Error(`429 em ${entry.path}: execução inválida; aumente --gap-ms.`);
+        assertExpectedStatus(entry, result.documentStatus);
         results.push({ path: entry.path, arm: `${index}:${arm}`, run, ...result });
         process.stderr.write(`${entry.path} arm ${index} run ${run} LCP(sim)=${round(result.simulated.lcpMs)}\n`);
         await Bun.sleep(gapMs);

@@ -50,6 +50,19 @@ export const PAGE_MATRIX: readonly MatrixEntry[] = [
   { path: '/manifest.json', label: 'manifest (public file)', routeClass: 'static-asset' },
 ];
 
+/**
+ * A blocked, failed or challenge response can be faster and smaller than the
+ * real page, so any status other than the route's own invalidates the run.
+ * Only the deliberate 404 probe expects 404.
+ */
+export function assertExpectedStatus(entry: MatrixEntry, status: number): void {
+  const expected = entry.routeClass === 'not-found' ? 404 : 200;
+  if (status !== expected) {
+    throw new Error(`HTTP ${status} em ${entry.path} (esperado ${expected}); execução inválida.`
+      + (status === 429 ? ' Regra de rate limit da zona: reduza a taxa e repita.' : ''));
+  }
+}
+
 export function resolveBaseUrl(args: string[]): string {
   const index = args.indexOf('--base');
   const raw = index === -1 ? 'https://megasena-analyzer.com.br' : args[index + 1];

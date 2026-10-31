@@ -4,11 +4,14 @@
 # ///
 """Exact pixel comparison of PNG screenshots (threshold 0, anti-aliasing counted).
 
-    uv run --no-project scripts/perf/pixel_diff.py <a.png> <b.png> [--out diff.png]
+    uv run --no-project scripts/perf/pixel_diff.py <a.png> <b.png> [--max-pixels N] [--out diff.png]
 
 Prints JSON: size match, differing pixel count and ratio, bounding box of the
-difference. Exit 0 always; the caller compares the count with the A/A noise floor.
+difference. A pixel differs when any RGBA channel differs. Exits 1 when the
+sizes differ or more than N pixels differ (default 0); pass the A/A noise floor
+as N.
 """
+import functools
 import json
 import pathlib
 import sys
@@ -24,9 +27,11 @@ def compare(a_path: str, b_path: str, out: str | None) -> dict:
     if a.size != b.size:
         result.update(differentPixels=None, ratio=None, bbox=None)
         return result
-    diff = ImageChops.difference(a, b)
-    mask = diff.convert("L").point(lambda value: 255 if value else 0)
-    count = sum(1 for value in mask.getdata() if value)
+    # Per-channel maximum: a grayscale conversion would round small single-channel
+    # changes to zero and drop alpha entirely.
+    channel_max = functools.reduce(ImageChops.lighter, ImageChops.difference(a, b).split())
+    mask = channel_max.point(lambda value: 255 if value else 0)
+    count = mask.histogram()[255]
     result.update(differentPixels=count, ratio=count / (a.size[0] * a.size[1]), bbox=mask.getbbox())
     if out and count:
         highlight = Image.new("RGBA", a.size, (255, 0, 0, 255))
@@ -34,16 +39,26 @@ def compare(a_path: str, b_path: str, out: str | None) -> dict:
     return result
 
 
+def take(args: list[str], flag: str) -> str | None:
+    if flag not in args:
+        return None
+    index = args.index(flag)
+    value = args[index + 1]
+    del args[index:index + 2]
+    return value
+
+
 def main() -> None:
     args = sys.argv[1:]
-    out = None
-    if "--out" in args:
-        index = args.index("--out")
-        out = args[index + 1]
-        del args[index:index + 2]
+    out = take(args, "--out")
+    max_pixels = int(take(args, "--max-pixels") or 0)
     if len(args) != 2:
         sys.exit(__doc__)
-    print(json.dumps(compare(args[0], args[1], out)))
+    result = compare(args[0], args[1], out)
+    result["maxPixels"] = max_pixels
+    result["pass"] = bool(result["sameSize"]) and result["differentPixels"] <= max_pixels
+    print(json.dumps(result))
+    sys.exit(0 if result["pass"] else 1)
 
 
 if __name__ == "__main__":

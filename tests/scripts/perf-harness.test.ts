@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { percentile, summarize } from '../../scripts/perf/stats';
 import { extractAssets, nonAsciiCodepoints } from '../../scripts/perf/page-bytes';
 import { parseWriteOut } from '../../scripts/perf/l2-ttfb';
-import { PAGE_MATRIX } from '../../scripts/perf/matrix';
+import { PAGE_MATRIX, assertExpectedStatus } from '../../scripts/perf/matrix';
 
 describe('perf harness statistics', () => {
   it('uses nearest-rank percentiles on sorted samples', () => {
@@ -59,6 +59,17 @@ describe('perf harness curl output', () => {
 });
 
 describe('perf page matrix', () => {
+  it('rejects any response other than the route class status, so error pages never become samples', () => {
+    const page = PAGE_MATRIX.find(entry => entry.routeClass === 'worker-static')!;
+    const missing = PAGE_MATRIX.find(entry => entry.routeClass === 'not-found')!;
+    expect(() => assertExpectedStatus(page, 200)).not.toThrow();
+    expect(() => assertExpectedStatus(missing, 404)).not.toThrow();
+    for (const status of [403, 404, 429, 500, 503, 301]) {
+      expect(() => assertExpectedStatus(page, status)).toThrow(/execução inválida/);
+    }
+    expect(() => assertExpectedStatus(missing, 200)).toThrow(/execução inválida/);
+  });
+
   it('never probes the audited API and keeps paths unique', () => {
     const paths = PAGE_MATRIX.map(entry => entry.path);
     expect(paths.some(value => value.startsWith('/api/'))).toBe(false);
