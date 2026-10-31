@@ -16,7 +16,7 @@ Custo e carregamento, mais a revisão de segurança de 2026-10-31. Nada muda no 
 - Segurança: `pnpm audit` volta a passar. O advisory GHSA-g3hv-75wg-m249 atinge `minimatch <11.0.1`, mas o código vulnerável só existe a partir da v7; um teste prova, contra a cópia instalada 3.1.4 (só ferramenta de desenvolvimento), que esse caminho não existe. O gate passa a se chamar `security:audit-exceptions` e cobre `braces` e `minimatch`.
 - Pseudonimização: a função que realmente gera `client_id_hash` sai do handler para `lib/security/pseudonymize.ts`, com testes do formato, da janela de 30 dias e do sal aleatório na falta de segredo. A função antiga, sem uso e com fallback SHA-256 sem sal, foi removida. O valor gerado é o mesmo.
 - O alarme diário do DO registra sucesso e falha pelo logger estruturado, com a mesma redação dos logs de requisição.
-- Gerador: o troco de um orçamento com centavos sai em centavos inteiros no JSON da API (antes, `4.299999999999997`), truncado para nunca passar do que sobrou: um orçamento de R$ 47,999 deixa R$ 5,99, não R$ 6,00.
+- Gerador: o troco de um orçamento com centavos sai em centavos inteiros no JSON da API (antes, `4.299999999999997`), truncado para nunca passar do que sobrou: um orçamento de R$ 47,999 deixa R$ 5,99, não R$ 6,00. O modo otimizado também deixa de arredondar o orçamento para cima (R$ 47,999999999 comprava uma combinação de R$ 48).
 - Resposta a incidentes: procedimento para bloquear um cliente abusivo na borda (lista de IPs + regra WAF), já que o app não tem contas.
 - Unidade operacional isolada para desligar staging após aceite de produção e backup/restauração verificados, com resposta `410`, preservação do segredo e exclusão declarativa do namespace.
 

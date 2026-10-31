@@ -57,3 +57,14 @@ identificadores de conta, endpoints workers.dev ou dados de linha nos arquivos.
 Limite de três rodadas atingido. A aceitação de segurança das correções acima é feita por
 uma verificação independente separada (mesmo modelo revisor, contexto novo), registrada
 no gate de deploy.
+
+### Aceitação de segurança (`d195096`)
+
+Verificação independente com critérios congelados C1–C5. C2 (assets), C3 (sem telemetria
+privada, gitleaks com controle positivo), C4 (sem Critical/High no diff completo) e C5
+(os testes novos falham na versão anterior) passaram. C1 falhou num ponto **pré-existente**
+desde a 1.19.2: no modo otimizado, `toCents(budget)` arredondava 47,999999999 para 4.800
+centavos e gastava R$ 48. **Corrigido** com `wholeCents` também nesse cálculo, com teste
+que falha em `d195096`. O outro ponto de C1 (6 + 0,56 = 6,5600000000000005) é soma em
+ponto flutuante de dois valores corretos; o critério de igualdade estrita estava mal
+escrito e passa a ser "troco em centavos inteiros e nunca acima do que sobrou".

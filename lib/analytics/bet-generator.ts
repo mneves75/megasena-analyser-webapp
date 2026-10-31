@@ -155,7 +155,8 @@ export class BetGenerator {
 
   private buildOptimizedBetSizes(budget: number): number[] {
     const costUnitCents = this.resolveCostUnitCents();
-    const budgetUnits = Math.floor(this.toCents(budget) / costUnitCents);
+    // Truncate, never round: 47.999999999 must not buy a R$ 48 combination.
+    const budgetUnits = Math.floor(wholeCents(budget) / costUnitCents);
 
     const options = Object.entries(BET_PRICES)
       .map(([numbers, price]) => {

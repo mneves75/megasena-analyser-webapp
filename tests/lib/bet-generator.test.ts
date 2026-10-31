@@ -91,6 +91,11 @@ describe('BetGenerator', () => {
     expect(result.totalCost).toBe(42);
     expect(result.remainingBudget).toBe(5.99);
     expect(result.totalCost + result.remainingBudget).toBeLessThanOrEqual(47.999);
+    // Optimized mode rounded the budget to 4800 cents and spent R$ 48.
+    const optimized = generator.generateOptimizedBets(47.999999999, BET_GENERATION_MODE.OPTIMIZED, 'random');
+    expect(optimized.totalCost).toBeLessThanOrEqual(47.999999999);
+    expect(optimized.totalCost + optimized.remainingBudget).toBeLessThanOrEqual(47.999999999);
+    expect(generator.generateOptimizedBets(48, BET_GENERATION_MODE.OPTIMIZED, 'random').totalCost).toBe(48);
     // Near the cent boundary a fixed epsilon rounded 599.9999999 up to 600.
     for (const near of [47.999999999, 47.9999999999999]) {
       const boundary = generator.generateOptimizedBets(near, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
