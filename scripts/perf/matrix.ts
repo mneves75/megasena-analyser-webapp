@@ -63,7 +63,7 @@ export function assertExpectedStatus(entry: MatrixEntry, status: number): void {
   }
 }
 
-export interface AssetStatus { path: string; type?: string; status?: number }
+export interface AssetStatus { path: string; type?: string | undefined; status?: number | undefined }
 
 const REQUIRED_ASSET_TYPES = new Set(['Script', 'Stylesheet', 'Font']);
 
