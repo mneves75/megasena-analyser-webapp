@@ -8,42 +8,48 @@
       "baseline": 175952,
       "limit": 90096,
       "source": "scripts/perf/page-bytes.ts",
-      "status": "not-measured"
+      "status": "pass",
+      "measured": 90096
     },
     {
       "id": "B-page-bytes",
       "metric": "total transfer bytes per HTML page, every matrix page",
       "limit": "<= baseline + max(1%, 1 KB)",
       "source": "scripts/perf/page-bytes.ts",
-      "status": "not-measured"
+      "status": "pass",
+      "note": "-85.8 KB per HTML page; other URLs identical (RESULTS.md §5)"
     },
     {
       "id": "B-requests",
       "metric": "requests per HTML page",
       "limit": "<= baseline",
       "source": "scripts/perf/page-bytes.ts",
-      "status": "not-measured"
+      "status": "pass",
+      "note": "-1 request on the 16 HTML pages, equal elsewhere"
     },
     {
       "id": "B-pixels",
       "metric": "differing pixels candidate vs baseline, 375@2 and 1440@1",
       "limit": "<= A/A noise floor of the same page and viewport",
       "source": "scripts/perf/pixel-capture.ts + pixel_diff.py",
-      "status": "not-measured"
+      "status": "fail",
+      "note": "Only the footer version digit differs (53 px at 1440, 134 px at 375, A/A floor 0). Owner decision pending: accept as content or mask the version region."
     },
     {
       "id": "B-ttfb",
       "metric": "L2 TTFB p50 per route and connection mode",
       "limit": "<= baseline + A/A noise (10 ms new, 4 ms warm)",
       "source": "scripts/perf/l2-ttfb.ts",
-      "status": "not-measured"
+      "status": "fail",
+      "note": "No version effect detectable (symmetric run, RESULTS.md §3); three cells exceed the fixed 10/4 ms noise, including /manifest.json, which W1 does not touch."
     },
     {
       "id": "B-lab-lcp",
       "metric": "Lighthouse mobile simulated LCP, lab subset",
       "limit": "<= baseline arm median + A/A spread",
       "source": "scripts/perf/l3-lab.ts",
-      "status": "not-measured"
+      "status": "pass",
+      "note": "Candidate below the baseline arm median on every lab page (RESULTS.md §1)"
     },
     {
       "id": "B-edge-hit",
