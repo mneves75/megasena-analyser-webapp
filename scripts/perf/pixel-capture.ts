@@ -47,6 +47,14 @@ export function parseEvalJson(out: string): AssetStatus[] {
   return value as AssetStatus[];
 }
 
+/**
+ * Every capture lands in a directory no earlier run wrote to, so the
+ * existence check after each screenshot cannot be satisfied by a stale PNG.
+ */
+export function assertFreshOutputDir(dir: string): void {
+  if (existsSync(dir)) throw new Error(`${dir} já existe de uma execução anterior; use um --label novo.`);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const base = resolveBaseUrl(args);
@@ -58,6 +66,7 @@ async function main(): Promise<void> {
   const only = args.includes('--paths') ? stringArg(args, '--paths', '').split(',') : null;
   const entries = PAGE_MATRIX.filter(entry => (only ? only.includes(entry.path) : entry.lab));
   const outDir = path.join('.scratch/perf', label, 'pixels');
+  assertFreshOutputDir(outDir);
   mkdirSync(outDir, { recursive: true });
   const sessions = arms.map((_arm, index) => `perf-pixels-${label}-${index}`);
   const captures = [];

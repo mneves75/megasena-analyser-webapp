@@ -11,7 +11,7 @@
  * Lighthouse reports stay in .scratch/perf/<label>/; the committed extract holds
  * metrics and the network log (URL path, type, transfer and resource bytes).
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
 import { HARNESS_USER_AGENT, type AssetStatus, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, assertRequiredAssetsLoaded, resolveBaseUrl, stringArg } from './matrix';
@@ -27,19 +27,49 @@ async function lighthouse(url: string, outFile: string, arm: string, script: str
   const headers: Record<string, string> = { 'X-Perf-Harness': HARNESS_USER_AGENT };
   if (arm !== 'current') headers['Cloudflare-Workers-Version-Overrides'] = `${script}="${arm}"`;
   args.push(`--extra-headers=${JSON.stringify(headers)}`);
-  // A Lighthouse tool failure (for example NO_NAVSTART on a loaded host) is
-  // retried; it produced no sample. Page-level failures are judged afterwards.
   for (let attempt = 1; ; attempt++) {
+    // A report left by an earlier attempt must never be read as this attempt's.
+    rmSync(outFile, { force: true });
     const proc = Bun.spawn(['lighthouse', ...args], { stdout: 'pipe', stderr: 'pipe' });
     const [err, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
     if (code === 0) return;
-    if (attempt >= LIGHTHOUSE_ATTEMPTS) throw new Error(`lighthouse saiu com ${code}: ${err.trim().slice(-500)}`);
+    const report = existsSync(outFile) ? readFileSync(outFile, 'utf8') : null;
+    const failure = `lighthouse saiu com ${code}: ${err.trim().slice(-500)}`;
+    if (lighthouseFailure(err, report) === 'fail') throw new Error(`${failure}; execução inválida.`);
+    if (attempt >= LIGHTHOUSE_ATTEMPTS) throw new Error(failure);
     process.stderr.write(`lighthouse falhou (tentativa ${attempt}/${LIGHTHOUSE_ATTEMPTS}), repetindo: ${err.trim().slice(-160)}\n`);
     await Bun.sleep(5000);
   }
 }
 
 const LIGHTHOUSE_ATTEMPTS = 3;
+/** Runtime errors of the tool itself, not of the page; they produced no sample. */
+const RETRYABLE_LIGHTHOUSE_ERRORS = ['NO_NAVSTART', 'PROTOCOL_TIMEOUT'];
+
+/**
+ * Lighthouse exits non-zero both for its own failures and for page failures
+ * (an error status such as 429 sets runtimeError ERRORED_DOCUMENT_REQUEST). Only
+ * an identified tool failure may be retried: retrying a page failure until a
+ * later attempt succeeds would hide it.
+ */
+export function lighthouseFailure(stderr: string, report: string | null): 'retry' | 'fail' {
+  if (report !== null) {
+    let code: unknown;
+    try {
+      code = JSON.parse(report)?.runtimeError?.code;
+    } catch {
+      return 'fail';
+    }
+    return typeof code === 'string' && RETRYABLE_LIGHTHOUSE_ERRORS.includes(code) ? 'retry' : 'fail';
+  }
+  return RETRYABLE_LIGHTHOUSE_ERRORS.some(code => stderr.includes(code)) ? 'retry' : 'fail';
+}
+
+/** Same-origin requests become `pathname + search`; others are recorded by host. */
+export function networkPath(url: string, base: string): string {
+  const parsed = new URL(url);
+  return parsed.origin === new URL(base).origin ? parsed.pathname + parsed.search : parsed.host;
+}
 
 function extract(lhrFile: string, base: string) {
   const lhr = JSON.parse(readFileSync(lhrFile, 'utf8'));
@@ -50,6 +80,7 @@ function extract(lhrFile: string, base: string) {
   const blocked = requests.filter(r => r.statusCode === 429).length;
   const documentStatus = requests.find(r => r.resourceType === 'Document')?.statusCode ?? 0;
   return {
+    runtimeError: lhr.runtimeError?.code as string | undefined,
     runWarnings: lhr.runWarnings,
     lighthouseVersion: lhr.lighthouseVersion,
     userAgent: lhr.environment?.hostUserAgent,
@@ -78,8 +109,8 @@ function extract(lhrFile: string, base: string) {
       document: bytes('Document'), script: bytes('Script'), stylesheet: bytes('Stylesheet'),
       font: bytes('Font'), image: bytes('Image'), fetch: bytes('Fetch'), other: bytes('Other'),
     },
-    fontRequests: requests.filter(r => r.resourceType === 'Font').map(r => r.url.replace(base, '')),
-    network: requests.map(r => ({ path: r.url.startsWith(base) ? r.url.slice(base.length) : new URL(r.url).host,
+    fontRequests: requests.filter(r => r.resourceType === 'Font').map(r => networkPath(r.url, base)),
+    network: requests.map(r => ({ path: networkPath(r.url, base),
       type: r.resourceType, status: r.statusCode, transferSize: r.transferSize, resourceSize: r.resourceSize })),
   };
 }
@@ -116,6 +147,7 @@ async function main(): Promise<void> {
         const file = path.join(scratch, `${entry.path.replace(/\W+/g, '_') || 'root'}-${index}-${run}.json`);
         await lighthouse(`${base}${entry.path}`, file, arm, script);
         const result = extract(file, base);
+        if (result.runtimeError) throw new Error(`Lighthouse ${result.runtimeError} em ${entry.path}: execução inválida.`);
         if (result.rateLimited > 0) throw new Error(`429 em ${entry.path}: execução inválida; aumente --gap-ms.`);
         assertExpectedStatus(entry, result.documentStatus);
         assertRequiredAssetsLoaded(entry.path, labAssets(result.network));
