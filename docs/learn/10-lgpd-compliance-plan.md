@@ -31,7 +31,7 @@ consegue responder olhando o código, há uma lacuna de conformidade.
 
 | Dado | Onde entra | Proteção aplicada |
 | --- | --- | --- |
-| Endereço IP (como pseudônimo) | `server.ts` → `pseudonymizeIp` | `lib/security/pseudonymize.ts`: HMAC-SHA256 com salt de 30 dias; grava `hmac-sha256:v1:<janela>:<digest>` em `client_id_hash`. Nunca grava IP cru |
+| Endereço IP (como pseudônimo) | `lib/api/handler.ts` → `pseudonymizeClient` | `lib/security/pseudonymize.ts`: HMAC-SHA256 da rede (IPv4 ou IPv6 /64) com janela de 30 dias; grava `hmac-sha256:v1:<janela>:<digest>` em `client_id_hash`. Sem segredo forte, usa sal aleatório por processo (`salted-sha256:`), nunca SHA-256 puro. Nunca grava IP cru |
 | User-agent | header HTTP | truncado a 120 chars, sem caracteres de controle (`lib/audit.ts`, `lib/log-store.ts`) |
 | Rota, método, status, duração, `request_id` | operacional | `request_id` é `crypto.randomUUID()`; sem correlação com pessoa |
 | `metadata_json` | fornecido pelo chamador | `sanitizeStructuredMetadata` redige `authorization|token|secret|password|cookie` |
@@ -179,7 +179,7 @@ pós-mortem é obrigatória.
 ## Como verificar isso no código
 
 ```bash
-grep -n "pseudonymizeIp\|IP_HASH_SECRET" server.ts lib/security/pseudonymize.ts
+grep -n "pseudonymizeClient\|IP_HASH_SECRET" lib/api/handler.ts lib/security/pseudonymize.ts
 grep -rn "localStorage.setItem" components
 grep -n "sanitizeStructuredMetadata" lib/audit.ts lib/logger.ts lib/log-store.ts
 grep -rn "PRAGMA key\|sqlcipher\|SQLCipher" .   # esperado: vazio (sem cifra em repouso)

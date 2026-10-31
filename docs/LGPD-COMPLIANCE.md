@@ -268,7 +268,7 @@ O titular sempre pode apresentar reclamação à ANPD em https://www.gov.br/anpd
 | 4 | Banner de divulgação de armazenamento local (não-bloqueante) | Concluído | `components/storage-disclosure.tsx`, integrado ao `layout.tsx` |
 | 5 | Página de direitos do titular `/privacy/direitos` com modelo de requisição | Concluído | `app/privacy/direitos/page.tsx`, `lib/i18n.ts` |
 | 6 | Endpoint `mailto:` para canal único `privacidade@megasena-analyzer.com.br` com modelo de requisição | Concluído | `app/privacy/direitos/page.tsx`, `components/privacy/rights-request-template.tsx` |
-| 7 | Pseudonimização robusta de IP via HMAC com salt rotativo | Concluído | `server.ts`, `lib/security/pseudonymize.ts` |
+| 7 | Pseudonimização robusta de IP via HMAC com salt rotativo | Concluído | `lib/api/handler.ts`, `lib/security/pseudonymize.ts` |
 | 8 | Sanitização recursiva de metadados antes da gravação | Já existente, validado | `lib/security/sanitize-metadata.ts` |
 | 9 | Retenção automática agendada (logs 30 d, auditoria 400 d) | Já existente, documentado | `lib/log-retention.ts`, `lib/audit-retention.ts`, `server.ts` |
 | 10 | Plano de resposta a incidente | Concluído | `docs/INCIDENT-RESPONSE.md`, `docs/INCIDENT-RESPONSE-TEMPLATE.md` |

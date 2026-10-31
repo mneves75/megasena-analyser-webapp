@@ -208,7 +208,7 @@ Observações importantes (verificadas):
 - A API enfileira eventos: `enqueueAuditEvent` (`lib/audit.ts`) e o logger →
   `enqueueLogEvent` (`lib/log-store.ts`). Ambos usam fila assíncrona com flush em lote
   (intervalo 2s, limites de tamanho) e transação `BEGIN IMMEDIATE`.
-- IP nunca é gravado cru: vira `client_id_hash` via `pseudonymizeIp` (HMAC-SHA256).
+- IP nunca é gravado cru: vira `client_id_hash` via `pseudonymizeClient` (HMAC-SHA256 da rede: IPv4 ou IPv6 /64).
 
 ## Como verificar isso no código
 

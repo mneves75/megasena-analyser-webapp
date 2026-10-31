@@ -25,8 +25,8 @@ import {
   readJsonBodyWithLimit,
 } from '../security/http';
 import { parseTrendNumbers, parseTrendsQuery } from '../security/trends-input';
-import { hashForAudit } from '../security/pseudonymize';
-import { createHmac, randomBytes } from 'node:crypto';
+import { hashForAudit, pseudonymizeClient } from '../security/pseudonymize';
+import { randomBytes } from 'node:crypto';
 import {
   buildResponseCacheKey,
   ContestResponseCache,
@@ -228,13 +228,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
 
     // Group by network, not by address: see rateLimitSubject for why a /128 key
     // gives one IPv6 client an unbounded number of buckets.
-    const subject = rateLimitSubject(clientIp) || clientIp;
-    const secret = options.ipHashSecret?.trim();
-    if (!secret || secret.length < 32) {
-      return `salted-sha256:${createHmac('sha256', fallbackAuditSalt).update(subject).digest('hex')}`;
-    }
-    const windowId = Math.max(0, Math.floor((Date.now() - Date.parse('2026-01-01T00:00:00.000Z')) / (30 * 24 * 60 * 60 * 1000)));
-    return `hmac-sha256:v1:${windowId}:${createHmac('sha256', secret).update(`v1:${windowId}:${subject}`).digest('hex')}`;
+    return pseudonymizeClient(rateLimitSubject(clientIp) || clientIp, options.ipHashSecret, fallbackAuditSalt);
   }
 
   function createRequestContext(

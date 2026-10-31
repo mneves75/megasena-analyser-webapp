@@ -1,16 +1,55 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { hashForAudit, isHmacEnabled, pseudonymizeIp, safeStringEqual } from '@/lib/security/pseudonymize';
+import { createHash, createHmac } from 'node:crypto';
+import { afterEach, describe, expect, it } from 'vitest';
+import { hashForAudit, isHmacEnabled, pseudonymizeClient, safeStringEqual } from '@/lib/security/pseudonymize';
 
 const STRONG_SECRET = 'a'.repeat(64);
 const SALT_EPOCH_MS = Date.parse('2026-01-01T00:00:00.000Z');
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
-describe('pseudonymizeIp', () => {
-  const originalSecret = process.env['IP_HASH_SECRET'];
+describe('pseudonymizeClient', () => {
+  const salt = Buffer.alloc(32, 7);
+  const subject = '203.0.113.42';
 
-  beforeEach(() => {
-    delete process.env['IP_HASH_SECRET'];
+  it('usa HMAC com janela de 30 dias quando o segredo é forte', () => {
+    const result = pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS);
+    expect(result).toBe(
+      `hmac-sha256:v1:0:${createHmac('sha256', STRONG_SECRET).update(`v1:0:${subject}`).digest('hex')}`
+    );
+    expect(result).not.toContain(subject);
   });
+
+  it('nunca cai para SHA-256 sem sal, que é reversível para IPv4', () => {
+    for (const secret of [undefined, '', 'short', `  ${'a'.repeat(31)}  `]) {
+      const result = pseudonymizeClient(subject, secret, salt, SALT_EPOCH_MS);
+      expect(result).toBe(`salted-sha256:${createHmac('sha256', salt).update(subject).digest('hex')}`);
+      expect(result).not.toContain(createHash('sha256').update(subject).digest('hex'));
+    }
+  });
+
+  it('roda a janela a cada 30 dias e mantém o hash estável dentro dela', () => {
+    const a = pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS + 1000);
+    const b = pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS + 2000);
+    const c = pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS + WINDOW_MS + 1);
+    expect(a).toBe(b);
+    expect(c.startsWith('hmac-sha256:v1:1:')).toBe(true);
+    expect(c).not.toBe(a);
+  });
+
+  it('trata instantes anteriores à época como janela 0', () => {
+    expect(pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS - WINDOW_MS)).toBe(
+      pseudonymizeClient(subject, STRONG_SECRET, salt, SALT_EPOCH_MS)
+    );
+  });
+
+  it('distingue sujeitos diferentes', () => {
+    expect(pseudonymizeClient('203.0.113.1', STRONG_SECRET, salt)).not.toBe(
+      pseudonymizeClient('203.0.113.2', STRONG_SECRET, salt)
+    );
+  });
+});
+
+describe('isHmacEnabled', () => {
+  const originalSecret = process.env['IP_HASH_SECRET'];
 
   afterEach(() => {
     if (typeof originalSecret === 'string') {
@@ -20,53 +59,8 @@ describe('pseudonymizeIp', () => {
     }
   });
 
-  it('retorna sentinela para entrada vazia', () => {
-    expect(pseudonymizeIp('')).toBe('sha256:unknown');
-  });
-
-  it('usa SHA-256 cru como fallback quando IP_HASH_SECRET ausente', () => {
-    const result = pseudonymizeIp('203.0.113.42');
-    expect(result.startsWith('sha256:')).toBe(true);
-    expect(result).not.toContain('hmac-sha256:');
-  });
-
-  it('rejeita segredo muito curto e cai para fallback', () => {
-    process.env['IP_HASH_SECRET'] = 'short';
-    const result = pseudonymizeIp('203.0.113.42');
-    expect(result.startsWith('sha256:')).toBe(true);
-    expect(result).not.toContain('hmac-sha256:');
-  });
-
-  it('usa HMAC-SHA256 quando IP_HASH_SECRET está configurado', () => {
-    process.env['IP_HASH_SECRET'] = STRONG_SECRET;
-    const result = pseudonymizeIp('203.0.113.42', SALT_EPOCH_MS);
-    expect(result.startsWith('hmac-sha256:v1:0:')).toBe(true);
-  });
-
-  it('produz hashes diferentes em janelas diferentes (rotação de salt)', () => {
-    process.env['IP_HASH_SECRET'] = STRONG_SECRET;
-    const a = pseudonymizeIp('203.0.113.42', SALT_EPOCH_MS);
-    const b = pseudonymizeIp('203.0.113.42', SALT_EPOCH_MS + WINDOW_MS + 1);
-    expect(a).not.toBe(b);
-    expect(a.startsWith('hmac-sha256:v1:0:')).toBe(true);
-    expect(b.startsWith('hmac-sha256:v1:1:')).toBe(true);
-  });
-
-  it('produz hashes determinísticos dentro da mesma janela', () => {
-    process.env['IP_HASH_SECRET'] = STRONG_SECRET;
-    const a = pseudonymizeIp('203.0.113.42', SALT_EPOCH_MS + 1000);
-    const b = pseudonymizeIp('203.0.113.42', SALT_EPOCH_MS + 2000);
-    expect(a).toBe(b);
-  });
-
-  it('produz hashes distintos para IPs diferentes na mesma janela', () => {
-    process.env['IP_HASH_SECRET'] = STRONG_SECRET;
-    const a = pseudonymizeIp('203.0.113.1', SALT_EPOCH_MS);
-    const b = pseudonymizeIp('203.0.113.2', SALT_EPOCH_MS);
-    expect(a).not.toBe(b);
-  });
-
-  it('isHmacEnabled reflete presença e tamanho do segredo', () => {
+  it('reflete presença e tamanho do segredo', () => {
+    delete process.env['IP_HASH_SECRET'];
     expect(isHmacEnabled()).toBe(false);
     process.env['IP_HASH_SECRET'] = 'short';
     expect(isHmacEnabled()).toBe(false);
