@@ -146,47 +146,33 @@ comprimem bem pior), não no encoder. Ver PLAN W9.
 
 A SQL API não tem percentis; o p75 é o **limite superior do bucket** do histograma em
 que a fração acumulada passa de 75% (estimativa conservadora). Valores-sentinela (−1 e
-≥ 4 × 10⁹) excluídos. Script: `/scratchpad` do operador, consulta reproduzida abaixo.
+≥ 4 × 10⁹) excluídos. Consulta-base:
+`SELECT deviceType, FLOOR(<col>/<bucket>) AS bucket, count(*) FROM events.rumWebvitalsEvents WHERE requestHost='<host>' AND <col> >= 0 AND <col> < 4000000000 AND bot=0 GROUP BY deviceType, bucket`.
 
 | Classe | LCP p75 | INP p75 | CLS p75 | TTFB p75 | FCP p75 |
 |---|---|---|---|---|---|
-| mobile | ≤ 1,7 s (n=80) | ≤ 80 ms (n=31) | ≤ 0,01 (n=68) | ≤ 950 ms (n=49) | ≤ 1,5 s (n=65) |
-| desktop | ≤ 1,8 s (n=31) | ≤ 48 ms (n=14) | **≤ 0,17** (n=27) | ≤ 1,15 s (n=24) | ≤ 1,8 s (n=19) |
+| mobile | ≤ 1,7 s | ≤ 80 ms | ≤ 0,01 | ≤ 950 ms | ≤ 1,5 s |
+| desktop | ≤ 1,8 s | ≤ 48 ms | **≤ 0,17** | ≤ 1,15 s | ≤ 1,8 s |
 
-As amostras são pequenas. O CrUX não foi consultado (exige chave de API; origem
-provavelmente abaixo do limiar de elegibilidade). Consulta-base:
-`SELECT deviceType, FLOOR(<col>/<bucket>) AS bucket, count(*) FROM events.rumWebvitalsEvents WHERE requestHost='megasena-analyzer.com.br' AND <col> >= 0 AND <col> < 4000000000 AND bot=0 GROUP BY deviceType, bucket`.
+As amostras são pequenas (tamanhos na evidência privada), então estes p75 indicam
+direção, não efeito. O CrUX não foi consultado (exige chave de API; origem provavelmente
+abaixo do limiar de elegibilidade).
 
-## 7. Servidor e custo (analytics de 7 dias até 2026-10-31 ~11:06 UTC)
+## 7. Servidor e custo (analytics de 7 dias até 2026-10-31)
 
-Fontes: `logs.workersLogs` (amostrado; contagens e somas já ponderadas pela API),
-`events.durableObjectsInvocations`, `events.httpRequests` (zona).
+Fontes: `logs.workersLogs` (amostrado; somas ponderadas pela API),
+`events.durableObjectsInvocations`, `events.httpRequests` (zona). Os valores absolutos (volumes, contagens, totais da conta) ficam na evidência privada do operador, fora do Git: o AGENTS.md proíbe contagens de telemetria privada neste repositório público.
 
-| Métrica | Valor |
+| Métrica (por requisição) | Valor |
 |---|---|
-| Invocações `fetch` do Worker de produção | ~38.950 |
-| CPU `fetch` do Worker | 2.389.470 ms (média ~61 ms; wall médio 324 ms) |
-| RPCs ao DO (`jsrpc`) | ~38.192, todos em **IAD**; CPU média ~13 ms, `APPROX_MAX` 4,5 s; wall médio 163 ms |
-| CPU total do megasena (Worker + DO) | ~2,99 M ms/semana ≈ 12,8 M/mês |
-| CPU da conta inteira | ~6,57 M ms/semana ≈ 28,2 M/mês (franquia: 30 M) |
-| Eventos de log do megasena | ~81 mil eventos `cf-worker-event`, ~278 MB/semana |
-| Requisições na zona (eyeball) | ~56 mil/semana (49 mil sem categoria de bot; 3,8 mil de buscadores; 2,7 mil de IA) |
-| Bloqueios 429 da regra da zona | 5.780/semana, `securityAction=block`. Principais UAs: Android 10 K/Chrome 131 (2.311), `curl/8.7.1` (1.065), Android K/Chrome 153 (627), HeadlessChrome 156 (213) |
-| Staging | ~2.200 fetches e 10 alarmes/semana (fora do escopo; ver PLAN F7) |
+| CPU `fetch` do Worker | média ~61 ms; wall médio 324 ms |
+| RPC ao DO (`jsrpc`) | todos em **IAD**; CPU média ~13 ms, `APPROX_MAX` 4,5 s; wall médio 163 ms |
 
-CPU média por URL (Worker, `fetch`, 7 d): `/` 120 ms (1.220 req), `/resultados` 157 ms,
-`/dashboard/statistics` 176 ms (wall 894 ms), `/numeros` 198 ms, `/dashboard` 125 ms,
-`/opengraph-image` 384 ms, `/concurso/:n/opengraph-image` 270–712 ms,
-`/favicon.ico` 81 ms (404), `/.well-known/assetlinks.json` 66 ms (404),
-`/robots.txt` 19,5 ms.
-
-**Billable Usage: não obtido.** `cf billing usage get-v1` respondeu 403 (token
-delegado sem permissão de billing). Para o dono: Dashboard → Manage Account → Billing →
-Billable Usage, últimos dois ciclos, por produto (Workers Paid, Workers requests,
-Workers CPU, Durable Objects requests/duration/SQLite rows read/rows written/storage,
-Workers Logs); ou a API `GET /accounts/{account_id}/billable-usage?from=<início do ciclo>&to=<fim>`
-com um token que tenha `Billing:Read`. Nenhum gasto foi estimado além das franquias
-públicas.
+Também coletados, só na evidência privada: invocações e CPU totais do app e da conta
+contra a franquia compartilhada, eventos de log, requisições na zona por categoria,
+bloqueios 429 da regra da zona por UA e atividade do staging. Conclusões qualitativas:
+o uso fica dentro das franquias; a CPU da conta inteira já está perto do incluído; a
+regra de rate limit bloqueia uma fração relevante das requisições (PLAN F5).
 
 ## 8. Consultas do DO (local, `bun:sqlite`, seed real de 3.065 concursos)
 

@@ -56,10 +56,10 @@ antes do código. Todo usuário está no Brasil, e o único DO de dados fica em 
 diz que a dica `sam` "spawn[s] in Eastern North America instead" e que objetos não
 mudam de lugar. Logo, cada RPC ao DO custa uma viagem BR↔EUA que nenhuma otimização
 de código remove. A alavanca é **tirar o DO do caminho crítico**. (b) Mediria quanto
-da franquia **compartilhada** da conta o app consome. A conta inteira gasta
-~6,6 M CPU-ms/semana (~28 M/mês) contra 30 M incluídos, e o megasena responde por
-~46%. O custo em dólar é quase zero, mas a folga de CPU já está no limite. (c) Notaria
-que uma regra de rate limit da zona bloqueia ~10% das requisições, o que afeta tanto
+da franquia **compartilhada** da conta o app consome. A soma da conta já fica perto
+da CPU incluída, e o megasena é uma parte grande dela (valores na evidência privada).
+O custo em dólar é quase zero, mas a folga de CPU já está no limite. (c) Notaria que
+uma regra de rate limit da zona bloqueia uma fração relevante das requisições, o que afeta tanto
 usuários atrás de CGNAT quanto qualquer benchmark.
 
 **Matéria-prima usada:** Analytics SQL API (`logs.workersLogs` com `cpuTimeMs`/
@@ -90,32 +90,32 @@ Logs, contagem de invocações do DO e Billable Usage no próximo ciclo.
 
 ## 3. Modelo de custo
 
-Fonte: analytics de 7 dias × 30/7. A conta tem outros projetos. As franquias são **por
-conta**, então a coluna "folga" considera a soma. Valores de preço conferidos em
+Fonte: analytics de 7 dias × 30/7. A conta tem outros projetos e as franquias são
+**por conta**, então a folga considera a soma. Os valores absolutos (volumes, contagens, totais da conta) ficam na evidência privada do operador, fora do Git: o AGENTS.md proíbe contagens de telemetria privada neste repositório público. Preços conferidos em
 2026-10-31: [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
 (atualizado em 2026-10-02) e
 [DO pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
 (atualizado em 2026-10-18).
 
-| Produto | Megasena/mês (est.) | Conta/mês (est.) | Incluído | Overage | Custo atual acima do fixo |
-|---|---:|---:|---:|---|---:|
-| Workers requests (invocações fetch, prod) | ~167 mil | n/d (sem dataset de invocações) | 10 M | $0,30/M | $0 |
-| Workers CPU (fetch + jsrpc do DO) | ~12,8 M ms | ~28,2 M ms | 30 M ms | $0,02/M ms | $0 (folga ~1,8 M ms) |
-| DO requests (RPC) | ~166 mil | ~270 mil | 1 M | $0,15/M | $0 |
-| DO duração | ~3,5 mil GB-s (wall × 128 MB) | — | 400 mil GB-s | $12,50/M GB-s | $0 |
-| DO SQLite rows written | não medido (estimado < 5 M) | — | 50 M | $1,00/M | $0 (a medir, §5 W7) |
-| Workers Logs (eventos) | ~350 mil eventos, ~1,2 GB | ~6 M eventos, ~31 GB | 20 M eventos; a partir de 2026-12-01, 50 GB | — | $0 |
-| Fixo Workers Paid | — | $5 | — | — | **não confirmado (billing 403)** |
+| Produto | Incluído | Overage | Situação (evidência privada) |
+|---|---:|---|---|
+| Workers requests | 10 M | $0,30/M | dentro |
+| Workers CPU (fetch + jsrpc do DO) | 30 M ms | $0,02/M ms | dentro, com pouca folga na conta |
+| DO requests (RPC) | 1 M | $0,15/M | dentro |
+| DO duração | 400 mil GB-s | $12,50/M GB-s | dentro |
+| DO SQLite rows written | 50 M | $1,00/M | não medido (§5 W7) |
+| Workers Logs (eventos) | 20 M eventos; a partir de 2026-12-01, 50 GB | — | dentro |
+| Fixo Workers Paid | $5 | — | **não confirmado (billing 403)** |
 
-**Custo por 1.000 operações úteis** (renderizações de página bem-sucedidas, ~167 mil/mês):
-o custo marginal de uso é $0 enquanto a conta ficar dentro das franquias. Na margem de
-overage, uma página custa ~76 ms de CPU (média ponderada), o que dá ≈ $0,0015 por
-1.000 páginas de CPU + $0,0003 de request.
+**Custo por 1.000 operações úteis** (renderizações de página bem-sucedidas): o custo
+marginal de uso é $0 enquanto a conta ficar dentro das franquias. Na margem de overage,
+uma página custa ~76 ms de CPU (média ponderada), o que dá ≈ $0,0015 por 1.000 páginas
+de CPU + $0,0003 de request.
 
-**Projeção:** 1× = $0 acima do fixo. 10× megasena (≈128 M CPU-ms/mês só do app) fica
-≈ 100 M acima da franquia, cerca de **$2/mês**, mais DO requests ≈ $0,10. Sensibilidade
-a cache: cada HIT do cache de arquivo evita um render de ~100–250 ms de CPU, mas
-**ainda paga um RPC ao DO** (`drawsVersion()`).
+**Projeção:** custo de CPU = max(0, CPU da conta − 30 M ms) × $0,02/M ms. Mesmo um
+crescimento grande do app custa poucos dólares por mês; a sensibilidade a cache é que
+cada HIT do cache de arquivo evita um render de ~100–250 ms de CPU, mas **ainda paga um
+RPC ao DO** (`drawsVersion()`).
 
 Conclusão: o gasto de uso está dentro das franquias. Segundo o briefing, o esforço vai
 para **latência e guardrails**, não para cortar centavos. A redução de CPU vale como
@@ -130,9 +130,9 @@ nunca "economia realizada").
 | F2 | Duas fontes pré-carregadas em toda página (latin 90.096 B + latin-ext 85.856 B). Nenhum texto do app ou do seed usa caracteres latin-ext. | `Link: rel=preload` em produção; vinext 1.3.0 `find-font-files-in-css.js`: `subsets` controla só o preload; varredura do código-fonte e de `db/seed/draws.json` | Alto (bytes e LCP na primeira visita) |
 | F3 | Páginas dinâmicas caras em CPU: `/` 120 ms, `/resultados` 157 ms, `/dashboard/statistics` 176 ms (wall 894 ms), `/numeros` 198 ms, imagens sociais 400–700 ms | `logs.workersLogs` 7 d, média de `cpuTimeMs` por URL | Médio (folga de CPU, TTFB/LCP) |
 | F4 | Rotas inexistentes renderizam a página 404 completa no Worker: `/favicon.ico` (81 ms CPU, 56 KB), `/.well-known/assetlinks.json` (66 ms), scanners `/wp-json/*`, `/feed/`, `/login` | Workers Logs; `curl /favicon.ico` → 404 HTML | Baixo–médio (CPU) |
-| F5 | Regra de rate limit da zona: 5.780 bloqueios (429) em 7 dias, ~10% das requisições. A maioria vem de UAs de scanner, mas também de `curl/8.7.1` e HeadlessChrome (lab). Limiar desconhecido, abaixo de ~80 req/min por IP. | `httpRequests` `securityAction=block`; o harness bateu 429 a 80/min | Risco de CGNAT (decisão do dono) |
-| F6 | CLS de campo no desktop: p75 ≤ 0,17 (n=27); mobile ≤ 0,01. Elementos deslocados (RUM): `#main-content>div…` (conteúdo empurrado) e `footer` (empurrado pelo conteúdo em streaming em `/dashboard*`). Causa provável do primeiro: `StorageDisclosure` usa `getServerSnapshot() = STORAGE_VERSION`, então o servidor não o renderiza e o banner entra **depois da hidratação**, no topo de `<main>`, para todo visitante novo. | RUM 28 d (`cumulativeLayoutShiftElement`), `components/storage-disclosure.tsx:29` | Médio (acima de 0,1) |
-| F7 | Staging ativo: ~2.200 fetches e ~10 alarmes por semana | Workers Logs | Fora de escopo (regra do dono "staging off") |
+| F5 | Regra de rate limit da zona: bloqueia (429) uma fração relevante das requisições, a maioria de UAs de scanner, mas também ferramentas de linha de comando e navegadores headless (lab). Limiar desconhecido, abaixo de ~80 req/min por IP. | `httpRequests` `securityAction=block` (contagens na evidência privada); o harness bateu 429 a 80/min | Risco de CGNAT (decisão do dono) |
+| F6 | CLS de campo no desktop: p75 ≤ 0,17 (amostra pequena); mobile ≤ 0,01. Elementos deslocados (RUM): `#main-content>div…` (conteúdo empurrado) e `footer` (empurrado pelo conteúdo em streaming em `/dashboard*`). Causa provável do primeiro: `StorageDisclosure` usa `getServerSnapshot() = STORAGE_VERSION`, então o servidor não o renderiza e o banner entra **depois da hidratação**, no topo de `<main>`, para todo visitante novo. | RUM 28 d (`cumulativeLayoutShiftElement`), `components/storage-disclosure.tsx:29` | Médio (acima de 0,1) |
+| F7 | Staging tinha fetches e alarmes na semana medida; desde 2026-10-27 é a unidade `staging-off` (410), sem namespace DO e sem alarmes | Workers Logs | Fora de escopo (regra do dono "staging off") |
 | F8 | Cada leitura de API escreve auditoria (1 linha + 4 índices) e log; o RPC `drawsVersion` não escreve | `lib/audit.ts`, migrações 004/006 | A medir (W7) |
 
 ## 5. Itens de trabalho (ordem de execução)
@@ -167,8 +167,8 @@ Guard: testes de unidade em `edge-cache.test.ts` (HIT sem chamar `drawsVersion`
 dentro do TTL; MISS da revisão chama uma vez; falha do DO continua renderizando).
 
 **W3 — Estender o cache de HTML a páginas que são função pura do build.** `/about`,
-`/privacy`, `/privacy/direitos`, `/terms` (texto estático, ~1.300 hits/semana cada no
-zone analytics) e, depois de verificar se dependem do relógio, `/`, `/resultados`,
+`/privacy`, `/privacy/direitos`, `/terms` (texto estático, tráfego relevante no zone
+analytics) e, depois de verificar se dependem do relógio, `/`, `/resultados`,
 `/numeros`, `/mega-da-virada`. Usa o mesmo mecanismo de reescrita de nonce. Precisa de
 prova de que a renderização não depende de hora, cookie ou query. Muda frescor (a
 revisão de draws já entra na chave). **Aprovação necessária por rota.** Efeito

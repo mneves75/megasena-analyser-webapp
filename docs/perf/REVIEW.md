@@ -38,6 +38,22 @@ comparações; o alarme registra erro estruturado sem causa nem stack e deixa es
 de infraestrutura; as regras de status; o escopo da exceção do minimatch (só ferramentas
 de lint); o comparador de pixels por canal e a sessão separada por braço.
 
-## Rodada 3 — correções da rodada 2
+## Rodada 3 — correções da rodada 2 e aceitação de segurança (`bcf863d`)
 
-<!-- ROUND3 -->
+Rodada final de revisão; o revisor também fez a aceitação de segurança do diff completo
+(`36ad8cc..bcf863d`): nenhum achado Critical ou High, mas aceitação FAIL pelos três P2 abaixo.
+
+| # | Sev. | Achado | Disposição |
+|---|---|---|---|
+| 1 | P2 | O epsilon fixo ainda promovia uma fração real: 47,999999999 em `multiple_only` dava troco 6 (soma 48). | **Corrigido.** `wholeCents` lê os centavos da forma decimal mais curta do número (o que o cliente enviou), sem `× 100`; testes de fronteira (47,999999999 e 47,9999999999999 → 5,99) e controles 6,1, 47,99, 48, 100,30. |
+| 2 | P2 | Um 200 da mesma URL mascarava um 500 real; a captura descartava a query string (`?v=old` 200 escondia `?v=new` 500); o conjunto de sucessos aceitava outro tipo. | **Corrigido.** Falha HTTP explícita reprova sempre; status 0 ou ausente só é tolerado com sucesso do mesmo tipo e da mesma URL completa; a captura mantém a query. Os casos mistos falham na regra anterior e passam na nova. |
+| 3 | P2 | BASELINE e PLAN publicavam contagens privadas de telemetria (RUM, uso da conta, tráfego, bloqueios, staging), vedadas pelo AGENTS.md. | **Corrigido.** Volumes, contagens e totais da conta saíram dos documentos públicos para a evidência privada do operador; ficam métricas por requisição e conclusões qualitativas. O commit `6aad51e` da branch já os continha; o merge no main é squash, para que esse commit não entre no histórico do main. |
+
+O revisor também conferiu e considerou corretos: a versão chega a `APP_VERSION` e às
+chaves de cache; a pseudonimização (75 comparações); agrupamento do rate limit, CSP/nonce
+e isolamento do cache; o escopo do minimatch; gitleaks nos 12 commits do candidato; sem
+identificadores de conta, endpoints workers.dev ou dados de linha nos arquivos.
+
+Limite de três rodadas atingido. A aceitação de segurança das correções acima é feita por
+uma verificação independente separada (mesmo modelo revisor, contexto novo), registrada
+no gate de deploy.
