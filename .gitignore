@@ -106,3 +106,6 @@ traefik*.yaml
 # repo must never receive them, so the whole directory stays untracked.
 docs/handoffs/
 /memory/
+
+# Python bytecode from scripts/fonts and scripts/perf
+__pycache__/
