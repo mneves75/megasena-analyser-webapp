@@ -8,6 +8,32 @@ metodologia completa: `BASELINE.md`. Tarefas: `TASKS.md`. Budgets: `budgets.json
 Este plano descreve mudanças **propostas**. Nada em produção foi alterado, nenhum
 `versions upload`/`deploy` foi feito e nenhuma escrita no Durable Object foi feita.
 
+## Estado após a revisão adversarial (2026-10-31)
+
+A rodada 1 (`REVIEW.md`) mudou este plano. O que vale hoje:
+
+- **Entra no release 1.19.3 só o W1**, que mexe só no frontend, sem alteração no DO. W2,
+  W3, W4, W5, W7 e W9 ficam fora. O W2 foi **rejeitado neste escopo**: servir a revisão
+  de um registro com TTL deixa uma página arquivada na revisão R enquanto a API já serve
+  R+1, e uma gravação atrasada de R pode estender o prazo. Isso viola o invariante de
+  frescor. O W5 troca a página 404 renderizada por outra resposta e quebra a
+  equivalência visual. W4 e W7 dependem de testes de carga de recuperação e de migração
+  inversa (abaixo).
+- **§3 (custo):** "$0 acima do fixo" é **condicional**. O billing respondeu 403; as
+  requisições Workers da conta e a duração e SQLite do DO na conta não foram medidas.
+  Os números são estimativas de franquia, não gasto confirmado.
+- **§6 (recuperação):** PITR **não** é rollback sem perda. Restaurar um bookmark
+  descarta sorteios, auditoria e agenda gravados depois dele. Uma mudança de esquema
+  precisa de migração inversa, e PITR fica como recuperação de desastre, restaurado
+  primeiro num destino isolado e reconciliado.
+- **§7 (harness):** excluir `/api/*` **não** zera escritas no DO. Uma página com dados,
+  num miss de cache, chama `DATA.handle()`, e o handler grava auditoria e log. O
+  orçamento de requisições do harness inclui essas escritas, e só páginas HIT ou
+  estáticas não escrevem.
+- **Harness corrigido:** status esperado validado em todas as ferramentas, comparador de
+  pixels por canal RGBA com reprovação por código de saída, e uma sessão de navegador
+  por braço.
+
 ## 0. Adaptações do briefing a este app
 
 O briefing foi escrito para D1. Este app não usa D1: os dados ficam num **único

@@ -1,0 +1,71 @@
+{
+  "$comment": "Derived from docs/perf/BASELINE.md (2026-10-31). status: pass | fail | deferred | not-measured. Frozen after review round 1; never loosened to make a candidate pass.",
+  "release": "1.19.3",
+  "budgets": [
+    {
+      "id": "B-font-preload",
+      "metric": "font bytes preloaded per HTML page (transfer)",
+      "baseline": 175952,
+      "limit": 90096,
+      "source": "scripts/perf/page-bytes.ts",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-page-bytes",
+      "metric": "total transfer bytes per HTML page, every matrix page",
+      "limit": "<= baseline + max(1%, 1 KB)",
+      "source": "scripts/perf/page-bytes.ts",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-requests",
+      "metric": "requests per HTML page",
+      "limit": "<= baseline",
+      "source": "scripts/perf/page-bytes.ts",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-pixels",
+      "metric": "differing pixels candidate vs baseline, 375@2 and 1440@1",
+      "limit": "<= A/A noise floor of the same page and viewport",
+      "source": "scripts/perf/pixel-capture.ts + pixel_diff.py",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-ttfb",
+      "metric": "L2 TTFB p50 per route and connection mode",
+      "limit": "<= baseline + A/A noise (10 ms new, 4 ms warm)",
+      "source": "scripts/perf/l2-ttfb.ts",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-lab-lcp",
+      "metric": "Lighthouse mobile simulated LCP, lab subset",
+      "limit": "<= baseline arm median + A/A spread",
+      "source": "scripts/perf/l3-lab.ts",
+      "status": "not-measured"
+    },
+    {
+      "id": "B-edge-hit",
+      "metric": "edge-cached file/HTML HIT, warm p50",
+      "baseline_ms": "168-263",
+      "limit_ms": 50,
+      "source": "scripts/perf/l2-ttfb.ts",
+      "status": "fail",
+      "note": "Every HIT waits for the drawsVersion() RPC to the IAD Durable Object. W2 would fix it but was rejected for this release (freshness contract)."
+    },
+    {
+      "id": "B-field",
+      "metric": "RUM p75 mobile LCP <= 2.0 s, INP <= 150 ms, CLS <= 0.05",
+      "source": "Cloudflare Web Analytics, 28 days after deploy",
+      "status": "deferred"
+    },
+    {
+      "id": "B-cpu",
+      "metric": "Worker CPU per fetch, by version",
+      "limit": "<= baseline (61 ms mean, 7 days)",
+      "source": "Workers analytics after the 100% rollout",
+      "status": "deferred"
+    }
+  ]
+}

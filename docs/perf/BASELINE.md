@@ -19,7 +19,90 @@ Caminhos de deploy (preflight): nenhum workflow do GitHub faz deploy de Worker; 
 Deploys de produção são manuais via `cf`. Workers Builds no painel: não verificável com
 o token delegado; perguntar ao dono.
 
-<!-- L2-L3-BYTES -->
+## 2. TTFB por classe de rota (L2, curl, 2026-10-31 11:16–11:52 UTC)
+
+`scripts/perf/l2-ttfb.ts --runs 30 --rate 40`, 1.220 requisições, nenhum 429, colo GIG
+em todas. "new" = conexão nova por requisição (DNS+TCP+TLS incluídos no TTFB); "warm" =
+conexão reutilizada (só o servidor). Mediana e p95 em ms. Bruto:
+`raw/baseline-2026-10-31/l2.json`.
+
+| Rota | Classe | new p50 | new p95 | warm p50 | warm p95 | Cache |
+|---|---|---:|---:|---:|---:|---|
+| `/` | dinâmica | 176,5 | 550,6 | 52,2 | 73,8 | — |
+| `/dashboard` | dinâmica | 143,9 | 287,6 | 56,7 | 171,4 | — |
+| `/dashboard/statistics` | dinâmica | 168,2 | 393,2 | 51,3 | 67,4 | — |
+| `/dashboard/generator` | dinâmica | 163,9 | 318,0 | 54,2 | 84,4 | — |
+| `/resultados` | dinâmica | 324,8 | 717,5 | 217,2 | 877,1 | — |
+| `/numeros` | dinâmica | 328,6 | 591,2 | 223,2 | 395,4 | — |
+| `/mega-da-virada` | dinâmica | 341,2 | 766,7 | 220,6 | 734,7 | — |
+| `/resultados/2026` | HTML em cache | 268,2 | 345,2 | 171,4 | 193,4 | HIT |
+| `/resultados/1996` | HTML em cache | 298,9 | 499,4 | 262,5 | 412,7 | HIT |
+| `/concurso/3079` | HTML em cache | 450,1 | 581,2 | 209,2 | 432,2 | HIT |
+| `/concurso/1` | HTML em cache | 283,4 | 598,0 | 168,4 | 176,3 | HIT |
+| `/numeros/10` | HTML em cache | 264,3 | 564,7 | 172,3 | 264,5 | HIT |
+| `/about` | estática | 154,6 | 468,1 | 55,0 | 155,8 | — |
+| `/privacy` | estática | 160,8 | 487,8 | 65,3 | 192,3 | — |
+| `/terms` | estática | 254,1 | 639,4 | 49,2 | 65,8 | — |
+| 404 | não encontrada | 159,0 | 312,6 | 75,2 | 338,1 | — |
+| `/robots.txt` | estática | 130,1 | 276,5 | 39,3 | 75,2 | — |
+| `/sitemap.xml` | arquivo em cache | 255,1 | 465,7 | 180,5 | 208,0 | HIT |
+| `/opengraph-image` | arquivo em cache | 304,8 | 832,1 | 179,5 | 225,6 | HIT |
+| `/manifest.json` | asset estático | 160,5 | 445,4 | 45,9 | 82,0 | HIT |
+
+**Leitura principal:** um HIT de HTML ou arquivo no cache de borda (warm p50 168–263 ms)
+é **mais lento** que páginas renderizadas a cada requisição sem dados lentos (warm p50
+49–57 ms). Todo HIT espera `drawsVersion()`, um RPC ao DO em IAD (~120 ms de ida e volta
+a partir de GIG), antes de ler o cache. As páginas `/dashboard*` começam a transmitir
+antes dos dados. É a oportunidade W2 do PLAN, que neste release **não** entra: a revisão
+adversarial mostrou que um registro de revisão com TTL enfraquece o contrato de frescor.
+
+### Ruído A/A (mesma versão nos dois braços, intercalados)
+
+`--arms current,current --paths /,/concurso/3079,/about,/manifest.json`, 488 requisições.
+
+| Rota | modo | p50 braço 0 | p50 braço 1 | Δ p50 | p95 braço 0 | p95 braço 1 |
+|---|---|---:|---:|---:|---:|---:|
+| `/` | new | 148,3 | 143,2 | 5,1 | 197,2 | 191,3 |
+| `/` | warm | 50,8 | 53,3 | 2,5 | 65,1 | 131,2 |
+| `/concurso/3079` | new | 281,4 | 272,3 | 9,0 | 597,4 | 752,5 |
+| `/concurso/3079` | warm | 173,6 | 170,1 | 3,6 | 203,6 | 194,3 |
+| `/about` | new | 162,4 | 161,4 | 1,0 | 693,9 | 422,4 |
+| `/about` | warm | 55,6 | 56,9 | 1,3 | 112,5 | 69,4 |
+| `/manifest.json` | new | 142,0 | 132,4 | 9,5 | 215,9 | 329,3 |
+| `/manifest.json` | warm | 41,7 | 43,6 | 1,9 | 50,9 | 64,2 |
+
+Piso de ruído: **~10 ms** na mediana com conexão nova e **~4 ms** com conexão
+reutilizada. O p95 varia até centenas de ms entre braços idênticos, então nenhuma
+diferença de p95 com n=30 é tratada como efeito.
+
+## 3. Lab (L3)
+
+Ver `RESULTS.md`: o L3 roda baseline e candidato intercalados na mesma sessão, para que
+a máquina e a rede sejam as mesmas nos dois braços.
+
+## 4. Peso das páginas (`page-bytes.ts`, bytes transferidos com `br, gzip`)
+
+Todas as páginas HTML carregam o mesmo CSS (8.654 B), ~175 KB de JS e **duas fontes
+pré-carregadas: 175.952 B** (latin 90.096 + latin-ext 85.856). Bruto:
+`raw/baseline-2026-10-31/page-bytes.json`.
+
+| Rota | Requisições | HTML | JS | Fontes | Total |
+|---|---:|---:|---:|---:|---:|
+| `/` | 15 | 13.955 | 175.368 | 175.952 | 373.929 |
+| `/dashboard/statistics` | 17 | 25.276 | 176.617 | 175.952 | 386.499 |
+| `/dashboard/generator` | 18 | 11.958 | 182.938 | 175.952 | 379.502 |
+| `/resultados/2026` | 15 | 19.403 | 175.368 | 175.952 | 379.377 |
+| `/concurso/3079` | 15 | 14.154 | 175.368 | 175.952 | 374.128 |
+| `/about` | 15 | 10.885 | 175.368 | 175.952 | 370.859 |
+| 404 | 13 | 7.478 | 174.570 | 175.952 | 366.654 |
+
+As fontes são **47%** dos bytes de uma primeira visita a `/`.
+
+**Code points por página** (16 páginas HTML, inclusive o texto RSC inline): só Latin-1
+(`U+00A0`–`U+00FA`), `U+2013`, `U+2014`, `U+2212` e `U+2264`. Contra os `unicode-range`
+servidos no HTML, tudo cai no arquivo latin (`U+0000-00FF`, `U+2000-206F`, `U+2212`),
+exceto `≤` (`U+2264`), que não existe em nenhuma face Archivo e já usa o fallback hoje.
+**Nenhuma página usa latin-ext.**
 
 ## 5. Fontes
 
