@@ -29,6 +29,7 @@ let sourceCalls = 0;
 let failSource = false;
 let networkGate: Promise<void> | undefined;
 let reportNetworkStart: (() => void) | undefined;
+const runtimeLogs: string[] = [];
 const options = (dailyRefreshEnabled = '1') => ({ ...convertV4MiniflareOptions({ workers: [{
   name: 'scheduler-test', modules: true, script: compiled.outputFiles[0]!.text,
   compatibilityDate: '2026-10-02', compatibilityFlags: ['nodejs_compat'],
@@ -43,7 +44,8 @@ const options = (dailyRefreshEnabled = '1') => ({ ...convertV4MiniflareOptions({
       numero: seed.length + 1, dataApuracao: '02/10/2026', listaDezenas: ['01', '02', '03', '04', '05', '06'],
     });
   },
-}] }), resourcePersistencePath: path.join(directory, 'storage') });
+}] }), resourcePersistencePath: path.join(directory, 'storage'),
+  handleStructuredLogs: ({ message }: { message: string }) => { runtimeLogs.push(message); } });
 let runtime = new Miniflare(options());
 async function state(route = '/status'): Promise<State> {
   const response = await runtime.dispatchFetch('https://example.com' + route);
@@ -94,6 +96,10 @@ try {
   await state('/due');
   let failed = await state('/run');
   assert(failed.ingestion?.status === 'failed' && failed.ingestion.retry_count === 1 && failed.schedule?.next_kind === 'retry', 'first failure keeps a persisted retry');
+  // Alarm events go through the redacting structured logger, like request logs.
+  const alarmFailure = runtimeLogs.flatMap(line => { try { return [JSON.parse(line) as { level?: string; event?: string; error?: { message?: string } }]; } catch { return []; } })
+    .find(entry => entry.event === 'ingestion.alarm_failed');
+  assert(alarmFailure?.level === 'error' && typeof alarmFailure.error?.message === 'string', 'alarm failure must be a structured logger entry');
   const retryState = JSON.stringify(failed);
   await runtime.dispose();
   runtime = new Miniflare(options());
