@@ -7,6 +7,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+- Medição: resultados do 1.19.3 em `docs/perf/RESULTS.md`, com status de todos os budgets em `docs/perf/budgets.json`. O harness ignora o beacon RUM que o lab bloqueia de propósito, repete falhas da ferramenta Lighthouse (sem amostra) e grava capturas por caminho absoluto, falhando se o arquivo não existir.
+
 ## [1.19.3] - 2026-10-31
 
 Custo e carregamento, mais a revisão de segurança de 2026-10-31. Nada muda no que o visitante vê ou faz.

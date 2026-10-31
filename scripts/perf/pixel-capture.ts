@@ -12,7 +12,7 @@
  * give the A/A noise floor. Images go to
  * .scratch/perf/<run>/pixels/; compare them with scripts/perf/pixel_diff.py.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
 import { type AssetStatus, HARNESS_USER_AGENT, PAGE_MATRIX, assertExpectedStatus, assertRequiredAssetsLoaded, resolveBaseUrl, stringArg } from './matrix';
@@ -47,6 +47,14 @@ export function parseEvalJson(out: string): AssetStatus[] {
   return value as AssetStatus[];
 }
 
+/**
+ * Every capture lands in a directory no earlier run wrote to, so the
+ * existence check after each screenshot cannot be satisfied by a stale PNG.
+ */
+export function assertFreshOutputDir(dir: string): void {
+  if (existsSync(dir)) throw new Error(`${dir} já existe de uma execução anterior; use um --label novo.`);
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const base = resolveBaseUrl(args);
@@ -58,6 +66,7 @@ async function main(): Promise<void> {
   const only = args.includes('--paths') ? stringArg(args, '--paths', '').split(',') : null;
   const entries = PAGE_MATRIX.filter(entry => (only ? only.includes(entry.path) : entry.lab));
   const outDir = path.join('.scratch/perf', label, 'pixels');
+  assertFreshOutputDir(outDir);
   mkdirSync(outDir, { recursive: true });
   const sessions = arms.map((_arm, index) => `perf-pixels-${label}-${index}`);
   const captures = [];
@@ -83,7 +92,10 @@ async function main(): Promise<void> {
           // each same-origin asset's status and every errored FontFace.
           assertRequiredAssetsLoaded(entry.path, parseEvalJson(await browser(session, 'eval', ASSET_STATUS_SCRIPT)));
           const file = path.join(outDir, `${viewport.name}${entry.path.replace(/\W+/g, '_') || '_root'}-${index}.png`);
-          await browser(session, 'screenshot', '--full', file);
+          // Absolute path: agent-browser reads a leading `.` (as in `.scratch/`) as a CSS
+          // selector and silently saves to its own temp directory instead.
+          const saved = await browser(session, 'screenshot', '--full', path.resolve(file));
+          if (!existsSync(file)) throw new Error(`screenshot não gravado em ${file}: ${saved.slice(-200)}`);
           captures.push({ viewport: viewport.name, path: entry.path, arm: `${index}:${arm}`, file });
           process.stderr.write(`${viewport.name} ${entry.path} arm ${index}\n`);
           await Bun.sleep(gapMs);

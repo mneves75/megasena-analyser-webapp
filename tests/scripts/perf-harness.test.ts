@@ -3,7 +3,11 @@ import { percentile, summarize } from '../../scripts/perf/stats';
 import { extractAssets, nonAsciiCodepoints } from '../../scripts/perf/page-bytes';
 import { parseWriteOut } from '../../scripts/perf/l2-ttfb';
 import { PAGE_MATRIX, assertExpectedStatus, assertRequiredAssetsLoaded } from '../../scripts/perf/matrix';
-import { parseEvalJson } from '../../scripts/perf/pixel-capture';
+import { mkdtempSync, rmdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { assertFreshOutputDir, parseEvalJson } from '../../scripts/perf/pixel-capture';
+import { labAssets, lighthouseFailure, networkPath } from '../../scripts/perf/l3-lab';
 
 describe('perf harness statistics', () => {
   it('uses nearest-rank percentiles on sorted samples', () => {
@@ -92,6 +96,40 @@ describe('perf page matrix', () => {
     ]) {
       expect(() => assertRequiredAssetsLoaded('/', [document, ...mixed])).toThrow(/execução inválida/);
     }
+  });
+
+  it('ignores the blocked third-party RUM beacon in the lab network log', () => {
+    const network = [{ path: '/a.js', type: 'Script', status: 200 }, { path: 'static.cloudflareinsights.com', type: 'Script', status: -1 }];
+    expect(() => assertRequiredAssetsLoaded('/', network)).toThrow(/execução inválida/);
+    expect(labAssets(network)).toEqual([{ path: '/a.js', type: 'Script', status: 200 }]);
+    expect(() => assertRequiredAssetsLoaded('/', labAssets(network))).not.toThrow();
+    expect(() => assertRequiredAssetsLoaded('/', labAssets([...network, { path: '/b.woff2', type: 'Font', status: 404 }]))).toThrow(/execução inválida/);
+  });
+
+  it('keeps same-origin requests by parsed origin, whatever the base spelling', () => {
+    for (const base of ['https://example.com', 'https://example.com:443', 'https://EXAMPLE.com']) {
+      expect(networkPath('https://example.com/_next/a.js?v=1', base)).toBe('/_next/a.js?v=1');
+      expect(networkPath('https://static.cloudflareinsights.com/beacon.min.js', base)).toBe('static.cloudflareinsights.com');
+    }
+    expect(networkPath('https://example.com.evil.test/a.js', 'https://example.com')).toBe('example.com.evil.test');
+  });
+
+  it('retries only Lighthouse tool failures, never page failures', () => {
+    const report = (code?: string) => JSON.stringify({ runtimeError: code ? { code } : undefined });
+    expect(lighthouseFailure('', report('NO_NAVSTART'))).toBe('retry');
+    expect(lighthouseFailure('Runtime error encountered: NO_NAVSTART', null)).toBe('retry');
+    expect(lighthouseFailure('', report('ERRORED_DOCUMENT_REQUEST'))).toBe('fail');
+    expect(lighthouseFailure('NO_NAVSTART', report('ERRORED_DOCUMENT_REQUEST'))).toBe('fail');
+    expect(lighthouseFailure('', report())).toBe('fail');
+    expect(lighthouseFailure('Chrome crashed', null)).toBe('fail');
+    expect(lighthouseFailure('NO_NAVSTART', '{not json')).toBe('fail');
+  });
+
+  it('refuses to capture into a directory left by an earlier run', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'perf-pixels-'));
+    expect(() => assertFreshOutputDir(path.join(dir, 'new'))).not.toThrow();
+    expect(() => assertFreshOutputDir(dir)).toThrow(/--label/);
+    rmdirSync(dir);
   });
 
   it('reads the asset list agent-browser prints, quoted or not', () => {
