@@ -36,6 +36,18 @@ interface CandidatePool {
   all: number[];
 }
 
+/**
+ * Whole cents in a non-negative amount, truncated. Read from the number's
+ * shortest decimal form (what the caller sent) instead of `amount * 100`, whose
+ * binary tails turn 6.1 into 609.99… and 47.999999999 into 600 after any epsilon.
+ */
+export function wholeCents(amount: number): number {
+  const text = String(amount);
+  if (/e/i.test(text)) return Math.floor(amount * 100);
+  const [integer = '0', fraction = ''] = text.split('.');
+  return Number(integer) * 100 + Number((fraction + '00').slice(0, 2));
+}
+
 export class BetGenerator {
   private db: ReturnType<typeof getDatabase>;
   private static readonly MAX_DEDUP_ATTEMPTS = 50;
@@ -320,10 +332,7 @@ export class BetGenerator {
     }
 
     const totalCost = bets.reduce((sum, bet) => sum + bet.cost, 0);
-    // Prices are whole reais but the budget may carry cents (the API also accepts
-    // fractions of a cent). Truncate the change to whole cents so it never exceeds
-    // what was left; the epsilon absorbs binary tails such as 6.1 - 6 = 0.0999….
-    const remainingBudget = Math.max(0, Math.floor((budget - totalCost) * 100 + 1e-6) / 100);
+    const remainingBudget = Math.max(0, (wholeCents(budget) - Math.round(totalCost * 100)) / 100);
     const budgetUtilization = (totalCost / budget) * 100;
 
     // Calculate unique numbers covered

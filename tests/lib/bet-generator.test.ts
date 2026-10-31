@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { BetGenerationInputError, BetGenerator } from '@/lib/analytics/bet-generator';
+import { BetGenerationInputError, BetGenerator, wholeCents } from '@/lib/analytics/bet-generator';
 import { runMigrations } from '@/lib/db';
 import {
   MEGASENA_CONSTANTS,
@@ -7,6 +7,15 @@ import {
   BET_GENERATION_LIMITS,
   BET_PRICES,
 } from '@/lib/constants';
+
+describe('wholeCents', () => {
+  it('truncates to the cents the caller sent, without binary tails', () => {
+    for (const [amount, cents] of [[6.1, 610], [100.3, 10030], [99999.99, 9999999], [48, 4800], [47.999, 4799],
+      [47.999999999, 4799], [47.9999999999999, 4799], [0.29, 29], [1e-7, 0]] as const) {
+      expect(wholeCents(amount)).toBe(cents);
+    }
+  });
+});
 
 describe('BetGenerator', () => {
   beforeAll(() => {
@@ -82,6 +91,11 @@ describe('BetGenerator', () => {
     expect(result.totalCost).toBe(42);
     expect(result.remainingBudget).toBe(5.99);
     expect(result.totalCost + result.remainingBudget).toBeLessThanOrEqual(47.999);
+    // Near the cent boundary a fixed epsilon rounded 599.9999999 up to 600.
+    for (const near of [47.999999999, 47.9999999999999]) {
+      const boundary = generator.generateOptimizedBets(near, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+      expect(boundary.remainingBudget).toBe(5.99);
+    }
     for (const [budget, remaining] of [[47.99, 5.99], [48, 6], [100.3, 58.3]] as const) {
       const control = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
       expect(control.remainingBudget).toBeCloseTo(remaining, 9);
