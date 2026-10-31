@@ -28,7 +28,7 @@ jobs:
       - name: Scan secrets and dependencies
         run: |
           bun run security:secrets
-          bun run security:braces
+          bun run security:audit-exceptions
           pnpm audit
       - name: Check source
         run: |

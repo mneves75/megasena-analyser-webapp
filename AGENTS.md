@@ -51,8 +51,21 @@ append/cache updates, with at most three persisted alarm retries per daily cycle
 The schedule journal, retry budget and native alarm commit together before network
 I/O. Success and retry exhaustion preserve the next calendar 06:00 UTC. Initialization
 preserves an existing schedule; early duplicate delivery cannot spend another attempt.
-Infrastructure errors must escape the alarm handler. Existing remote Cron registrations
+Infrastructure errors must escape the alarm handler.
+
+`GET /api/health` exposes only `scheduler.enabled` and `scheduler.nextAlarmAt` in the
+Worker. The optional shared handler callback reads the native `getAlarm()` every
+request, including when disabled; Bun omits the field. Keep native epoch milliseconds
+or `null`, never infer it from enablement or the schedule journal. Read failures use
+the existing sanitized production 503/no-store path. This snapshot does not prove
+past inactivity; health probes themselves write audit/log records.
+
+Existing remote Cron registrations
 must be explicitly removed and read back: `cf` beta5 preserves them for `triggers: []`.
+`cloudflare/staging-off/` is a separate operational unit, restricted to the
+`staging-off` mode and an explicit account. Its deployment returns `410` and
+permanently deletes the staging namespace after production acceptance and verified
+backup/restoration. Follow `docs/DEPLOY.md`; the next release creates a new namespace.
 Retention bindings keep Bun's 400/30-day defaults
 and configurable semantics; copy the source settings before migrating retained rows.
 See docs/DEPLOY.md for per-environment build inputs and architecture alternatives.
@@ -147,7 +160,7 @@ history scan, fails on findings), `security:csp:edge` (verify edge did not repla
 CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`.
 
 **Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
-`bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit`, and `bun run build` all pass;
+`bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit`, and `bun run build` all pass;
 Argent Chromium verification for UI-affecting changes. The owner requires Argent
 for this review: do not run Playwright. Existing `tests/app` remain legacy coverage;
 the saved Argent flow covers generator pagination, not that entire suite. See

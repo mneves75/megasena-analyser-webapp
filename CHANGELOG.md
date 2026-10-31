@@ -7,7 +7,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
-## [1.19.2] - Não lançado
+## [1.19.3] - 2026-10-31
+
+Custo e carregamento, mais a revisão de segurança de 2026-10-31. Nada muda no que o visitante vê ou faz.
+
+- Fontes: a página pré-carrega só o arquivo latin da Archivo (90.096 B). O preload do latin-ext (85.856 B) era desperdício: nenhuma das 16 páginas HTML medidas usa um caractere desse subset. A face continua declarada e carrega por `unicode-range` se algum dia for necessária.
+- Medição: `scripts/perf/` mede TTFB por classe de rota (com ruído A/A), peso das páginas, Lighthouse móvel, pixels em 375 px e 1440 px, e as consultas do DO. Uma resposta com status diferente do esperado (403, 429, 5xx, desafio), ou um script, CSS ou fonte que não carregou, invalida a execução em vez de virar amostra. O comparador de pixels conta qualquer canal RGBA e reprova por código de saída. Baseline e plano em `docs/perf/`.
+- Segurança: `pnpm audit` volta a passar. O advisory GHSA-g3hv-75wg-m249 atinge `minimatch <11.0.1`, mas o código vulnerável só existe a partir da v7; um teste prova, contra a cópia instalada 3.1.4 (só ferramenta de desenvolvimento), que esse caminho não existe. O gate passa a se chamar `security:audit-exceptions` e cobre `braces` e `minimatch`.
+- Pseudonimização: a função que realmente gera `client_id_hash` sai do handler para `lib/security/pseudonymize.ts`, com testes do formato, da janela de 30 dias e do sal aleatório na falta de segredo. A função antiga, sem uso e com fallback SHA-256 sem sal, foi removida. O valor gerado é o mesmo.
+- O alarme diário do DO registra sucesso e falha pelo logger estruturado, com a mesma redação dos logs de requisição.
+- Gerador: o troco de um orçamento com centavos sai em centavos inteiros no JSON da API (antes, `4.299999999999997`), truncado para nunca passar do que sobrou: um orçamento de R$ 47,999 deixa R$ 5,99, não R$ 6,00. O modo otimizado também deixa de arredondar o orçamento para cima (R$ 47,999999999 comprava uma combinação de R$ 48).
+- Resposta a incidentes: procedimento para bloquear um cliente abusivo na borda (lista de IPs + regra WAF), já que o app não tem contas.
+- Unidade operacional isolada para desligar staging após aceite de produção e backup/restauração verificados, com resposta `410`, preservação do segredo e exclusão declarativa do namespace.
+
+## [1.19.2] - 2026-10-27
 
 Integra as branches pendentes de cache e dependências, preservando as correções mais recentes de `main`.
 
@@ -17,6 +30,8 @@ Integra as branches pendentes de cache e dependências, preservando as correçõ
 - Requisições com cookies, autenticação, seletores de navegação do framework, range/condicionais ou `_rsc` ignoram o cache. HTML comprimido e respostas com variantes `Vary` fora da chave também ficam fora dele.
 - A API mantém o cache limitado das listagens compartilhadas e os concursos individuais sem cache; as chaves passam a incluir a versão do aplicativo. O merge de Dependabot preserva `baseline-browser-mapping` em `2.11.30` e os controles do pnpm.
 - Staging usa `DAILY_REFRESH_ENABLED=0`, com Crons explicitamente vazios. A ativação cancela alarmes nativos existentes; entregas atrasadas não consultam a CAIXA, não gravam nem reagendam. O RPC privado de refresh manual permanece disponível, sem retries autônomos quando desabilitado.
+- `/api/health` no Worker informa somente `scheduler.enabled` e `scheduler.nextAlarmAt`, lendo o alarme nativo a cada consulta (milissegundos Unix ou `null`). O Bun omite o campo; falhas de leitura usam o `503` existente, sanitizado em produção e sem cache. Testes cobrem os limites do contrato e o alarme real no workerd.
+- Documentos de resposta a incidentes corrigem o prazo padrão de comunicação à ANPD e aos titulares para três dias úteis, contado do conhecimento de que dados pessoais foram afetados, quando a obrigação for aplicável e ressalvadas regras específicas; a severidade interna não é o único critério.
 - Regressões cobrem compressão, headers após reescrita, variantes de navegação, cancelamento de alarmes, entregas atrasadas e refresh manual, preservando as provas de retry e recuperação do agendador de produção.
 
 ## [1.19.1] - 2026-10-26

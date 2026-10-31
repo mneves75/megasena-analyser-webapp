@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { BetGenerationInputError, BetGenerator } from '@/lib/analytics/bet-generator';
+import { BetGenerationInputError, BetGenerator, wholeCents } from '@/lib/analytics/bet-generator';
 import { runMigrations } from '@/lib/db';
 import {
   MEGASENA_CONSTANTS,
@@ -7,6 +7,15 @@ import {
   BET_GENERATION_LIMITS,
   BET_PRICES,
 } from '@/lib/constants';
+
+describe('wholeCents', () => {
+  it('truncates to the cents the caller sent, without binary tails', () => {
+    for (const [amount, cents] of [[6.1, 610], [100.3, 10030], [99999.99, 9999999], [48, 4800], [47.999, 4799],
+      [47.999999999, 4799], [47.9999999999999, 4799], [0.29, 29], [1e-7, 0]] as const) {
+      expect(wholeCents(amount)).toBe(cents);
+    }
+  });
+});
 
 describe('BetGenerator', () => {
   beforeAll(() => {
@@ -63,6 +72,39 @@ describe('BetGenerator', () => {
     expect(result.totalCost).toBeLessThanOrEqual(budget);
     expect(result.remainingBudget).toBeGreaterThanOrEqual(0);
     expect(result.totalCost + result.remainingBudget).toBe(budget);
+  });
+
+  it('reports a budget with cents back in whole cents, without float tails', () => {
+    const generator = new BetGenerator();
+    for (const budget of [100.3, 99999.99, 6.1]) {
+      const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.SIMPLE_ONLY, 'random');
+      // 100.3 - 96 is 4.299999999999997 in binary floating point.
+      expect(String(result.remainingBudget)).toMatch(/^\d+(\.\d{1,2})?$/);
+      expect(result.totalCost + result.remainingBudget).toBeCloseTo(budget, 9);
+    }
+  });
+
+  it('never reports more change than the submitted budget left over', () => {
+    const generator = new BetGenerator();
+    // The API accepts fractional cents: 47.999 - 42 must not round up to 6.
+    const result = generator.generateOptimizedBets(47.999, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+    expect(result.totalCost).toBe(42);
+    expect(result.remainingBudget).toBe(5.99);
+    expect(result.totalCost + result.remainingBudget).toBeLessThanOrEqual(47.999);
+    // Optimized mode rounded the budget to 4800 cents and spent R$ 48.
+    const optimized = generator.generateOptimizedBets(47.999999999, BET_GENERATION_MODE.OPTIMIZED, 'random');
+    expect(optimized.totalCost).toBeLessThanOrEqual(47.999999999);
+    expect(optimized.totalCost + optimized.remainingBudget).toBeLessThanOrEqual(47.999999999);
+    expect(generator.generateOptimizedBets(48, BET_GENERATION_MODE.OPTIMIZED, 'random').totalCost).toBe(48);
+    // Near the cent boundary a fixed epsilon rounded 599.9999999 up to 600.
+    for (const near of [47.999999999, 47.9999999999999]) {
+      const boundary = generator.generateOptimizedBets(near, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+      expect(boundary.remainingBudget).toBe(5.99);
+    }
+    for (const [budget, remaining] of [[47.99, 5.99], [48, 6], [100.3, 58.3]] as const) {
+      const control = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+      expect(control.remainingBudget).toBeCloseTo(remaining, 9);
+    }
   });
 
   it('should reject multiple_only mode when budget cannot fund a multiple bet', () => {

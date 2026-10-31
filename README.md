@@ -4,13 +4,14 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Hospedagem e atualização diária
 
-A versão 1.19.2 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e linha de fonte da CAIXA. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
+A versão 1.19.3 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e linha de fonte da CAIXA. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
 
 - `cloudflare/worker.ts` atende páginas App Router via vinext/Vite e encaminha `/api/*` ao Durable Object SQLite `MegaSenaData` pelo binding privado `DATA`.
 - `lib/api/handler.ts` contém o contrato compartilhado da API; `server.ts` é o adaptador Bun. Contextos de banco e log isolam operações concorrentes.
 - `cloudflare.config.ts` define staging/produção, o segredo `IP_HASH_SECRET` e habilita o agendador persistente somente em produção. O Durable Object agenda a atualização diária às **06:00 UTC (03:00 Brasília)**, sem depender de visitas ao site. Staging cancela alarmes existentes e permite refresh manual por RPC privado, sem retries autônomos.
 - O cache de borda usa versão do aplicativo e revisão dos sorteios para imagens sociais, índices e páginas canônicas de concurso, número e ano sem query string. Cada HTML servido do cache recebe um nonce CSP novo em headers e corpo; o navegador continua recebendo `no-store`. Queries, cookies, autenticação, variantes de navegação e respostas comprimidas não entram no cache HTML.
 - O seed público até o concurso **3065** inicializa somente um banco vazio. Isso não comprova atualização recente da CAIXA.
+- Após o aceite de produção e backup/restauração verificados, `cloudflare/staging-off/` desativa staging com resposta `410` e exclui seu namespace. O próximo release provisiona um banco novo; veja [o procedimento e suas condições](docs/DEPLOY.md#desligamento-isolado-de-staging).
 - A ingestão consulta a CAIXA antes da transação, valida concursos e acrescenta sorteios/caches atomicamente, com idempotência e até três novas tentativas por alarmes persistidos.
 - A próxima tentativa é persistida antes da chamada de rede. Sucesso ou esgotamento das três tentativas preservam o próximo ciclo diário; reinícios mantêm o horário e o orçamento. Falhas de armazenamento permanecem visíveis à plataforma. A retenção é configurável por ambiente, preservando os prazos da origem e os padrões 400/30 dias. Decisões e alternativas estão no [guia de deploy](docs/DEPLOY.md#decisão-reavaliada-operação-e-manutenção).
 
@@ -378,6 +379,15 @@ Todos os design tokens estão definidos em `app/globals.css` e `tailwind.config.
 
 ## Endpoints da API
 
+### `/api/health` (GET)
+
+No Worker, inclui `scheduler: { enabled, nextAlarmAt }`: habilitação do agendador e
+próximo alarme nativo em milissegundos Unix, ou `null`. O Bun omite `scheduler`.
+Falhas de leitura retornam `503`; em produção, a mensagem é sanitizada. A resposta
+mantém `no-store` e os critérios existentes de saúde dos dados. É um retrato do
+instante, sem comprovar ausência de escritas anteriores; a própria consulta grava
+auditoria/log. Veja os limites em [docs/DEPLOY.md](docs/DEPLOY.md#dados-e-atualização-diária).
+
 ### Arquivo de resultados (GET, somente leitura)
 
 Usados pelas páginas `/resultados`, `/concurso`, `/numeros` e `/mega-da-virada`. Parâmetros inválidos,
@@ -515,7 +525,7 @@ O `docker-compose.yml` local publica as portas apenas em `127.0.0.1`. Em produç
 3. Garanta que todos os testes passam com `bun run test -- --run`
 4. Atualize a documentação para novas funcionalidades
 
-Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
+Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
 
 Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação não usa `unsafe-inline` em nenhuma diretiva de produção. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
 

@@ -18,29 +18,29 @@ function getSecret(): string | null {
   return trimmed;
 }
 
-function currentSaltWindowId(now: number = Date.now()): number {
-  const elapsed = now - SALT_ROTATION_EPOCH_MS;
-  if (elapsed < 0) {
-    return 0;
-  }
-  return Math.floor(elapsed / SALT_ROTATION_WINDOW_MS);
+function currentSaltWindowId(now: number): number {
+  return Math.max(0, Math.floor((now - SALT_ROTATION_EPOCH_MS) / SALT_ROTATION_WINDOW_MS));
 }
 
-export function pseudonymizeIp(value: string, now: number = Date.now()): string {
-  if (!value) {
-    return 'sha256:unknown';
+/**
+ * Pseudonym for a client network (`rateLimitSubject`: IPv4 address or IPv6
+ * /64). It keys the rate limit and is the audited `client_id_hash`. With a
+ * strong secret it is an HMAC whose 30-day window limits long-term linkage;
+ * without one it uses the caller's random per-process salt, never a plain
+ * SHA-256, which is reversible over the IPv4 space.
+ */
+export function pseudonymizeClient(
+  subject: string,
+  secret: string | undefined,
+  fallbackSalt: Uint8Array,
+  now: number = Date.now()
+): string {
+  const trimmed = secret?.trim();
+  if (!trimmed || trimmed.length < 32) {
+    return `salted-sha256:${createHmac(HMAC_ALGORITHM, fallbackSalt).update(subject).digest('hex')}`;
   }
-
-  const secret = getSecret();
-  if (!secret) {
-    return `sha256:${createHash('sha256').update(value).digest('hex')}`;
-  }
-
   const windowId = currentSaltWindowId(now);
-  const digest = createHmac(HMAC_ALGORITHM, secret)
-    .update(`v1:${windowId}:${value}`)
-    .digest('hex');
-  return `hmac-sha256:v1:${windowId}:${digest}`;
+  return `hmac-sha256:v1:${windowId}:${createHmac(HMAC_ALGORITHM, trimmed).update(`v1:${windowId}:${subject}`).digest('hex')}`;
 }
 
 export function hashForAudit(value: string, maxLength: number = 500): string {

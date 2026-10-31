@@ -233,14 +233,14 @@ Incidente de segurança é qualquer evento que afete (a) confidencialidade, (b) 
    - Restaurar serviço sem reintroduzir vulnerabilidade.
    - Validar com `bun run lint`, `bun run test -- --run`, `bun run build`, `bun run deploy:verify`.
 4. **Notificação à ANPD** (Art. 48, §1º):
-   - Em **prazo razoável**, considerando a gravidade. Para incidentes que envolvam dado pessoal com risco relevante: comunicar **em até 3 dias úteis** ao DPO interno (registro em changelog) e **em até 5 dias úteis** à ANPD (canal oficial), incluindo:
+   - Acionar o encarregado conforme o [plano de resposta](INCIDENT-RESPONSE.md). Quando houver obrigação de comunicação por risco ou dano relevante aos titulares, comunicar à ANPD e aos titulares afetados **em até 3 dias úteis**, contados do conhecimento pelo controlador de que o incidente afetou dados pessoais, ressalvadas as regras específicas aplicáveis. A obrigação não depende apenas da classificação interna de severidade. Fonte: [orientação da ANPD sobre comunicação de incidentes](https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis). Incluir:
      - descrição da natureza dos dados afetados;
      - informação sobre os titulares envolvidos;
      - indicação das medidas técnicas de proteção;
      - riscos relacionados;
      - razões da demora, se houver;
      - medidas adotadas para reverter/mitigar os efeitos.
-5. **Comunicação aos titulares** quando o incidente puder gerar risco ou dano relevante.
+5. **Comunicação aos titulares** quando o incidente puder gerar risco ou dano relevante, no mesmo prazo do item 4.
 6. **Pós-incidente** (até 30 dias):
    - Post-mortem público sem dado sensível.
    - Atualização deste documento.
@@ -268,7 +268,7 @@ O titular sempre pode apresentar reclamação à ANPD em https://www.gov.br/anpd
 | 4 | Banner de divulgação de armazenamento local (não-bloqueante) | Concluído | `components/storage-disclosure.tsx`, integrado ao `layout.tsx` |
 | 5 | Página de direitos do titular `/privacy/direitos` com modelo de requisição | Concluído | `app/privacy/direitos/page.tsx`, `lib/i18n.ts` |
 | 6 | Endpoint `mailto:` para canal único `privacidade@megasena-analyzer.com.br` com modelo de requisição | Concluído | `app/privacy/direitos/page.tsx`, `components/privacy/rights-request-template.tsx` |
-| 7 | Pseudonimização robusta de IP via HMAC com salt rotativo | Concluído | `server.ts`, `lib/security/pseudonymize.ts` |
+| 7 | Pseudonimização robusta de IP via HMAC com salt rotativo | Concluído | `lib/api/handler.ts`, `lib/security/pseudonymize.ts` |
 | 8 | Sanitização recursiva de metadados antes da gravação | Já existente, validado | `lib/security/sanitize-metadata.ts` |
 | 9 | Retenção automática agendada (logs 30 d, auditoria 400 d) | Já existente, documentado | `lib/log-retention.ts`, `lib/audit-retention.ts`, `server.ts` |
 | 10 | Plano de resposta a incidente | Concluído | `docs/INCIDENT-RESPONSE.md`, `docs/INCIDENT-RESPONSE-TEMPLATE.md` |

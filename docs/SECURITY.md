@@ -226,7 +226,7 @@ têm controles positivos em `tests/security/braces.test.ts`.
 
 O audit do registro enxerga a versão original, sem avaliar patches locais.
 Por isso, `auditConfig.ignoreGhsas` tem uma exceção somente para esse advisory.
-Todos os caminhos de audit no CI executam **antes** `bun run security:braces`,
+Todos os caminhos de audit no CI executam **antes** `bun run security:audit-exceptions`,
 contra a dependência realmente instalada. A suíte falha sem a proteção; a
 exceção não libera outro advisory. Localmente, execute esse gate antes de
 `pnpm audit`. A proteção deve ser reavaliada em cada atualização de dependências.
@@ -234,6 +234,27 @@ exceção não libera outro advisory. Localmente, execute esse gate antes de
 Quando houver versão oficial corrigida, atualize o lockfile e remova juntos o
 override, o patch e essa exceção, após executar a regressão e os gates completos.
 Mantenha testes relevantes para provar que a correção oficial cobre os casos.
+
+### Exceção de audit para `minimatch` 3.1.4
+
+[GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249)
+(publicado em 2026-10-30) declara `minimatch <11.0.1`, com correção só na
+11.0.1. A amplificação ocorre em `firstPhasePreProcess()`, o otimizador da
+linha 7+ que, com `optimizationLevel >= 2`, clona entradas de `globParts`
+dentro de um laço de ponto fixo. A linha 3.x instalada aqui não tem esse
+otimizador: cada padrão expandido gera exatamente uma entrada. O pacote entra
+apenas pelas ferramentas de desenvolvimento (ESLint, `eslint-config-next`,
+React Doctor); `pnpm audit --prod` já era limpo. Saltar para a 11.x quebraria
+o ESLint 9.
+
+`tests/security/minimatch.test.ts` prova, contra a cópia instalada, que a
+versão é a 3.1.4, que o código não contém o otimizador e que o padrão do
+advisory mantém uma única entrada em qualquer tamanho, com controle positivo de
+expansão de chaves. O controle negativo foi conferido no tarball da 10.2.6, que
+contém os marcadores. A exceção em `auditConfig.ignoreGhsas` cobre só esse
+GHSA e roda depois de `bun run security:audit-exceptions`, como a de `braces`.
+Remova a exceção e o teste quando o override de `minimatch` sair ou mudar de
+major.
 
 ### HTTPS na entrada Cloudflare
 

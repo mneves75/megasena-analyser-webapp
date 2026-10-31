@@ -11,7 +11,7 @@ import {
 import { getDrawsVersion } from '@/lib/api/response-cache';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
-import { runWithLogSink } from '@/lib/logger';
+import { logger, runWithLogSink } from '@/lib/logger';
 import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from './ingestion';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
@@ -117,6 +117,10 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       ipHashSecret: env.IP_HASH_SECRET, allowedOrigins: env.ALLOWED_ORIGINS,
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
+      schedulerStatus: async () => ({
+        enabled: this.dailyRefreshEnabled,
+        nextAlarmAt: await ctx.storage.getAlarm(),
+      }),
     });
     void ctx.blockConcurrencyWhile(() => this.dailyRefreshEnabled
       ? this.initializeSchedule()
@@ -260,11 +264,11 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     }
     try {
       const result = await this.refresh();
-      console.info('caixa.daily_refresh', result);
+      logger.info('caixa.daily_refresh', { ...result });
     }
     catch (error) {
       if (!(error instanceof RefreshFailure)) throw error;
-      console.error('ingestion.alarm_failed', error.message);
+      logger.error('ingestion.alarm_failed', error);
     }
   }
 

@@ -11,6 +11,9 @@ export default defineConfig({
     exclude: [
       ...configDefaults.exclude,
       'tests/app/**',
+      // Verifier and reviewer worktrees live under .scratch/wt-*; their copies
+      // of the suite must not run against this checkout's modules.
+      '.scratch/**',
     ],
     coverage: {
       provider: 'v8',

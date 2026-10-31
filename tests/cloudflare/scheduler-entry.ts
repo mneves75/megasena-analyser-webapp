@@ -28,6 +28,18 @@ export class ScheduledData extends MegaSenaData {
     };
   }
 
+  failNextAlarmRead() {
+    const original = this.ctx.storage.getAlarm.bind(this.ctx.storage);
+    this.ctx.storage.getAlarm = async () => {
+      this.ctx.storage.getAlarm = original;
+      throw new Error('Injected native alarm read failure');
+    };
+  }
+
+  async clearAlarm() {
+    await this.ctx.storage.deleteAlarm();
+  }
+
   failNextRetentionWrite() {
     const original = this.ctx.storage.sql.exec.bind(this.ctx.storage.sql);
     this.ctx.storage.sql.exec = ((query: string, ...bindings: SqlStorageValue[]) => {
@@ -46,6 +58,12 @@ const worker = {
     const object = env.DATA.getByName(url.searchParams.get('object') ?? 'scheduler-fixture');
     const now = url.searchParams.has('now') ? Number(url.searchParams.get('now')) : undefined;
     try {
+      if (url.pathname === '/api/health') return object.handle(request, { internal: true });
+      if (url.pathname === '/fail-read') {
+        await object.failNextAlarmRead();
+        return new Response(null, { status: 204 });
+      }
+      if (url.pathname === '/clear-alarm') await object.clearAlarm();
       if (url.pathname === '/due') await object.makeDue(now);
       if (url.pathname === '/run') await object.run(now);
       if (url.pathname === '/refresh') await object.refresh();

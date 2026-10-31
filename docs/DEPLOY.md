@@ -2,7 +2,7 @@
 
 ## Hospedagem Worker e migração
 
-A versão 1.17.4 executa a aplicação em um Worker vinext/App Router, com SQLite
+A aplicação executa em um Worker vinext/App Router, com SQLite
 no Durable Object `MegaSenaData` pelo binding privado `DATA`. Não há API
 administrativa pública do banco. O caminho Docker abaixo permite execução local
 e recuperação durante a migração.
@@ -26,7 +26,7 @@ Dimensione importação e consultas antes da transferência; monitore leituras,
 gravações, CPU e armazenamento sem publicar dados de assinatura ou consumo.
 
 1. Confirmar conta e zonas antes de cada escrita. Uma troca de credencial exige repetir a conferência.
-2. Rodar lint, lint estrutural, typecheck, Vitest com cobertura, SQLite real Bun, `bun run security:braces`, `pnpm audit` e build standalone. A regressão da mitigação local deve preceder o audit, conforme SECURITY.md. Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare`. Verificar persistência Worker/DO, ingestão inválida, rollback transacional, rate limit e controles negativos de acesso interno. Inspecionar páginas, hidratação e Server Actions com Argent Chromium; não usar Playwright nesta migração.
+2. Rodar lint, lint estrutural, typecheck, Vitest com cobertura, SQLite real Bun, `bun run security:audit-exceptions`, `pnpm audit` e build standalone. A regressão da mitigação local deve preceder o audit, conforme SECURITY.md. Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare`. Verificar persistência Worker/DO, ingestão inválida, rollback transacional, rate limit e controles negativos de acesso interno. Inspecionar páginas, hidratação e Server Actions com Argent Chromium; não usar Playwright nesta migração.
 3. Preparar staging distinto, com `IP_HASH_SECRET` de pelo menos 32 caracteres e origens CORS correspondentes ao domínio de staging. Configuração é por ambiente. Deploy é ação externa e exige autorização para o alvo exato. Usar o fluxo `cf` e descobrir comandos com `cf cli search`. Os scripts explícitos são `bun run deploy:cloudflare:staging` e `bun run deploy:cloudflare:production`.
 4. Validar em staging `/api/health`, versão do artefato, dados, CSP por requisição, hidratação, Server Actions, 404/308, metadata, sitemap e robots. Repetir controles negativos, reinicialização do objeto e retenção. Build local não comprova comportamento publicado.
 5. Verificar backup recuperável dos dados existentes e prova de restauração/retenção do destino antes de trocar DNS. Gerar snapshot consistente do SQLite do VPS com `VACUUM INTO`; não copiar o arquivo vivo. Importar por caminho privado validado, sem substituir silenciosamente registros existentes. O bootstrap público não migra auditoria ou logs privados; transferi-los exige escopo e destino aprovados.
@@ -43,6 +43,18 @@ Obtenha autorização específica para arquivar e retirar o ambiente anterior. M
 4. Confirmar ausência de processos/jobs ativos deste projeto no VPS e dos recursos correspondentes no Coolify. Repetir health, versão, dados, CSP e DNS públicos no Cloudflare; registrar o resultado e a localização privada do arquivo no runbook operacional privado.
 
 ### Dados e atualização diária
+
+No Worker, `GET /api/health` acrescenta somente `scheduler.enabled` (booleano) e
+`scheduler.nextAlarmAt` (milissegundos desde a época Unix, ou `null`). Cada consulta
+lê o alarme nativo, inclusive quando o agendador está desabilitado; não usa o diário
+como substituto nem deduz `null` a partir de `enabled`. Um alarme em execução pode
+ter `getAlarm()` igual a `null`, mesmo habilitado. O Bun não fornece esse diagnóstico
+e omite `scheduler`. Falha no callback de leitura usa a resposta `503` existente,
+com erro sanitizado em produção, sem campos de sucesso e com `Cache-Control: no-store`.
+Os critérios de saúde dos dados, CORS, quota e auditoria permanecem os mesmos.
+Esse retrato não comprova execuções anteriores nem ausência de escritas autônomas
+no passado. As próprias consultas de health gravam auditoria/log; diferencie-as
+das execuções agendadas ao coletar evidências privadas.
 
 O build recebe `CLOUDFLARE_STAGING_ALLOWED_ORIGINS` ou `CLOUDFLARE_PRODUCTION_ALLOWED_ORIGINS` como lista de origens HTTPS separadas por vírgula. Staging usa lista vazia por padrão (sem acesso CORS entre origens); produção mantém a origem canônica. `ENVIRONMENT=production` preserva os controles de segurança nos dois alvos, enquanto `DEPLOYMENT_STAGE` distingue a indexação: staging envia `X-Robots-Tag: noindex, nofollow` e `robots.txt` com `Disallow: /`. Produção preserva a política pública atual.
 
@@ -65,6 +77,64 @@ A retenção continua sendo 400 dias para auditoria e 30 dias para logs. O objet
 Antes da migração, confira os valores efetivos `AUDIT_RETENTION_DAYS` e `LOG_RETENTION_DAYS` no VPS. O build aceita `CLOUDFLARE_STAGING_AUDIT_RETENTION_DAYS`, `CLOUDFLARE_STAGING_LOG_RETENTION_DAYS` e os equivalentes com `PRODUCTION`, mapeados aos mesmos nomes de bindings do runtime. Ausência mantém 400/30; valores não finitos ou não positivos desativam a eliminação daquela tabela, como no Bun. Preserve a política efetiva na transferência; alterar prazos exige sincronizar a política pública e os documentos LGPD.
 
 O contador de tentativas e o próximo alarme são gravados numa transação de armazenamento. A falha da CAIXA só é tratada no handler depois que a política de retry foi persistida. Falhas de agendamento/armazenamento continuam sendo lançadas para permitir a recuperação da plataforma. Os testes workerd injetam uma falha de `setAlarm`, verificam rollback do contador e comprovam o agendamento no próximo processamento. Isso não substitui prova de uma execução diária no ambiente publicado.
+
+### Desligamento isolado de staging
+
+`cloudflare/staging-off/` é uma unidade operacional separada do build da aplicação.
+Ela substitui somente o Worker de staging existente por uma resposta `410` em texto
+pt-BR, com `Cache-Control: no-store` e `X-Robots-Tag: noindex, nofollow`. Não importa
+a aplicação, não declara `DATA` nem assets e não acessa armazenamento. Mantém o
+domínio de staging de `lib/site-domains.json`, a observabilidade e somente a
+declaração do segredo existente `IP_HASH_SECRET`, sem ler ou trocar seu valor.
+
+**O deploy desta unidade é destrutivo:** o export `MegaSenaData` tem
+`state: 'deleted'`, removendo o namespace e seus objetos. Não é uma forma de
+pausar o banco. Antes de executá-lo, o responsável pela operação deve:
+
+1. Obter aceite e verificação independente da produção no commit publicado, incluindo dados atuais, segurança, UI e agendamento nativo. Rodar o gate `mneves-security` no commit exato da unidade antes de qualquer deploy, inclusive deste desligamento.
+2. Confirmar novamente conta, nome e ID do Worker/namespace de staging e distinguir os de produção. Inventariar **todos** os objetos, com todas as páginas da listagem; não presumir que só existe o objeto conhecido pelo aplicativo. Guardar o inventário e os recibos em armazenamento privado.
+3. Cancelar e reler os agendamentos de staging, incluindo Crons remotos e alarmes de cada objeto, e confirmar ausência de escritores. `triggers: []` não remove Crons antigos no `cf` beta5; usar a operação de schedules descrita acima. Não consultar a API da aplicação durante a janela de prova de ausência de escritas, pois ela própria registra auditoria/log.
+4. Exportar consistentemente cada objeto com dados, incluindo esquema completo (tabelas, índices e triggers) e sequências SQLite, preservar checksums e exercitar restauração em destino isolado autorizado. Comparar integralmente o conteúdo restaurado com a exportação e reconciliar os registros com produção. Se houver dados que produção não contém, preservar o banco e resolver a diferença antes da exclusão, salvo autorização expressa para excluí-los após backup/restauração verificados. Backup sem restauração verificada não libera o gate.
+5. Revisar o artefato recém-gerado: conta no recibo superior, modo `staging-off`, somente o nome/domínio de staging, segredo declarado, `triggers: []` e export deletado sem `storage`. O bundle deve exportar apenas o handler `fetch`, sem classe `MegaSenaData`, imports da aplicação, `DATA` ou assets. Reconfirmar a autorização para o namespace identificado imediatamente antes da escrita.
+
+Com o Node de `.nvmrc` ativo, os testes e o smoke build local não precisam de
+credenciais nem acesso ao provedor:
+
+```bash
+bun run test -- --run tests/cloudflare/staging-off.test.ts
+cd cloudflare/staging-off
+CLOUDFLARE_ACCOUNT_ID=00000000000000000000000000000000 node ../../node_modules/vite/bin/vite.js build --config vite.config.ts --mode staging-off
+```
+
+O Vite fixa a raiz nesta unidade, desabilita `publicDir` e usa somente o plugin
+instalado `@cloudflare/vite-plugin`, sem vinext nem geração de tipos de runtime. O output fica em
+`cloudflare/staging-off/.cloudflare/output/v0/`: conferir `config.json`,
+`workers/default/worker.config.json` e `workers/default/bundle/index.js`.
+Outros modos e conta ausente/vazia são rejeitados.
+
+**Nunca publicar o smoke build.** Depois dos gates, o operador obtém a conta pelo
+fluxo normal privado do `cf`, a fornece explicitamente em `CLOUDFLARE_ACCOUNT_ID`
+e refaz o build. `cf deploy --prebuilt` prioriza a conta gravada no output; mudar
+apenas o ambiente depois do build não corrige o recibo. Ainda dentro da unidade:
+
+```bash
+: "${CLOUDFLARE_ACCOUNT_ID:?confirme a conta de staging pelo fluxo privado}"
+node ../../node_modules/vite/bin/vite.js build --config vite.config.ts --mode staging-off
+node ../../node_modules/cf/bin/cf deploy --prebuilt --mode staging-off --worker megasena-analyser-staging --dry-run
+# Somente após revisar o preview e concluir todos os gates acima:
+node ../../node_modules/cf/bin/cf deploy --prebuilt --mode staging-off --worker megasena-analyser-staging
+```
+
+Depois, comprovar `410`/headers pelo domínio de staging, preservação do segredo,
+ausência do namespace antigo, Crons vazios e zero execuções agendadas/escritas na
+janela de observação. Revalidar produção e registrar tudo privadamente. Build e
+dry-run não comprovam exclusão nem inatividade remota.
+
+Na próxima release, o deploy normal da aplicação a partir da raiz recria um
+**novo namespace vazio**. Redescobrir os IDs e carregar/restaurar os dados atuais
+antes do aceite; o seed versionado sozinho não prova atualização. Nunca reutilizar
+cegamente um artefato antigo de `staging-off`: ele poderia apagar o banco futuro.
+Cada novo desligamento exige build, inventário, backup/restauração e gates novos.
 
 ### CI e evidência local
 

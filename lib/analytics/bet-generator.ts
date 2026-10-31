@@ -36,6 +36,18 @@ interface CandidatePool {
   all: number[];
 }
 
+/**
+ * Whole cents in a non-negative amount, truncated. Read from the number's
+ * shortest decimal form (what the caller sent) instead of `amount * 100`, whose
+ * binary tails turn 6.1 into 609.99… and 47.999999999 into 600 after any epsilon.
+ */
+export function wholeCents(amount: number): number {
+  const text = String(amount);
+  if (/e/i.test(text)) return Math.floor(amount * 100);
+  const [integer = '0', fraction = ''] = text.split('.');
+  return Number(integer) * 100 + Number((fraction + '00').slice(0, 2));
+}
+
 export class BetGenerator {
   private db: ReturnType<typeof getDatabase>;
   private static readonly MAX_DEDUP_ATTEMPTS = 50;
@@ -143,7 +155,8 @@ export class BetGenerator {
 
   private buildOptimizedBetSizes(budget: number): number[] {
     const costUnitCents = this.resolveCostUnitCents();
-    const budgetUnits = Math.floor(this.toCents(budget) / costUnitCents);
+    // Truncate, never round: 47.999999999 must not buy a R$ 48 combination.
+    const budgetUnits = Math.floor(wholeCents(budget) / costUnitCents);
 
     const options = Object.entries(BET_PRICES)
       .map(([numbers, price]) => {
@@ -320,7 +333,7 @@ export class BetGenerator {
     }
 
     const totalCost = bets.reduce((sum, bet) => sum + bet.cost, 0);
-    const remainingBudget = budget - totalCost;
+    const remainingBudget = Math.max(0, (wholeCents(budget) - Math.round(totalCost * 100)) / 100);
     const budgetUtilization = (totalCost / budget) * 100;
 
     // Calculate unique numbers covered

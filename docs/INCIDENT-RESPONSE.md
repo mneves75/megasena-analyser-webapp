@@ -61,6 +61,24 @@ Vale para qualquer computador ou celular com acesso de produção e para qualque
 
 Prevenção: todo dispositivo com acesso de produção usa criptografia de disco e bloqueio automático de tela.
 
+#### Cliente abusivo (tráfego que custa CPU ou derruba a cota)
+
+O app não tem contas, então não existe banimento dentro dele. O bloqueio é feito na borda da Cloudflare, com uma lista de IPs referenciada por uma regra WAF. A lista e a regra são criadas **antes** do incidente, para que banir alguém seja apenas incluir uma entrada.
+
+Preparação (uma vez):
+
+1. Dashboard → **Configurations** da conta → **Lists** → **Create new list**, do tipo IP. Nome sugerido: `megasena_blocklist`.
+2. Na zona do domínio canônico: **Security** → **WAF** → **Custom rules**, uma regra com a expressão `ip.src in $megasena_blocklist` e a ação **Block**. A regra fica sempre ativa; com a lista vazia, ela não afeta ninguém.
+
+Durante o incidente:
+
+1. Identificar a origem em **Security** → **Events** da zona, a partir dos 429 da regra de rate limit ou do pico de requisições. Por desenho, os logs do app guardam só o pseudônimo (`client_id_hash`), nunca o IP.
+2. Incluir a entrada em **Lists** → `megasena_blocklist` → **Add items**, com descrição `INC-YYYYMMDD-NN, até AAAA-MM-DD`. O app agrupa IPv6 por /64, então bloqueie o prefixo /64 inteiro (a lista aceita CIDR IPv6 de /12 a /128). Um IPv4 de operadora móvel pode ser compartilhado por muitos usuários (CGNAT): nesse caso, prefira uma regra separada com **Managed Challenge** a um Block.
+3. Confirmar o efeito em **Security** → **Events**: as requisições daquela origem devem aparecer como bloqueadas.
+4. Registrar no registro privado do incidente: a entrada, o motivo, quem bloqueou e a data de remoção. Remover a entrada nessa data.
+
+Referência: Cloudflare, [Custom lists](https://developers.cloudflare.com/waf/tools/lists/custom-lists/) e [Create a list in the dashboard](https://developers.cloudflare.com/waf/tools/lists/create-dashboard/), acesso em 2026-10-31.
+
 ### Fase 3 — Erradicação (T0+24 h a T0+72 h)
 
 1. Identificar causa raiz com análise estruturada (cinco-porquês).
@@ -84,7 +102,7 @@ Prevenção: todo dispositivo com acesso de produção usa criptografia de disco
 Quando o incidente envolver dado pessoal com risco ou dano relevante:
 
 1. Comunicar internamente o encarregado em até 24 h após confirmação.
-2. Notificar a ANPD em prazo razoável — referência: até 5 dias úteis para incidentes de severidade Alta ou Crítica.
+2. Quando a obrigação de comunicação for aplicável, notificar a ANPD e os titulares afetados em até **3 dias úteis**, contados do conhecimento pelo controlador de que o incidente afetou dados pessoais, ressalvadas as regras específicas aplicáveis. A obrigação não depende apenas da severidade interna Alta/Crítica. Fonte: [orientação da ANPD sobre comunicação de incidentes](https://www.gov.br/anpd/pt-br/canais_atendimento/agente-de-tratamento/comunicado-de-incidente-de-seguranca-cis).
 3. Conteúdo mínimo da notificação (Art. 48, §1º):
    - Descrição da natureza dos dados afetados.
    - Informações sobre os titulares envolvidos.
@@ -96,7 +114,7 @@ Quando o incidente envolver dado pessoal com risco ou dano relevante:
 
 ### Fase 6 — Comunicação aos titulares
 
-Quando o incidente puder gerar risco ou dano relevante aos titulares:
+Quando o incidente puder gerar risco ou dano relevante aos titulares, comunicar no mesmo prazo indicado na fase 5:
 
 1. Publicar aviso público no site (página /privacy ou banner do site).
 2. Linguagem clara, sem termos técnicos opacos.
@@ -133,8 +151,8 @@ Não notificar quando:
 
 | Destinatário | Quando | Canal |
 |--------------|--------|-------|
-| ANPD | Severidade Alta/Crítica em dados pessoais | Peticionamento eletrônico no `gov.br/anpd` |
-| Titulares afetados | Quando houver risco ou dano relevante | Banner no site + nota em `/privacy` |
+| ANPD | Quando houver risco ou dano relevante aos titulares, no prazo da fase 5 | Peticionamento eletrônico no `gov.br/anpd` |
+| Titulares afetados | Quando houver risco ou dano relevante, no mesmo prazo da fase 5 | Banner no site + nota em `/privacy` |
 | Provedor VPS | Quando houver indício de comprometimento da infraestrutura | Canal de suporte do provedor |
 | Cloudflare | Quando houver evidência de comprometimento de TLS, DNS ou WAF | Painel Cloudflare e ticket de suporte |
 
