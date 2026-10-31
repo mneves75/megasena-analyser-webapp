@@ -525,7 +525,7 @@ O `docker-compose.yml` local publica as portas apenas em `127.0.0.1`. Em produç
 3. Garanta que todos os testes passam com `bun run test -- --run`
 4. Atualize a documentação para novas funcionalidades
 
-Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:braces`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
+Antes de publicar uma release, execute `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit` e `bun run build`; verifique mudanças de UI com Argent conforme o fluxo acima. A exceção de audit do patch local é específica e exige a regressão anterior; veja [SECURITY.md](docs/SECURITY.md).
 
 Depois do deploy, execute `bun run deploy:verify`; produção com versão antiga em `/api/health` deve ser tratada como release não concluída. Depois de mudanças em Cloudflare/Traefik, execute também `bun run security:csp:edge`; a borda não deve trocar a CSP nonce-based por uma política com `unsafe-inline` em `script-src` ou `style-src`. A aplicação não usa `unsafe-inline` em nenhuma diretiva de produção. Quando a mesma CSP ampla aparecer na home e em `/api/health`, o verificador deve apontar `shared_response_headers` como diagnóstico provável; investigue primeiro regras globais de response headers ou middleware do proxy. Se o lookup Cloudflare disser que a zona está inacessível ao token, não conclua que a zona não tem regras candidatas.
 

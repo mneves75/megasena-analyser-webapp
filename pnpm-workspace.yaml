@@ -78,9 +78,13 @@ overrides:
 patchedDependencies:
   braces@3.0.3: patches/braces@3.0.3.patch
   minimatch@3.1.4: patches/minimatch@3.1.4.patch
-# The registry advisory cannot recognize local pnpm patches. Every CI audit
-# first proves this exact mitigation through security:braces; all other
-# advisories remain blocking. Remove together with the upstream fixed upgrade.
+# Each exception is proved against the installed dependency by
+# security:audit-exceptions, which every CI audit runs first; all other
+# advisories remain blocking. See docs/SECURITY.md for removal conditions.
 auditConfig:
   ignoreGhsas:
+    # braces 3.0.3: no upstream fix; the local patch bounds nesting depth.
     - GHSA-vfj7-8cjw-p6xm
+    # minimatch 3.1.4: the advisory range is <11.0.1, but the vulnerable
+    # first-phase optimizer exists only from v7 (dev-only via ESLint).
+    - GHSA-g3hv-75wg-m249
