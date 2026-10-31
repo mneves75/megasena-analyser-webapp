@@ -320,7 +320,9 @@ export class BetGenerator {
     }
 
     const totalCost = bets.reduce((sum, bet) => sum + bet.cost, 0);
-    const remainingBudget = budget - totalCost;
+    // Prices are whole reais but the budget may carry cents; report the change
+    // in whole cents rather than a binary floating-point tail.
+    const remainingBudget = Math.round((budget - totalCost) * 100) / 100;
     const budgetUtilization = (totalCost / budget) * 100;
 
     // Calculate unique numbers covered

@@ -65,6 +65,16 @@ describe('BetGenerator', () => {
     expect(result.totalCost + result.remainingBudget).toBe(budget);
   });
 
+  it('reports a budget with cents back in whole cents, without float tails', () => {
+    const generator = new BetGenerator();
+    for (const budget of [100.3, 99999.99, 6.1]) {
+      const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.SIMPLE_ONLY, 'random');
+      // 100.3 - 96 is 4.299999999999997 in binary floating point.
+      expect(String(result.remainingBudget)).toMatch(/^\d+(\.\d{1,2})?$/);
+      expect(result.remainingBudget).toBe(Math.round((budget - result.totalCost) * 100) / 100);
+    }
+  });
+
   it('should reject multiple_only mode when budget cannot fund a multiple bet', () => {
     const generator = new BetGenerator();
 
