@@ -31,9 +31,10 @@ async function browser(session: string, ...args: string[]): Promise<string> {
 
 const ASSET_STATUS_SCRIPT = `JSON.stringify([
   ...performance.getEntriesByType("resource").filter(e => e.name.startsWith(location.origin)).map(e => {
-    const path = new URL(e.name).pathname;
-    const type = /\\.woff2?$/.test(path) ? "Font" : /\\.css$/.test(path) ? "Stylesheet" : /\\.m?js$/.test(path) ? "Script" : "Other";
-    return { path, type, status: e.responseStatus };
+    const url = new URL(e.name);
+    const file = url.pathname;
+    const type = /\\.woff2?$/.test(file) ? "Font" : /\\.css$/.test(file) ? "Stylesheet" : /\\.m?js$/.test(file) ? "Script" : "Other";
+    return { path: file + url.search, type, status: e.responseStatus };
   }),
   ...[...document.fonts].filter(f => f.status === "error").map(f => ({ path: "FontFace " + f.family, type: "Font" })),
 ])`;

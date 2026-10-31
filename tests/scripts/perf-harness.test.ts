@@ -83,6 +83,15 @@ describe('perf page matrix', () => {
       { path: 'FontFace Archivo', type: 'Font' }]) {
       expect(() => assertRequiredAssetsLoaded('/', [document, bad])).toThrow(/execução inválida/);
     }
+    // A success never masks an explicit failure: same URL, another query, or another type.
+    for (const mixed of [
+      [{ path: '/a.js', type: 'Script', status: 200 }, { path: '/a.js', type: 'Script', status: 500 }],
+      [{ path: '/app.js?v=old', type: 'Script', status: 200 }, { path: '/app.js?v=new', type: 'Script', status: 500 }],
+      [{ path: '/app.js?v=old', type: 'Script', status: 200 }, { path: '/app.js?v=new', type: 'Script', status: 0 }],
+      [{ path: '/a.woff2', type: 'Other', status: 200 }, { path: '/a.woff2', type: 'Font', status: 0 }],
+    ]) {
+      expect(() => assertRequiredAssetsLoaded('/', [document, ...mixed])).toThrow(/execução inválida/);
+    }
   });
 
   it('reads the asset list agent-browser prints, quoted or not', () => {

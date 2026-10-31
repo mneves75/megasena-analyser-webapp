@@ -70,14 +70,18 @@ const REQUIRED_ASSET_TYPES = new Set(['Script', 'Stylesheet', 'Font']);
 /**
  * A browser sample whose scripts, stylesheets or fonts failed looks like a
  * smaller, faster page, so it is rejected. Completed redirects and revalidations
- * (3xx) count as loaded; a missing or network-failed status does not. Judged per
- * URL: Chromium also lists a deduplicated modulepreload hint as a second entry
- * with status 0 next to the real 200 fetch of the same file.
+ * (3xx) count as loaded. Any explicit HTTP failure rejects the sample, even next
+ * to a success. A status of 0 or none is tolerated only when the same type and
+ * full URL (query included) also loaded: Chromium lists a deduplicated
+ * modulepreload hint that way next to the real 200 fetch of the same file.
  */
 export function assertRequiredAssetsLoaded(pagePath: string, assets: AssetStatus[]): void {
+  const key = (asset: AssetStatus) => `${asset.type ?? ''} ${asset.path}`;
   const loaded = (asset: AssetStatus) => typeof asset.status === 'number' && asset.status >= 200 && asset.status < 400;
-  const loadedPaths = new Set(assets.filter(loaded).map(asset => asset.path));
-  const failed = assets.filter(asset => REQUIRED_ASSET_TYPES.has(asset.type ?? '') && !loadedPaths.has(asset.path));
+  const unknown = (asset: AssetStatus) => asset.status === undefined || asset.status === 0;
+  const loadedKeys = new Set(assets.filter(loaded).map(key));
+  const failed = assets.filter(asset => REQUIRED_ASSET_TYPES.has(asset.type ?? '') && !loaded(asset)
+    && !(unknown(asset) && loadedKeys.has(key(asset))));
   if (failed.length > 0) {
     const sample = failed.slice(0, 3).map(asset => `${asset.status ?? 'sem status'} ${asset.path}`).join(', ');
     throw new Error(`${failed.length} recurso(s) obrigatório(s) falharam em ${pagePath} (${sample}); execução inválida.`);
