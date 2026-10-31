@@ -1,0 +1,1360 @@
+{
+ "tool": "scripts/perf/query-audit.ts",
+ "measuredAt": "2026-10-31T11:31:20.613Z",
+ "runtime": "bun 1.4.4",
+ "tables": {
+  "migrations": 10,
+  "sqlite_sequence": 1,
+  "draws": 3065,
+  "number_frequency": 60,
+  "user_bets": 0,
+  "number_pair_frequency": 1770,
+  "audit_logs": 0,
+  "log_events": 0,
+  "cache_revisions": 1
+ },
+ "routes": [
+  {
+   "route": "/api/dashboard",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 21.6,
+   "responseBytes": 3702,
+   "statements": 10,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws",
+     "calls": 2,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ]
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT number, frequency, last_drawn_contest as lastDrawnContest, last_drawn_date as lastDrawnDate FROM number_frequency ORDER BY frequency DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN number_frequency",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN number_frequency"
+     ]
+    },
+    {
+     "sql": "SELECT AVG(prize_sena) as avg FROM draws WHERE prize_sena > 0",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_prize_sena (prize_sena>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT AVG(prize_quina) as avg FROM draws WHERE prize_quina > 0",
+     "calls": 1,
+     "plan": [
+      "SCAN draws"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws WHERE accumulated = 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_accumulated (accumulated=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number as contestNumber, draw_date as drawDate, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena as prizeSena, accumulated FROM draws ORDER BY contest_number DESC LIMIT ?",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT number_1, number_2, number_3, number_4, number_5, number_6, contest_number FROM draws ORDER BY contest_number DESC LIMIT ?",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH all_occurrences AS ( SELECT number_1 as num, contest_number FROM draws UNION ALL SELECT number_2, contest_number FROM draws UNION ALL SELECT number_3, contest_number FROM draws UNION ALL SELECT number_4, contest_number FROM draws UNION ALL SELECT * FROM ( SELECT number_5, contest_number FROM draws UNION ALL SELECT number_6, contest_number FROM draws ) ) SELECT num, COUNT(*) as frequency, MAX(contest_number) as lastContest FROM all_occurrences GROUP BY num",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE all_occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "SCAN all_occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN all_occurrences"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/dashboard",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.5,
+   "responseBytes": 3702,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 53.7,
+   "responseBytes": 38251,
+   "statements": 18,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws",
+     "calls": 4,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ]
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT number, frequency, last_drawn_contest as lastDrawnContest, last_drawn_date as lastDrawnDate FROM number_frequency ORDER BY frequency DESC",
+     "calls": 2,
+     "plan": [
+      "SCAN number_frequency",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN number_frequency"
+     ]
+    },
+    {
+     "sql": "SELECT AVG(prize_sena) as avg FROM draws WHERE prize_sena > 0",
+     "calls": 2,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_prize_sena (prize_sena>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT AVG(prize_quina) as avg FROM draws WHERE prize_quina > 0",
+     "calls": 1,
+     "plan": [
+      "SCAN draws"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws WHERE accumulated = 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_accumulated (accumulated=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT COUNT(*) as occurrences, ( SELECT draw_date FROM draws AS latest WHERE (latest.number_2 = latest.number_1 + 1) OR (latest.number_3 = latest.number_2 + 1) OR (latest.number_4 = latest.number_3 + 1) OR (latest.number_5 = latest.number_4 + 1) OR (latest.number_6 = latest.number_5 + 1) ORDER BY latest.contest_number DESC LIMIT 1 ) as last_seen FROM draws WHERE (number_2 = number_1 + 1) OR (number_3 = number_2 + 1) OR (number_4 = number_3 + 1) OR (number_5 = number_4 + 1) OR (number_6 = number_5 + 1)",
+     "calls": 1,
+     "plan": [
+      "SCAN draws",
+      "SCALAR SUBQUERY 1",
+      "SCAN latest USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN latest USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as occurrences, ( SELECT draw_date FROM draws AS latest WHERE latest.number_1 % 2 = 0 AND latest.number_2 % 2 = 0 AND latest.number_3 % 2 = 0 AND latest.number_4 % 2 = 0 AND latest.number_5 % 2 = 0 AND latest.number_6 % 2 = 0 ORDER BY latest.contest_number DESC LIMIT 1 ) as last_seen FROM draws WHERE (number_1 % 2 = 0 AND number_2 % 2 = 0 AND number_3 % 2 = 0 AND number_4 % 2 = 0 AND number_5 % 2 = 0 AND number_6 % 2 = 0)",
+     "calls": 1,
+     "plan": [
+      "SCAN draws",
+      "SCALAR SUBQUERY 1",
+      "SCAN latest USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN latest USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH ordered_draws AS ( SELECT contest_number, draw_date, ROW_NUMBER() OVER (ORDER BY contest_number DESC) as draw_index FROM draws ), all_occurrences AS ( SELECT number_1 as num, contest_number, draw_date FROM draws UNION ALL SELECT number_2, contest_number, draw_date FROM draws UNION ALL SELECT number_3, contest_number, draw_date FROM draws UNION ALL SELECT number_4, contest_number, draw_date FROM draws UNION ALL SELECT * FROM ( SELECT number_5, contest_number, draw_date FROM draws UNION ALL SELECT number_6, contest_number, draw_date FROM draws ) ), number_stats AS ( SELECT num, COUNT(*) as total_occurrences, MAX(contest_number) as last_contest FROM all_occurrences GROUP BY num ) SELECT number_stats.num, number_stats.total_occurrences, number_stats.last_contest, ordered_draws.draw_date as last_date, ordered_draws.draw_index - 1 as delay_draws FROM number_stats JOIN ordered_draws ON ordered_draws.contest_number = number_stats.last_contest ORDER BY number_stats.num",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE number_stats",
+      "CO-ROUTINE all_occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "SCAN all_occurrences",
+      "USE TEMP B-TREE FOR GROUP BY",
+      "MATERIALIZE ordered_draws",
+      "CO-ROUTINE (subquery-12)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-12)",
+      "SCAN number_stats",
+      "BLOOM FILTER ON ordered_draws (contest_number=?)",
+      "SEARCH ordered_draws USING AUTOMATIC COVERING INDEX (contest_number=?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN all_occurrences",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-12)",
+      "SCAN number_stats"
+     ]
+    },
+    {
+     "sql": "WITH all_occurrences AS ( SELECT number_1 as number FROM draws UNION ALL SELECT number_2 FROM draws UNION ALL SELECT number_3 FROM draws UNION ALL SELECT number_4 FROM draws UNION ALL SELECT * FROM ( SELECT number_5 FROM draws UNION ALL SELECT number_6 FROM draws ) ) SELECT number, COUNT(*) as frequency FROM all_occurrences GROUP BY number ORDER BY number",
+     "calls": 2,
+     "plan": [
+      "CO-ROUTINE all_occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws USING COVERING INDEX idx_draws_number_1",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_2",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_3",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_4",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws USING COVERING INDEX idx_draws_number_5",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_6",
+      "SCAN all_occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_number_1",
+      "SCAN draws USING COVERING INDEX idx_draws_number_2",
+      "SCAN draws USING COVERING INDEX idx_draws_number_3",
+      "SCAN draws USING COVERING INDEX idx_draws_number_4",
+      "SCAN draws USING COVERING INDEX idx_draws_number_5",
+      "SCAN draws USING COVERING INDEX idx_draws_number_6",
+      "SCAN all_occurrences"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM number_pair_frequency",
+     "calls": 1,
+     "plan": [
+      "SCAN number_pair_frequency USING COVERING INDEX idx_pair_last_contest"
+     ],
+     "scans": [
+      "SCAN number_pair_frequency USING COVERING INDEX idx_pair_last_contest"
+     ]
+    },
+    {
+     "sql": "WITH all_occurrences AS ( SELECT number_1 as number FROM draws UNION ALL SELECT number_2 FROM draws UNION ALL SELECT number_3 FROM draws UNION ALL SELECT number_4 FROM draws UNION ALL SELECT * FROM ( SELECT number_5 FROM draws UNION ALL SELECT number_6 FROM draws ) ) SELECT number, COUNT(*) as frequency FROM all_occurrences GROUP BY number",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE all_occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws USING COVERING INDEX idx_draws_number_1",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_2",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_3",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_4",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws USING COVERING INDEX idx_draws_number_5",
+      "UNION ALL",
+      "SCAN draws USING COVERING INDEX idx_draws_number_6",
+      "SCAN all_occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_number_1",
+      "SCAN draws USING COVERING INDEX idx_draws_number_2",
+      "SCAN draws USING COVERING INDEX idx_draws_number_3",
+      "SCAN draws USING COVERING INDEX idx_draws_number_4",
+      "SCAN draws USING COVERING INDEX idx_draws_number_5",
+      "SCAN draws USING COVERING INDEX idx_draws_number_6",
+      "SCAN all_occurrences"
+     ]
+    },
+    {
+     "sql": "SELECT number_1, number_2, frequency, correlation, last_occurred_contest, last_occurred_date FROM number_pair_frequency WHERE frequency >= ? ORDER BY frequency DESC LIMIT 50",
+     "calls": 1,
+     "plan": [
+      "SEARCH number_pair_frequency USING INDEX idx_pair_frequency (frequency>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT number_1, number_2, number_3, number_4, number_5, number_6 FROM draws",
+     "calls": 4,
+     "plan": [
+      "SCAN draws"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    },
+    {
+     "sql": "SELECT number_1, number_2, number_3, number_4, number_5, number_6, contest_number FROM draws ORDER BY contest_number DESC LIMIT ?",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH all_occurrences AS ( SELECT number_1 as num, contest_number FROM draws UNION ALL SELECT number_2, contest_number FROM draws UNION ALL SELECT number_3, contest_number FROM draws UNION ALL SELECT number_4, contest_number FROM draws UNION ALL SELECT * FROM ( SELECT number_5, contest_number FROM draws UNION ALL SELECT number_6, contest_number FROM draws ) ) SELECT num, COUNT(*) as frequency, MAX(contest_number) as lastContest FROM all_occurrences GROUP BY num",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE all_occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "SCAN all_occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN all_occurrences"
+     ]
+    },
+    {
+     "sql": "WITH number_prizes AS ( SELECT number_1 as num, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END as has_winner_sena, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END as has_winner_quina FROM draws UNION ALL SELECT number_2, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END FROM draws UNION ALL SELECT number_3, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END FROM draws UNION ALL SELECT number_4, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END FROM draws UNION ALL SELECT * FROM ( SELECT number_5, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END FROM draws UNION ALL SELECT number_6, prize_sena, prize_quina, CASE WHEN winners_sena > 0 THEN 1 ELSE 0 END, CASE WHEN winners_quina > 0 THEN 1 ELSE 0 END FROM draws ) ) -- Per-number averages must share the overallAvg* basis (prize > 0 only): -- including zero-prize accumulated draws in the numerator but not the -- denominator dragged every correlationScore below 1, emptying luckyNumbers. SELECT num as number, COUNT(*) as frequency, COALESCE(AVG(CASE WHEN prize_sena > 0 THEN prize_sena END), 0) as avg_sena, COALESCE(AVG(CASE WHEN prize_quina > 0 THEN prize_quina END), 0) as avg_quina, SUM(CASE WHEN prize_sena > 0 THEN 1 ELSE 0 END) as prize_draw_count, SUM(has_winner_sena) as total_wins_sena, SUM(has_winner_quina) as total_wins_quina FROM number_prizes GROUP BY num ORDER BY num",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: incomplete input)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/statistics?delays=true&decades=true&pairs=true&parity=true&primes=true&sum=true&streaks=true&prize=true",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.3,
+   "responseBytes": 38251,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/draws",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 11.1,
+   "responseBytes": 6982,
+   "statements": 4,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize FROM draws ORDER BY contest_number DESC LIMIT ?",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT COUNT(*) AS total_draws, MAX(contest_number) AS last_contest, MAX(draw_date) AS last_draw_date, MAX(page_modified) AS last_modified FROM draw_changes",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, COUNT(*) AS draw_count, MIN(contest_number) AS first_contest, MAX(contest_number) AS last_contest, MIN(draw_date) AS first_draw_date, MAX(draw_date) AS last_draw_date FROM draws GROUP BY year ORDER BY year DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/draws",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.2,
+   "responseBytes": 6982,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?year=2026",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 14.4,
+   "responseBytes": 33000,
+   "statements": 4,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize FROM draws WHERE draw_date >= ? AND draw_date < ? ORDER BY contest_number DESC",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_draw_date (draw_date>? AND draw_date<?)",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT MAX(listing_modified) AS last_modified FROM draw_changes WHERE draw_date >= ? AND draw_date < ?",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SEARCH draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)"
+     ]
+    },
+    {
+     "sql": "SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, COUNT(*) AS draw_count, MIN(contest_number) AS first_contest, MAX(contest_number) AS last_contest, MIN(draw_date) AS first_draw_date, MAX(draw_date) AS last_draw_date FROM draws GROUP BY year ORDER BY year DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?year=2026",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.5,
+   "responseBytes": 33000,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?contest=3065",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 20,
+   "responseBytes": 1155,
+   "statements": 7,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize, ( contest_number IN (1140, 1245, 1350, 1455, 1560, 1665, 1775, 1890, 2000, 2110, 2220, 2330, 2440, 2550, 2670, 2810, 2955) OR ( special_draw = 1 AND contest_number % 5 = 0 AND (substr(draw_date, 6, 5) >= '12-20' OR substr(draw_date, 6, 5) <= '01-10') ) ) AS mega_da_virada FROM draws WHERE contest_number = ?",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX sqlite_autoindex_draws_1 (contest_number=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, number_1, number_2, number_3, number_4, number_5, number_6 FROM draws WHERE contest_number < ? ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number<?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws WHERE contest_number > ? ORDER BY contest_number ASC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT page_modified FROM draw_changes WHERE contest_number = ?",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "WITH occurrences AS ( SELECT contest_number, draw_date, number_1 AS number FROM draws UNION ALL SELECT contest_number, draw_date, number_2 FROM draws UNION ALL SELECT contest_number, draw_date, number_3 FROM draws UNION ALL SELECT contest_number, draw_date, number_4 FROM draws UNION ALL SELECT * FROM ( SELECT contest_number, draw_date, number_5 FROM draws UNION ALL SELECT contest_number, draw_date, number_6 FROM draws ) ) SELECT number, COUNT(*) AS times_drawn, MAX(CASE WHEN contest_number < ?7 THEN contest_number END) AS previous_contest FROM occurrences WHERE contest_number <= ?7 AND number IN (?1, ?2, ?3, ?4, ?5, ?6) GROUP BY number",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: SQLite query expected 7 values, received 8)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT draw_date, (SELECT COUNT(*) FROM draws AS between_draws WHERE between_draws.contest_number > ?1 AND between_draws.contest_number < ?2) AS draws_between FROM draws WHERE contest_number = ?1",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: SQLite query expected 2 values, received 3)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT COUNT(*) AS earlier_draws, COALESCE(SUM(CASE WHEN number_1 + number_2 + number_3 + number_4 + number_5 + number_6 < ?2 THEN 1 ELSE 0 END), 0) AS lower_sum FROM draws WHERE contest_number < ?1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number<?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?contest=3065",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 10.1,
+   "responseBytes": 1155,
+   "statements": 7,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize, ( contest_number IN (1140, 1245, 1350, 1455, 1560, 1665, 1775, 1890, 2000, 2110, 2220, 2330, 2440, 2550, 2670, 2810, 2955) OR ( special_draw = 1 AND contest_number % 5 = 0 AND (substr(draw_date, 6, 5) >= '12-20' OR substr(draw_date, 6, 5) <= '01-10') ) ) AS mega_da_virada FROM draws WHERE contest_number = ?",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX sqlite_autoindex_draws_1 (contest_number=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, number_1, number_2, number_3, number_4, number_5, number_6 FROM draws WHERE contest_number < ? ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number<?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws WHERE contest_number > ? ORDER BY contest_number ASC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT page_modified FROM draw_changes WHERE contest_number = ?",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "WITH occurrences AS ( SELECT contest_number, draw_date, number_1 AS number FROM draws UNION ALL SELECT contest_number, draw_date, number_2 FROM draws UNION ALL SELECT contest_number, draw_date, number_3 FROM draws UNION ALL SELECT contest_number, draw_date, number_4 FROM draws UNION ALL SELECT * FROM ( SELECT contest_number, draw_date, number_5 FROM draws UNION ALL SELECT contest_number, draw_date, number_6 FROM draws ) ) SELECT number, COUNT(*) AS times_drawn, MAX(CASE WHEN contest_number < ?7 THEN contest_number END) AS previous_contest FROM occurrences WHERE contest_number <= ?7 AND number IN (?1, ?2, ?3, ?4, ?5, ?6) GROUP BY number",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: SQLite query expected 7 values, received 8)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT draw_date, (SELECT COUNT(*) FROM draws AS between_draws WHERE between_draws.contest_number > ?1 AND between_draws.contest_number < ?2) AS draws_between FROM draws WHERE contest_number = ?1",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: SQLite query expected 2 values, received 3)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT COUNT(*) AS earlier_draws, COALESCE(SUM(CASE WHEN number_1 + number_2 + number_3 + number_4 + number_5 + number_6 < ?2 THEN 1 ELSE 0 END), 0) AS lower_sum FROM draws WHERE contest_number < ?1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING INDEX idx_draws_contest_number (contest_number<?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?view=mega-da-virada",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 5.3,
+   "responseBytes": 5630,
+   "statements": 3,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize FROM draws WHERE ( contest_number IN (1140, 1245, 1350, 1455, 1560, 1665, 1775, 1890, 2000, 2110, 2220, 2330, 2440, 2550, 2670, 2810, 2955) OR ( special_draw = 1 AND contest_number % 5 = 0 AND (substr(draw_date, 6, 5) >= '12-20' OR substr(draw_date, 6, 5) <= '01-10') ) ) ORDER BY contest_number DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT MAX(touched) AS last_modified FROM draw_touches WHERE contest_number IN (SELECT contest_number FROM draws WHERE ( contest_number IN (1140, 1245, 1350, 1455, 1560, 1665, 1775, 1890, 2000, 2110, 2220, 2330, 2440, 2550, 2670, 2810, 2955) OR ( special_draw = 1 AND contest_number % 5 = 0 AND (substr(draw_date, 6, 5) >= '12-20' OR substr(draw_date, 6, 5) <= '01-10') ) ))",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SEARCH draw_touches",
+      "LIST SUBQUERY 3",
+      "SCAN draws",
+      "CREATE BLOOM FILTER"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draws"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/draws?view=mega-da-virada",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.2,
+   "responseBytes": 5630,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/numbers",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 15.5,
+   "responseBytes": 7279,
+   "statements": 4,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number FROM draws ORDER BY contest_number ASC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH occurrences AS ( SELECT contest_number, draw_date, number_1 AS number FROM draws UNION ALL SELECT contest_number, draw_date, number_2 FROM draws UNION ALL SELECT contest_number, draw_date, number_3 FROM draws UNION ALL SELECT contest_number, draw_date, number_4 FROM draws UNION ALL SELECT * FROM ( SELECT contest_number, draw_date, number_5 FROM draws UNION ALL SELECT contest_number, draw_date, number_6 FROM draws ) ) SELECT number, COUNT(*) AS frequency, MAX(contest_number) AS last_contest, draw_date FROM occurrences GROUP BY number",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "SCAN occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN occurrences"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT COUNT(*) AS total_draws, MAX(contest_number) AS last_contest, MAX(draw_date) AS last_draw_date, MAX(page_modified) AS last_modified FROM draw_changes",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/numbers",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.3,
+   "responseBytes": 7279,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/numbers?n=10",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 25.4,
+   "responseBytes": 1037,
+   "statements": 6,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT contest_number FROM draws ORDER BY contest_number ASC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH occurrences AS ( SELECT contest_number, draw_date, number_1 AS number FROM draws UNION ALL SELECT contest_number, draw_date, number_2 FROM draws UNION ALL SELECT contest_number, draw_date, number_3 FROM draws UNION ALL SELECT contest_number, draw_date, number_4 FROM draws UNION ALL SELECT * FROM ( SELECT contest_number, draw_date, number_5 FROM draws UNION ALL SELECT contest_number, draw_date, number_6 FROM draws ) ) SELECT number, COUNT(*) AS frequency, MAX(contest_number) AS last_contest, draw_date FROM occurrences GROUP BY number",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE occurrences",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "UNION ALL",
+      "COMPOUND QUERY",
+      "LEFT-MOST SUBQUERY",
+      "SCAN draws",
+      "UNION ALL",
+      "SCAN draws",
+      "SCAN occurrences",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN draws",
+      "SCAN occurrences"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT COUNT(*) AS total_draws, MAX(contest_number) AS last_contest, MAX(draw_date) AS last_draw_date, MAX(page_modified) AS last_modified FROM draw_changes",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws WHERE ?1 IN (number_1, number_2, number_3, number_4, number_5, number_6) ORDER BY contest_number ASC",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "WITH hits AS ( SELECT number_1, number_2, number_3, number_4, number_5, number_6 FROM draws WHERE ?1 IN (number_1, number_2, number_3, number_4, number_5, number_6) ), companions AS ( SELECT number_1 AS number FROM hits UNION ALL SELECT number_2 FROM hits UNION ALL SELECT number_3 FROM hits UNION ALL SELECT number_4 FROM hits UNION ALL SELECT * FROM ( SELECT number_5 FROM hits UNION ALL SELECT number_6 FROM hits ) ) SELECT number, COUNT(*) AS count FROM companions WHERE number != ?1 GROUP BY number ORDER BY count DESC, number ASC LIMIT 6",
+     "calls": 1,
+     "plan": [
+      "(plano indisponível: SQLite query expected 1 values, received 2)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/numbers?n=10",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.4,
+   "responseBytes": 1037,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/sitemap",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 35,
+   "responseBytes": 200054,
+   "statements": 5,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT contest_number, page_modified AS last_modified FROM draw_changes ORDER BY contest_number ASC",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT CAST(substr(draw_date, 1, 4) AS INTEGER) AS year, MAX(listing_modified) AS last_modified FROM draw_changes GROUP BY year ORDER BY year DESC",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes",
+      "USE TEMP B-TREE FOR GROUP BY"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT COUNT(*) AS total_draws, MAX(contest_number) AS last_contest, MAX(draw_date) AS last_draw_date, MAX(page_modified) AS last_modified FROM draw_changes",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_changes",
+      "CO-ROUTINE (subquery-4)",
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "USE TEMP B-TREE FOR ORDER BY",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draw_touches",
+      "SCAN (subquery-4)",
+      "SCAN draw_changes"
+     ]
+    },
+    {
+     "sql": "WITH draw_touches AS ( SELECT contest_number, draw_date, MAX(COALESCE(updated_at, draw_date), COALESCE(created_at, draw_date)) AS touched, COALESCE(LEAD(COALESCE(created_at, draw_date)) OVER (ORDER BY contest_number), '') AS next_loaded FROM draws ), draw_changes AS ( SELECT contest_number, draw_date, MAX(touched, next_loaded) AS listing_modified, MAX( MAX(touched) OVER (ORDER BY contest_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), next_loaded ) AS page_modified FROM draw_touches ) SELECT MAX(touched) AS last_modified FROM draw_touches WHERE contest_number IN (SELECT contest_number FROM draws WHERE ( contest_number IN (1140, 1245, 1350, 1455, 1560, 1665, 1775, 1890, 2000, 2110, 2220, 2330, 2440, 2550, 2670, 2810, 2955) OR ( special_draw = 1 AND contest_number % 5 = 0 AND (substr(draw_date, 6, 5) >= '12-20' OR substr(draw_date, 6, 5) <= '01-10') ) ))",
+     "calls": 1,
+     "plan": [
+      "CO-ROUTINE draw_touches",
+      "CO-ROUTINE (subquery-5)",
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SEARCH draw_touches",
+      "LIST SUBQUERY 3",
+      "SCAN draws",
+      "CREATE BLOOM FILTER"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number",
+      "SCAN (subquery-5)",
+      "SCAN draws"
+     ]
+    }
+   ]
+  },
+  {
+   "route": "/api/sitemap",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.2,
+   "responseBytes": 200054,
+   "statements": 1,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT revision FROM cache_revisions WHERE name = 'draws'",
+     "calls": 1,
+     "plan": [
+      "SEARCH cache_revisions USING INDEX sqlite_autoindex_cache_revisions_1 (name=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/health",
+   "pass": "cold",
+   "status": 200,
+   "wallMs": 1,
+   "responseBytes": 234,
+   "statements": 6,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ]
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT number, frequency, last_drawn_contest as lastDrawnContest, last_drawn_date as lastDrawnDate FROM number_frequency ORDER BY frequency DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN number_frequency",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN number_frequency"
+     ]
+    },
+    {
+     "sql": "SELECT AVG(prize_sena) as avg FROM draws WHERE prize_sena > 0",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_prize_sena (prize_sena>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT AVG(prize_quina) as avg FROM draws WHERE prize_quina > 0",
+     "calls": 1,
+     "plan": [
+      "SCAN draws"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws WHERE accumulated = 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_accumulated (accumulated=?)"
+     ],
+     "scans": []
+    }
+   ]
+  },
+  {
+   "route": "/api/health",
+   "pass": "warm",
+   "status": 200,
+   "wallMs": 0.5,
+   "responseBytes": 234,
+   "statements": 6,
+   "writes": [],
+   "selects": [
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ],
+     "scans": [
+      "SCAN draws USING COVERING INDEX idx_draws_accumulated"
+     ]
+    },
+    {
+     "sql": "SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1",
+     "calls": 1,
+     "plan": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ],
+     "scans": [
+      "SCAN draws USING INDEX idx_draws_contest_number"
+     ]
+    },
+    {
+     "sql": "SELECT number, frequency, last_drawn_contest as lastDrawnContest, last_drawn_date as lastDrawnDate FROM number_frequency ORDER BY frequency DESC",
+     "calls": 1,
+     "plan": [
+      "SCAN number_frequency",
+      "USE TEMP B-TREE FOR ORDER BY"
+     ],
+     "scans": [
+      "SCAN number_frequency"
+     ]
+    },
+    {
+     "sql": "SELECT AVG(prize_sena) as avg FROM draws WHERE prize_sena > 0",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_prize_sena (prize_sena>?)"
+     ],
+     "scans": []
+    },
+    {
+     "sql": "SELECT AVG(prize_quina) as avg FROM draws WHERE prize_quina > 0",
+     "calls": 1,
+     "plan": [
+      "SCAN draws"
+     ],
+     "scans": [
+      "SCAN draws"
+     ]
+    },
+    {
+     "sql": "SELECT COUNT(*) as count FROM draws WHERE accumulated = 1",
+     "calls": 1,
+     "plan": [
+      "SEARCH draws USING COVERING INDEX idx_draws_accumulated (accumulated=?)"
+     ],
+     "scans": []
+    }
+   ]
+  }
+ ]
+}
