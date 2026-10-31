@@ -14,7 +14,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
-import { HARNESS_USER_AGENT, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, assertRequiredAssetsLoaded, resolveBaseUrl, stringArg } from './matrix';
+import { HARNESS_USER_AGENT, type AssetStatus, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, assertRequiredAssetsLoaded, resolveBaseUrl, stringArg } from './matrix';
 import { round, summarize } from './stats';
 
 interface NetworkRequest { url: string; resourceType?: string; transferSize?: number; resourceSize?: number; statusCode?: number }
@@ -27,10 +27,19 @@ async function lighthouse(url: string, outFile: string, arm: string, script: str
   const headers: Record<string, string> = { 'X-Perf-Harness': HARNESS_USER_AGENT };
   if (arm !== 'current') headers['Cloudflare-Workers-Version-Overrides'] = `${script}="${arm}"`;
   args.push(`--extra-headers=${JSON.stringify(headers)}`);
-  const proc = Bun.spawn(['lighthouse', ...args], { stdout: 'pipe', stderr: 'pipe' });
-  const [err, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
-  if (code !== 0) throw new Error(`lighthouse saiu com ${code}: ${err.trim().slice(-500)}`);
+  // A Lighthouse tool failure (for example NO_NAVSTART on a loaded host) is
+  // retried; it produced no sample. Page-level failures are judged afterwards.
+  for (let attempt = 1; ; attempt++) {
+    const proc = Bun.spawn(['lighthouse', ...args], { stdout: 'pipe', stderr: 'pipe' });
+    const [err, code] = await Promise.all([new Response(proc.stderr).text(), proc.exited]);
+    if (code === 0) return;
+    if (attempt >= LIGHTHOUSE_ATTEMPTS) throw new Error(`lighthouse saiu com ${code}: ${err.trim().slice(-500)}`);
+    process.stderr.write(`lighthouse falhou (tentativa ${attempt}/${LIGHTHOUSE_ATTEMPTS}), repetindo: ${err.trim().slice(-160)}\n`);
+    await Bun.sleep(5000);
+  }
 }
+
+const LIGHTHOUSE_ATTEMPTS = 3;
 
 function extract(lhrFile: string, base: string) {
   const lhr = JSON.parse(readFileSync(lhrFile, 'utf8'));
@@ -75,6 +84,15 @@ function extract(lhrFile: string, base: string) {
   };
 }
 
+/**
+ * Same-origin entries of the extracted network log (paths start with `/`;
+ * third parties are recorded by host). The RUM beacon is blocked on purpose in
+ * the lab and reports -1, so it must not invalidate the sample.
+ */
+export function labAssets(network: { path: string; type?: string | undefined; status?: number | undefined }[]): AssetStatus[] {
+  return network.filter(r => r.path.startsWith('/')).map(r => ({ path: r.path, type: r.type, status: r.status }));
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const base = resolveBaseUrl(args);
@@ -100,7 +118,7 @@ async function main(): Promise<void> {
         const result = extract(file, base);
         if (result.rateLimited > 0) throw new Error(`429 em ${entry.path}: execução inválida; aumente --gap-ms.`);
         assertExpectedStatus(entry, result.documentStatus);
-        assertRequiredAssetsLoaded(entry.path, result.network.map(r => ({ path: r.path, type: r.type, status: r.status })));
+        assertRequiredAssetsLoaded(entry.path, labAssets(result.network));
         results.push({ path: entry.path, arm: `${index}:${arm}`, run, ...result });
         process.stderr.write(`${entry.path} arm ${index} run ${run} LCP(sim)=${round(result.simulated.lcpMs)}\n`);
         await Bun.sleep(gapMs);

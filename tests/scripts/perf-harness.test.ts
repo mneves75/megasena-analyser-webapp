@@ -4,6 +4,7 @@ import { extractAssets, nonAsciiCodepoints } from '../../scripts/perf/page-bytes
 import { parseWriteOut } from '../../scripts/perf/l2-ttfb';
 import { PAGE_MATRIX, assertExpectedStatus, assertRequiredAssetsLoaded } from '../../scripts/perf/matrix';
 import { parseEvalJson } from '../../scripts/perf/pixel-capture';
+import { labAssets } from '../../scripts/perf/l3-lab';
 
 describe('perf harness statistics', () => {
   it('uses nearest-rank percentiles on sorted samples', () => {
@@ -92,6 +93,14 @@ describe('perf page matrix', () => {
     ]) {
       expect(() => assertRequiredAssetsLoaded('/', [document, ...mixed])).toThrow(/execução inválida/);
     }
+  });
+
+  it('ignores the blocked third-party RUM beacon in the lab network log', () => {
+    const network = [{ path: '/a.js', type: 'Script', status: 200 }, { path: 'static.cloudflareinsights.com', type: 'Script', status: -1 }];
+    expect(() => assertRequiredAssetsLoaded('/', network)).toThrow(/execução inválida/);
+    expect(labAssets(network)).toEqual([{ path: '/a.js', type: 'Script', status: 200 }]);
+    expect(() => assertRequiredAssetsLoaded('/', labAssets(network))).not.toThrow();
+    expect(() => assertRequiredAssetsLoaded('/', labAssets([...network, { path: '/b.woff2', type: 'Font', status: 404 }]))).toThrow(/execução inválida/);
   });
 
   it('reads the asset list agent-browser prints, quoted or not', () => {
