@@ -71,7 +71,20 @@ describe('BetGenerator', () => {
       const result = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.SIMPLE_ONLY, 'random');
       // 100.3 - 96 is 4.299999999999997 in binary floating point.
       expect(String(result.remainingBudget)).toMatch(/^\d+(\.\d{1,2})?$/);
-      expect(result.remainingBudget).toBe(Math.round((budget - result.totalCost) * 100) / 100);
+      expect(result.totalCost + result.remainingBudget).toBeCloseTo(budget, 9);
+    }
+  });
+
+  it('never reports more change than the submitted budget left over', () => {
+    const generator = new BetGenerator();
+    // The API accepts fractional cents: 47.999 - 42 must not round up to 6.
+    const result = generator.generateOptimizedBets(47.999, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+    expect(result.totalCost).toBe(42);
+    expect(result.remainingBudget).toBe(5.99);
+    expect(result.totalCost + result.remainingBudget).toBeLessThanOrEqual(47.999);
+    for (const [budget, remaining] of [[47.99, 5.99], [48, 6], [100.3, 58.3]] as const) {
+      const control = generator.generateOptimizedBets(budget, BET_GENERATION_MODE.MULTIPLE_ONLY, 'random');
+      expect(control.remainingBudget).toBeCloseTo(remaining, 9);
     }
   });
 
