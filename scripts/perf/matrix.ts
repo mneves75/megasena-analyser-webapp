@@ -63,6 +63,27 @@ export function assertExpectedStatus(entry: MatrixEntry, status: number): void {
   }
 }
 
+export interface AssetStatus { path: string; type?: string; status?: number }
+
+const REQUIRED_ASSET_TYPES = new Set(['Script', 'Stylesheet', 'Font']);
+
+/**
+ * A browser sample whose scripts, stylesheets or fonts failed looks like a
+ * smaller, faster page, so it is rejected. Completed redirects and revalidations
+ * (3xx) count as loaded; a missing or network-failed status does not. Judged per
+ * URL: Chromium also lists a deduplicated modulepreload hint as a second entry
+ * with status 0 next to the real 200 fetch of the same file.
+ */
+export function assertRequiredAssetsLoaded(pagePath: string, assets: AssetStatus[]): void {
+  const loaded = (asset: AssetStatus) => typeof asset.status === 'number' && asset.status >= 200 && asset.status < 400;
+  const loadedPaths = new Set(assets.filter(loaded).map(asset => asset.path));
+  const failed = assets.filter(asset => REQUIRED_ASSET_TYPES.has(asset.type ?? '') && !loadedPaths.has(asset.path));
+  if (failed.length > 0) {
+    const sample = failed.slice(0, 3).map(asset => `${asset.status ?? 'sem status'} ${asset.path}`).join(', ');
+    throw new Error(`${failed.length} recurso(s) obrigatório(s) falharam em ${pagePath} (${sample}); execução inválida.`);
+  }
+}
+
 export function resolveBaseUrl(args: string[]): string {
   const index = args.indexOf('--base');
   const raw = index === -1 ? 'https://megasena-analyzer.com.br' : args[index + 1];

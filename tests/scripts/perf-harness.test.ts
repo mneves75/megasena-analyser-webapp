@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { percentile, summarize } from '../../scripts/perf/stats';
 import { extractAssets, nonAsciiCodepoints } from '../../scripts/perf/page-bytes';
 import { parseWriteOut } from '../../scripts/perf/l2-ttfb';
-import { PAGE_MATRIX, assertExpectedStatus } from '../../scripts/perf/matrix';
+import { PAGE_MATRIX, assertExpectedStatus, assertRequiredAssetsLoaded } from '../../scripts/perf/matrix';
+import { parseEvalJson } from '../../scripts/perf/pixel-capture';
 
 describe('perf harness statistics', () => {
   it('uses nearest-rank percentiles on sorted samples', () => {
@@ -68,6 +69,27 @@ describe('perf page matrix', () => {
       expect(() => assertExpectedStatus(page, status)).toThrow(/execução inválida/);
     }
     expect(() => assertExpectedStatus(missing, 200)).toThrow(/execução inválida/);
+  });
+
+  it('rejects a browser sample whose script, stylesheet or font failed', () => {
+    const document = { path: '/', type: 'Document', status: 200 };
+    const ok = [document, { path: '/a.js', type: 'Script', status: 200 }, { path: '/a.css', type: 'Stylesheet', status: 304 },
+      { path: '/a.woff2', type: 'Font', status: 200 }, { path: '/old', type: 'Script', status: 301 }, { path: '/x.png', type: 'Image', status: 404 }];
+    expect(() => assertRequiredAssetsLoaded('/', ok)).not.toThrow();
+    // A deduplicated modulepreload hint (status 0) next to the real fetch of the same file.
+    expect(() => assertRequiredAssetsLoaded('/', [...ok, { path: '/a.js', type: 'Script', status: 0 }])).not.toThrow();
+    for (const bad of [{ path: '/a.woff2', type: 'Font', status: 403 }, { path: '/a.js', type: 'Script', status: 500 },
+      { path: '/a.js', type: 'Script', status: -1 }, { path: '/a.css', type: 'Stylesheet', status: 0 },
+      { path: 'FontFace Archivo', type: 'Font' }]) {
+      expect(() => assertRequiredAssetsLoaded('/', [document, bad])).toThrow(/execução inválida/);
+    }
+  });
+
+  it('reads the asset list agent-browser prints, quoted or not', () => {
+    const list = [{ path: '/a.js', type: 'Script', status: 200 }];
+    expect(parseEvalJson(JSON.stringify(list))).toEqual(list);
+    expect(parseEvalJson(JSON.stringify(JSON.stringify(list)))).toEqual(list);
+    expect(() => parseEvalJson('"ok"')).toThrow();
   });
 
   it('never probes the audited API and keeps paths unique', () => {

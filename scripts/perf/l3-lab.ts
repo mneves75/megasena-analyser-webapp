@@ -14,7 +14,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parsePositiveIntegerArg } from '../cli-args';
-import { HARNESS_USER_AGENT, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, resolveBaseUrl, stringArg } from './matrix';
+import { HARNESS_USER_AGENT, PAGE_MATRIX, RUM_BLOCK_PATTERNS, assertExpectedStatus, assertRequiredAssetsLoaded, resolveBaseUrl, stringArg } from './matrix';
 import { round, summarize } from './stats';
 
 interface NetworkRequest { url: string; resourceType?: string; transferSize?: number; resourceSize?: number; statusCode?: number }
@@ -100,6 +100,7 @@ async function main(): Promise<void> {
         const result = extract(file, base);
         if (result.rateLimited > 0) throw new Error(`429 em ${entry.path}: execução inválida; aumente --gap-ms.`);
         assertExpectedStatus(entry, result.documentStatus);
+        assertRequiredAssetsLoaded(entry.path, result.network.map(r => ({ path: r.path, type: r.type, status: r.status })));
         results.push({ path: entry.path, arm: `${index}:${arm}`, run, ...result });
         process.stderr.write(`${entry.path} arm ${index} run ${run} LCP(sim)=${round(result.simulated.lcpMs)}\n`);
         await Bun.sleep(gapMs);
