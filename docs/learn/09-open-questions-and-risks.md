@@ -67,8 +67,7 @@ ruins. Aqui está a lista do que verificar antes de confiar.
   profundidade recomendada (ver `10-lgpd-compliance-plan.md`, gap 1).
 - **Entry points legados.** `scripts/fetch-missing.ts` agora delega ao `pullDraws`
   incremental, com `DATABASE_PATH`, validação e transação dos caches. Não mantém
-  mais uma conexão SQLite independente. `start-docker-distroless.ts` continua sem
-  Dockerfile que o use.
+  mais uma conexão SQLite independente.
 
 ## Armadilhas para juniores
 

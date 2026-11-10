@@ -765,25 +765,4 @@ export class BetGenerator {
 
     return selected;
   }
-
-  calculateBetCost(numberCount: number): number {
-    return BET_PRICES[numberCount] || 0;
-  }
-
-  getAvailableMultipleBets(budget: number): Array<{ numbers: number; cost: number }> {
-    const available: Array<{ numbers: number; cost: number }> = [];
-
-    for (
-      let count = BetGenerator.MIN_MULTIPLE_BET_NUMBERS;
-      count <= MEGASENA_CONSTANTS.MAX_NUMBERS_MULTIPLE;
-      count++
-    ) {
-      const cost = BET_PRICES[count];
-      if (cost && cost <= budget) {
-        available.push({ numbers: count, cost });
-      }
-    }
-
-    return available;
-  }
 }

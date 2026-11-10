@@ -76,9 +76,7 @@ const apiEnv: Record<string, string> = {
 };
 
 // IP_HASH_SECRET is required (fail-closed in server.ts). Operators running
-// `bun run start` on systemd/PM2/etc. must export it. The only escape hatch is
-// IP_HASH_SECRET_AUTOGENERATE=true, set explicitly by the caller (e.g. Playwright
-// webServer config) — never silently injected here.
+// `bun run start` on systemd/PM2/etc. must export it; it is never injected here.
 
 const apiServer = spawn(['bun', 'server.ts'], {
   stdout: 'inherit',

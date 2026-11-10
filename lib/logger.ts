@@ -207,28 +207,6 @@ class Logger {
     this.log('error', message, context, error);
   }
 
-  // Utility methods for common scenarios
-  apiRequest(method: string, path: string, duration?: number): void {
-    this.info('api.request', {
-      method,
-      route: path,
-      durationMs: typeof duration === 'number' ? duration : undefined,
-    });
-  }
-
-  apiError(method: string, path: string, error: unknown): void {
-    this.error('api.error', error, { method, route: path });
-  }
-
-  dbQuery(query: string, duration?: number): void {
-    if (this.isDebugEnabled) {
-      this.debug('db.query', {
-        query: this.sanitizeString(query, 500),
-        durationMs: typeof duration === 'number' ? duration : undefined,
-      });
-    }
-  }
-
   migration(name: string, status: 'start' | 'success' | 'error'): void {
     const level: LogLevel = status === 'error' ? 'error' : 'info';
     this.log(level, 'db.migration', { name, status });
