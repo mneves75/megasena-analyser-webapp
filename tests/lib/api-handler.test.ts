@@ -65,6 +65,35 @@ describe('runtime-neutral API handler', () => {
       spy.mockRestore();
     }
   });
+  it('answers a wrong method on every route with the same 405 body, Allow header and audit event', async () => {
+    const routes = [
+      ['/api/health', 'GET', 'api.health_read'], ['/api/dashboard', 'GET', 'api.dashboard_read'],
+      ['/api/statistics', 'GET', 'api.statistics_read'], ['/api/trends', 'GET', 'api.trends_read'],
+      ['/api/draws', 'GET', 'api.draws_read'], ['/api/numbers', 'GET', 'api.numbers_read'],
+      ['/api/sitemap', 'GET', 'api.sitemap_read'], ['/api/generate-bets', 'POST', 'bets.generate_requested'],
+    ] as const;
+    const audit = vi.fn();
+    const handler = createApiHandler({ ...options, audit });
+    expect(handler.routes).toEqual(routes.map(([route]) => route).sort());
+    for (const [route, allowed, event] of routes) {
+      for (const method of allowed === 'GET' ? ['POST', 'PUT', 'DELETE'] : ['GET', 'PUT', 'DELETE']) {
+        audit.mockClear();
+        const response = await handler.fetch(new Request(`https://example.com${route}`, { method }), { internal: true });
+        expect(response.status).toBe(405);
+        expect(response.headers.get('Allow')).toBe(allowed);
+        expect(response.headers.get('Content-Type')).toBe('application/json');
+        const body = await response.json();
+        expect(body).toStrictEqual({
+          success: false, error: 'Método não permitido.',
+          requestId: response.headers.get('X-Request-Id'), timestamp: expect.any(String),
+        });
+        expect(audit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+          event, route, method, statusCode: 405, success: false,
+          metadata: { validationError: true, reason: 'method_not_allowed' },
+        }));
+      }
+    }
+  });
   it('adds only the approved scheduler fields without changing healthy data status', async () => {
     closeDatabase();
     getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
