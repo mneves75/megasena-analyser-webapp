@@ -385,9 +385,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
       ctx.audit = { event: 'api.health_read' };
       try {
         // Check database connectivity
-        const stats = new StatisticsEngine();
-        const statistics = stats.getDrawStatistics();
-        const drawCount = statistics.totalDraws;
+        const summary = new StatisticsEngine().getDrawSummary();
+        const drawCount = summary.totalDraws;
         const dataReady =
           Number.isFinite(MIN_HEALTH_TOTAL_DRAWS) &&
           MIN_HEALTH_TOTAL_DRAWS > 0 &&
@@ -402,8 +401,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
             connected: true,
             totalDraws: drawCount,
             minTotalDraws: MIN_HEALTH_TOTAL_DRAWS,
-            lastContestNumber: statistics.lastContestNumber,
-            lastDrawDate: statistics.lastDrawDate,
+            lastContestNumber: summary.lastContestNumber,
+            lastDrawDate: summary.lastDrawDate,
             dataReady,
           },
           version: options.appVersion,

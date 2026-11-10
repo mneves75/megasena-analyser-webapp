@@ -3,6 +3,7 @@ import { createApiHandler } from '../../lib/api/handler';
 import { closeDatabase, getDatabase } from '../../lib/db';
 import { BASE_URL } from '../../lib/constants';
 import { DrawArchiveEngine } from '../../lib/analytics/draw-archive';
+import { StatisticsEngine } from '../../lib/analytics/statistics';
 import '../../lib/log-context.runtime';
 import { runWithLogSink } from '../../lib/logger';
 
@@ -38,6 +39,31 @@ describe('runtime-neutral API handler', () => {
     const invalidMethod = await handler.fetch(new Request('https://example.com/api/health', { method: 'POST' }));
     expect(invalidMethod.status).toBe(405);
     expect(invalidMethod.headers.get('Allow')).toBe('GET');
+  });
+  it('answers health from the draw count without building the full statistics, with an unchanged body', async () => {
+    const spy = vi.spyOn(StatisticsEngine.prototype, 'getDrawStatistics');
+    const handler = createApiHandler({ ...options, uptime: () => 42 });
+    const read = async () => {
+      const response = await handler.fetch(new Request('https://example.com/api/health'));
+      return { status: response.status, text: (await response.text()).replace(/"timestamp":"[^"]+"/, '"timestamp":"T"') };
+    };
+    try {
+      closeDatabase();
+      getDatabase();
+      expect(await read()).toStrictEqual({ status: 503, text: '{"status":"unhealthy","timestamp":"T","uptime":42,'
+        + '"database":{"connected":true,"totalDraws":0,"minTotalDraws":1,"lastContestNumber":null,"lastDrawDate":null,'
+        + '"dataReady":false},"version":"test"}' });
+      const insert = getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+        number_3, number_4, number_5, number_6) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+      insert.run(1, '2025-01-01', 1, 2, 3, 4, 5, 6);
+      insert.run(2, '2025-01-08', 7, 8, 9, 10, 11, 12);
+      expect(await read()).toStrictEqual({ status: 200, text: '{"status":"healthy","timestamp":"T","uptime":42,'
+        + '"database":{"connected":true,"totalDraws":2,"minTotalDraws":1,"lastContestNumber":2,"lastDrawDate":"2025-01-08",'
+        + '"dataReady":true},"version":"test"}' });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
   it('adds only the approved scheduler fields without changing healthy data status', async () => {
     closeDatabase();

@@ -121,7 +121,8 @@ export class StatisticsEngine {
     }
   }
 
-  getDrawStatistics(): DrawStatistics {
+  /** Draw count and latest draw: all the health check needs. */
+  getDrawSummary(): Pick<DrawStatistics, 'totalDraws' | 'lastDrawDate' | 'lastContestNumber'> {
     const totalDraws = (
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
@@ -129,6 +130,16 @@ export class StatisticsEngine {
     const lastDraw = this.db
       .prepare('SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1')
       .get() as { contest_number: number; draw_date: string } | undefined;
+
+    return {
+      totalDraws,
+      lastDrawDate: lastDraw?.draw_date || null,
+      lastContestNumber: lastDraw?.contest_number || null,
+    };
+  }
+
+  getDrawStatistics(): DrawStatistics {
+    const { totalDraws, lastDrawDate, lastContestNumber } = this.getDrawSummary();
 
     const frequencies = this.getNumberFrequencies();
     const mostFrequent = frequencies.slice(0, STATISTICS_DISPLAY.DASHBOARD_TOP_COUNT);
@@ -154,8 +165,8 @@ export class StatisticsEngine {
 
     return {
       totalDraws,
-      lastDrawDate: lastDraw?.draw_date || null,
-      lastContestNumber: lastDraw?.contest_number || null,
+      lastDrawDate,
+      lastContestNumber,
       mostFrequentNumbers: mostFrequent,
       leastFrequentNumbers: leastFrequent,
       averagePrizeSena: avgSena,
