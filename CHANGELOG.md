@@ -8,6 +8,8 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## [Unreleased]
 
 - Medição: resultados do 1.19.3 em `docs/perf/RESULTS.md`, com status de todos os budgets em `docs/perf/budgets.json`. O harness ignora o beacon RUM que o lab bloqueia de propósito, repete falhas da ferramenta Lighthouse (sem amostra) e grava capturas por caminho absoluto, falhando se o arquivo não existir.
+- Instruções de agente: `AGENTS.md` e `.cursor/rules/` descrevem o que o código apaga com `DELETE` (retenção de audit/log, também no Durable Object; janelas de rate limit expiradas; o cache de pares reconstruído; o banco de fixture do e2e), o rate limit por rede (`rateLimitSubject`), o Worker do Cloudflare em produção e staging, e a proibição de Playwright como decisão de uma revisão, não regra permanente.
+- Regras de agente em `.claude/settings.json`: bloqueia a leitura de `.env*` e gerenciadores de pacote além do pnpm; pede confirmação antes de editar `vitest.config.ts`, copiar bancos `.db` com `scp`/`rsync` e fazer deploy no Cloudflare; o Stop roda lint, ast-grep, typecheck, testes com cobertura, `test:sqlite` e `security:audit-exceptions` quando a árvore mudou.
 
 ## [1.19.3] - 2026-10-31
 
