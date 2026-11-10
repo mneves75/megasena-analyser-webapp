@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Read(./.env.*.local)",
+      "Bash(npm install*)",
+      "Bash(npm i *)",
+      "Bash(yarn*)",
+      "Bash(bun install*)",
+      "Bash(bun add*)"
+    ],
+    "ask": [
+      "Edit(./vitest.config.ts)",
+      "Bash(scp *.db*)",
+      "Bash(rsync *.db*)",
+      "Bash(*cf deploy*)",
+      "Bash(*deploy:cloudflare*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/claude-gate\" ] || \"$HOME/.claude/hooks/claude-gate\" baseline"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -x \"$HOME/.claude/hooks/claude-gate\" ] || \"$HOME/.claude/hooks/claude-gate\" stop -- 'bun run lint && bun run lint:ast && bun run typecheck && bun run test -- --run --coverage && bun run test:sqlite && bun run security:audit-exceptions'",
+            "timeout": 900
+          }
+        ]
+      }
+    ]
+  }
+}

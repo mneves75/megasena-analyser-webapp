@@ -161,9 +161,9 @@ CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:pru
 
 **Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
 `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit`, and `bun run build` all pass;
-Argent Chromium verification for UI-affecting changes. The owner requires Argent
-for this review: do not run Playwright. Existing `tests/app` remain legacy coverage;
-the saved Argent flow covers generator pagination, not that entire suite. See
+Argent Chromium verification for UI-affecting changes. The owner barred Playwright for one review;
+ask before treating that as standing (CI still runs `test:e2e`). Existing `tests/app` remain
+legacy coverage; the saved Argent flow covers generator pagination, not that entire suite. See
 README.md for the isolated local production fixture and two-pass replay.
 
 ## Architecture map
@@ -254,8 +254,11 @@ README.md for the isolated local production fixture and two-pass replay.
   baseline (2026-09-25) toward the 80% target: raise them as coverage grows, never
   lower them.
 - **Hard-delete exception (approved):** audit/log retention deletes rows permanently
-  (`audit:prune`, `log:prune`). This overrides the global soft-delete default and is
-  the only place hard delete is allowed.
+  (`audit:prune`, `log:prune` and the Durable Object retention in `cloudflare/data-object.ts`);
+  this overrides the global soft-delete default for retained data. Besides it, only expired
+  `rate_limit_windows`, the rebuilt `number_pair_frequency` cache and the disposable e2e fixture DB
+  (`scripts/prepare-e2e-db.ts`) are cleared with `DELETE`; draws and other retained rows are never
+  hard-deleted.
 - **DB writes:** batch large ingestions in a single transaction with rollback; use
   prepared statements; run `scripts/optimize-db.ts` after big pulls; keep ~15-20% disk
   free (WAL requirement). `bun run build` fails if `.next/standalone` contains DB/WAL/
