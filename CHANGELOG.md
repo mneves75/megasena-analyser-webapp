@@ -7,6 +7,7 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+- Node 26.13.0: `docs/DEPLOY.md`, `AGENTS.md` e `@types/node` acompanham o pin de `.nvmrc`; o teste de supply chain deriva de `.nvmrc` a frase do guia de deploy e a faixa de `engines.node`, para que nenhum dos dois fique para trás. A imagem Docker de recuperação continua em `node:22-alpine` até ter sua própria verificação de digest.
 - Medição: resultados do 1.19.3 em `docs/perf/RESULTS.md`, com status de todos os budgets em `docs/perf/budgets.json`. O harness ignora o beacon RUM que o lab bloqueia de propósito, repete falhas da ferramenta Lighthouse (sem amostra) e grava capturas por caminho absoluto, falhando se o arquivo não existir.
 
 ## [1.19.3] - 2026-10-31

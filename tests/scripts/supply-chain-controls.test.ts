@@ -147,7 +147,12 @@ describe('controles de supply chain', () => {
       expect(job).toContain(setupNode);
       expect(job).toContain(`node-version: ${pinnedNode}`);
     }
-    expect(deploy).toContain('Node.js `>= 22.0.0` na máquina que compila o Next.js');
+    // The deploy guide states the same pin; derived from .nvmrc so the doc cannot lag it.
+    const pinnedMajor = pinnedNode.split('.')[0];
+    expect(deploy).toContain(
+      `Node.js \`>= ${pinnedMajor}.0.0\` na máquina que compila o Next.js (CI fixa \`${pinnedNode}\`)`
+    );
+    expect(packageJson.engines.node).toBe(`>=${pinnedMajor}.0.0 <${Number(pinnedMajor) + 1}.0.0`);
   });
 
   it('mantém os pins de segurança apenas onde o pnpm os aplica', async () => {

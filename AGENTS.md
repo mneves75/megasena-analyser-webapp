@@ -100,7 +100,7 @@ See docs/DEPLOY.md; do not infer deployment authorization from preparation.
   move the pin.
 - **CI uses a pinned Bun version** recorded in `.bun-ci-version` and installed via
   `.github/actions/setup-bun-pinned/action.yml`. Next.js production builds still
-  compile under the Node patch in `.nvmrc` (currently 22.23.4; the workflows and
+  compile under the Node patch in `.nvmrc` (currently 26.13.0; the workflows and
   `tests/scripts/supply-chain-controls.test.ts` read that file, so the gate cannot
   drift a patch behind the runtime image): the old Bun 1.3.14 Linux SIGSEGV building
   Next.js 16.3.0 was a napi thread-safe-function use-after-free, fixed in
