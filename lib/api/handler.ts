@@ -315,8 +315,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     return finalized;
   }
 
-  function checkRateLimit(clientIp: string | null): { allowed: boolean; remaining: number; resetAt: number } {
-    const key = getRateLimitKey(clientIp);
+  function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
 
     let entry = rateLimiterCache.get(key);
@@ -1002,7 +1001,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
             remaining: RATE_LIMIT_MAX_REQUESTS,
             resetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
           }
-        : options.checkRateLimit?.(getRateLimitKey(clientIp)) ?? checkRateLimit(clientIp);
+        : options.checkRateLimit?.(ctx.clientId) ?? checkRateLimit(ctx.clientId);
 
       if (!rateLimit.allowed) {
         logger.warn('api.rate_limit_exceeded', {
