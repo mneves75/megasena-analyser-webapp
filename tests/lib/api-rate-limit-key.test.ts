@@ -112,3 +112,24 @@ describe('rejected requests are recorded once per window', () => {
     }
   });
 });
+
+describe('repeated rejections write nothing, whatever else the request carries', () => {
+  it('an untrusted Origin logs its CORS rejection only on the first 429 of the window', async () => {
+    vi.useFakeTimers({ now: Date.parse('2026-06-01T12:00:00.000Z') });
+    const events: string[] = [];
+    const handler = createApiHandler({ ...options, audit: vi.fn() });
+    const peer = { clientIp: '203.0.113.90' };
+    const health = () => new Request('https://example.com/api/health', { headers: { Origin: 'https://untrusted.example' } });
+    try {
+      await runWithLogSink(entry => { events.push(entry.event); }, async () => {
+        for (let index = 0; index < RATE_LIMIT_MAX_REQUESTS; index++) await handler.fetch(health(), peer);
+        const before = events.length;
+        for (let index = 0; index < 3; index++) expect((await handler.fetch(health(), peer)).status).toBe(429);
+        // Every row written by the three rejections: only the first one's.
+        expect(events.slice(before).sort()).toEqual(['api.rate_limit_exceeded', 'api.request_completed', 'security.cors_origin_rejected']);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

@@ -370,7 +370,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
    * Validates origin against allowed list and returns appropriate headers
    * In production, only HTTPS origins are allowed
    */
-  function getCorsHeaders(origin: string | null): Record<string, string> {
+  function getCorsHeaders(origin: string | null, logRejection: boolean): Record<string, string> {
     // If no origin header (same-origin request), don't add CORS headers
     if (!origin) {
       return {};
@@ -380,7 +380,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     const isAllowed = ALLOWED_ORIGINS.includes(origin);
 
     if (!isAllowed) {
-      logger.warn('security.cors_origin_rejected', {
+      if (logRejection) logger.warn('security.cors_origin_rejected', {
         origin,
         allowedOriginsCount: ALLOWED_ORIGINS.length,
       });
@@ -952,7 +952,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
       getRateLimitKey(clientIp),
       peer.secure ?? url.protocol === 'https:'
     );
-    const corsHeaders = getCorsHeaders(ctx.origin ?? null);
     const rateLimitHeaders = (limit: {
       remaining: number;
       resetAt: number;
@@ -967,6 +966,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
       // rest. This replaces a branch that could not be reached, because every
       // registered handler lives under /api/.
       if (!url.pathname.startsWith('/api/')) {
+        const corsHeaders = getCorsHeaders(ctx.origin ?? null, true);
         const response =
           req.method === 'OPTIONS'
             ? new Response(null, { status: 204, headers: corsHeaders })
@@ -990,6 +990,12 @@ export function createApiHandler(options: ApiHandlerOptions) {
             count: 0,
           }
         : options.checkRateLimit?.(ctx.clientId) ?? checkRateLimit(ctx.clientId);
+      // Decided after the limiter: a 429 past the first in its window writes no row
+      // at all, the CORS rejection log included.
+      const corsHeaders = getCorsHeaders(
+        ctx.origin ?? null,
+        rateLimit.allowed || rateLimit.count === RATE_LIMIT_MAX_REQUESTS + 1
+      );
 
       if (!rateLimit.allowed) {
         // Only the first rejection in a window is written (audit row and log

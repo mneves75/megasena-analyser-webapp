@@ -311,6 +311,16 @@ const worker = {
         assert(statuses.join() === '429,429,429' && rows.audit === window + 1 && rows.logs === window + 1,
           `one recorded rejection per window: window ${window}, ${statuses.join()}, ${JSON.stringify(rows)}`);
       }
+      // Every log/audit row of repeated rejections is suppressed, including the CORS rejection log.
+      const untrusted = env.SEEDED.getByName('untrusted-origin');
+      const untrustedRequest = () => new Request('https://example.com/api/health', { headers: { Origin: 'https://untrusted.example' } });
+      const untrustedPeer = { clientIp: '203.0.113.81', secure: true };
+      for (let index = 0; index < 100; index++) await untrusted.handle(untrustedRequest(), untrustedPeer);
+      const beforeRejections = await untrusted.status();
+      for (let index = 0; index < 3; index++) assert((await untrusted.handle(untrustedRequest(), untrustedPeer)).status === 429, 'untrusted origin 429');
+      const afterRejections = await untrusted.status();
+      const rejectionRows = { audit: afterRejections.auditRows - beforeRejections.auditRows, logs: afterRejections.logRows - beforeRejections.logRows };
+      assert(rejectionRows.audit === 1 && rejectionRows.logs === 3, `only the first rejection writes rows (all log_events): ${JSON.stringify(rejectionRows)}`);
       const boundary = await seeded.rateLimitAtBoundary();
       assert(boundary.opened && boundary.allowed && boundary.remaining === 99, `rate-limit window expires at exactly resetAt: ${JSON.stringify(boundary)}`);
       const preloaded = await env.PRELOADED.getByName('preloaded').status();
