@@ -103,7 +103,7 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
   const topListed = top.numbers.slice(0, TOP_NUMBERS_LISTED).map(dezena);
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={path}
         name={`Resultados da Mega-Sena em ${year}`}

@@ -141,7 +141,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path="/dashboard"
         name={pt.meta.dashboard.title}
@@ -152,169 +152,115 @@ export default async function DashboardPage() {
         ]}
       />
 
-      <div className="space-y-14">
-        <h1 className="text-4xl font-semibold sm:text-5xl">{pt.dashboard.title}</h1>
+      <h1 className="text-4xl font-semibold sm:text-5xl">{pt.dashboard.title}</h1>
 
-        {lastDraw ? (
-          <section
-            aria-labelledby="dashboard-last"
-            className="grid gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12"
-          >
-            <div className="space-y-4">
-              <h2
-                id="dashboard-last"
-                className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"
-              >
-                Concurso {lastDraw.contestNumber}
-              </h2>
-              <p className="text-muted-foreground tabular-nums">
-                Sorteio de {formatDate(lastDraw.drawDate)}
-              </p>
-              <dl className="border-t border-border pt-4">
-                <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
-                <dd className="font-condensed text-2xl font-semibold tabular-nums">
-                  {lastDraw.accumulated ? 'Acumulou' : formatCurrency(lastDraw.prizeSena)}
-                </dd>
-              </dl>
-              <ArchiveLink
-                href={`/concurso/${lastDraw.contestNumber}`}
-                className={cn('inline-block', inlineLinkClass)}
-              >
-                Ganhadores e rateio do concurso {lastDraw.contestNumber}
-              </ArchiveLink>
-            </div>
-            <figure className="space-y-3">
-              <NumberField
-                struck={lastDraw.numbers}
-                linked
-                size="lg"
-                label={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
-              />
-              <figcaption>
-                <SourceLine through={lastDraw.contestNumber} />
-              </figcaption>
-            </figure>
-          </section>
-        ) : null}
-
-        <section aria-labelledby="dashboard-archive" className="space-y-4">
-          <SectionHeading id="dashboard-archive">{pt.dashboard.archiveTitle}</SectionHeading>
-          <FactList facts={facts} />
-          <SourceLine through={through} />
-        </section>
-
-        <div className="grid gap-12 lg:grid-cols-2">
-          <section aria-labelledby="dashboard-most" className="space-y-4">
-            <SectionHeading id="dashboard-most">{pt.dashboard.mostFrequent}</SectionHeading>
-            <RankedList
-              labelId="dashboard-most"
-              entries={rankBy(
-                10,
-                statistics.mostFrequentNumbers,
-                (entry) => entry.frequency,
-                times
-              )}
-            />
-          </section>
-          <section aria-labelledby="dashboard-least" className="space-y-4">
-            <SectionHeading id="dashboard-least">{pt.dashboard.leastFrequent}</SectionHeading>
-            <RankedList
-              labelId="dashboard-least"
-              entries={rankBy(
-                10,
-                statistics.leastFrequentNumbers,
-                (entry) => -entry.frequency,
-                times
-              )}
-            />
-          </section>
-          <div className="lg:col-span-2">
-            <SourceLine through={through} />
+      {lastDraw ? (
+        <section
+          aria-labelledby="dashboard-last"
+          className="grid gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12"
+        >
+          <div className="space-y-4">
+            <h2
+              id="dashboard-last"
+              className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"
+            >
+              Concurso {lastDraw.contestNumber}
+            </h2>
+            <p className="text-muted-foreground tabular-nums">
+              Sorteio de {formatDate(lastDraw.drawDate)}
+            </p>
+            <dl className="border-t border-border pt-4">
+              <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
+              <dd className="font-condensed text-2xl font-semibold tabular-nums">
+                {lastDraw.accumulated ? 'Acumulou' : formatCurrency(lastDraw.prizeSena)}
+              </dd>
+            </dl>
+            <ArchiveLink
+              href={`/concurso/${lastDraw.contestNumber}`}
+              className={cn('inline-block', inlineLinkClass)}
+            >
+              Ganhadores e rateio do concurso {lastDraw.contestNumber}
+            </ArchiveLink>
           </div>
+          <figure className="space-y-3">
+            <NumberField
+              struck={lastDraw.numbers}
+              linked
+              size="lg"
+              label={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
+            />
+            <figcaption>
+              <SourceLine through={lastDraw.contestNumber} />
+            </figcaption>
+          </figure>
+        </section>
+      ) : null}
+
+      <section aria-labelledby="dashboard-archive" className="space-y-4">
+        <SectionHeading id="dashboard-archive">{pt.dashboard.archiveTitle}</SectionHeading>
+        <FactList facts={facts} />
+        <SourceLine through={through} />
+      </section>
+
+      <div className="grid gap-12 lg:grid-cols-2">
+        <section aria-labelledby="dashboard-most" className="space-y-4">
+          <SectionHeading id="dashboard-most">{pt.dashboard.mostFrequent}</SectionHeading>
+          <RankedList
+            labelId="dashboard-most"
+            entries={rankBy(10, statistics.mostFrequentNumbers, (entry) => entry.frequency, times)}
+          />
+        </section>
+        <section aria-labelledby="dashboard-least" className="space-y-4">
+          <SectionHeading id="dashboard-least">{pt.dashboard.leastFrequent}</SectionHeading>
+          <RankedList
+            labelId="dashboard-least"
+            entries={rankBy(
+              10,
+              statistics.leastFrequentNumbers,
+              (entry) => -entry.frequency,
+              times
+            )}
+          />
+        </section>
+        <div className="lg:col-span-2">
+          <SourceLine through={through} />
         </div>
+      </div>
 
-        {hotNumbers && hotNumbers.length > 0 ? (
-          <section aria-labelledby="dashboard-hot" className="space-y-4">
-            <SectionHeading id="dashboard-hot">{pt.dashboard.hotNumbersTitle}</SectionHeading>
-            <TableFrame>
-              <table className={tableClass}>
-                <caption className="px-4 py-3 text-left text-sm text-muted-foreground">
-                  {pt.dashboard.hotNumbersCaption}
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className={thClass}>
-                      Dezena
-                    </th>
-                    <th scope="col" className={thClass}>
-                      Saídas nos últimos 10
-                    </th>
-                    <th scope="col" className={thClass}>
-                      Em relação à média
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hotNumbers.map((hot: HotNumber) => (
-                    <tr key={hot.number}>
-                      <th scope="row" className={cellClass}>
-                        <ArchiveLink
-                          href={`/numeros/${hot.number}`}
-                          className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
-                        >
-                          {dezena(hot.number)}
-                        </ArchiveLink>
-                      </th>
-                      <td className={cellClass}>{hot.recentOccurrences}</td>
-                      <td className={cellClass}>{formatDecimal(hot.streakIntensity, 1)}×</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </TableFrame>
-            <SourceLine through={through} />
-          </section>
-        ) : null}
-
-        <section aria-labelledby="dashboard-recent" className="space-y-4">
-          <SectionHeading id="dashboard-recent">{pt.dashboard.recentDraws}</SectionHeading>
+      {hotNumbers && hotNumbers.length > 0 ? (
+        <section aria-labelledby="dashboard-hot" className="space-y-4">
+          <SectionHeading id="dashboard-hot">{pt.dashboard.hotNumbersTitle}</SectionHeading>
           <TableFrame>
             <table className={tableClass}>
-              <caption className="sr-only">{pt.dashboard.recentDraws}</caption>
+              <caption className="px-4 py-3 text-left text-sm text-muted-foreground">
+                {pt.dashboard.hotNumbersCaption}
+              </caption>
               <thead>
                 <tr>
                   <th scope="col" className={thClass}>
-                    Concurso
+                    Dezena
                   </th>
                   <th scope="col" className={thClass}>
-                    Data
+                    Saídas nos últimos 10
                   </th>
                   <th scope="col" className={thClass}>
-                    Dezenas
-                  </th>
-                  <th scope="col" className={cn(thClass, 'text-right')}>
-                    Prêmio da sena
+                    Em relação à média
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {recentDraws.map((draw: RecentDraw) => (
-                  <tr key={draw.contestNumber}>
+                {hotNumbers.map((hot: HotNumber) => (
+                  <tr key={hot.number}>
                     <th scope="row" className={cellClass}>
                       <ArchiveLink
-                        href={`/concurso/${draw.contestNumber}`}
-                        className={inlineLinkClass}
+                        href={`/numeros/${hot.number}`}
+                        className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
                       >
-                        {draw.contestNumber}
+                        {dezena(hot.number)}
                       </ArchiveLink>
                     </th>
-                    <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-                    <td className={cellClass}>
-                      <DezenaChips numbers={draw.numbers} />
-                    </td>
-                    <td className={cn(cellClass, 'text-right')}>
-                      {draw.accumulated ? 'Acumulou' : formatCurrency(draw.prizeSena)}
-                    </td>
+                    <td className={cellClass}>{hot.recentOccurrences}</td>
+                    <td className={cellClass}>{formatDecimal(hot.streakIntensity, 1)}×</td>
                   </tr>
                 ))}
               </tbody>
@@ -322,29 +268,76 @@ export default async function DashboardPage() {
           </TableFrame>
           <SourceLine through={through} />
         </section>
+      ) : null}
 
-        <section aria-labelledby="dashboard-tools">
-          <SectionHeading id="dashboard-tools">{pt.dashboard.toolsTitle}</SectionHeading>
-          <ul className="mt-6 border-t-2 border-primary">
-            {pt.dashboard.tools.map((tool) => (
-              <li
-                key={tool.href}
-                className="grid gap-1 border-b border-border py-5 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-8"
+      <section aria-labelledby="dashboard-recent" className="space-y-4">
+        <SectionHeading id="dashboard-recent">{pt.dashboard.recentDraws}</SectionHeading>
+        <TableFrame>
+          <table className={tableClass}>
+            <caption className="sr-only">{pt.dashboard.recentDraws}</caption>
+            <thead>
+              <tr>
+                <th scope="col" className={thClass}>
+                  Concurso
+                </th>
+                <th scope="col" className={thClass}>
+                  Data
+                </th>
+                <th scope="col" className={thClass}>
+                  Dezenas
+                </th>
+                <th scope="col" className={cn(thClass, 'text-right')}>
+                  Prêmio da sena
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentDraws.map((draw: RecentDraw) => (
+                <tr key={draw.contestNumber}>
+                  <th scope="row" className={cellClass}>
+                    <ArchiveLink
+                      href={`/concurso/${draw.contestNumber}`}
+                      className={inlineLinkClass}
+                    >
+                      {draw.contestNumber}
+                    </ArchiveLink>
+                  </th>
+                  <td className={cellClass}>{formatDate(draw.drawDate)}</td>
+                  <td className={cellClass}>
+                    <DezenaChips numbers={draw.numbers} />
+                  </td>
+                  <td className={cn(cellClass, 'text-right')}>
+                    {draw.accumulated ? 'Acumulou' : formatCurrency(draw.prizeSena)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
+        <SourceLine through={through} />
+      </section>
+
+      <section aria-labelledby="dashboard-tools">
+        <SectionHeading id="dashboard-tools">{pt.dashboard.toolsTitle}</SectionHeading>
+        <ul className="mt-6 border-t-2 border-primary">
+          {pt.dashboard.tools.map((tool) => (
+            <li
+              key={tool.href}
+              className="grid gap-1 border-b border-border py-5 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-8"
+            >
+              <Link
+                href={tool.href}
+                className="w-fit rounded-sm font-title text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors [font-stretch:88%] hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                <Link
-                  href={tool.href}
-                  className="w-fit rounded-sm font-title text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors [font-stretch:88%] hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {tool.title}
-                </Link>
-                <p className="max-w-[60ch] text-muted-foreground">{tool.description}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+                {tool.title}
+              </Link>
+              <p className="max-w-[68ch] text-muted-foreground">{tool.description}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-        <RandomnessNote />
-      </div>
+      <RandomnessNote />
     </div>
   );
 }

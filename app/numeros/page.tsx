@@ -68,7 +68,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
   const minFrequency = Math.min(...frequencies);
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={PATH}
         name="Números da Mega-Sena de 1 a 60"
@@ -125,7 +125,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             />
           </div>
         </div>
-        <p className="max-w-[70ch] text-sm text-muted-foreground">
+        <p className="max-w-[68ch] text-sm text-muted-foreground">
           O atraso não muda a chance do próximo sorteio: em todo concurso, cada dezena tem 10% de
           chance de sair. As listas descrevem o histórico; não são palpites.
         </p>

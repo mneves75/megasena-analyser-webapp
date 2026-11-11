@@ -69,7 +69,7 @@ export function SiteHeader(): React.JSX.Element {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
+      <div className="page flex h-14 items-center justify-between gap-4">
         <Link
           href="/"
           className="flex items-center gap-2.5 rounded-sm font-title text-lg font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
@@ -127,7 +127,7 @@ export function SiteHeader(): React.JSX.Element {
           aria-label="Navegação principal"
           className="border-t border-border bg-background lg:hidden"
         >
-          <ul className="container mx-auto flex flex-col gap-1 px-4 py-3">
+          <ul className="page flex flex-col gap-1 py-3">
             {NAV_LINKS.map((link) => {
               const active = isLinkActive(pathname, link);
               return (

@@ -147,7 +147,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
   );
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={PATH}
         name={HEADING}
@@ -281,7 +281,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
       {editions.length > 0 ? (
         <section aria-labelledby="dezenas" className="space-y-4">
           <SectionHeading id="dezenas">Dezenas que mais saíram na Mega da Virada</SectionHeading>
-          {mostDrawn ? <p className="max-w-[70ch]">{mostDrawn}</p> : null}
+          {mostDrawn ? <p className="max-w-[68ch]">{mostDrawn}</p> : null}
           <ul
             aria-label="Vezes que cada dezena saiu na Mega da Virada"
             className="grid grid-cols-5 border-l border-t border-border sm:grid-cols-10"
@@ -314,7 +314,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         </section>
       ) : null}
 
-      <section aria-labelledby="regras" className="max-w-prose space-y-3">
+      <section aria-labelledby="regras" className="max-w-[68ch] space-y-3">
         <SectionHeading id="regras">Como funciona a Mega da Virada</SectionHeading>
         <p>
           Pelas regras da CAIXA, a Mega da Virada é o último concurso do ano com final 0 ou 5,

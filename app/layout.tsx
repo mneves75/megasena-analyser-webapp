@@ -114,7 +114,7 @@ export default async function RootLayout({
           <SiteHeader />
           <main id="main-content" className="flex-1">
             <StorageDisclosure />
-            {children}
+            <div className="page pb-16 pt-8 sm:pt-10">{children}</div>
           </main>
           <Footer />
         </ThemeProvider>

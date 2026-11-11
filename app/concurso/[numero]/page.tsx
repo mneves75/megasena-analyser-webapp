@@ -195,7 +195,7 @@ export default async function DrawResultPage({
   ] as const;
 
   return (
-    <div className="container mx-auto max-w-6xl space-y-14 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={path}
         name={heading}
@@ -300,7 +300,7 @@ export default async function DrawResultPage({
 
       <section aria-labelledby="historico" className="space-y-4">
         <SectionHeading id="historico">As dezenas no histórico até este concurso</SectionHeading>
-        <p className="max-w-[70ch] text-muted-foreground">
+        <p className="max-w-[68ch] text-muted-foreground">
           Quantas vezes cada dezena tinha saído até o concurso {contest}, e há quantos concursos ela
           não aparecia antes deste sorteio.
         </p>

@@ -123,13 +123,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         description={pt.meta.home.description}
         extra={[generateFAQSchema(homeFaqs)]}
       />
-      <div className="container mx-auto px-4 pb-20 pt-10 sm:pt-14">
+      <div className="space-y-16 lg:space-y-20">
         {/* DOM order is the phone reading order (title, field, actions, note); the
             grid places the field beside them on wide screens. */}
         <section className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-16 lg:gap-y-8">
           <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-1 lg:pt-4">
             <h1 className="text-4xl font-semibold sm:text-6xl">{pt.home.heroTitle}</h1>
-            <p className="max-w-[44ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
+            <p className="max-w-[68ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
           </div>
 
           <div className="lg:col-start-2 lg:row-span-3 lg:row-start-1">
@@ -150,7 +150,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           </div>
         </section>
 
-        <section aria-labelledby="home-contents" className="mt-20">
+        <section aria-labelledby="home-contents">
           <h2 id="home-contents" className="text-3xl font-semibold">
             {pt.home.contentsTitle}
           </h2>
@@ -168,7 +168,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   >
                     {entry.title}
                   </LinkComponent>
-                  <p className="max-w-[60ch] text-muted-foreground">{entry.description}</p>
+                  <p className="max-w-[68ch] text-muted-foreground">{entry.description}</p>
                 </li>
               );
             })}
@@ -177,19 +177,19 @@ export default async function HomePage(): Promise<React.JSX.Element> {
 
         <section
           aria-labelledby="home-about"
-          className="mt-20 grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
+          className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
         >
           <div>
             <h2 id="home-about" className="text-3xl font-semibold">
               O que é o Mega-Sena Analyzer?
             </h2>
-            <p className="mt-4 max-w-[60ch] text-muted-foreground">
+            <p className="mt-4 max-w-[68ch] text-muted-foreground">
               O Mega-Sena Analyzer é uma ferramenta gratuita que analisa todos os sorteios
               históricos da Mega-Sena utilizando dados oficiais da API pública da CAIXA Econômica
               Federal. A plataforma oferece estatísticas de frequência, análise de padrões,
               distribuições numéricas e um gerador de apostas baseado em programação dinâmica.
             </p>
-            <p className="mt-4 max-w-[60ch] text-muted-foreground">
+            <p className="mt-4 max-w-[68ch] text-muted-foreground">
               Desenvolvido para fins educacionais e recreativos, o sistema não possui nenhuma
               capacidade preditiva. A Mega-Sena é um jogo puramente aleatório onde cada sorteio é um
               evento independente.{' '}
@@ -211,7 +211,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
                     />
                   </summary>
-                  <p className="max-w-[65ch] pb-5 text-muted-foreground">{faq.answer}</p>
+                  <p className="max-w-[68ch] pb-5 text-muted-foreground">{faq.answer}</p>
                 </details>
               ))}
             </div>

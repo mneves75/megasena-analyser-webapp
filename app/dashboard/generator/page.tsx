@@ -14,7 +14,7 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default function GeneratorPage() {
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div>
       <PageJsonLd
         path="/dashboard/generator"
         name={pt.meta.generator.title}

@@ -61,7 +61,7 @@ export function StorageDisclosure(): React.ReactElement | null {
       aria-label={pt.storageBanner.ariaLabel}
       className="border-b border-border bg-tint"
     >
-      <div className="container mx-auto flex items-start gap-3 px-4 py-3">
+      <div className="page flex items-start gap-3 py-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-sm font-semibold text-foreground">{pt.storageBanner.title}</p>
           <p className="text-xs text-muted-foreground">{pt.storageBanner.body}</p>

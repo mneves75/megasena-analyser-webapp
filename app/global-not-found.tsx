@@ -28,7 +28,7 @@ export default async function GlobalNotFound(): Promise<React.JSX.Element> {
     <html lang="pt-BR" className={fontVariables} suppressHydrationWarning>
       <body className="antialiased min-h-screen font-sans bg-background">
         <ThemeScript nonce={nonce} />
-        <main className="container mx-auto px-4 py-12">
+        <main className="page py-12">
           <div className="mx-auto max-w-2xl text-center space-y-6">
             <h1 className="text-4xl font-bold">{pt.errors.notFound.title}</h1>
             <p className="text-muted-foreground">{pt.errors.notFound.description}</p>

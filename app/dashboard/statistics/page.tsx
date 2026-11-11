@@ -531,7 +531,7 @@ export default async function StatisticsPage() {
   const pairMax = Math.max(0, ...topPairs.map((pair) => pair.frequency));
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div>
       <PageJsonLd
         path="/dashboard/statistics"
         name={pt.meta.statistics.title}
@@ -568,7 +568,7 @@ export default async function StatisticsPage() {
 
       <SectionNav sections={sections} />
 
-      <div className="mt-10 space-y-14">
+      <div className="mt-10 space-y-16 lg:space-y-20">
         <StatSection id="frequencia" title="Análise de Frequência">
           {hasFrequencies ? (
             <Columns

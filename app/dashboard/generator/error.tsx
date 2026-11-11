@@ -21,7 +21,7 @@ export default function GeneratorError({
   }, [error]);
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div>
       <div className="mx-auto max-w-2xl space-y-6 text-center">
         <h1 className="font-title text-4xl font-bold">{pt.errors.generic.title}</h1>
         <p className="text-muted-foreground">{pt.errors.generic.description}</p>

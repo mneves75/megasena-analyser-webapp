@@ -46,7 +46,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
   const newestYear = years[0];
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={PATH}
         name="Resultados da Mega-Sena"
