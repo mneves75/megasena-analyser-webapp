@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { DrawsTable } from '@/app/_components/archive-ui';
 
 /*
@@ -31,8 +31,30 @@ describe('source line', () => {
     expect(sourceMentions(file)).toBe(1);
   });
 
-  it('a draws table carries no source line of its own', () => {
-    render(<DrawsTable caption="Concursos" draws={[]} />);
+  it('a draws table renders its rows and carries no source line of its own', () => {
+    const draw = (contestNumber: number) => ({
+      contestNumber,
+      drawDate: '2026-05-12',
+      numbers: [2, 10, 18, 26, 34, 52],
+      sena: { winners: 0, prize: 0 },
+      quina: { winners: 10, prize: 1000 },
+      quadra: { winners: 100, prize: 100 },
+      accumulated: true,
+      accumulatedValue: null,
+      nextEstimatedPrize: null,
+      totalCollection: null,
+    });
+    render(<DrawsTable caption="Concursos" draws={[draw(3006), draw(3005)]} />);
+    const table = screen.getByRole('table', { name: 'Concursos' });
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(2);
+    rows.forEach((row, index) => {
+      const contest = 3006 - index;
+      expect(within(row).getByRole('link', { name: String(contest) })).toHaveAttribute(
+        'href',
+        `/concurso/${contest}`
+      );
+    });
     expect(screen.queryByText(/Fonte:/)).not.toBeInTheDocument();
   });
 });
