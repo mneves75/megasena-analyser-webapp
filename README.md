@@ -34,7 +34,7 @@ Use `bun run dev:vinext` para desenvolvimento Worker; `bun run build:cloudflare`
 
 ## Stack Tecnológica
 
-- **Frontend**: App Router/React 19.2.8; Next.js 16.3.6 no caminho Bun e vinext/Vite no Worker
+- **Frontend**: App Router/React 19.3.1; Next.js 16.4.6 no caminho Bun e vinext/Vite no Worker
 - **Runtime**: Worker com `nodejs_compat` em produção; Bun >=1.4.2 no caminho local/CI; imagem Docker de recuperação com digest imutável
 - **Banco de Dados**: SQLite Durable Object em produção; `bun:sqlite` no caminho local e de recuperação
 - **Estilização**: Tailwind CSS + componentes shadcn/ui
@@ -89,7 +89,7 @@ bun run build
 bun run start
 ```
 
-O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no baseline Bun 1.3.14, para encerrar processos Bun filhos quando o processo pai morre. `bun run build` delega somente a compilação do Next.js ao Node 22+, evitando um crash conhecido do Bun 1.3.14 no Linux; scripts, SQLite, API e runtime de produção continuam no Bun. Os scripts de supervisão também esperam `process.exited` após `SIGTERM` e escalam para `SIGKILL` depois do período de graça; não use `proc.killed` como prova de encerramento.
+O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no baseline Bun 1.4.2 (`.bun-ci-version`), para encerrar processos Bun filhos quando o processo pai morre. `bun run build` delega somente a compilação do Next.js ao Node do `.nvmrc`: a medida evitava um crash do Bun 1.3.14 no Linux, corrigido no Bun 1.4.0, e fica até o `next build` sob Bun ser revalidado no CI; scripts, SQLite, API e runtime de produção continuam no Bun. Os scripts de supervisão também esperam `process.exited` após `SIGTERM` e escalam para `SIGKILL` depois do período de graça; não use `proc.killed` como prova de encerramento.
 
 ## Comandos Disponíveis
 
