@@ -326,11 +326,11 @@ describe('Bun CLIs that store draws', () => {
     }
   }, 30_000);
 
-  it('import-draws stores a null seed prize as 0', () => {
+  it('import-draws stores a null seed prize as NULL', () => {
     const file = freshDatabase('null-prize');
     const result = importDraws(file, [seedDraw(1, { prizeSena: null })]);
     expect(result.status, result.stderr).toBe(0);
-    expect(readRows(file)[0]?.['prize_sena']).toBe(0);
+    expect(readRows(file)[0]?.['prize_sena']).toBeNull();
   }, 30_000);
 
   it('import-draws refuses a DD/MM/YYYY seed date', () => {
@@ -347,10 +347,38 @@ describe('Bun CLIs that store draws', () => {
     expect(asSeed(readRows(file)[0]!).numbers).toEqual([4, 5, 30, 33, 41, 52]);
   }, 30_000);
 
-  it.each([[[]], [['--dry-run']]])('import-draws accepts an archive that does not start at contest 1 (flags %j)', (flags) => {
+  it.each([[[]], [['--dry-run']]])('import-draws refuses an archive that does not start at contest 1 (flags %j)', (flags) => {
     const file = freshDatabase(`offset-${flags.length}`);
     const result = importDraws(file, [seedDraw(2), seedDraw(3)], ...flags);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('deixaria lacunas');
+    expect(readRows(file)).toEqual([]);
+  }, 30_000);
+
+  it('import-draws reports the rows it actually inserted when a planned contest was stored meanwhile', () => {
+    const file = freshDatabase('race');
+    expect(importDraws(file, [seedDraw(1)]).status).toBe(0);
+    // Another writer stores contest 2, identical to the payload, between the plan and the write lock.
+    const preload = path.join(directory, 'race.ts');
+    fs.writeFileSync(preload, `
+      import { Database } from 'bun:sqlite';
+      const exec = Database.prototype.exec;
+      let raced = false;
+      Database.prototype.exec = function (sql, ...rest) {
+        if (sql === 'BEGIN IMMEDIATE' && !raced) {
+          raced = true;
+          const other = new Database(process.env.DATABASE_PATH);
+          other.prepare("INSERT INTO draws (contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6, prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra, total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw) VALUES (2, '2026-05-02', 4, 5, 30, 33, 41, 52, 0, 0, 40000, 50, 900, 3000, 40000000, 1, 5000000, 10000000, 0)").run();
+          other.close();
+        }
+        return exec.call(this, sql, ...rest);
+      };
+    `);
+    const input = path.join(directory, 'race.json');
+    fs.writeFileSync(input, JSON.stringify([seedDraw(1), seedDraw(2), seedDraw(3)]));
+    const result = bun(['--preload', preload, 'scripts/import-draws.ts', input], file);
     expect(result.status, result.stderr).toBe(0);
-    expect(readRows(file).map(entry => entry['contest_number'])).toEqual(flags.length ? [] : [2, 3]);
+    expect(JSON.parse(result.stdout.trim().split('\n').at(-1) ?? '{}')).toMatchObject({ inserted: 1, toInsert: [2, 3] });
+    expect(readRows(file).map(entry => entry['contest_number'])).toEqual([1, 2, 3]);
   }, 30_000);
 });
