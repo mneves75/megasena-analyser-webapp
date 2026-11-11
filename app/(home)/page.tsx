@@ -225,9 +225,18 @@ function HomeLatestDraw({
     </p>
   );
 
+  // The game's name stays whole when the title wraps: a line never ends in "Mega-".
+  const [beforeName, afterName] = pt.home.heroTitle.split('Mega-Sena');
+
   return (
     <LatestDrawFigure
-      heading={<PageTitle>{pt.home.heroTitle}</PageTitle>}
+      heading={
+        <PageTitle>
+          {beforeName}
+          <span className="whitespace-nowrap">Mega-Sena</span>
+          {afterName}
+        </PageTitle>
+      }
       numbers={draw?.numbers ?? []}
       fieldLabel={
         draw ? `Dezenas sorteadas no concurso ${draw.contestNumber}` : 'Dezenas de 01 a 60'

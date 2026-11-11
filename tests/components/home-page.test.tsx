@@ -36,6 +36,10 @@ describe('HomePage', () => {
     const hero = within(header as HTMLElement);
 
     expect(hero.getByRole('heading', { level: 1 })).toHaveTextContent(TITLE);
+    // The game's name never breaks at its hyphen when the title wraps.
+    expect(within(hero.getByRole('heading', { level: 1 })).getByText('Mega-Sena')).toHaveClass(
+      'whitespace-nowrap'
+    );
     expect(hero.getByText('Concurso 3006, sorteado em 12/05/2026')).toBeInTheDocument();
     expect(hero.getByText('Acumulou')).toBeInTheDocument();
     expect(hero.getByRole('link', { name: /concurso 3006/ })).toHaveAttribute(
