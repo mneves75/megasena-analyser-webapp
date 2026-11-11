@@ -101,7 +101,7 @@ export default async function RootLayout({
         <ThemeScript nonce={nonce} />
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus-ring"
         >
           Pular para o conteúdo principal
         </a>
@@ -109,7 +109,11 @@ export default async function RootLayout({
         <ThemeProvider defaultTheme="system">
           <SiteHeader />
           <StorageDisclosure />
-          <main id="main-content" className="page flex-1 pb-16 pt-8 sm:pt-10">
+          <main
+            id="main-content"
+            className="page flex-1 pb-16 pt-8 sm:pt-10 focus:outline-none"
+            tabIndex={-1}
+          >
             {children}
           </main>
           <Footer />

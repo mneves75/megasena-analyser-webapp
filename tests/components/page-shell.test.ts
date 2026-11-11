@@ -35,8 +35,24 @@ describe('page shell', () => {
 
   it('the shell sits on <main> itself, with its vertical padding and no inner wrapper', () => {
     const layout = read('app/layout.tsx');
-    expect(layout).toMatch(/<main id="main-content" className="page [^"]*\bp[tb]-\d+[^"]*"/);
+    expect(layout).toMatch(/<main\s+id="main-content"\s+className="page [^"]*\bp[tb]-\d+[^"]*"/);
     expect(layout).not.toMatch(/<div className="page/);
+  });
+
+  it('the skip link shows the shared focus ring and moves focus into <main>', () => {
+    const layout = read('app/layout.tsx');
+    const link = layout.match(/<a\s+href="#main-content"\s+className="([^"]*)"/)?.[1];
+    expect(link).toBeDefined();
+    expect(link).toMatch(/\bsr-only\b/);
+    expect(link).toMatch(/\bfocus:not-sr-only\b/);
+    expect(link).toMatch(/(^|\s)focus-ring(\s|$)/);
+    expect(link).not.toMatch(/outline-none/);
+
+    // A fragment link focuses its target only if the target can take focus.
+    const main = layout.match(/<main\b[^>]*>/)?.[0] ?? '';
+    expect(main).toMatch(/\btabIndex=\{-1\}/);
+    // Programmatic focus on <main> (not a tab stop) draws no ring.
+    expect(main).toMatch(/className="[^"]*\bfocus:outline-none\b[^"]*"/);
   });
 
   it('the storage band sits between the header and <main>, outside the page content', () => {
