@@ -23,7 +23,7 @@ export default function GeneratorError({
   return (
     <div>
       <div className="mx-auto max-w-2xl space-y-6 text-center">
-        <h1 className="font-title text-4xl font-bold">{pt.errors.generic.title}</h1>
+        <h1 className="text-4xl font-bold">{pt.errors.generic.title}</h1>
         <p className="text-muted-foreground">{pt.errors.generic.description}</p>
         <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Button onClick={reset}>{pt.errors.generic.action}</Button>

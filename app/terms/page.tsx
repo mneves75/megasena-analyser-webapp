@@ -44,7 +44,7 @@ export default function TermsPage(): React.JSX.Element {
         </div>
 
         <section aria-labelledby="terms-warning" className="space-y-2 border-t border-border pt-4">
-          <p id="terms-warning" className="font-title text-xl font-semibold !text-foreground">
+          <p id="terms-warning" className="text-xl font-semibold !text-foreground">
             {pt.terms.warningTitle}
           </p>
           <p className="!text-foreground">{pt.terms.warningIntro}</p>

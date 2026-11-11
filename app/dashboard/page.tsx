@@ -16,6 +16,7 @@ import {
   DezenaChips,
   FactList,
   LatestDrawFigure,
+  PageTitle,
   RandomnessNote,
   RankedList,
   SectionHeading,
@@ -152,18 +153,13 @@ export default async function DashboardPage() {
         ]}
       />
 
-      <h1 className="text-4xl font-semibold sm:text-5xl">{pt.dashboard.title}</h1>
+      <PageTitle>{pt.dashboard.title}</PageTitle>
 
       {lastDraw ? (
         <section aria-labelledby="dashboard-last">
           <LatestDrawFigure
             heading={
-              <h2
-                id="dashboard-last"
-                className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"
-              >
-                Concurso {lastDraw.contestNumber}
-              </h2>
+              <SectionHeading id="dashboard-last">Concurso {lastDraw.contestNumber}</SectionHeading>
             }
             numbers={lastDraw.numbers}
             fieldLabel={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
@@ -319,7 +315,7 @@ export default async function DashboardPage() {
             >
               <Link
                 href={tool.href}
-                className="w-fit rounded-sm font-title text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors [font-stretch:88%] hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                className="w-fit rounded-sm text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors [font-stretch:88%] hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 {tool.title}
               </Link>

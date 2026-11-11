@@ -32,7 +32,7 @@ export function Footer(): React.JSX.Element {
     <footer className="border-t-2 border-primary bg-background">
       <div className="page py-10">
         <div className={`${ROW} pt-0`}>
-          <p className="font-title text-base font-semibold text-foreground [font-stretch:88%]">
+          <p className="text-base font-semibold text-foreground [font-stretch:88%]">
             {APP_INFO.NAME}
           </p>
           <p className="max-w-[68ch] text-sm text-muted-foreground">{pt.footer.aboutText}</p>

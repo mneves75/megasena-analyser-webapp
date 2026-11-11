@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
+import { PageTitle, SectionHeading } from '@/app/_components/archive-ui';
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard/generator',
@@ -27,9 +28,7 @@ export default function GeneratorPage() {
       />
 
       <header className="mb-6 max-w-2xl">
-        <h1 className="text-balance font-title text-4xl font-semibold text-foreground sm:text-5xl">
-          {pt.generatorPage.title}
-        </h1>
+        <PageTitle>{pt.generatorPage.title}</PageTitle>
         <p className="mt-2 text-muted-foreground">{pt.generatorPage.subtitle}</p>
       </header>
 
@@ -51,10 +50,8 @@ export default function GeneratorPage() {
 
       <GeneratorForm />
 
-      <section className="mt-12 max-w-3xl">
-        <h2 className="mb-4 font-title text-2xl font-semibold text-foreground sm:text-3xl">
-          Como funciona o gerador
-        </h2>
+      <section aria-labelledby="generator-how" className="mt-12 max-w-3xl space-y-4">
+        <SectionHeading id="generator-how">Como funciona o gerador</SectionHeading>
         <div className="space-y-4 text-sm text-muted-foreground">
           <p>
             O sistema utiliza um algoritmo de{' '}

@@ -151,7 +151,7 @@ export default function AboutPage() {
 
         <section className="space-y-3">
           <h2>Aviso importante</h2>
-          <p className="font-title text-xl font-semibold !text-foreground">
+          <p className="text-xl font-semibold !text-foreground">
             Previsão de loteria é estatisticamente impossível
           </p>
           <p>

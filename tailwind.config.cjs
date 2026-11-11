@@ -52,7 +52,6 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-archivo)', 'system-ui', '-apple-system', 'sans-serif'],
-        title: ['var(--font-archivo)', 'system-ui', '-apple-system', 'sans-serif'],
       },
       letterSpacing: {
         tighter: '-0.05em',

@@ -21,6 +21,7 @@ import {
   ArchiveLink,
   FrequencyGrid,
   FactList,
+  PageTitle,
   RandomnessNote,
   RankedList,
   SectionHeading,
@@ -544,7 +545,7 @@ export default async function StatisticsPage() {
       />
 
       <header className="mb-6 space-y-3">
-        <h1 className="text-4xl font-semibold sm:text-5xl">{pt.statistics.title}</h1>
+        <PageTitle>{pt.statistics.title}</PageTitle>
         {hasFrequencies ? (
           <AnswerSummary>
             {pt.statistics.lead(

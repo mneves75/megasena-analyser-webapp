@@ -83,7 +83,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
 }
 
 export function PageTitle({ children }: { children: ReactNode }): React.JSX.Element {
-  return <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">{children}</h1>;
+  return <h1 className="text-balance text-4xl font-semibold sm:text-5xl">{children}</h1>;
 }
 
 /** The first paragraph answers the page's query in plain words. */
@@ -145,7 +145,7 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
 
 /** Long-form reading pages (about, privacy, terms): measure, rhythm and hairline-ruled section heads. */
 export const proseClass =
-  'max-w-[68ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:font-title [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_li]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
+  'max-w-[68ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_li]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
 
 export interface TermRow {
   term: string;
@@ -174,7 +174,7 @@ export function SectionHeading({
   children: ReactNode;
 }): React.JSX.Element {
   return (
-    <h2 id={id} className="text-balance font-title text-2xl font-semibold sm:text-3xl">
+    <h2 id={id} className="text-balance text-2xl font-semibold sm:text-3xl">
       {children}
     </h2>
   );

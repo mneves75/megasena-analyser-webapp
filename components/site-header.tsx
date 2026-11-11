@@ -72,7 +72,7 @@ export function SiteHeader(): React.JSX.Element {
       <div className="page flex h-14 items-center justify-between gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-sm font-title text-lg font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
+          className="flex items-center gap-2.5 rounded-sm text-lg font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
         >
           <span aria-hidden className="grid grid-cols-3 gap-0.5">
             {[0, 1, 2, 3, 4, 5].map((dot) => (

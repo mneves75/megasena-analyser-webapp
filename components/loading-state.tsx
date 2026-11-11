@@ -8,7 +8,7 @@ export function LoadingState({ title, className }: { title: string; className?: 
     <div role="status" aria-live="polite" aria-busy="true" className={cn('space-y-6', className)}>
       {/* Not a heading: a placeholder must not become the page's h1 in the
           streamed HTML that non-rendering crawlers read. */}
-      <p className="font-title text-4xl font-semibold [font-stretch:88%] sm:text-5xl">{title}</p>
+      <p className="text-4xl font-semibold [font-stretch:88%] sm:text-5xl">{title}</p>
       <div className="animate-pulse divide-y divide-border border-y-2 border-y-primary">
         {ROWS.map((row) => (
           <div key={row} className="flex items-center gap-4 py-3">

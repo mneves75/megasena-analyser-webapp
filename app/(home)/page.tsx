@@ -13,7 +13,9 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import {
   ArchiveLink,
   LatestDrawFigure,
+  PageTitle,
   RandomnessNote,
+  SectionHeading,
   SourceLine,
   textLinkClass,
 } from '@/app/_components/archive-ui';
@@ -125,7 +127,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       />
       <div className="space-y-16 lg:space-y-20">
         <header className="space-y-6">
-          <h1 className="text-4xl font-semibold sm:text-6xl">{pt.home.heroTitle}</h1>
+          <PageTitle>{pt.home.heroTitle}</PageTitle>
           <p className="max-w-[68ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
           <div className="grid grid-cols-2 gap-3 sm:flex">
             <Button asChild size="lg">
@@ -143,9 +145,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         </section>
 
         <section aria-labelledby="home-contents">
-          <h2 id="home-contents" className="text-3xl font-semibold">
-            {pt.home.contentsTitle}
-          </h2>
+          <SectionHeading id="home-contents">{pt.home.contentsTitle}</SectionHeading>
           <ol className="mt-6 border-t-2 border-primary">
             {pt.home.contents.map((entry) => {
               const LinkComponent = entry.archive ? ArchiveLink : Link;
@@ -156,7 +156,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 >
                   <LinkComponent
                     href={entry.href}
-                    className="w-fit rounded-sm font-title text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
+                    className="w-fit rounded-sm text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
                   >
                     {entry.title}
                   </LinkComponent>
@@ -172,9 +172,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
         >
           <div>
-            <h2 id="home-about" className="text-3xl font-semibold">
-              O que é o Mega-Sena Analyzer?
-            </h2>
+            <SectionHeading id="home-about">O que é o Mega-Sena Analyzer?</SectionHeading>
             <p className="mt-4 max-w-[68ch] text-muted-foreground">
               O Mega-Sena Analyzer é uma ferramenta gratuita que analisa todos os sorteios
               históricos da Mega-Sena utilizando dados oficiais da API pública da CAIXA Econômica
@@ -192,7 +190,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           </div>
 
           <div>
-            <h2 className="text-3xl font-semibold">Perguntas frequentes</h2>
+            <SectionHeading id="home-faq">Perguntas frequentes</SectionHeading>
             <div className="mt-6 border-t-2 border-primary">
               {homeFaqs.map((faq) => (
                 <details key={faq.question} className="group border-b border-border">
@@ -221,15 +219,10 @@ function HomeLatestDraw({
   draw: LatestDraw | null;
   contestNumber: number | null;
 }): React.JSX.Element {
-  const headingClass = 'font-condensed text-4xl font-semibold tabular-nums sm:text-5xl';
   if (!draw) {
     return (
       <LatestDrawFigure
-        heading={
-          <h2 id="home-latest" className={headingClass}>
-            Último concurso
-          </h2>
-        }
+        heading={<SectionHeading id="home-latest">Último concurso</SectionHeading>}
         numbers={[]}
         fieldLabel="Dezenas de 01 a 60"
       >
@@ -250,11 +243,7 @@ function HomeLatestDraw({
 
   return (
     <LatestDrawFigure
-      heading={
-        <h2 id="home-latest" className={headingClass}>
-          Concurso {draw.contestNumber}
-        </h2>
-      }
+      heading={<SectionHeading id="home-latest">Concurso {draw.contestNumber}</SectionHeading>}
       numbers={draw.numbers}
       fieldLabel={`Dezenas sorteadas no concurso ${draw.contestNumber}`}
     >

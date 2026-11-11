@@ -93,7 +93,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
         <SectionHeading id="rankings">Mais sorteados e mais atrasados</SectionHeading>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <h3 id="mais-sorteados" className="font-medium">
+            <h3 id="mais-sorteados" className="text-lg font-semibold">
               Números mais sorteados
             </h3>
             <RankedList
@@ -107,7 +107,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             />
           </div>
           <div className="space-y-2">
-            <h3 id="mais-atrasados" className="font-medium">
+            <h3 id="mais-atrasados" className="text-lg font-semibold">
               Números mais atrasados
             </h3>
             <RankedList
