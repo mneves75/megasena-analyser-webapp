@@ -72,6 +72,25 @@ describe('Columns', () => {
     expect(rects(plot).map((rect) => rect.getAttribute('height'))).toEqual(['0']);
   });
 
+  it('gives no svg any React child, so React can never stream a piece of a figure on its own', () => {
+    // A deferred chunk inside <svg> is streamed as <svg style="display:none">, which the CSP refuses.
+    const svgs = (node: unknown): { props: Record<string, unknown> }[] => {
+      if (Array.isArray(node)) return node.flatMap(svgs);
+      if (!node || typeof node !== 'object' || !('props' in node)) return [];
+      const element = node as { type: unknown; props: Record<string, unknown> };
+      return [...(element.type === 'svg' ? [element] : []), ...svgs(element.props['children'])];
+    };
+    const found = [
+      ...svgs(Bar({ value: 1, max: 3 })),
+      ...svgs(Columns({ columns: parity, reference: { value: 30, label: 'ref' }, label: 'x' })),
+    ];
+    expect(found).toHaveLength(3);
+    for (const svg of found) {
+      expect(svg.props['children']).toBeUndefined();
+      expect(svg.props['dangerouslySetInnerHTML']).toEqual({ __html: expect.any(String) });
+    }
+  });
+
   it('never emits a style attribute: the CSP has no style-src-attr exception', () => {
     const { container } = render(
       <>

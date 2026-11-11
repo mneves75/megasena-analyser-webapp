@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Bar, Columns } from '@/components/figures';
+import { Bar, Columns, n } from '@/components/figures';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { cn, formatCurrency, formatDate, formatDecimal, formatNumber } from '@/lib/utils';
 import { SectionNav, type StatisticsSection } from '@/components/statistics/section-nav';
@@ -311,46 +311,16 @@ function SumStrip({ stats }: { stats: SumStats }): React.JSX.Element {
         viewBox={`${SUM_FLOOR} 0 ${SUM_CEILING - SUM_FLOOR} 12`}
         preserveAspectRatio="none"
         className="block h-8 w-full"
-      >
-        <line
-          x1={SUM_FLOOR}
-          x2={SUM_CEILING}
-          y1="6"
-          y2="6"
-          vectorEffect="non-scaling-stroke"
-          className="stroke-border stroke-1"
-        />
-        <line
-          x1={minSum}
-          x2={maxSum}
-          y1="6"
-          y2="6"
-          vectorEffect="non-scaling-stroke"
-          className="stroke-muted-foreground stroke-1"
-        />
-        <rect
-          x={percentiles.p5}
-          width={percentiles.p95 - percentiles.p5}
-          y="5"
-          height="2"
-          className="fill-primary"
-        />
-        <rect
-          x={percentiles.p25}
-          width={percentiles.p75 - percentiles.p25}
-          y="2"
-          height="8"
-          className="fill-primary"
-        />
-        <line
-          x1={percentiles.p50}
-          x2={percentiles.p50}
-          y1="0"
-          y2="12"
-          vectorEffect="non-scaling-stroke"
-          className="stroke-foreground stroke-2"
-        />
-      </svg>
+        // One markup string, no React children: see components/figures.tsx.
+        dangerouslySetInnerHTML={{
+          __html:
+            `<line x1="${SUM_FLOOR}" x2="${SUM_CEILING}" y1="6" y2="6" vector-effect="non-scaling-stroke" class="stroke-border stroke-1"></line>` +
+            `<line x1="${n(minSum)}" x2="${n(maxSum)}" y1="6" y2="6" vector-effect="non-scaling-stroke" class="stroke-muted-foreground stroke-1"></line>` +
+            `<rect x="${n(percentiles.p5)}" width="${n(percentiles.p95 - percentiles.p5)}" y="5" height="2" class="fill-primary"></rect>` +
+            `<rect x="${n(percentiles.p25)}" width="${n(percentiles.p75 - percentiles.p25)}" y="2" height="8" class="fill-primary"></rect>` +
+            `<line x1="${n(percentiles.p50)}" x2="${n(percentiles.p50)}" y1="0" y2="12" vector-effect="non-scaling-stroke" class="stroke-foreground stroke-2"></line>`,
+        }}
+      />
       <p aria-hidden className="flex justify-between text-xs tabular-nums text-muted-foreground">
         <span>{SUM_FLOOR}</span>
         <span>{SUM_CEILING}</span>

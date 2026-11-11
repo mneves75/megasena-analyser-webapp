@@ -6,7 +6,18 @@ import { cn } from '@/lib/utils';
  * attribute reaches the HTML (the CSP has no `style-src-attr` exception) and no
  * JavaScript reaches the browser. Shapes stretch with their box; text never sits
  * inside the SVG, so labels keep their size on a phone.
+ *
+ * Every <svg> here takes its shapes as one markup string, never as React
+ * children. React streams a large page in pieces, and a piece that starts
+ * inside an <svg> is sent as `<svg style="display:none">`, which the CSP
+ * refuses. With no element children there is no place inside the SVG to split.
+ * The strings are built only from numbers (through `n`) and fixed class names.
  */
+
+/** A finite number as an SVG attribute value; anything else draws as zero. */
+export function n(value: number): string {
+  return Number.isFinite(value) ? String(value) : '0';
+}
 
 /** A value drawn against the largest in its column. The number itself is in the row. */
 export function Bar({
@@ -25,10 +36,12 @@ export function Bar({
       viewBox="0 0 100 1"
       preserveAspectRatio="none"
       className={cn('block h-1.5 w-full', className)}
-    >
-      <rect width="100" height="1" className="fill-border" />
-      <rect width={width} height="1" className="fill-primary" />
-    </svg>
+      dangerouslySetInnerHTML={{
+        __html:
+          '<rect width="100" height="1" class="fill-border"></rect>' +
+          `<rect width="${n(width)}" height="1" class="fill-primary"></rect>`,
+      }}
+    />
   );
 }
 
@@ -66,6 +79,18 @@ export function Columns({
   const scale = (value: number): number => (max > 0 ? (value / max) * PLOT_HEIGHT : 0);
   const hasLabels = columns.some((column) => column.label !== '');
 
+  const bars = columns
+    .map((column, index) => {
+      const height = scale(column.value);
+      return `<rect x="${n(index * SLOT + GAP / 2)}" y="${n(PLOT_HEIGHT - height)}" width="${n(SLOT - GAP)}" height="${n(height)}" class="fill-primary"></rect>`;
+    })
+    .join('');
+  const referenceY = reference ? n(PLOT_HEIGHT - scale(reference.value)) : null;
+  const referenceLine =
+    referenceY === null
+      ? ''
+      : `<line x1="0" x2="${n(width)}" y1="${referenceY}" y2="${referenceY}" vector-effect="non-scaling-stroke" stroke-dasharray="4 3" class="stroke-foreground stroke-1"></line>`;
+
   return (
     <figure className={cn('space-y-2', className)}>
       <svg
@@ -74,32 +99,8 @@ export function Columns({
         viewBox={`0 0 ${width} ${PLOT_HEIGHT}`}
         preserveAspectRatio="none"
         className="block h-40 w-full border-b border-foreground sm:h-48"
-      >
-        {columns.map((column, index) => {
-          const height = scale(column.value);
-          return (
-            <rect
-              key={index}
-              x={index * SLOT + GAP / 2}
-              y={PLOT_HEIGHT - height}
-              width={SLOT - GAP}
-              height={height}
-              className="fill-primary"
-            />
-          );
-        })}
-        {reference ? (
-          <line
-            x1="0"
-            x2={width}
-            y1={PLOT_HEIGHT - scale(reference.value)}
-            y2={PLOT_HEIGHT - scale(reference.value)}
-            vectorEffect="non-scaling-stroke"
-            strokeDasharray="4 3"
-            className="stroke-foreground stroke-1"
-          />
-        ) : null}
-      </svg>
+        dangerouslySetInnerHTML={{ __html: bars + referenceLine }}
+      />
       {hasLabels ? (
         <ol aria-hidden="true" className="flex">
           {columns.map((column, index) => (
@@ -118,16 +119,15 @@ export function Columns({
       ) : null}
       {reference ? (
         <figcaption className="flex items-center gap-2 text-xs text-muted-foreground">
-          <svg aria-hidden="true" viewBox="0 0 24 2" className="h-0.5 w-6">
-            <line
-              x1="0"
-              x2="24"
-              y1="1"
-              y2="1"
-              strokeDasharray="4 3"
-              className="stroke-foreground stroke-2"
-            />
-          </svg>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 2"
+            className="h-0.5 w-6"
+            dangerouslySetInnerHTML={{
+              __html:
+                '<line x1="0" x2="24" y1="1" y2="1" stroke-dasharray="4 3" class="stroke-foreground stroke-2"></line>',
+            }}
+          />
           {reference.label}
         </figcaption>
       ) : null}
