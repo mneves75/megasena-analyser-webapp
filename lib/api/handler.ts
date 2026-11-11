@@ -948,14 +948,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
       'X-RateLimit-Reset': limit.resetAt.toString(),
     });
 
-    logger.info('api.request_received', {
-      requestId: ctx.requestId,
-      route: ctx.route,
-      method: ctx.method,
-      userAgent: ctx.userAgent,
-      clientId: ctx.clientId,
-    });
-
     try {
       // A non-API path is never registered: answer the preflight and 404 the
       // rest. This replaces a branch that could not be reached, because every

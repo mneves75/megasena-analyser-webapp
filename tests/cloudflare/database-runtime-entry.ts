@@ -301,6 +301,10 @@ const worker = {
       assert(health.status === 200, 'real API health request');
       const afterHealth = await seeded.status();
       assert(afterHealth.auditRows >= 1 && afterHealth.logRows >= 1, 'audit/log persisted before response');
+      await seeded.handle(new Request('https://example.com/api/health'), { clientIp: '203.0.113.60', secure: true });
+      const afterSecond = await seeded.status();
+      assert(afterSecond.auditRows - afterHealth.auditRows === 1 && afterSecond.logRows - afterHealth.logRows === 1,
+        `one API request writes one audit row and one log row: ${afterSecond.auditRows - afterHealth.auditRows} / ${afterSecond.logRows - afterHealth.logRows}`);
       const retry = env.RETRY.getByName('retries');
       await retry.insertExpiredEvents();
       let rejected = false;

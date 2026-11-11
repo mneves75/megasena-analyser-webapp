@@ -31,7 +31,7 @@ try {
   const health = await first.dispatchFetch('https://example.com/api/health');
   assert(health.status === 200 && health.headers.get('x-ratelimit-remaining') === '99', 'first durable rate-limit request');
   firstStatus = await (await first.dispatchFetch('https://example.com/status')).json() as typeof firstStatus;
-  assert(firstStatus.draws === publicSeed.length + 1 && firstStatus.auditRows === 1 && firstStatus.logRows >= 2, 'initial draws/audit/log persisted');
+  assert(firstStatus.draws === publicSeed.length + 1 && firstStatus.auditRows === 1 && firstStatus.logRows === 1, `initial draws/audit/log persisted (one log row per request): ${JSON.stringify(firstStatus)}`);
 } finally { await first.dispose(); }
 // A new runtime process opens the same exclusive persisted storage.
 const second = new Miniflare(options);
