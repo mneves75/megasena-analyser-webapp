@@ -67,7 +67,7 @@ export function StorageDisclosure(): React.ReactElement | null {
     >
       <div className="page flex items-start gap-3 py-1.5">
         <details className="group min-w-0 flex-1 text-sm">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-tint [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm focus-ring focus-visible:ring-offset-tint [&::-webkit-details-marker]:hidden">
             <span>
               <span className="font-semibold text-foreground">{pt.storageBanner.title}.</span>{' '}
               <span className="text-muted-foreground">{pt.storageBanner.summary}</span>

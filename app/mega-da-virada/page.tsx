@@ -285,7 +285,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
               >
                 <ArchiveLink
                   href={`/numeros/${number}`}
-                  className="rounded-sm font-condensed text-xl font-semibold tabular-nums text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="rounded-sm font-condensed text-xl font-semibold tabular-nums text-foreground underline-offset-4 hover:underline focus-ring"
                   aria-label={`Dezena ${dezena(number)}: saiu ${timesLabel(count)} na Mega da Virada`}
                 >
                   {dezena(number)}

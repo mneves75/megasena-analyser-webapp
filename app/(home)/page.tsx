@@ -158,7 +158,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             <div className="mt-6 border-t-2 border-primary">
               {homeFaqs.map((faq) => (
                 <details key={faq.question} className="group border-b border-border">
-                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-ring-inset">
                     {faq.question}
                     <ChevronDown
                       aria-hidden

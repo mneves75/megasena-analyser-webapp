@@ -1,8 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { BET_GENERATION_LIMITS, BUDGET_PRESETS } from '@/lib/constants';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -58,12 +56,14 @@ export function BudgetSelector({
       <h3 className="text-lg font-semibold leading-tight">{pt.betGenerator.budget.title}</h3>
       {/* Custom Input */}
       <div className="space-y-2">
-        <Label htmlFor="budget-input">{pt.betGenerator.budget.customValue}</Label>
+        <label htmlFor="budget-input" className="block text-sm font-medium">
+          {pt.betGenerator.budget.customValue}
+        </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             {pt.betGenerator.budget.currencyPrefix}
           </span>
-          <Input
+          <input
             id="budget-input"
             type="text"
             value={inputValue}
@@ -71,7 +71,7 @@ export function BudgetSelector({
             inputMode="decimal"
             aria-invalid={hasBudgetError ? 'true' : undefined}
             aria-errormessage={hasBudgetError ? errorId : undefined}
-            className="pl-10 text-lg font-semibold tabular-nums"
+            className="focus-ring flex h-11 w-full rounded-sm border border-input bg-card py-2 pl-10 pr-3 text-lg font-semibold tabular-nums transition-smooth placeholder:text-muted-foreground"
             placeholder={pt.betGenerator.budget.placeholder}
           />
         </div>

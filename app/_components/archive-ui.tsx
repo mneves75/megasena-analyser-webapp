@@ -6,9 +6,6 @@ import { cn, formatDate } from '@/lib/utils';
 import { countLabel, dezena, formatDateInBrasilia, frequencyBand } from '@/app/_lib/format';
 import { Bar } from '@/components/figures';
 
-const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
-
 /**
  * Link into an archive route (/resultados, /concurso, /numeros). Prefetch is off:
  * these pages have no loading boundary, so a viewport prefetch renders the whole
@@ -21,16 +18,12 @@ export function ArchiveLink(
 }
 
 /** Standalone links (table cells, link rows): colour plus underline on hover. */
-export const inlineLinkClass = cn(
-  'rounded-sm font-medium text-primary underline-offset-4 hover:underline',
-  focusRing
-);
+export const inlineLinkClass =
+  'focus-ring rounded-sm font-medium text-primary underline-offset-4 hover:underline';
 
 /** Links inside running text are always underlined (WCAG 1.4.1: not colour alone). */
-export const textLinkClass = cn(
-  'rounded-sm font-medium text-primary underline underline-offset-4',
-  focusRing
-);
+export const textLinkClass =
+  'focus-ring rounded-sm font-medium text-primary underline underline-offset-4';
 
 const FREQUENCY_SHADES = [
   'bg-background',
@@ -64,7 +57,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
                 <>
                   <ArchiveLink
                     href={item.url}
-                    className={cn('rounded-sm hover:text-foreground', focusRing)}
+                    className={'focus-ring rounded-sm hover:text-foreground'}
                   >
                     {item.name}
                   </ArchiveLink>
@@ -196,7 +189,7 @@ export function TableFrame({
       aria-label={name.label}
       aria-labelledby={name.labelledBy}
       tabIndex={0}
-      className={cn('overflow-x-auto border-y-2 border-y-primary bg-card', focusRing)}
+      className={'focus-ring overflow-x-auto border-y-2 border-y-primary bg-card'}
     >
       {children}
     </div>
@@ -301,7 +294,7 @@ export function FrequencyGrid({
             <ArchiveLink
               href={`/numeros/${entry.number}`}
               className={cn(
-                'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-ring-inset',
                 frequencyShadeClass(entry.frequency, min, max)
               )}
             >
@@ -459,10 +452,8 @@ export function Pager({
   next: PagerLink | null;
   label: string;
 }): React.JSX.Element {
-  const linkClass = cn(
-    'flex min-h-11 flex-col rounded-sm py-3 transition-colors hover:text-primary',
-    focusRing
-  );
+  const linkClass =
+    'focus-ring flex min-h-11 flex-col rounded-sm py-3 transition-colors hover:text-primary';
   return (
     <nav aria-label={label} className="grid gap-3 border-t-2 border-primary sm:grid-cols-2">
       {previous ? (

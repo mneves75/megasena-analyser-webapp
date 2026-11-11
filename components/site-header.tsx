@@ -72,7 +72,7 @@ export function SiteHeader(): React.JSX.Element {
       <div className="page flex h-14 items-center justify-between gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2.5 rounded-sm text-lg font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
+          className="flex items-center gap-2.5 rounded-sm text-lg font-semibold text-foreground transition-colors hover:text-primary focus-ring [font-stretch:88%]"
         >
           <span aria-hidden className="grid grid-cols-3 gap-0.5">
             {[0, 1, 2, 3, 4, 5].map((dot) => (
@@ -92,7 +92,7 @@ export function SiteHeader(): React.JSX.Element {
                 prefetch={link.prefetch ?? null}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  'relative flex items-center px-3 text-sm font-medium transition-colors focus-ring-inset',
                   active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -114,7 +114,7 @@ export function SiteHeader(): React.JSX.Element {
             aria-expanded={menuOpen}
             aria-controls="site-header-mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background lg:hidden"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-ring lg:hidden"
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -138,7 +138,7 @@ export function SiteHeader(): React.JSX.Element {
                     aria-current={active ? 'page' : undefined}
                     onClick={() => setMenuOpen(false)}
                     className={cn(
-                      'flex min-h-11 items-center py-2.5 text-sm font-medium underline-offset-[6px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      'flex min-h-11 items-center py-2.5 text-sm font-medium underline-offset-[6px] transition-colors focus-ring',
                       active
                         ? 'text-foreground underline decoration-primary decoration-2'
                         : 'text-muted-foreground hover:text-foreground'

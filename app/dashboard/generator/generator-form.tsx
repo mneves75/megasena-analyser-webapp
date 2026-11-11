@@ -87,7 +87,7 @@ export function GeneratorForm() {
           role="alert"
           aria-live="assertive"
           tabIndex={-1}
-          className="mb-6 border-t-2 border-destructive pt-3 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mb-6 border-t-2 border-destructive pt-3 text-destructive focus-ring"
         >
           <strong className="font-semibold">{pt.generatorForm.errorPrefix}:</strong> {error}
         </div>

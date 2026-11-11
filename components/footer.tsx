@@ -3,7 +3,7 @@ import { APP_INFO } from '@/lib/constants';
 import { pt } from '@/lib/i18n';
 
 const linkClass =
-  'rounded-sm text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+  'rounded-sm text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-primary focus-ring';
 
 // Row labels name their landmark (aria-labelledby) without being headings, so
 // the footer adds nothing to a page's outline.

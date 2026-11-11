@@ -195,7 +195,7 @@ function Disclosure({
         id ? SECTION_SCROLL_MARGIN : undefined
       )}
     >
-      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-ring-inset [&::-webkit-details-marker]:hidden">
         {label}
         <ChevronDown
           aria-hidden

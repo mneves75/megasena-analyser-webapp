@@ -184,7 +184,7 @@ describe('TableFrame', () => {
     const region = screen.getByRole('region', { name: 'Concursos de 2026' });
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region.className).toMatch(/overflow-x-auto/);
-    expect(region.className).toMatch(/focus-visible:ring-2/);
+    expect(region.className).toMatch(/\bfocus-ring\b/);
   });
 
   it('can take its name from a visible heading', () => {

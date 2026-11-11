@@ -33,7 +33,7 @@ export default function GeneratorPage() {
       </header>
 
       <details className="group mb-8 max-w-3xl border-y border-border">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 text-sm font-medium text-foreground transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 text-sm font-medium text-foreground transition-smooth focus-ring-inset">
           <span>
             <span className="font-semibold">Nota.</span> Prever o resultado da loteria é
             estatisticamente impossível.

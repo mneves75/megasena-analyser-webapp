@@ -58,10 +58,7 @@ module.exports = {
         tight: '-0.02em',
       },
       transitionTimingFunction: {
-        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
         'out-quint': 'cubic-bezier(0.23, 1, 0.32, 1)',
-        'out-cubic': 'cubic-bezier(0.33, 1, 0.68, 1)',
-        'in-out-cubic': 'cubic-bezier(0.645, 0.045, 0.355, 1)',
       },
     },
   },
