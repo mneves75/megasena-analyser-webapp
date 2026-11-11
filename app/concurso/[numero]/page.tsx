@@ -6,7 +6,6 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadDrawPage } from '@/app/_lib/archive';
-import { NumberField } from '@/components/number-field';
 import {
   countLabel,
   describeDraw,
@@ -27,14 +26,15 @@ import {
   Pager,
   RandomnessNote,
   SectionHeading,
-  SourceLine,
   TableFrame,
   inlineLinkClass,
+  phoneLineClass,
   tableClass,
   cellClass,
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 interface DrawRouteProps {
   params: Promise<{ numero: string }>;
@@ -195,7 +195,7 @@ export default async function DrawResultPage({
   ] as const;
 
   return (
-    <div className="container mx-auto max-w-6xl space-y-14 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={path}
         name={heading}
@@ -207,50 +207,35 @@ export default async function DrawResultPage({
 
       <header className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <PageTitle>{heading}</PageTitle>
-              <p className="text-muted-foreground">
-                Sorteio de {weekdayPtBr(draw.drawDate)},{' '}
-                <span className="tabular-nums">{date}</span>. Fonte: CAIXA Econômica Federal.
-              </p>
-            </div>
-            <AnswerSummary>
-              {megaDaViradaEdition === null
-                ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
-                : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
-              As dezenas sorteadas foram {joinPtBr(dezenas)}. {senaOutcome(draw)}
-              {comeback
-                ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
-                : ''}
-              {draw.nextEstimatedPrize !== null
-                ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
-                    draw.nextEstimatedPrize
-                  )}.`
-                : ''}
-            </AnswerSummary>
-          </div>
-          <figure className="space-y-3 self-start border-t-2 border-primary pt-4">
-            <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <span className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl">
-                Concurso {contest}
-              </span>
-              <span className="text-muted-foreground tabular-nums">{date}</span>
-            </figcaption>
-            <NumberField
-              struck={draw.numbers}
-              linked
-              size="lg"
-              label={`Dezenas sorteadas no concurso ${contest}`}
-            />
-          </figure>
-        </div>
+        <LatestDrawFigure
+          heading={<PageTitle>{heading}</PageTitle>}
+          numbers={draw.numbers}
+          fieldLabel={`Dezenas sorteadas no concurso ${contest}`}
+        >
+          <p className="text-muted-foreground">
+            Sorteio de {weekdayPtBr(draw.drawDate)}, <span className="tabular-nums">{date}</span>.
+            Fonte: CAIXA Econômica Federal.
+          </p>
+          <AnswerSummary>
+            {megaDaViradaEdition === null
+              ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
+              : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
+            As dezenas sorteadas foram {joinPtBr(dezenas)}. {senaOutcome(draw)}
+            {comeback
+              ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
+              : ''}
+            {draw.nextEstimatedPrize !== null
+              ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
+                  draw.nextEstimatedPrize
+                )}.`
+              : ''}
+          </AnswerSummary>
+        </LatestDrawFigure>
       </header>
 
       <section aria-labelledby="premiacao" className="space-y-4">
         <SectionHeading id="premiacao">Premiação</SectionHeading>
-        <TableFrame>
+        <TableFrame label={`Premiação do concurso ${contest}`}>
           <table className={tableClass}>
             <caption className="sr-only">Premiação do concurso {contest}</caption>
             <thead>
@@ -271,7 +256,10 @@ export default async function DrawResultPage({
                 <tr key={label}>
                   <th scope="row" className={`${cellClass} font-medium`}>
                     {label}{' '}
-                    <span className="font-normal text-muted-foreground">({hits} acertos)</span>
+                    <span className="hidden font-normal text-muted-foreground sm:inline">
+                      ({hits} acertos)
+                    </span>
+                    <span className={phoneLineClass}>{hits} acertos</span>
                   </th>
                   <td className={`${cellClass} text-right`}>
                     {tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}
@@ -289,22 +277,20 @@ export default async function DrawResultPage({
           </table>
         </TableFrame>
         {prizeFacts.length > 0 ? <FactList facts={prizeFacts} /> : null}
-        <SourceLine />
       </section>
 
       <section aria-labelledby="analise" className="space-y-4">
         <SectionHeading id="analise">Análise do sorteio</SectionHeading>
         <FactList facts={analysisFacts} />
-        <SourceLine through={contest} />
       </section>
 
       <section aria-labelledby="historico" className="space-y-4">
         <SectionHeading id="historico">As dezenas no histórico até este concurso</SectionHeading>
-        <p className="max-w-[70ch] text-muted-foreground">
+        <p className="max-w-[68ch] text-muted-foreground">
           Quantas vezes cada dezena tinha saído até o concurso {contest}, e há quantos concursos ela
           não aparecia antes deste sorteio.
         </p>
-        <TableFrame>
+        <TableFrame label={`Histórico das dezenas até o concurso ${contest}`}>
           <table className={tableClass}>
             <caption className="sr-only">Histórico das dezenas até o concurso {contest}</caption>
             <thead>
@@ -312,13 +298,13 @@ export default async function DrawResultPage({
                 <th scope="col" className={thClass}>
                   Dezena
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Vezes sorteada
                 </th>
                 <th scope="col" className={thClass}>
                   Aparição anterior
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Concursos sem sair
                 </th>
               </tr>
@@ -331,7 +317,7 @@ export default async function DrawResultPage({
                       {dezena(entry.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={cellClass}>{formatNumber(entry.timesDrawn)}</td>
+                  <td className={`${cellClass} text-right`}>{formatNumber(entry.timesDrawn)}</td>
                   <td className={cellClass}>
                     {entry.previous ? (
                       <>
@@ -341,15 +327,18 @@ export default async function DrawResultPage({
                         >
                           {entry.previous.contestNumber}
                         </ArchiveLink>{' '}
-                        <span className="text-muted-foreground">
+                        <span className="hidden text-muted-foreground sm:inline">
                           ({formatDate(entry.previous.drawDate)})
+                        </span>
+                        <span className={phoneLineClass}>
+                          {formatDate(entry.previous.drawDate)}
                         </span>
                       </>
                     ) : (
                       'Primeira vez'
                     )}
                   </td>
-                  <td className={cellClass}>
+                  <td className={`${cellClass} text-right`}>
                     {entry.previous ? formatNumber(entry.previous.drawsBetween) : '—'}
                   </td>
                 </tr>
@@ -357,7 +346,6 @@ export default async function DrawResultPage({
             </tbody>
           </table>
         </TableFrame>
-        <SourceLine through={contest} />
       </section>
 
       <Pager

@@ -1,6 +1,7 @@
 import { ARCHIVE_DRIVEN_PATHS, EDITORIAL_PATHS } from '@/lib/seo/archive-paths';
 import { absoluteUrl } from '@/lib/seo/metadata';
 import { loadSitemapData } from '@/app/_lib/archive';
+import { MEGASENA_CONSTANTS } from '@/lib/constants';
 
 // Built per request from the archive so new draws appear without a deploy.
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function GET(): Promise<Response> {
     ...EDITORIAL_PATHS.map((path): [string, string | null] => [path, null]),
     ['/mega-da-virada', megaDaViradaLastModified],
     ...years.map((year): [string, string | null] => [`/resultados/${year.year}`, year.lastModified]),
-    ...Array.from({ length: 60 }, (_, index): [string, string | null] => [
+    ...Array.from({ length: MEGASENA_CONSTANTS.MAX_NUMBER }, (_, index): [string, string | null] => [
       `/numeros/${index + 1}`,
       archive.lastModified,
     ]),

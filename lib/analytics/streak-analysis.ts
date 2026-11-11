@@ -173,8 +173,4 @@ export class StreakAnalysisEngine {
   getHotNumbers(limit: number = 10): StreakStats[] {
     return this.getStreakSets(limit, 0).hotNumbers;
   }
-
-  getColdNumbers(limit: number = 10): StreakStats[] {
-    return this.getStreakSets(0, limit).coldNumbers;
-  }
 }

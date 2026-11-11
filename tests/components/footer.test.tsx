@@ -60,11 +60,20 @@ describe('Footer - Core Sections', () => {
     vi.setSystemTime(new Date('2025-12-02'));
   });
 
-  it('should render about section', () => {
-    render(<Footer />);
+  it('has three rows: links, responsible gaming, disclaimer with copyright and version', () => {
+    const { container } = render(<Footer />);
+    const shell = container.querySelector('footer > .page') as HTMLElement;
+    expect(shell.children).toHaveLength(3);
+    expect(shell.children[0]?.querySelectorAll('nav')).toHaveLength(2);
+    expect(shell.children[1]).toHaveTextContent(/cvv: 188/i);
+    expect(shell.children[2]).toHaveTextContent(/© 2025 Mega-Sena Analyzer/);
+    expect(shell.children[2]).toHaveTextContent(/^.*v\d+\.\d+\.\d+/);
+  });
 
-    expect(screen.getAllByText(/mega-sena analyzer/i).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText(/ferramenta de an.lise estat.stica/i)).toBeInTheDocument();
+  it('labels its landmarks without adding headings to the page outline', () => {
+    const { container } = render(<Footer />);
+    expect(container.querySelectorAll('h1, h2, h3, h4, h5, h6')).toHaveLength(0);
+    expect(screen.queryByText(/ferramenta de an.lise estat.stica/i)).toBeNull();
   });
 
   it('should render legal section', () => {
@@ -90,7 +99,7 @@ describe('Footer - Core Sections', () => {
   it('should render responsible gaming section', () => {
     render(<Footer />);
 
-    expect(screen.getByRole('heading', { name: /jogo respons.vel/i })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /jogo respons.vel/i })).toBeInTheDocument();
     expect(screen.getByText(/proibidas para menores de 18 anos/i)).toBeInTheDocument();
     expect(screen.getByText(/cvv: 188/i)).toBeInTheDocument();
   });

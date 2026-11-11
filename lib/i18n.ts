@@ -94,46 +94,7 @@ export const pt = {
     },
   },
   home: {
-    heroTitle: 'Mega-Sena Analyzer',
-    heroSubtitle:
-      'Todos os concursos desde 1996 com os dados oficiais da CAIXA: resultados, frequência das dezenas e um gerador de apostas que distribui o seu orçamento.',
-    contentsTitle: 'Neste site',
-    contents: [
-      {
-        title: 'Resultados',
-        description:
-          'Todos os concursos por ano, com as dezenas, os ganhadores e o prêmio de cada faixa.',
-        href: '/resultados',
-        archive: true,
-      },
-      {
-        title: 'Números de 01 a 60',
-        description:
-          'Quantas vezes cada dezena saiu, há quantos concursos não sai e com quais outras costuma sair.',
-        href: '/numeros',
-        archive: true,
-      },
-      {
-        title: 'Estatísticas',
-        description:
-          'Frequência, atraso, pares, paridade, primos e soma das dezenas em todo o histórico.',
-        href: '/dashboard/statistics',
-        archive: false,
-      },
-      {
-        title: 'Gerador de apostas',
-        description:
-          'Distribui um orçamento entre apostas simples e múltiplas com o menor desperdício.',
-        href: '/dashboard/generator',
-        archive: false,
-      },
-      {
-        title: 'Mega da Virada',
-        description: 'As edições de fim de ano, com as dezenas sorteadas e os prêmios pagos.',
-        href: '/mega-da-virada',
-        archive: true,
-      },
-    ],
+    heroTitle: 'Resultados e estatísticas da Mega-Sena desde 1996',
     disclaimer: {
       text: 'Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória. Jogue com responsabilidade.',
       termsLinkLabel: 'Termos de uso',
@@ -152,20 +113,6 @@ export const pt = {
     hotNumbersTitle: 'Em alta nos últimos 10 concursos',
     hotNumbersCaption:
       'Saídas de cada dezena nos últimos 10 concursos, comparadas com a média histórica da própria dezena.',
-    toolsTitle: 'Ferramentas',
-    tools: [
-      {
-        title: 'Estatísticas',
-        description:
-          'Frequência, atraso, pares, paridade, soma e distribuição de todas as dezenas.',
-        href: '/dashboard/statistics',
-      },
-      {
-        title: 'Gerador de apostas',
-        description: 'Distribui o seu orçamento entre apostas simples e múltiplas.',
-        href: '/dashboard/generator',
-      },
-    ],
   },
   generatorPage: {
     title: 'Gerador de Apostas Otimizado',
@@ -283,13 +230,21 @@ export const pt = {
   },
   statistics: {
     title: 'Estatísticas Detalhadas',
-    freshness: {
-      descriptionPrefix: 'Dados atualizados até o concurso',
-    },
-    hotNumbersTitle: 'Números Quentes (Top 20)',
-    coldNumbersTitle: 'Números Frios (Top 20)',
+    source: 'Fonte: CAIXA Econômica Federal.',
+    freshness: (contest: number, date: string | null, draws: string) =>
+      `Dados até o concurso ${contest}${date ? ` (${date})` : ''}, ${draws}.`,
+    lead: (draws: string, most: string, least: string, average: string) =>
+      `Em ${draws}, ${most} e ${least}. Se todas saíssem igualmente, cada uma teria saído ${average} vezes.`,
+    fullTable: 'Tabela completa',
+    appendixTitle: 'Tabelas complementares',
+    hotNumbersTitle: 'Dezenas mais sorteadas',
+    coldNumbersTitle: 'Dezenas menos sorteadas',
+    frequencyFigureLabel: (min: string, max: string) =>
+      `Vezes que cada dezena de 01 a 60 foi sorteada: de ${min} a ${max} vezes`,
+    frequencyReference: (average: string) =>
+      `Média se todas as dezenas saíssem igualmente: ${average} vezes`,
     patterns: {
-      title: 'Padrões Detectados',
+      title: 'Padrões detectados',
       lastSeenLabel: 'Última ocorrência',
       descriptions: {
         consecutive: 'Números consecutivos no sorteio',
@@ -299,6 +254,7 @@ export const pt = {
     delays: {
       title: 'Análise de Atraso',
       distributionTitle: 'Distribuição de Atrasos',
+      distributionFigureLabel: 'Dezenas por situação de atraso',
     },
     delayCategories: {
       recent: 'Recente',
@@ -308,16 +264,20 @@ export const pt = {
     },
     decades: {
       title: 'Distribuição por Dezena',
+      figureLabel: 'Porcentagem das dezenas sorteadas em cada faixa',
+      reference: (percentage: string) => `Esperado por faixa: ${percentage}%`,
     },
     pairs: {
       title: 'Pares Mais Frequentes',
       correlationLabel: 'Correlação',
+      moreLabel: (from: number, to: number) => `Do ${from}º ao ${to}º par`,
     },
     parity: {
       title: 'Distribuição Par/Ímpar',
       mostCommonLabel: 'Mais Comum',
       balancedLabel: 'Distribuições Balanceadas (2-4, 3-3, 4-2)',
       drawsLabel: 'dos sorteios',
+      figureLabel: 'Concursos por quantidade de pares e ímpares',
     },
     primes: {
       title: 'Análise de Números Primos',
@@ -329,6 +289,7 @@ export const pt = {
       mostCommonSuffix: 'primos por sorteio',
       distributionTitle: 'Distribuição de Primos por Sorteio',
       topTitle: 'Top 10 Números Primos Mais Sorteados',
+      figureLabel: 'Concursos por quantidade de primos sorteados',
     },
     sum: {
       title: 'Distribuição de Soma',
@@ -336,16 +297,20 @@ export const pt = {
       medianLabel: 'Mediana',
       modeLabel: 'Moda',
       stdDevLabel: 'Desvio Padrão',
+      figureLabel: (min: string, median: string, max: string) =>
+        `Soma das seis dezenas: mínima ${min}, mediana ${median}, máxima ${max}`,
+      spread: (middle: string, p25: string, p75: string, outer: string, p5: string, p95: string) =>
+        `${middle} dos concursos somaram entre ${p25} e ${p75}; ${outer} entre ${p5} e ${p95}.`,
     },
     streaks: {
-      title: 'Números em Sequência (Últimos 10 Sorteios)',
+      title: 'Números em sequência nos últimos 10 concursos',
       disclaimerBody:
         'Cada sorteio é um evento independente. A frequência recente de um número não influencia sua probabilidade em sorteios futuros. Esta análise é apenas histórica e não possui valor preditivo.',
       hotTitle: 'Números Quentes (Alta Intensidade)',
       coldTitle: 'Números Frios (Baixa Intensidade)',
     },
     prizeCorrelation: {
-      title: 'Correlação com Prêmios',
+      title: 'Correlação com prêmios',
       disclaimerBody:
         'Os valores dos prêmios dependem do acúmulo do jackpot e do número de ganhadores, não dos números sorteados. Esta correlação é coincidência estatística, não indica causalidade.',
       luckyTitle: 'Números "Sortudos" (Prêmios Acima da Média)',
@@ -635,6 +600,7 @@ export const pt = {
   },
   storageBanner: {
     title: 'Aviso de privacidade',
+    summary: 'Sem cookies; até dois valores funcionais ficam no seu navegador.',
     body: 'O Mega-Sena Analyzer não usa cookies HTTP nem autenticação. Apenas dois valores funcionais ficam no localStorage do seu navegador: megasena-theme (preferência de tema) e, ao confirmar este aviso, megasena-privacy-ack (versão deste aviso já visualizada, para não exibi-lo novamente).',
     accept: 'Entendi',
     learnMore: 'Política de Privacidade',
@@ -644,8 +610,6 @@ export const pt = {
     ariaLabel: 'Aviso de privacidade e armazenamento local',
   },
   footer: {
-    aboutText:
-      'Ferramenta de análise estatística da Mega-Sena para visualização de padrões e geração de sugestões de apostas baseadas em dados históricos.',
     legalTitle: 'Legal',
     termsLink: 'Termos de Serviço',
     privacyLink: 'Política de Privacidade',

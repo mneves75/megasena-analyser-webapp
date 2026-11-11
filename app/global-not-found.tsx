@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/error-state';
 import { ThemeScript } from '@/components/theme-script';
 import { pt } from '@/lib/i18n';
 import { BASE_URL } from '@/lib/constants';
@@ -26,16 +27,14 @@ export default async function GlobalNotFound(): Promise<React.JSX.Element> {
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="pt-BR" className={fontVariables} suppressHydrationWarning>
-      <body className="antialiased min-h-screen font-sans bg-background">
+      <body className="antialiased bg-background font-sans text-foreground">
         <ThemeScript nonce={nonce} />
-        <main className="container mx-auto px-4 py-12">
-          <div className="mx-auto max-w-2xl text-center space-y-6">
-            <h1 className="text-4xl font-bold">{pt.errors.notFound.title}</h1>
-            <p className="text-muted-foreground">{pt.errors.notFound.description}</p>
-            <Button asChild size="lg">
+        <main className="page py-12">
+          <ErrorState title={pt.errors.notFound.title} description={pt.errors.notFound.description}>
+            <Button asChild>
               <Link href="/">{pt.errors.notFound.action}</Link>
             </Button>
-          </div>
+          </ErrorState>
         </main>
       </body>
     </html>

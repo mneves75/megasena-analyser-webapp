@@ -46,8 +46,7 @@ steps:
         text: R$ 50,50
         role: dd
   - scroll-to: { target: { text: Gerar Apostas, role: button } }
-  - tap:
-      text: Gerar Apostas
+  - tap: { text: Gerar Apostas, role: button }
   - tool: await-ui-element
     args:
       condition: visible

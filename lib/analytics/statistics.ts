@@ -2,18 +2,6 @@ import { getDatabase } from '@/lib/db';
 import { withDatabaseTransaction } from '@/lib/db-transaction';
 import { MEGASENA_CONSTANTS, STATISTICS_DISPLAY } from '@/lib/constants';
 
-// Pre-generated safe SQL queries to avoid string interpolation
-const NUMBER_COLUMN_COUNT_QUERIES = Array.from(
-  { length: 6 },
-  (_, i) => `SELECT COUNT(*) as count FROM draws WHERE number_${i + 1} = ?`
-);
-
-const NUMBER_COLUMN_LAST_DRAWN_QUERIES = Array.from(
-  { length: 6 },
-  (_, i) =>
-    `SELECT contest_number, draw_date FROM draws WHERE number_${i + 1} = ? ORDER BY contest_number DESC LIMIT 1`
-);
-
 export interface NumberFrequency {
   number: number;
   frequency: number;
@@ -66,9 +54,30 @@ export class StatisticsEngine {
       // Preserve the outer transaction while rebuilding this cache atomically.
       withDatabaseTransaction(this.db, () => {
 
-        const resetStatement = this.db.prepare('UPDATE number_frequency SET frequency = 0');
-        const countStatements = NUMBER_COLUMN_COUNT_QUERIES.map((query) => this.db.prepare(query));
-        const lastDrawStatements = NUMBER_COLUMN_LAST_DRAWN_QUERIES.map((query) => this.db.prepare(query));
+        // One pass over the six number columns: occurrences and the latest
+        // contest per number, joined back to that contest for its date. The last
+        // two columns are nested: the Durable Object's SQLite refuses a compound
+        // SELECT with more than five terms.
+        const aggregates = this.db
+          .prepare(
+            `WITH drawn(number, contest_number) AS (
+               SELECT number_1, contest_number FROM draws
+               UNION ALL SELECT number_2, contest_number FROM draws
+               UNION ALL SELECT number_3, contest_number FROM draws
+               UNION ALL SELECT number_4, contest_number FROM draws
+               UNION ALL SELECT * FROM (
+                 SELECT number_5, contest_number FROM draws
+                 UNION ALL SELECT number_6, contest_number FROM draws
+               )
+             ), totals AS (
+               SELECT number, COUNT(*) AS frequency, MAX(contest_number) AS last_contest
+               FROM drawn GROUP BY number
+             )
+             SELECT totals.number, totals.frequency, totals.last_contest, draws.draw_date AS last_date
+             FROM totals JOIN draws ON draws.contest_number = totals.last_contest`
+          )
+          .all() as Array<{ number: number; frequency: number; last_contest: number; last_date: string }>;
+        const byNumber = new Map(aggregates.map((row) => [row.number, row]));
         const updateStatement = this.db.prepare(
           `UPDATE number_frequency
            SET frequency = ?,
@@ -78,42 +87,11 @@ export class StatisticsEngine {
            WHERE number = ?`
         );
 
-        // Reset frequencies
-        resetStatement.run();
-
-        // Count occurrences for each number
+        // Every number is written, so a number no longer drawn resets to 0/NULL.
         for (let num = MEGASENA_CONSTANTS.MIN_NUMBER; num <= MEGASENA_CONSTANTS.MAX_NUMBER; num++) {
-          let frequency = 0;
-          let lastContest: number | null = null;
-          let lastDate: string | null = null;
-
-          // Count occurrences across all number columns using pre-generated safe queries
-          for (let col = 0; col < 6; col++) {
-            // Count ALL occurrences in this column
-            const countStatement = countStatements[col];
-            const lastDrawStatement = lastDrawStatements[col];
-            if (!countStatement || !lastDrawStatement) {
-              continue;
-            }
-            const countResult = countStatement.get(num) as { count: number } | undefined;
-
-            frequency += countResult?.count ?? 0;
-
-            // Separately get the last drawn info
-            const lastDrawn = lastDrawStatement.get(num) as
-              | { contest_number: number; draw_date: string }
-              | undefined;
-
-            if (lastDrawn && (lastContest === null || lastDrawn.contest_number > lastContest)) {
-              lastContest = lastDrawn.contest_number;
-              lastDate = lastDrawn.draw_date;
-            }
-          }
-
-          // Update frequency table
-          updateStatement.run(frequency, lastContest, lastDate, num);
+          const row = byNumber.get(num);
+          updateStatement.run(row?.frequency ?? 0, row?.last_contest ?? null, row?.last_date ?? null, num);
         }
-
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -121,7 +99,14 @@ export class StatisticsEngine {
     }
   }
 
-  getDrawStatistics(): DrawStatistics {
+  /**
+   * Draw count and latest draw: all the health check reports. It also touches the
+   * frequency cache table, so health still fails when the analytics schema is
+   * unreadable, as it did when it built the full statistics.
+   */
+  getDrawSummary(): Pick<DrawStatistics, 'totalDraws' | 'lastDrawDate' | 'lastContestNumber'> {
+    this.db.prepare('SELECT 1 FROM number_frequency LIMIT 1').get();
+
     const totalDraws = (
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
@@ -129,6 +114,16 @@ export class StatisticsEngine {
     const lastDraw = this.db
       .prepare('SELECT contest_number, draw_date FROM draws ORDER BY contest_number DESC LIMIT 1')
       .get() as { contest_number: number; draw_date: string } | undefined;
+
+    return {
+      totalDraws,
+      lastDrawDate: lastDraw?.draw_date || null,
+      lastContestNumber: lastDraw?.contest_number || null,
+    };
+  }
+
+  getDrawStatistics(): DrawStatistics {
+    const { totalDraws, lastDrawDate, lastContestNumber } = this.getDrawSummary();
 
     const frequencies = this.getNumberFrequencies();
     const mostFrequent = frequencies.slice(0, STATISTICS_DISPLAY.DASHBOARD_TOP_COUNT);
@@ -154,8 +149,8 @@ export class StatisticsEngine {
 
     return {
       totalDraws,
-      lastDrawDate: lastDraw?.draw_date || null,
-      lastContestNumber: lastDraw?.contest_number || null,
+      lastDrawDate,
+      lastContestNumber,
       mostFrequentNumbers: mostFrequent,
       leastFrequentNumbers: leastFrequent,
       averagePrizeSena: avgSena,

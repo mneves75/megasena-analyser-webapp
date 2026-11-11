@@ -65,7 +65,7 @@ function rovingKeyDown<T extends string>(
 }
 
 const OPTION_ROW =
-  'flex w-full items-start gap-3 border-b border-border py-3 text-left transition-colors hover:bg-tint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
+  'flex w-full items-start gap-3 border-b border-border py-3 text-left transition-colors hover:bg-tint focus-ring-inset';
 
 /** The volante's mark: an empty ring, filled when chosen. */
 function RadioMark({ selected }: { selected: boolean }) {

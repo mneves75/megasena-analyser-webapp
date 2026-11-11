@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { StatisticsEngine } from '../analytics/statistics';
 import { BetGenerator } from '../analytics/bet-generator';
 import { BetGenerationInputError } from '../analytics/bet-generator';
-import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from '../constants';
+import { BET_GENERATION_LIMITS, BET_GENERATION_MODE, MEGASENA_CONSTANTS } from '../constants';
 import siteDomains from '../site-domains.json';
 import { DelayAnalysisEngine } from '../analytics/delay-analysis';
 import { DecadeAnalysisEngine } from '../analytics/decade-analysis';
@@ -14,7 +14,12 @@ import { SumAnalysisEngine } from '../analytics/sum-analysis';
 import { StreakAnalysisEngine } from '../analytics/streak-analysis';
 import { PrizeCorrelationEngine } from '../analytics/prize-correlation';
 import { DrawArchiveEngine } from '../analytics/draw-archive';
-import { parseDrawsQuery, parseNumbersQuery } from './archive-contract';
+import {
+  FIRST_DRAW_YEAR,
+  LAST_ACCEPTED_YEAR,
+  parseDrawsQuery,
+  parseNumbersQuery,
+} from './archive-contract';
 import { logger } from '../logger';
 import type { AuditEventInput, AuditEventName } from '../audit';
 import { buildApiSecurityHeaders } from '../security/csp';
@@ -177,12 +182,14 @@ export function createApiHandler(options: ApiHandlerOptions) {
   // Trends keys derive from user-chosen number sets (high cardinality); a separate
   // instance keeps that traffic from evicting the shared analytics entries above.
   const trendsResponseCache = new ContestResponseCache(64);
-  // Public archive views crawled page by page. Listings shared by many pages
-  // (60 number profiles, the number index, ~31 years, the archive index, Mega da
-  // Virada and the sitemap: under 100 validated keys) each scan the whole draws
-  // table, so they are cached by draws revision. Single draws are 3,000+ crawl-once
-  // keys and bypass the cache.
-  const archiveResponseCache = new ContestResponseCache(128);
+  // Public archive views crawled page by page. Listings shared by many pages each
+  // scan the whole draws table, so they are cached by draws revision, sized to hold
+  // every validated key: each accepted year (empty years cache their 404 body too),
+  // the number profiles, plus the number index, archive index, Mega da Virada and
+  // sitemap. Single draws are 3,000+ crawl-once keys and bypass the cache.
+  const archiveResponseCache = new ContestResponseCache(
+    LAST_ACCEPTED_YEAR - FIRST_DRAW_YEAR + 1 + MEGASENA_CONSTANTS.MAX_NUMBER + 4
+  );
 
   /**
    * Per-handler salt for environments that have no `IP_HASH_SECRET`.
@@ -315,8 +322,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     return finalized;
   }
 
-  function checkRateLimit(clientIp: string | null): { allowed: boolean; remaining: number; resetAt: number } {
-    const key = getRateLimitKey(clientIp);
+  function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetAt: number } {
     const now = Date.now();
 
     let entry = rateLimiterCache.get(key);
@@ -376,18 +382,20 @@ export function createApiHandler(options: ApiHandlerOptions) {
     };
   }
 
-  // Define API route handlers
-  const apiHandlers: Record<
-    string,
-    (req: Request, ctx: RequestContext) => Promise<Response> | Response
-  > = {
-    '/api/health': async (_req, ctx) => {
+  // One record per route, so its methods, audit event and handler cannot drift apart.
+  interface ApiRoute {
+    methods: readonly string[];
+    auditEvent: AuditEventName;
+    handle: (req: Request, ctx: RequestContext) => Promise<Response> | Response;
+  }
+
+  const apiRoutes: Record<string, ApiRoute> = {
+    '/api/health': { methods: ['GET'], auditEvent: 'api.health_read', handle: async (_req, ctx) => {
       ctx.audit = { event: 'api.health_read' };
       try {
         // Check database connectivity
-        const stats = new StatisticsEngine();
-        const statistics = stats.getDrawStatistics();
-        const drawCount = statistics.totalDraws;
+        const summary = new StatisticsEngine().getDrawSummary();
+        const drawCount = summary.totalDraws;
         const dataReady =
           Number.isFinite(MIN_HEALTH_TOTAL_DRAWS) &&
           MIN_HEALTH_TOTAL_DRAWS > 0 &&
@@ -402,8 +410,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
             connected: true,
             totalDraws: drawCount,
             minTotalDraws: MIN_HEALTH_TOTAL_DRAWS,
-            lastContestNumber: statistics.lastContestNumber,
-            lastDrawDate: statistics.lastDrawDate,
+            lastContestNumber: summary.lastContestNumber,
+            lastDrawDate: summary.lastDrawDate,
             dataReady,
           },
           version: options.appVersion,
@@ -439,9 +447,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
           }
         );
       }
-    },
+    } },
 
-    '/api/dashboard': async (_req, ctx) => {
+    '/api/dashboard': { methods: ['GET'], auditEvent: 'api.dashboard_read', handle: async (_req, ctx) => {
       ctx.audit = { event: 'api.dashboard_read' };
       try {
         const cacheKey = buildResponseCacheKey(ctx.route, {}, options.appVersion);
@@ -469,9 +477,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível carregar os dados do painel.', null, 500);
       }
-    },
+    } },
 
-    '/api/statistics': async (req, ctx) => {
+    '/api/statistics': { methods: ['GET'], auditEvent: 'api.statistics_read', handle: async (req, ctx) => {
       try {
         const url = new URL(req.url);
         const includeDelays = url.searchParams.get('delays') === 'true';
@@ -577,9 +585,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível carregar os dados estatísticos.', null, 500);
       }
-    },
+    } },
 
-    '/api/trends': async (req, ctx) => {
+    '/api/trends': { methods: ['GET'], auditEvent: 'api.trends_read', handle: async (req, ctx) => {
       ctx.audit = { event: 'api.trends_read' };
       try {
         const url = new URL(req.url);
@@ -674,9 +682,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível carregar os dados de tendência.', null, 500);
       }
-    },
+    } },
 
-    '/api/draws': (req, ctx) => {
+    '/api/draws': { methods: ['GET'], auditEvent: 'api.draws_read', handle: (req, ctx) => {
       ctx.audit = { event: 'api.draws_read' };
       try {
         const query = parseDrawsQuery(new URL(req.url).searchParams);
@@ -714,9 +722,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível carregar os resultados.', null, 500);
       }
-    },
+    } },
 
-    '/api/numbers': (req, ctx) => {
+    '/api/numbers': { methods: ['GET'], auditEvent: 'api.numbers_read', handle: (req, ctx) => {
       ctx.audit = { event: 'api.numbers_read' };
       try {
         const query = parseNumbersQuery(new URL(req.url).searchParams);
@@ -749,9 +757,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível carregar os números.', null, 500);
       }
-    },
+    } },
 
-    '/api/sitemap': (_req, ctx) => {
+    '/api/sitemap': { methods: ['GET'], auditEvent: 'api.sitemap_read', handle: (_req, ctx) => {
       ctx.audit = { event: 'api.sitemap_read' };
       try {
         const body = archiveResponseCache.getOrCompute(
@@ -770,19 +778,11 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível montar o índice do site.', null, 500);
       }
-    },
+    } },
 
-    '/api/generate-bets': async (req, ctx) => {
+    '/api/generate-bets': { methods: ['POST'], auditEvent: 'bets.generate_requested', handle: async (req, ctx) => {
       ctx.audit = { event: 'bets.generate_requested' };
       try {
-        if (req.method !== 'POST') {
-          ctx.audit = {
-            event: 'bets.generate_requested',
-            metadata: { validationError: true, reason: 'method_not_allowed' },
-          };
-          return createErrorResponse(ctx, 'Método não permitido.', null, 405);
-        }
-
         if (!isJsonContentType(req)) {
           ctx.audit = {
             event: 'bets.generate_requested',
@@ -911,30 +911,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
         });
         return createErrorResponse(ctx, 'Não foi possível gerar as apostas.', null, 500);
       }
-    },
+    } },
   };
 
-  const apiAllowedMethods: Record<string, readonly string[]> = {
-    '/api/health': ['GET'],
-    '/api/dashboard': ['GET'],
-    '/api/statistics': ['GET'],
-    '/api/trends': ['GET'],
-    '/api/draws': ['GET'],
-    '/api/numbers': ['GET'],
-    '/api/sitemap': ['GET'],
-    '/api/generate-bets': ['POST'],
-  };
-
-  const apiAuditEvents: Record<string, AuditEventName> = {
-    '/api/health': 'api.health_read',
-    '/api/dashboard': 'api.dashboard_read',
-    '/api/statistics': 'api.statistics_read',
-    '/api/trends': 'api.trends_read',
-    '/api/draws': 'api.draws_read',
-    '/api/numbers': 'api.numbers_read',
-    '/api/sitemap': 'api.sitemap_read',
-    '/api/generate-bets': 'bets.generate_requested',
-  };
 
   function createMethodNotAllowedResponse(ctx: RequestContext, allowedMethods: readonly string[]): Response {
     const response = createErrorResponse(ctx, 'Método não permitido.', null, 405);
@@ -1003,7 +982,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
             remaining: RATE_LIMIT_MAX_REQUESTS,
             resetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
           }
-        : options.checkRateLimit?.(getRateLimitKey(clientIp)) ?? checkRateLimit(clientIp);
+        : options.checkRateLimit?.(ctx.clientId) ?? checkRateLimit(ctx.clientId);
 
       if (!rateLimit.allowed) {
         logger.warn('api.rate_limit_exceeded', {
@@ -1016,7 +995,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
         // A throttled request on a known route is audited like any other
         // outcome. An unknown path keeps only the structured rate-limit log:
         // labelling it as a dashboard read put a false event in the audit table.
-        const knownEvent = apiAuditEvents[url.pathname];
+        const knownEvent = apiRoutes[url.pathname]?.auditEvent;
         if (knownEvent) {
           ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
         }
@@ -1055,18 +1034,17 @@ export function createApiHandler(options: ApiHandlerOptions) {
         );
       }
 
-      const handler = apiHandlers[url.pathname];
-      const response = handler
+      const route = apiRoutes[url.pathname];
+      const response = route
         ? await (async () => {
-            const allowedMethods = apiAllowedMethods[url.pathname];
-            if (allowedMethods && !allowedMethods.includes(req.method)) {
+            if (!route.methods.includes(req.method)) {
               ctx.audit = {
-                event: apiAuditEvents[url.pathname] ?? 'api.dashboard_read',
+                event: route.auditEvent,
                 metadata: { validationError: true, reason: 'method_not_allowed' },
               };
-              return createMethodNotAllowedResponse(ctx, allowedMethods);
+              return createMethodNotAllowedResponse(ctx, route.methods);
             }
-            return handler(req, ctx);
+            return route.handle(req, ctx);
           })()
         : createErrorResponse(ctx, 'Não encontrado.', null, 404);
 
@@ -1098,5 +1076,5 @@ export function createApiHandler(options: ApiHandlerOptions) {
     }
   }
 
-  return { fetch, routes: Object.keys(apiHandlers).sort() };
+  return { fetch, routes: Object.keys(apiRoutes).sort() };
 }

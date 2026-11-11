@@ -2,6 +2,7 @@
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import siteDomains from '../lib/site-domains.json';
 
 type HealthPayload = {
   status?: unknown;
@@ -31,7 +32,7 @@ type CheckResult = {
   lastDrawDate: string | null;
 };
 
-const DEFAULT_BASE_URL = 'https://megasena-analyzer.com.br';
+export const DEFAULT_BASE_URL = `https://${siteDomains.primaryDomain}`;
 const DEFAULT_TIMEOUT_MS = 10000;
 const DEFAULT_MIN_TOTAL_DRAWS = 3000;
 const DEFAULT_MAX_DRAW_AGE_DAYS = 21;

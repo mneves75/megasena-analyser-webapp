@@ -27,23 +27,17 @@ ruins. Aqui está a lista do que verificar antes de confiar.
 
 | # | Afirmação em docs/config | Realidade no código | Ação sugerida |
 | --- | --- | --- | --- |
-| 1 | `CLAUDE.md`: "Framer Motion para micro-interações" | Nenhum import de `framer-motion` em `app/`/`components/`/`lib/` | Remover a dependência ou usá-la; atualizar doc |
-| 2 | `package.json` lista `date-fns` | Nenhum import; datas via `Intl` em `lib/utils.ts` | Remover `date-fns` |
+| 1 | ~~`CLAUDE.md`: "Framer Motion para micro-interações"~~ | Nenhum import de `framer-motion` em `app/`/`components/`/`lib/` | **Resolvido**: `framer-motion` não é dependência e o `CLAUDE.md` não o cita |
+| 2 | ~~`package.json` lista `date-fns`~~ | Nenhum import; datas via `Intl` em `lib/utils.ts` | **Resolvido**: `date-fns` não é dependência |
 | 3 | ~~`.cursor/rules`: "Supabase keys", "Caixa tokens"~~ | Não há Supabase nem token CAIXA no código | **Resolvido em 2026-07-28**: as seis regras `.mdc` foram reescritas para o stack real (Bun + `bun:sqlite`, pnpm, Next.js 16) |
 | 4 | `migrations 004/005`: comentário "soft delete via deleted_at" | `006` removeu `deleted_at`; retenção é hard delete | Corrigir comentários das migrações |
-| 5 | `.env.example`: `AUDIT_RETENTION_DAYS=400` | `prune-audit-logs.ts` usa default 365 e não lê a env | Alinhar default do CLI à env |
-| 6 | Suposição de que `app/api/*` contém handlers | `app/api/*` são **diretórios vazios** (sem arquivos — verificado); a API real é `server.ts` via rewrite | Remover os diretórios vazios ou documentar que são placeholders |
+| 5 | ~~`.env.example`: `AUDIT_RETENTION_DAYS=400`~~ | `prune-audit-logs.ts` lê `AUDIT_RETENTION_DAYS` com default 400 | **Resolvido**: CLI e env usam 400 |
+| 6 | ~~Suposição de que `app/api/*` contém handlers~~ | Não existe `app/api/`; a API é `lib/api/handler.ts`, servida por `server.ts` via rewrite | **Resolvido**: diretórios removidos |
 
 > Estas seis são **falsificáveis** e foram verificadas por leitura/grep direto.
 
 ## Dívida arquitetural (verificada)
 
-- **`ComplexityScoreEngine` definida mas sem uso.** `lib/analytics/complexity-score.ts`
-  expõe `calculateComplexityScore`, mas nenhum arquivo de `lib/`, `server.ts`, `app/` ou
-  `components/` a chama (verificado por grep). É código morto — ou ligue-a (ex.: nova
-  flag em `/api/statistics`, ou no scoring do gerador), ou remova-a.
-- **`app/api/*` são diretórios vazios.** Não há `route.ts` algum sob `app/api/*`; a API
-  real é `server.ts`. Remova os diretórios para não sugerir uma API que não existe.
 - **Tabela `user_bets` morta.** Existe desde a migração `001`, mas nenhum código a lê
   ou escreve. Ou implemente o rastreamento de apostas, ou remova a tabela para não
   confundir o MER.
@@ -51,10 +45,9 @@ ruins. Aqui está a lista do que verificar antes de confiar.
   `TimeSeriesEngine` emitem muitas consultas pequenas por chamada. Funciona no volume
   atual; vira gargalo se a base crescer ou se a página de estatísticas ficar muito
   acessada. Considere agregações únicas ou caches.
-- **`InMemoryDatabase` acoplada a SQL específico.** `lib/db.ts` reconhece apenas os SQLs
-  que o app usa hoje (por prefixo normalizado). Um SQL novo num teste pode retornar
-  vazio silenciosamente. Risco: testes "passam" sem exercitar o caminho real. Mitigação:
-  `VITEST_FORCE_FILE_DB=1` quando o SQL for novo/complexo.
+- **SQLite de teste diferente do Durable Object.** Vitest usa `node:sqlite` em memória
+  com as migrações reais, mas o SQLite do Durable Object recusa um SELECT composto com
+  mais de cinco termos, que o Vitest aceita. Só `bun run test:cloudflare` pega esse caso.
 - **Assimetria de `.unref()`.** `log-store.ts` chama `.unref()` no timer de flush;
   `audit.ts` não. Se `stopAuditWriter()` não for chamado, o timer de auditoria pode
   segurar o processo. O caminho de shutdown chama, mas scripts ad-hoc podem esquecer.
@@ -67,8 +60,7 @@ ruins. Aqui está a lista do que verificar antes de confiar.
   profundidade recomendada (ver `10-lgpd-compliance-plan.md`, gap 1).
 - **Entry points legados.** `scripts/fetch-missing.ts` agora delega ao `pullDraws`
   incremental, com `DATABASE_PATH`, validação e transação dos caches. Não mantém
-  mais uma conexão SQLite independente. `start-docker-distroless.ts` continua sem
-  Dockerfile que o use.
+  mais uma conexão SQLite independente.
 
 ## Armadilhas para juniores
 
@@ -84,7 +76,7 @@ ruins. Aqui está a lista do que verificar antes de confiar.
 
 ## Perguntas em aberto (precisam de decisão humana)
 
-1. **Retenção de auditoria:** 400 dias (env) vs 365 (CLI) vs recomendação de 180 dias
+1. **Retenção de auditoria:** 400 dias (env e CLI) vs recomendação de 180 dias
    da `LGPD-COMPLIANCE.md`. Qual é o alvo oficial?
 2. **CSP na borda compartilhada:** a memória do projeto indica que o Traefik impõe uma
    CSP estática compartilhada que `security:csp:edge` acusa; isso é decisão do
@@ -102,15 +94,12 @@ ruins. Aqui está a lista do que verificar antes de confiar.
 - Medir o tempo de `/api/statistics` com todas as flags e o volume atual de `draws`
   (baseline de performance — não há número medido neste documento).
 - Auditar o caminho `enqueueLogEvent` para a lacuna de sanitização (gap 1).
-- Decidir o destino dos diretórios vazios `app/api/*` (remover ou documentar).
 
 ## Como verificar isso no código
 
 ```bash
 grep -rl "framer-motion\|date-fns" app components lib   # esperado: vazio
 grep -rn "user_bets" lib scripts app server.ts | grep -v migrations  # esperado: vazio
-grep -rn "ComplexityScoreEngine\|calculateComplexityScore" lib server.ts app components | grep -v "lib/analytics/complexity-score.ts"  # esperado: vazio
-find app/api -type f   # esperado: nenhum arquivo (só diretórios)
 grep -n "deleted_at" db/migrations/004_audit_logs.sql db/migrations/005_log_events.sql
 grep -n "sanitizeStructuredMetadata" lib/log-store.ts   # esperado: ausente
 grep -n ".unref()" lib/log-store.ts lib/audit.ts

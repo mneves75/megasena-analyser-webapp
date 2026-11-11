@@ -1,10 +1,13 @@
 'use client';
 
+import './globals.css';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/error-state';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
+import { fontVariables } from '@/app/_lib/fonts';
 
 export default function GlobalError({
   error,
@@ -20,21 +23,18 @@ export default function GlobalError({
     });
   }, [error]);
 
+  // It replaces the root layout, so it loads the stylesheet and font itself.
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-12">
-          <div className="mx-auto max-w-2xl text-center space-y-6">
-            <h1 className="text-4xl font-bold">{pt.errors.generic.title}</h1>
-            <p className="text-muted-foreground">{pt.errors.generic.description}</p>
-            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Button onClick={reset}>{pt.errors.generic.action}</Button>
-              <Button variant="outline" asChild>
-                <Link href="/">{pt.errors.notFound.action}</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
+    <html lang="pt-BR" className={fontVariables}>
+      <body className="antialiased bg-background font-sans text-foreground">
+        <main className="page py-12">
+          <ErrorState title={pt.errors.generic.title} description={pt.errors.generic.description}>
+            <Button onClick={reset}>{pt.errors.generic.action}</Button>
+            <Button variant="outline" asChild>
+              <Link href="/">{pt.errors.notFound.action}</Link>
+            </Button>
+          </ErrorState>
+        </main>
       </body>
     </html>
   );

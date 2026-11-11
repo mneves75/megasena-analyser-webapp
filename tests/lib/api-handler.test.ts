@@ -3,6 +3,7 @@ import { createApiHandler } from '../../lib/api/handler';
 import { closeDatabase, getDatabase } from '../../lib/db';
 import { BASE_URL } from '../../lib/constants';
 import { DrawArchiveEngine } from '../../lib/analytics/draw-archive';
+import { StatisticsEngine } from '../../lib/analytics/statistics';
 import '../../lib/log-context.runtime';
 import { runWithLogSink } from '../../lib/logger';
 
@@ -38,6 +39,74 @@ describe('runtime-neutral API handler', () => {
     const invalidMethod = await handler.fetch(new Request('https://example.com/api/health', { method: 'POST' }));
     expect(invalidMethod.status).toBe(405);
     expect(invalidMethod.headers.get('Allow')).toBe('GET');
+  });
+  it('answers health from the draw count without building the full statistics, with an unchanged body', async () => {
+    const spy = vi.spyOn(StatisticsEngine.prototype, 'getDrawStatistics');
+    const handler = createApiHandler({ ...options, uptime: () => 42 });
+    const read = async () => {
+      const response = await handler.fetch(new Request('https://example.com/api/health'));
+      return { status: response.status, text: (await response.text()).replace(/"timestamp":"[^"]+"/, '"timestamp":"T"') };
+    };
+    try {
+      closeDatabase();
+      getDatabase();
+      expect(await read()).toStrictEqual({ status: 503, text: '{"status":"unhealthy","timestamp":"T","uptime":42,'
+        + '"database":{"connected":true,"totalDraws":0,"minTotalDraws":1,"lastContestNumber":null,"lastDrawDate":null,'
+        + '"dataReady":false},"version":"test"}' });
+      const insert = getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+        number_3, number_4, number_5, number_6) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+      insert.run(1, '2025-01-01', 1, 2, 3, 4, 5, 6);
+      insert.run(2, '2025-01-08', 7, 8, 9, 10, 11, 12);
+      expect(await read()).toStrictEqual({ status: 200, text: '{"status":"healthy","timestamp":"T","uptime":42,'
+        + '"database":{"connected":true,"totalDraws":2,"minTotalDraws":1,"lastContestNumber":2,"lastDrawDate":"2025-01-08",'
+        + '"dataReady":true},"version":"test"}' });
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+  it('still reports unhealthy when the analytics cache table is unreadable', async () => {
+    closeDatabase();
+    const database = getDatabase();
+    database.prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const handler = createApiHandler(options);
+    const health = () => handler.fetch(new Request('https://example.com/api/health'));
+    expect((await health()).status).toBe(200);
+    database.prepare('ALTER TABLE number_frequency RENAME TO number_frequency_gone').run();
+    const broken = await health();
+    expect(broken.status).toBe(503);
+    expect(await broken.json()).toMatchObject({ status: 'unhealthy' });
+    expect((await handler.fetch(new Request('https://example.com/api/dashboard'))).status).toBe(500);
+  });
+  it('answers a wrong method on every route with the same 405 body, Allow header and audit event', async () => {
+    const routes = [
+      ['/api/health', 'GET', 'api.health_read'], ['/api/dashboard', 'GET', 'api.dashboard_read'],
+      ['/api/statistics', 'GET', 'api.statistics_read'], ['/api/trends', 'GET', 'api.trends_read'],
+      ['/api/draws', 'GET', 'api.draws_read'], ['/api/numbers', 'GET', 'api.numbers_read'],
+      ['/api/sitemap', 'GET', 'api.sitemap_read'], ['/api/generate-bets', 'POST', 'bets.generate_requested'],
+    ] as const;
+    const audit = vi.fn();
+    const handler = createApiHandler({ ...options, audit });
+    expect(handler.routes).toEqual(routes.map(([route]) => route).sort());
+    for (const [route, allowed, event] of routes) {
+      for (const method of allowed === 'GET' ? ['POST', 'PUT', 'DELETE'] : ['GET', 'PUT', 'DELETE']) {
+        audit.mockClear();
+        const response = await handler.fetch(new Request(`https://example.com${route}`, { method }), { internal: true });
+        expect(response.status).toBe(405);
+        expect(response.headers.get('Allow')).toBe(allowed);
+        expect(response.headers.get('Content-Type')).toBe('application/json');
+        const body = await response.json();
+        expect(body).toStrictEqual({
+          success: false, error: 'Método não permitido.',
+          requestId: response.headers.get('X-Request-Id'), timestamp: expect.any(String),
+        });
+        expect(audit).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+          event, route, method, statusCode: 405, success: false,
+          metadata: { validationError: true, reason: 'method_not_allowed' },
+        }));
+      }
+    }
   });
   it('adds only the approved scheduler fields without changing healthy data status', async () => {
     closeDatabase();
@@ -204,6 +273,32 @@ describe('runtime-neutral API handler', () => {
       await handler.fetch(request(), { internal: true, clientIp: '203.0.113.2' });
     }
     expect((await handler.fetch(request(), { internal: true, clientIp: '203.0.113.2' })).status).toBe(429);
+  });
+  it('keeps every validated archive listing key cached at once', async () => {
+    closeDatabase();
+    getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const handler = createApiHandler(options);
+    const get = async (route: string) =>
+      (await handler.fetch(new Request(`https://example.com${route}`), { internal: true })).status;
+    const years = vi.spyOn(DrawArchiveEngine.prototype, 'getYearArchive');
+    const profiles = vi.spyOn(DrawArchiveEngine.prototype, 'getNumberProfile');
+    try {
+      const routes = [
+        ...Array.from({ length: 2100 - 1996 + 1 }, (_, i) => `/api/draws?year=${1996 + i}`),
+        ...Array.from({ length: 60 }, (_, i) => `/api/numbers?n=${i + 1}`),
+        '/api/numbers', '/api/draws', '/api/draws?view=mega-da-virada', '/api/sitemap',
+      ];
+      expect(routes).toHaveLength(169);
+      for (const route of routes) expect([200, 404]).toContain(await get(route));
+      expect(await get('/api/draws?year=1996')).toBe(404);
+      expect(await get('/api/numbers?n=1')).toBe(200);
+      expect(years).toHaveBeenCalledTimes(105);
+      expect(profiles).toHaveBeenCalledTimes(60);
+    } finally {
+      years.mockRestore();
+      profiles.mockRestore();
+    }
   });
   it('serves shared archive listings from the revision cache and keeps draw pages uncached', async () => {
     closeDatabase();

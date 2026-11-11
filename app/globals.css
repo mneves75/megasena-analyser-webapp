@@ -39,8 +39,6 @@
     --app-header-height: 3.5rem;
 
     --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
-    --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
-    --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
   }
 
   .dark {
@@ -66,7 +64,6 @@
     --border: 200 14% 24%;
     --input: 200 14% 32%;
     --ring: 186 58% 56%;
-
   }
 }
 
@@ -94,7 +91,6 @@
   h4,
   h5,
   h6 {
-    @apply font-title;
     font-stretch: 88%;
     letter-spacing: -0.01em;
     line-height: 1.15;
@@ -162,6 +158,50 @@
       color, background-color, border-color, text-decoration-color, opacity, transform;
     transition-duration: 180ms;
     transition-timing-function: var(--ease-out-quint);
+  }
+}
+
+/* The page shell: every left edge (header, storage band, page, footer) sits on it. */
+@utility page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+/* The one focus ring: 2px ink, offset from the page. `focus-ring-inset` draws it
+   inside the element, for full-width rows and cells whose edge touches a rule. */
+@utility focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+}
+
+@utility focus-ring-inset {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
+}
+
+/* The disclosure chevron of a server-rendered <details>: an empty 1rem box with
+   a "v" drawn by two borders in currentColor, the same 8x4px mark the icon set
+   draws. CSS instead of an inline SVG, because an SVG with element children can
+   start a streamed piece that the CSP refuses (components/figures.tsx). The
+   drawing uses `transform`, so the caller's `group-open:rotate-180` (the
+   `rotate` property) turns the whole box without undoing it. */
+@utility disclosure-chevron {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.354rem;
+    height: 0.354rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translate(-50%, calc(-50% - 0.125rem)) rotate(45deg);
   }
 }
 

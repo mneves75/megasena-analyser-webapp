@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ErrorState } from '@/components/error-state';
 import { pt } from '@/lib/i18n';
 import { BASE_URL as baseUrl } from '@/lib/constants';
 
@@ -16,16 +17,10 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-12">
-        <div className="mx-auto max-w-2xl text-center space-y-6">
-          <h1 className="text-4xl font-bold">{pt.errors.notFound.title}</h1>
-          <p className="text-muted-foreground">{pt.errors.notFound.description}</p>
-          <Button asChild size="lg">
-            <Link href="/">{pt.errors.notFound.action}</Link>
-          </Button>
-        </div>
-      </div>
-    </div>
+    <ErrorState title={pt.errors.notFound.title} description={pt.errors.notFound.description}>
+      <Button asChild>
+        <Link href="/">{pt.errors.notFound.action}</Link>
+      </Button>
+    </ErrorState>
   );
 }

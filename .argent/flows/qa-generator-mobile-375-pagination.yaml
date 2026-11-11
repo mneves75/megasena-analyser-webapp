@@ -35,8 +35,7 @@ steps:
   - tap:
       text: Apenas Simples
   - scroll-to: { target: { text: Gerar Apostas, role: button } }
-  - tap:
-      text: Gerar Apostas
+  - tap: { text: Gerar Apostas, role: button }
   - tool: await-ui-element
     args:
       condition: visible

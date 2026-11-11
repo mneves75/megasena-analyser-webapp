@@ -219,7 +219,6 @@ export function createLogWriter(options: { automaticFlush: boolean } = { automat
 }
 
 const defaultWriter = createLogWriter();
-export const startLogWriter = defaultWriter.start;
 export const stopLogWriter = defaultWriter.stop;
 export const enqueueLogEvent = defaultWriter.enqueue;
 export const flushLogQueue = defaultWriter.flush;

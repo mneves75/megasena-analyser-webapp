@@ -35,7 +35,7 @@ describe('ThemeProvider - localStorage Persistence', () => {
     // Mock localStorage
     mockLocalStorage = {};
 
-    global.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
       setItem: vi.fn((key: string, value: string) => {
         mockLocalStorage[key] = value;
@@ -48,7 +48,7 @@ describe('ThemeProvider - localStorage Persistence', () => {
       }),
       length: 0,
       key: vi.fn(),
-    } as Storage;
+    } as Storage);
 
     // Mock window.matchMedia
     global.matchMedia = vi.fn().mockImplementation((query) => ({
@@ -157,7 +157,7 @@ describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
       dispatchEvent: vi.fn(),
     }));
 
-    global.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
       setItem: vi.fn((key: string, value: string) => {
         mockLocalStorage[key] = value;
@@ -166,7 +166,7 @@ describe('ThemeProvider - Media Query Event Listener Cleanup', () => {
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as Storage;
+    } as Storage);
   });
 
   it('should add media query listener when theme is system', () => {
@@ -298,14 +298,14 @@ describe('ThemeProvider - DOM Manipulation', () => {
       dispatchEvent: vi.fn(),
     }));
 
-    global.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => null),
       setItem: vi.fn(),
       removeItem: vi.fn(),
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as Storage;
+    } as Storage);
   });
 
   it('should apply theme class to document root', () => {
@@ -382,14 +382,14 @@ describe('ThemeProvider - Regression Prevention', () => {
       dispatchEvent: vi.fn(),
     }));
 
-    global.localStorage = {
+    vi.stubGlobal('localStorage', {
       getItem: vi.fn(() => null),
       setItem: vi.fn(),
       removeItem: vi.fn(),
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    } as Storage;
+    } as Storage);
   });
 
   it('should not throw errors when unmounting', () => {
@@ -449,7 +449,7 @@ describe('ThemeProvider - Regression Prevention', () => {
       key: vi.fn(() => null),
       length: 0,
     };
-    global.localStorage = blockedStorage;
+    vi.stubGlobal('localStorage', blockedStorage);
 
     render(
       <ThemeProvider defaultTheme="light">

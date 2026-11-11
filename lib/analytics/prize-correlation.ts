@@ -141,12 +141,4 @@ export class PrizeCorrelationEngine {
         .slice(0, unluckyLimit),
     };
   }
-
-  getLuckyNumbers(limit: number = 10): PrizeCorrelation[] {
-    return this.getCorrelationSets(limit, 0).luckyNumbers;
-  }
-
-  getUnluckyNumbers(limit: number = 10): PrizeCorrelation[] {
-    return this.getCorrelationSets(0, limit).unluckyNumbers;
-  }
 }

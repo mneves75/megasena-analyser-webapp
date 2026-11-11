@@ -26,6 +26,11 @@ function recordedSelectors(file: string): Selector[] {
   for (const match of yaml.matchAll(re)) {
     out.push({ text: match[1]!.trim(), role: match[2]!.trim() });
   }
+  // Taps scoped to a tag (`tap: { text: X, role: button }`), so a link with the
+  // same text (the footer's "Gerar Apostas") cannot take the tap.
+  for (const match of yaml.matchAll(/tap:\s*\{\s*text:\s*([^,}]+),\s*role:\s*([^,}\s]+)\s*\}/g)) {
+    out.push({ text: match[1]!.trim(), role: match[2]!.trim() });
+  }
   return out;
 }
 

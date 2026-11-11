@@ -50,9 +50,7 @@ vi.mock('@/lib/api/api-fetch', () => ({
 describe('DashboardPage', () => {
   it('keeps a strict heading outline: one h1, then h2 sections, no level skipped', async () => {
     render(await DashboardPage());
-    const levels = screen
-      .getAllByRole('heading')
-      .map((h) => Number(h.tagName.slice(1)));
+    const levels = screen.getAllByRole('heading').map((h) => Number(h.tagName.slice(1)));
     expect(levels.filter((l) => l === 1)).toHaveLength(1);
     expect(levels[0]).toBe(1);
     for (let i = 1; i < levels.length; i += 1) {
@@ -63,7 +61,11 @@ describe('DashboardPage', () => {
   it('shows the latest draw with its six numbers, prize state and contest link', async () => {
     render(await DashboardPage());
     const field = screen.getByRole('list', { name: 'Dezenas sorteadas no concurso 3006' });
-    expect(within(field).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+    expect(
+      within(field)
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('href'))
+    ).toEqual([
       '/numeros/4',
       '/numeros/15',
       '/numeros/23',
@@ -104,17 +106,89 @@ describe('DashboardPage', () => {
   it('renders the recent draws table with a paid prize and the hot numbers table', async () => {
     render(await DashboardPage());
     const recent = screen.getByRole('table', { name: pt.dashboard.recentDraws });
-    expect(within(recent).getByRole('link', { name: '3005' })).toHaveAttribute('href', '/concurso/3005');
-    expect(within(recent).getByText('R$ 50.000.000,00')).toBeInTheDocument();
+    expect(within(recent).getByRole('link', { name: '3005' })).toHaveAttribute(
+      'href',
+      '/concurso/3005'
+    );
+    expect(within(recent).getAllByText('R$ 50.000.000,00')[0]).toBeInTheDocument();
 
     const hot = screen.getByRole('table', { name: pt.dashboard.hotNumbersCaption });
     expect(within(hot).getByRole('link', { name: '42' })).toHaveAttribute('href', '/numeros/42');
     expect(within(hot).getByText('2,5×')).toBeInTheDocument();
   });
 
-  it('links both tools', async () => {
+  it('stacks each recent draw date and prize in the row on phones, where their columns are hidden', async () => {
     render(await DashboardPage());
-    expect(screen.getByRole('link', { name: 'Estatísticas' })).toHaveAttribute('href', '/dashboard/statistics');
-    expect(screen.getByRole('link', { name: 'Gerador de apostas' })).toHaveAttribute('href', '/dashboard/generator');
+    const recent = screen.getByRole('table', { name: pt.dashboard.recentDraws });
+    const rows = within(recent).getAllByRole('row').slice(1);
+    const lines = rows.map((row) =>
+      Array.from(row.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'))
+    );
+    expect(lines.map((row) => row.map((line) => line.textContent?.replace(/\s+/g, ' ')))).toEqual([
+      ['12/05/2026', 'Acumulou'],
+      ['09/05/2026', 'R$ 50.000.000,00'],
+    ]);
+    for (const line of lines.flat()) {
+      expect(line.className).toMatch(/\bblock\b/);
+      expect(line.className).toContain('text-muted-foreground');
+    }
+    expect(lines[0]?.[0]?.closest('th')).not.toBeNull();
+  });
+
+  it('does not repeat the navigation: the header and footer carry the tool links', async () => {
+    render(await DashboardPage());
+    expect(screen.queryByRole('heading', { name: 'Ferramentas' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Estatísticas' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Gerador de apostas' })).toBeNull();
+  });
+});
+
+describe('DashboardPage latest draw', () => {
+  it('sets "Concurso N" as a section heading, not at page-title size', async () => {
+    render(await DashboardPage());
+    const heading = screen.getByRole('heading', { level: 2, name: 'Concurso 3006' });
+    const section = screen.getByRole('heading', { level: 2, name: pt.dashboard.archiveTitle });
+    expect(heading.className).toBe(section.className);
+  });
+});
+
+describe('DashboardPage opening', () => {
+  it('keeps the latest draw next to the header, inside one opening block', async () => {
+    const { container } = render(await DashboardPage());
+    const header = container.querySelector('header') as HTMLElement;
+    expect(header.parentElement?.className).toBe('space-y-8');
+    expect(header.nextElementSibling).toContainElement(
+      screen.getByRole('heading', { level: 2, name: 'Concurso 3006' })
+    );
+  });
+});
+
+describe('DashboardPage source', () => {
+  it('states the source once, in the page header', async () => {
+    const { container } = render(await DashboardPage());
+    expect(container.textContent?.match(/Fonte: CAIXA/g)).toHaveLength(1);
+    expect(container.querySelector('header')).toHaveTextContent(/Fonte: CAIXA/);
+  });
+});
+
+describe('DashboardPage rankings', () => {
+  it('draws each ranked row against the most drawn number, the least drawn by frequency', async () => {
+    render(await DashboardPage());
+    const widths = (name: string): (string | null | undefined)[] =>
+      Array.from(screen.getByRole('list', { name }).querySelectorAll('svg')).map((svg) =>
+        svg.querySelectorAll('rect')[1]?.getAttribute('width')
+      );
+    expect(widths(pt.dashboard.mostFrequent)).toEqual(['100', '100', String((340 / 356) * 100)]);
+    expect(widths(pt.dashboard.leastFrequent)).toEqual([
+      String((250 / 356) * 100),
+      String((260 / 356) * 100),
+    ]);
+  });
+
+  it('right-aligns the hot numbers measures', async () => {
+    render(await DashboardPage());
+    const hot = screen.getByRole('table', { name: pt.dashboard.hotNumbersCaption });
+    const cells = within(within(hot).getAllByRole('row')[1]!).getAllByRole('cell');
+    expect(cells.every((cell) => cell.className.includes('text-right'))).toBe(true);
   });
 });

@@ -4,9 +4,7 @@ import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
 import { countLabel, dezena, formatDateInBrasilia, frequencyBand } from '@/app/_lib/format';
-
-const focusRing =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+import { Bar } from '@/components/figures';
 
 /**
  * Link into an archive route (/resultados, /concurso, /numeros). Prefetch is off:
@@ -20,16 +18,12 @@ export function ArchiveLink(
 }
 
 /** Standalone links (table cells, link rows): colour plus underline on hover. */
-export const inlineLinkClass = cn(
-  'rounded-sm font-medium text-primary underline-offset-4 hover:underline',
-  focusRing
-);
+export const inlineLinkClass =
+  'focus-ring rounded-sm font-medium text-primary underline-offset-4 hover:underline';
 
 /** Links inside running text are always underlined (WCAG 1.4.1: not colour alone). */
-export const textLinkClass = cn(
-  'rounded-sm font-medium text-primary underline underline-offset-4',
-  focusRing
-);
+export const textLinkClass =
+  'focus-ring rounded-sm font-medium text-primary underline underline-offset-4';
 
 const FREQUENCY_SHADES = [
   'bg-background',
@@ -63,7 +57,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
                 <>
                   <ArchiveLink
                     href={item.url}
-                    className={cn('rounded-sm hover:text-foreground', focusRing)}
+                    className={'focus-ring rounded-sm hover:text-foreground'}
                   >
                     {item.name}
                   </ArchiveLink>
@@ -81,7 +75,7 @@ export function Breadcrumbs({ items }: { items: readonly BreadcrumbItem[] }): Re
 }
 
 export function PageTitle({ children }: { children: ReactNode }): React.JSX.Element {
-  return <h1 className="text-balance font-title text-4xl font-semibold sm:text-5xl">{children}</h1>;
+  return <h1 className="text-balance text-4xl font-semibold sm:text-5xl">{children}</h1>;
 }
 
 /** The first paragraph answers the page's query in plain words. */
@@ -143,7 +137,7 @@ export function FactList({ facts }: { facts: readonly Fact[] }): React.JSX.Eleme
 
 /** Long-form reading pages (about, privacy, terms): measure, rhythm and hairline-ruled section heads. */
 export const proseClass =
-  'max-w-[60ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:font-title [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_li]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
+  'max-w-[68ch] space-y-6 break-words leading-7 [&_a:hover]:decoration-primary [&_a]:text-foreground [&_a]:underline [&_a]:decoration-border [&_a]:underline-offset-4 [&_h2]:text-balance [&_h2]:border-t [&_h2]:border-border [&_h2]:pt-6 [&_h2]:text-2xl [&_h2]:font-semibold [&_li]:my-1 [&_li]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted-foreground [&_ul]:list-disc [&_ul]:pl-6';
 
 export interface TermRow {
   term: string;
@@ -172,17 +166,49 @@ export function SectionHeading({
   children: ReactNode;
 }): React.JSX.Element {
   return (
-    <h2 id={id} className="text-balance font-title text-2xl font-semibold sm:text-3xl">
+    <h2 id={id} className="text-balance text-2xl font-semibold sm:text-3xl">
       {children}
     </h2>
   );
 }
 
-export function TableFrame({ children }: { children: ReactNode }): React.JSX.Element {
-  return <div className="overflow-x-auto border-y-2 border-y-primary bg-card">{children}</div>;
+type TableName = { label: string; labelledBy?: never } | { labelledBy: string; label?: never };
+
+/**
+ * The ruled frame around a table. It is a named region in the tab order, so a
+ * table wider than the screen can be scrolled from the keyboard; phones hide
+ * secondary columns (wideCellClass) and stack their values in a cell that stays
+ * (phoneLineClass), so the common tables fit without scrolling and lose nothing.
+ */
+export function TableFrame({
+  children,
+  ...name
+}: TableName & { children: ReactNode }): React.JSX.Element {
+  return (
+    <div
+      role="region"
+      aria-label={name.label}
+      aria-labelledby={name.labelledBy}
+      tabIndex={0}
+      className={'focus-ring overflow-x-auto border-y-2 border-y-primary bg-card'}
+    >
+      {children}
+    </div>
+  );
 }
 
-export const tableClass = 'w-full min-w-[32rem] border-collapse text-left text-sm';
+export const tableClass = 'w-full border-collapse text-left text-sm';
+/**
+ * A column phones hide: shown from `sm`. Put it on the head cell and every body
+ * cell, and repeat each value in the same row with phoneLineClass.
+ */
+export const wideCellClass = 'hidden sm:table-cell';
+/**
+ * The value of a hidden column, stacked as a second line in a cell that stays.
+ * Shown below `sm` only, so at no width is a value shown twice.
+ */
+export const phoneLineClass =
+  'block whitespace-normal text-xs font-normal tabular-nums text-muted-foreground sm:hidden';
 /** Head cells sit on the tinted band, set in the condensed width. */
 export const thClass = 'bg-tint px-4 py-2.5 font-condensed text-sm font-semibold text-foreground';
 /** Body cells, including row headers (`<th scope="row">`). */
@@ -191,7 +217,7 @@ export const cellClass = 'border-t border-border px-4 py-2.5 tabular-nums';
 /** Dezenas in dense tables: plain figures in fixed slots, the yearbook way. */
 export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.JSX.Element {
   return (
-    <span className="flex flex-wrap gap-x-2 gap-y-1 font-condensed text-base font-semibold">
+    <span className="flex gap-x-1.5 font-condensed text-base font-semibold sm:gap-x-2">
       {numbers.map((number) => (
         <span key={number} className="w-6 text-center tabular-nums">
           {dezena(number)}
@@ -200,6 +226,9 @@ export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.
     </span>
   );
 }
+
+const drawOutcome = (draw: DrawRecord): string =>
+  draw.sena.winners === 0 ? 'Acumulou' : countLabel(draw.sena.winners, 'ganhador', 'ganhadores');
 
 /** One row per draw, newest first, each linking to its page. */
 export function DrawsTable({
@@ -211,7 +240,7 @@ export function DrawsTable({
 }): React.JSX.Element {
   return (
     <>
-      <TableFrame>
+      <TableFrame label={caption}>
         <table className={tableClass}>
           <caption className="sr-only">{caption}</caption>
           <thead>
@@ -219,13 +248,13 @@ export function DrawsTable({
               <th scope="col" className={thClass}>
                 Concurso
               </th>
-              <th scope="col" className={thClass}>
+              <th scope="col" className={cn(thClass, wideCellClass)}>
                 Data
               </th>
               <th scope="col" className={thClass}>
                 Dezenas
               </th>
-              <th scope="col" className={thClass}>
+              <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                 Sena
               </th>
             </tr>
@@ -237,35 +266,30 @@ export function DrawsTable({
                   <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
                     {draw.contestNumber}
                   </ArchiveLink>
+                  <span className={phoneLineClass}>{formatDate(draw.drawDate)}</span>
                 </th>
-                <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-                <td className={cellClass}>
+                <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
+                <td className={cn(cellClass, 'whitespace-nowrap')}>
                   <DezenaChips numbers={draw.numbers} />
+                  <span className={phoneLineClass}>{drawOutcome(draw)}</span>
                 </td>
-                <td className={cellClass}>
-                  {draw.sena.winners === 0
-                    ? 'Acumulou'
-                    : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
-                </td>
+                <td className={cn(cellClass, wideCellClass, 'text-right')}>{drawOutcome(draw)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </TableFrame>
-      <SourceLine />
     </>
   );
 }
 
-/** All sixty numbers as a linked cartogram, darker for numbers drawn more often. */
+/** All sixty numbers as a linked cartogram, stronger ink for numbers drawn more often. */
 export function FrequencyGrid({
   entries,
   label,
-  through,
 }: {
   entries: readonly { number: number; frequency: number }[];
   label: string;
-  through?: number | null | undefined;
 }): React.JSX.Element {
   const frequencies = entries.map((entry) => entry.frequency);
   const min = Math.min(...frequencies);
@@ -281,7 +305,7 @@ export function FrequencyGrid({
             <ArchiveLink
               href={`/numeros/${entry.number}`}
               className={cn(
-                'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                'flex flex-col items-center gap-0.5 py-3 transition-colors hover:bg-primary hover:text-primary-foreground focus-ring-inset',
                 frequencyShadeClass(entry.frequency, min, max)
               )}
             >
@@ -295,24 +319,21 @@ export function FrequencyGrid({
           </li>
         ))}
       </ul>
-      <figcaption className="space-y-1">
-        <p className="text-sm text-muted-foreground">
-          Quanto mais escura a casa, mais vezes a dezena foi sorteada.
-        </p>
-        <SourceLine through={through} />
+      <figcaption className="text-sm text-muted-foreground">
+        Quanto mais forte a cor da casa, mais vezes a dezena foi sorteada.
       </figcaption>
     </figure>
   );
 }
 
-/** The yearbook's source line under a table or figure. */
+/** The page's one source line, set in its header beside the freshness statement. */
 export function SourceLine({
   through,
 }: {
   through?: number | null | undefined;
 }): React.JSX.Element {
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-sm text-muted-foreground">
       Fonte: CAIXA Econômica Federal{through ? `, concursos 1 a ${through}` : ''}.
     </p>
   );
@@ -322,47 +343,93 @@ export interface RankedEntry {
   number: number;
   /** Competition rank: tied values share a position, like the number pages. */
   rank: number;
+  /** The measure itself (times drawn, draws absent), drawn as a bar when the list has one. */
+  value: number;
   detail: string;
 }
 
-/** Top `limit` entries by a score (higher first), with shared positions for ties. */
+/**
+ * Top `limit` entries by a score (higher first), with shared positions for ties.
+ * `value` defaults to the score; pass it when the score is not the measure
+ * (a least-drawn list ranks by the negated frequency).
+ */
 export function rankBy<T extends { number: number }>(
   limit: number,
   items: readonly T[],
   score: (item: T) => number,
-  detail: (item: T) => string
+  detail: (item: T) => string,
+  value: (item: T) => number = score
 ): RankedEntry[] {
   const sorted = [...items].sort((a, b) => score(b) - score(a) || a.number - b.number);
   return sorted.slice(0, limit).map((item) => ({
     number: item.number,
     rank: 1 + sorted.filter((other) => score(other) > score(item)).length,
+    value: value(item),
     detail: detail(item),
   }));
 }
 
-/** Ranked numbers as ruled rows: position, linked dezena, measure. */
+/**
+ * Ranked numbers as ruled rows: position, linked dezena, measure. With `barMax`
+ * each row also draws its value against that maximum; lists that share a
+ * `barMax` are comparable bar for bar. Fixed columns keep every bar on the same
+ * origin and length whatever the detail text.
+ */
 export function RankedList({
   labelId,
   entries,
+  barMax,
 }: {
   labelId: string;
   entries: readonly RankedEntry[];
+  barMax?: number;
 }): React.JSX.Element {
+  if (barMax === undefined) {
+    return (
+      <ol aria-labelledby={labelId} className={rankedListClass}>
+        {entries.map((entry) => (
+          <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
+            <RankedHead entry={entry} />
+            <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  // One grid for the whole list (rows are subgrids), so the detail column takes
+  // the width of the longest detail and every bar gets the same track.
   return (
-    <ol aria-labelledby={labelId} className="divide-y divide-border border-y-2 border-y-primary">
+    <ol
+      aria-labelledby={labelId}
+      className={cn(rankedListClass, 'grid grid-cols-[1.5rem_auto_minmax(2rem,1fr)_auto]')}
+    >
       {entries.map((entry) => (
-        <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
-          <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
-          <ArchiveLink
-            href={`/numeros/${entry.number}`}
-            className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
-          >
-            {dezena(entry.number)}
-          </ArchiveLink>
-          <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
+        <li
+          key={entry.number}
+          className="col-span-4 grid grid-cols-subgrid items-center gap-x-3 py-2.5 text-sm"
+        >
+          <RankedHead entry={entry} />
+          <Bar value={entry.value} max={barMax} />
+          <span className="text-right tabular-nums text-muted-foreground">{entry.detail}</span>
         </li>
       ))}
     </ol>
+  );
+}
+
+const rankedListClass = 'divide-y divide-border border-y-2 border-y-primary';
+
+function RankedHead({ entry }: { entry: RankedEntry }): React.JSX.Element {
+  return (
+    <>
+      <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
+      <ArchiveLink
+        href={`/numeros/${entry.number}`}
+        className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
+      >
+        {dezena(entry.number)}
+      </ArchiveLink>
+    </>
   );
 }
 
@@ -396,10 +463,8 @@ export function Pager({
   next: PagerLink | null;
   label: string;
 }): React.JSX.Element {
-  const linkClass = cn(
-    'flex min-h-11 flex-col rounded-sm py-3 transition-colors hover:text-primary',
-    focusRing
-  );
+  const linkClass =
+    'focus-ring flex min-h-11 flex-col rounded-sm py-3 transition-colors hover:text-primary';
   return (
     <nav aria-label={label} className="grid gap-3 border-t-2 border-primary sm:grid-cols-2">
       {previous ? (

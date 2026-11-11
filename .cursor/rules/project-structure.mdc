@@ -21,16 +21,20 @@ description: Project structure and where things live
   database/transport adapters. `cloudflare.config.ts` owns bindings; `MegaSenaData`
   owns the persisted daily alarm and bounded retries.
   On Bun, `next.config.js` forwards `/api/:path*` to `server.ts`. New endpoints
-  belong in `lib/api/handler.ts`.
+  belong in `lib/api/handler.ts` as one `apiRoutes` record (methods, audit event, handler).
 - `proxy.ts`: the Next.js 16 middleware (Next renamed `middleware` → `proxy`); mints
-  the per-request CSP nonce and sets page security headers.
-- `components/`: reusable UI using Tailwind semantic tokens and shadcn variants.
+  the per-request CSP nonce and sets page security headers (`buildCsp` +
+  `buildSecurityHeaders`); the API handler uses `buildApiSecurityHeaders`.
+- `components/`: reusable UI using Tailwind semantic tokens. `figures.tsx` renders the
+  SVG figures on the server (no `style` attribute, no client JavaScript, no chart
+  library); `components/ui/` holds only a hand-written `Button` (no shadcn/ui).
 - `lib/`:
   - `lib/analytics/`: statistics engines and `bet-generator.ts`
-  - `lib/api/`: CAIXA API client and response cache
+  - `lib/api/`: CAIXA API client, shared API handler and response cache
   - `lib/security/`: CSP, HTTP guards, IP pseudonymization
   - `lib/db.ts`: `bun:sqlite` layer; `lib/constants.ts`: shared config (incl. `BASE_URL`)
-- `db/`: SQLite database plus `db/migrations/*.sql`.
+- `db/`: SQLite database plus `db/migrations/*.sql`; each migration also enters the
+  Worker list in `cloudflare/data-object.ts` (`tests/cloudflare/migration-list.test.ts`).
 - `scripts/`: Bun CLIs such as `scripts/pull-draws.ts` for ingest/seeding.
 - `tests/`: Vitest (`tests/lib`, `tests/components`, `tests/scripts`) and Playwright
   (`tests/app`).

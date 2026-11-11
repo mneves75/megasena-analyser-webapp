@@ -16,7 +16,7 @@ const PRIVACY_CHANNEL = pt.privacyRights.channelValue;
 
 export default function PrivacyRightsPage(): React.JSX.Element {
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div>
       <PageJsonLd
         path="/privacy/direitos"
         name={pt.meta.privacyRights.title}

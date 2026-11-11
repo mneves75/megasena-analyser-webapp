@@ -377,7 +377,6 @@ erDiagram
           <tr><td>StreakAnalysisEngine</td><td><code>streaks</code></td><td>quentes/frios</td></tr>
           <tr><td>PrizeCorrelationEngine</td><td><code>prize</code></td><td>prêmio médio por número</td></tr>
           <tr><td>TimeSeriesEngine</td><td><span class="pill">via /api/trends</span></td><td>frequência ao longo do tempo</td></tr>
-          <tr><td>ComplexityScoreEngine</td><td><span class="pill tag-danger">não utilizada</span></td><td>complexidade de uma aposta (definida, sem uso no código)</td></tr>
         </table>
         <p class="ref">Capítulo completo: <code>05-core-subsystems.md</code>.</p>
       </section>
@@ -389,17 +388,14 @@ erDiagram
         <p class="lead">O que é, por que está aqui e onde aparece.</p>
         <table class="data">
           <tr><th>Tecnologia</th><th>Onde</th><th>Status</th></tr>
-          <tr><td>Bun ≥1.3.14</td><td><code>server.ts</code>, <code>bun:sqlite</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
-          <tr><td>Next.js 16</td><td><code>app/</code>, <code>proxy.ts</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
-          <tr><td>React 19</td><td>RSC + <code>'use client'</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
-          <tr><td>Zod</td><td><code>server.ts</code> (schemas)</td><td><span class="pill tag-ok">essencial</span></td></tr>
-          <tr><td>Tailwind v4</td><td><code>globals.css</code> tokens</td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Bun ≥1.4.2</td><td><code>server.ts</code>, <code>bun:sqlite</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Next.js 16.4.6</td><td><code>app/</code>, <code>proxy.ts</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>React 19.3.1</td><td>RSC + <code>'use client'</code></td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Zod 4</td><td><code>lib/api/handler.ts</code> (schemas)</td><td><span class="pill tag-ok">essencial</span></td></tr>
+          <tr><td>Tailwind 4.3.5</td><td><code>globals.css</code> tokens</td><td><span class="pill tag-ok">essencial</span></td></tr>
           <tr><td>Recharts</td><td>—</td><td><span class="pill tag-danger">removido na 1.19.0</span></td></tr>
           <tr><td>Intl (não date-fns)</td><td><code>lib/utils.ts</code></td><td><span class="pill tag-ok">usado</span></td></tr>
-          <tr><td>framer-motion</td><td>—</td><td><span class="pill tag-danger">não importado</span></td></tr>
-          <tr><td>date-fns</td><td>—</td><td><span class="pill tag-danger">não importado</span></td></tr>
         </table>
-        <div class="callout danger">Discrepância verificada: <code>CLAUDE.md</code> cita "Framer Motion para micro-interações", mas nenhum arquivo importa <code>framer-motion</code> nem <code>date-fns</code>. Trate como dependências mortas.</div>
         <p class="ref">Capítulo completo: <code>06-tech-stack-explained.md</code>.</p>
       </section>
 
@@ -427,7 +423,7 @@ bun run security:csp:edge    # a borda não substituiu a CSP?</pre>
         <p class="eyebrow">Capítulo 08</p>
         <h2 tabindex="-1">Exercícios</h2>
         <p class="lead">Pratique do entendimento à mudança. Gabaritos escondidos — tente antes de abrir.</p>
-        <details class="q"><summary>Fácil · Liste as 5 rotas <code>/api/*</code></summary><p class="gab">/api/health, /api/dashboard, /api/statistics, /api/trends, /api/generate-bets (ver <code>apiHandlers</code> em <code>server.ts</code>).</p></details>
+        <details class="q"><summary>Fácil · Liste as 8 rotas <code>/api/*</code></summary><p class="gab">/api/health, /api/dashboard, /api/statistics, /api/trends, /api/draws, /api/numbers, /api/sitemap, /api/generate-bets (ver <code>apiRoutes</code> em <code>lib/api/handler.ts</code>).</p></details>
         <details class="q"><summary>Médio · Por que as frequências podem ficar erradas após importar?</summary><p class="gab">Faltou rodar <code>StatisticsEngine.updateNumberFrequencies()</code>; <code>number_frequency</code> é cache derivado.</p></details>
         <details class="q"><summary>Médio · Onde a produção recusa iniciar sem segredo?</summary><p class="gab"><code>server.ts</code>: bloco que faz <code>process.exit(1)</code> sem <code>IP_HASH_SECRET</code>, antes de <code>runMigrations()</code> (fail-closed).</p></details>
         <details class="q"><summary>Difícil · Prove a defesa em profundidade da unicidade</summary><p class="gab">Escreva um teste que insira números repetidos e espere <code>ABORT</code> (trigger da migração <code>007</code>); use <code>VITEST_FORCE_FILE_DB=1</code>.</p></details>
@@ -441,13 +437,10 @@ bun run security:csp:edge    # a borda não substituiu a CSP?</pre>
         <p class="lead">Fato separado de palpite. O que verificar antes de confiar.</p>
         <table class="data">
           <tr><th>Discrepância</th><th>Realidade no código</th></tr>
-          <tr><td>"Framer Motion anima a UI"</td><td>nenhum import de <code>framer-motion</code></td></tr>
-          <tr><td><code>date-fns</code> listado</td><td>datas via <code>Intl</code> em <code>lib/utils.ts</code></td></tr>
           <tr><td><code>.cursor</code>: Supabase/tokens CAIXA</td><td>não existem no código</td></tr>
           <tr><td>migrações 004/005: "deleted_at"</td><td>removido na 006 (hard delete)</td></tr>
-          <tr><td>auditoria 400 dias (env)</td><td>CLI usa default 365</td></tr>
         </table>
-        <div class="callout warn">Dívida: tabela <code>user_bets</code> morta; engines "chatty" (decade/prime/time-series); <code>InMemoryDatabase</code> só conhece SQLs atuais; assimetria de <code>.unref()</code> entre log e auditoria.</div>
+        <div class="callout warn">Dívida: tabela <code>user_bets</code> morta; engines "chatty" (decade/prime/time-series); o SQLite de teste aceita SELECTs compostos que o Durable Object recusa; assimetria de <code>.unref()</code> entre log e auditoria.</div>
         <p class="ref">Capítulo completo: <code>09-open-questions-and-risks.md</code>.</p>
       </section>
 
@@ -468,7 +461,7 @@ bun run security:csp:edge    # a borda não substituiu a CSP?</pre>
         <ol>
           <li><span class="pill tag-danger">alta</span> Sanitizar metadados também em <code>buildLogRow</code> (<code>log-store.ts</code>).</li>
           <li><span class="pill tag-danger">alta</span> Decidir/implementar criptografia em repouso (sem SQLCipher hoje).</li>
-          <li><span class="pill tag-danger">alta</span> Unificar prazo de retenção de auditoria (400/365/180).</li>
+          <li><span class="pill tag-danger">alta</span> Decidir prazo de retenção de auditoria (400/180).</li>
           <li><span class="pill tag-warn">média</span> Resolver colunas <code>session_id/user_id</code> não usadas.</li>
           <li><span class="pill tag-warn">média</span> Procedimento formal de verificação de identidade do titular.</li>
           <li><span class="pill tag-warn">média</span> Rotação/cifra de backups verificável.</li>

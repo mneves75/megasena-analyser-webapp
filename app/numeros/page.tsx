@@ -3,7 +3,8 @@ import type { NumberSummary } from '@/lib/api/archive-contract';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatNumber } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { Bar } from '@/components/figures';
 import { loadNumbersIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
 import {
@@ -17,12 +18,13 @@ import {
   RankedList,
   rankBy,
   SectionHeading,
-  SourceLine,
   TableFrame,
   cellClass,
   inlineLinkClass,
   tableClass,
   thClass,
+  phoneLineClass,
+  wideCellClass,
 } from '@/app/_components/archive-ui';
 
 const PATH = '/numeros';
@@ -68,7 +70,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
   const minFrequency = Math.min(...frequencies);
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={PATH}
         name="Números da Mega-Sena de 1 a 60"
@@ -93,7 +95,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
         <SectionHeading id="rankings">Mais sorteados e mais atrasados</SectionHeading>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <h3 id="mais-sorteados" className="font-medium">
+            <h3 id="mais-sorteados" className="text-lg font-semibold">
               Números mais sorteados
             </h3>
             <RankedList
@@ -107,7 +109,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             />
           </div>
           <div className="space-y-2">
-            <h3 id="mais-atrasados" className="font-medium">
+            <h3 id="mais-atrasados" className="text-lg font-semibold">
               Números mais atrasados
             </h3>
             <RankedList
@@ -125,7 +127,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             />
           </div>
         </div>
-        <p className="max-w-[70ch] text-sm text-muted-foreground">
+        <p className="max-w-[68ch] text-sm text-muted-foreground">
           O atraso não muda a chance do próximo sorteio: em todo concurso, cada dezena tem 10% de
           chance de sair. As listas descrevem o histórico; não são palpites.
         </p>
@@ -138,7 +140,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
 
       <section aria-labelledby="tabela" className="space-y-4">
         <SectionHeading id="tabela">Frequência e atraso de cada número</SectionHeading>
-        <TableFrame>
+        <TableFrame label="Frequência e atraso dos números de 1 a 60">
           <table className={tableClass}>
             <caption className="sr-only">Frequência e atraso dos números de 1 a 60</caption>
             <thead>
@@ -146,19 +148,19 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                 <th scope="col" className={thClass}>
                   Número
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, 'w-2/5 text-right')}>
                   Vezes
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   % dos concursos
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   Ranking
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, 'text-right')}>
                   Atraso
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   Última vez
                 </th>
               </tr>
@@ -171,15 +173,35 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                       {dezena(summary.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={cellClass}>{formatNumber(summary.frequency)}</td>
                   <td className={cellClass}>
+                    <span className="grid grid-cols-[minmax(2rem,1fr)_4ch] items-center gap-3">
+                      <Bar value={summary.frequency} max={maxFrequency} />
+                      <span className="text-right">{formatNumber(summary.frequency)}</span>
+                    </span>
+                    <span className={cn(phoneLineClass, 'mt-0.5 text-right')}>
+                      {formatPercentPtBr(summary.frequency, archive.totalDraws)} · {summary.rank}º
+                      lugar
+                    </span>
+                  </td>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {formatPercentPtBr(summary.frequency, archive.totalDraws)}
                   </td>
-                  <td className={cellClass}>{summary.rank}º</td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>{summary.rank}º</td>
+                  <td className={cn(cellClass, 'text-right')}>
                     {summary.lastAppearance ? formatNumber(summary.lastAppearance.drawsSince) : '—'}
+                    {summary.lastAppearance ? (
+                      <span className={phoneLineClass}>
+                        último no{' '}
+                        <ArchiveLink
+                          href={`/concurso/${summary.lastAppearance.contestNumber}`}
+                          className={inlineLinkClass}
+                        >
+                          {summary.lastAppearance.contestNumber}
+                        </ArchiveLink>
+                      </span>
+                    ) : null}
                   </td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {summary.lastAppearance ? (
                       <ArchiveLink
                         href={`/concurso/${summary.lastAppearance.contestNumber}`}
@@ -196,7 +218,6 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
             </tbody>
           </table>
         </TableFrame>
-        <SourceLine />
       </section>
 
       <RandomnessNote>

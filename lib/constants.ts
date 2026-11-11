@@ -66,9 +66,7 @@ export const BET_GENERATION_MODE = {
 export type BetGenerationMode = (typeof BET_GENERATION_MODE)[keyof typeof BET_GENERATION_MODE];
 
 // Budget Presets (R$)
-export const BUDGET_PRESETS = [
-  10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
-] as const;
+export const BUDGET_PRESETS = [10, 20, 50, 100, 200, 500] as const;
 
 // Bet Generation Algorithm Constants
 export const BET_ALLOCATION = {
@@ -89,7 +87,7 @@ export const BET_GENERATION_LIMITS = {
 
 // Statistics Display Constants
 export const STATISTICS_DISPLAY = {
-  TOP_NUMBERS_COUNT: 20, // Top N hot/cold numbers to display
+  TOP_NUMBERS_COUNT: 10, // Top N for the statistics page's ranked lists
   DASHBOARD_TOP_COUNT: 10, // Top N for dashboard overview
   RECENT_DRAWS_DEFAULT: 50, // Default number of recent draws to fetch
 } as const;

@@ -1,8 +1,8 @@
 # 06 - Tecnologias Explicadas (Onboarding Completo)
 
-## Cloudflare em staging
+## Cloudflare em produção e staging
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 
 > Trilha de onboarding do **sistema** (código como fonte primária). Para a trilha de
@@ -43,9 +43,9 @@ Pense em três camadas:
   Node falha de propósito com mensagem explícita.
 - **Onde:**
   - `package.json` → `"engines": { "bun": ">=1.4.2" }` e `"runtime": "bun"`.
-  - `server.ts:7` → `import { serve } from 'bun'` (servidor HTTP da API).
-  - `lib/db.ts:665` → `const { Database } = require('bun:sqlite')`.
-  - `lib/db.ts:679-686` → erro deliberado se `bun:sqlite` não existir ("must be run
+  - `server.ts` → `import { serve } from 'bun'` (servidor HTTP da API).
+  - `lib/db.ts` → `const { Database } = require('bun:sqlite')`.
+  - `lib/db.ts` → erro deliberado se `bun:sqlite` não existir ("must be run
     with Bun, not Node.js").
   - `bunfig.toml` → `run.noOrphans` (mencionado em `AGENTS.md`) evita processos Bun
     órfãos quando o pai morre.
@@ -53,7 +53,7 @@ Pense em três camadas:
   Use `pnpm install`, `bun run dev` e `bun x vitest`.
 - Docs: https://bun.sh/docs
 
-### Next.js (`16.3.6`) — framework web (App Router)
+### Next.js (`16.4.6`) — framework web (App Router)
 
 - **O que é:** framework React full-stack. Aqui usado em modo **App Router** com
   `output: standalone`.
@@ -75,12 +75,12 @@ Pense em três camadas:
   o servidor standalone de produção, as Server Actions e a API rodam em Bun.
 - Docs: https://nextjs.org/docs
 
-### React (`19.2.8`) — biblioteca de UI
+### React (`19.3.1`) — biblioteca de UI
 
 - **O que é:** biblioteca de componentes. Versão 19 com Server Components.
 - **Por que aparece:** define a fronteira servidor/cliente. Tudo é Server Component a
   menos que precise de interatividade.
-- **Onde:** `'use client'` aparece em `components/ui/*`,
+- **Onde:** `'use client'` aparece em `components/ui/button.tsx`,
   `components/bet-generator/*`, `components/site-header.tsx`, `components/theme-provider.tsx`,
   `components/storage-disclosure.tsx`, `app/dashboard/generator/generator-form.tsx`,
   e nos `error.tsx` (error boundaries exigem cliente).
@@ -94,29 +94,28 @@ Pense em três camadas:
 - **Onde:** `tsconfig.json` (`"strict": true`); tipos de retorno explícitos em funções
   exportadas (ex.: `lib/analytics/statistics.ts` exporta interfaces `DrawStatistics`,
   `NumberFrequency`, `Pattern`).
-- **Regra do projeto:** proibido `any`; use `unknown` + type guards (ver
-  `toNumberValue` em `lib/db.ts:934`).
+- **Regra do projeto:** proibido `any`; use `unknown` + type guards.
 
 ### `bun:sqlite` — banco de dados embutido
 
 - **O que é:** SQLite nativo do Bun, sem compilação.
-- **Onde:** `lib/db.ts:661-689` (`initializeDatabase`), incluindo os PRAGMAs:
+- **Onde:** `lib/db.ts` (`initializeDatabase`), incluindo os PRAGMAs:
   `journal_mode = WAL`, `synchronous = NORMAL`, `foreign_keys = ON`,
   `busy_timeout = 5000`, `cache_size = -8000`, `wal_autocheckpoint = 1000`,
   `trusted_schema = OFF`, `application_id = 0xA17E6D42` representado como inteiro assinado de 32 bits.
-- **Detalhe de teste:** em Vitest, `lib/db.ts` substitui o SQLite por uma
-  `InMemoryDatabase` (linhas 132-549) que normaliza SQL em memória. Força banco real
-  com `VITEST_FORCE_FILE_DB=1`.
+- **Detalhe de teste:** em Vitest, `lib/db.ts` abre um `node:sqlite` `:memory:` com as
+  migrações reais. Força o banco Bun em arquivo com `VITEST_FORCE_FILE_DB=1`.
 
-### Zod (`^3.24.1`) — validação de entrada
+### Zod (`^4.6.7`) — validação de entrada
 
-- **Onde:** `server.ts:65-77` define `generateBetsSchema` (orçamento 6..1.000.000,
-  enums de estratégia/modo) e `trendsQuerySchema` (regex de números, período).
+- **Onde:** `lib/api/handler.ts` define `generateBetsSchema` (orçamento entre
+  `BET_GENERATION_LIMITS.MIN_BUDGET` e `MAX_BUDGET`, enums de estratégia/modo) e
+  `lib/security/trends-input.ts` define `trendsQuerySchema` (regex de números, período).
   `safeParse` rejeita entradas inválidas com `400`.
 - **Por que importa:** é a fronteira de confiança da API. Nenhum corpo/query chega à
   lógica sem passar por Zod.
 
-### TailwindCSS v4 + tokens semânticos
+### TailwindCSS 4.3.5 + tokens semânticos
 
 - **O que é:** CSS utilitário. Versão 4 via `@tailwindcss/postcss`.
 - **Onde:** `app/globals.css` (`@import "tailwindcss"`, `@config "../tailwind.config.cjs"`),
@@ -125,25 +124,27 @@ Pense em três camadas:
 - **Regra do projeto:** nunca cores fixas (`text-white`); só tokens (`text-foreground`,
   `bg-background`).
 
-### shadcn/ui (padrão), `class-variance-authority`, `clsx`, `tailwind-merge`
+### `class-variance-authority`, `clsx`, `tailwind-merge` (`^3.7.0`)
 
-- **O que é:** componentes copiados para o repo (não um pacote), construídos com `cva`
-  para variantes.
-- **Onde:** `components/ui/*` (button, input, label). O helper `cn`
+- **O que é:** sem shadcn/ui nem biblioteca de componentes. O único primitivo é um
+  `Button` escrito à mão, com variantes via `cva`.
+- **Onde:** `components/ui/button.tsx`. O helper `cn`
   (`lib/utils.ts`) combina `clsx` + `tailwind-merge` para resolver conflitos de classe.
 
 ### Sem biblioteca de gráficos
 
 - **Onde:** desde a 1.19.0 as estatísticas são tabelas e listas ranqueadas
   (`app/_components/archive-ui.tsx`) e o volante de 60 (`components/number-field.tsx`);
-  `recharts` saiu das dependências. Tabelas são acessíveis por natureza, sem fallback
-  `sr-only`.
+  `recharts` saiu das dependências. Na 1.20.0 entram figuras SVG renderizadas no
+  servidor (`Bar` e `Columns` em `components/figures.tsx`), sem atributo `style` e sem
+  JavaScript no cliente; os números de cada figura ficam no texto ao lado.
 
-### lucide-react (`^0.462.0`) — ícones
+### lucide-react (`^1.70.0`) — ícones
 
 - **Onde:** só em controles: o menu e o tema (`components/site-header.tsx`,
   `components/theme-toggle.tsx`) e as setas de abrir/fechar (`app/(home)/page.tsx`,
-  `app/dashboard/generator/page.tsx`). Títulos não levam ícones.
+  `app/dashboard/generator/page.tsx`, `app/dashboard/statistics/page.tsx`,
+  `components/storage-disclosure.tsx`). Títulos não levam ícones.
 
 ### Intl API (nativa) — formatação pt-BR (NÃO `date-fns`)
 
@@ -162,30 +163,32 @@ Pense em três camadas:
 - **Onde:** `lib/log-sink.server.ts`. Garante (em build) que o módulo nunca seja
   importado no bundle do cliente.
 
-### Vitest (`4.1.11`) + coverage v8 + Testing Library + jsdom — testes unitários
+### Vitest (`5.1.0`) + coverage v8 + Testing Library + jsdom (`^31.0.0`) — testes unitários
 
 - **Onde:** `vitest.config.ts`, `tests/**`, `tests/setup.ts` (cleanup + `stopLogWriter`).
-  Os limites ficam em `vitest.config.ts` e sobem com a cobertura medida, rumo
-  a 80%; nunca descem. `bun run test:sqlite`
+  A cobertura conta só `components/**` e `lib/**`. Os limites ficam em
+  `vitest.config.ts` e sobem com a cobertura medida, rumo a 80%; nunca descem. `bun run test:sqlite`
   executa os 12 casos de atraso com Bun/SQLite real, após preparar uma fixture
   descartável com a proteção contra caminhos externos e links simbólicos.
 
-### Playwright (`^1.57.0`) — testes E2E
+### Playwright (`^1.65.0`) — testes E2E
 
 - **Onde:** `playwright.config.ts`, `tests/app/*.spec.ts` (dashboard, statistics,
   generator, layout, security).
   Nesta revisão, o responsável exige Argent: use o fluxo e as verificações em
   desktop/celular documentados no README; não execute Playwright.
 
-### ESLint 9 + `eslint-config-next` + Prettier — qualidade de código
+### ESLint 9 (`9.39.5`) + `eslint-config-next` + Prettier — qualidade de código
 
 - **Onde:** `eslint.config.mjs`, `.prettierrc`. `bun run lint` usa `--max-warnings=0`
   (qualquer warning falha).
 
-### Vite 8 + `@vitejs/plugin-react` — infraestrutura de teste
+### Vite (`8.3.7`) + vinext (`1.4.4`) + `@vitejs/plugin-react` — Worker e testes
 
-- **Por que aparece:** Vitest usa o Vite por baixo; `@vitejs/plugin-react` compila JSX
-  nos testes de componente. Não serve a aplicação em produção (quem serve é Next/Bun).
+- **Por que aparece:** o vinext usa o Vite para gerar o Worker que serve produção e
+  staging (`vite.config.ts`); o Vitest também roda sobre o Vite, e
+  `@vitejs/plugin-react` compila JSX nos testes de componente. O caminho Next/Bun não
+  usa o Vite.
 
 ---
 
@@ -200,12 +203,12 @@ grep -n "\"runtime\"\|engines" package.json
 grep -rln "'use client'" app components | sort
 
 # Validação Zod
-grep -n "z.object\|safeParse" server.ts
+grep -n "z.object\|safeParse" lib/api/handler.ts lib/security/trends-input.ts
 
 # Formatação pt-BR via Intl (não date-fns)
 grep -n "Intl\." lib/utils.ts
 
-# Dependências declaradas porém NÃO importadas
+# Pacotes que não são dependências
 grep -rl "framer-motion" app components lib   # esperado: vazio
 grep -rl "date-fns" app components lib        # esperado: vazio
 ```
@@ -229,16 +232,16 @@ grep -rl "date-fns" app components lib        # esperado: vazio
 2. **(Médio / rastreamento)** Partindo de `app/dashboard/statistics/page.tsx`, siga a
    cadeia até o banco: qual função busca os dados? Para qual host/porta? Qual processo
    responde? **Gabarito:** `fetchApi('/api/statistics?...')` → `lib/api/api-fetch.ts`
-   (`API_HOST`/`API_PORT`, default `localhost:3201`) → `server.ts` handler
-   `'/api/statistics'` → `StatisticsEngine` → `bun:sqlite`.
+   (`API_HOST`/`API_PORT`, default `localhost:3201`) → `server.ts` → `apiRoutes`
+   `'/api/statistics'` em `lib/api/handler.ts` → `StatisticsEngine` → `bun:sqlite`.
 3. **(Médio / mudança)** Adicione um novo token de cor semântico (`--info`) em
    `app/globals.css` (`:root` e `.dark`) e exponha-o em `tailwind.config.cjs`. Use-o em
    um componente sem nenhuma cor fixa. **Aprendizado:** o fluxo "design tokens primeiro,
    componente depois".
-4. **(Difícil / investigação)** O projeto declara `vite` e `@vitejs/plugin-react` como
-   devDependencies, mas serve a aplicação com Next/Bun. Explique, com base em
-   `vitest.config.ts`, por que o Vite ainda é necessário. **Gabarito:** Vitest roda
-   sobre o Vite; o plugin React compila JSX nos testes de componente.
+4. **(Difícil / investigação)** O projeto tem dois caminhos de build: Next/Bun e
+   vinext/Vite. Explique, com base em `vite.config.ts` e `vitest.config.ts`, onde o
+   Vite entra em cada um. **Gabarito:** o vinext usa o Vite para gerar o Worker de
+   produção e staging; o Vitest roda sobre o Vite; o caminho Next/Bun não o usa.
 
 ---
 
@@ -248,6 +251,6 @@ grep -rl "date-fns" app components lib        # esperado: vazio
   `lib/db.ts`; Zod em `server.ts`; tokens em `globals.css`/`tailwind.config.cjs`;
   `Intl` em `lib/utils.ts`; ausência de imports de `framer-motion`/`date-fns` (grep);
   `server-only` em `log-sink.server.ts`; ausência de `recharts` em `package.json`.
-- **Inferido do código:** papel do Vite como infraestrutura do Vitest (deduzido de
-  `vitest.config.ts` + ausência de uso em runtime).
+- **Inferido do código:** papel do Vite no Worker e no Vitest (deduzido de
+  `vite.config.ts` e `vitest.config.ts`).
 - **Conhecimento externo:** descrições gerais de cada biblioteca e links oficiais.

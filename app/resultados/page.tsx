@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import { NumberField } from '@/components/number-field';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadArchiveIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, joinPtBr, senaOutcome } from '@/app/_lib/format';
 import {
@@ -16,13 +15,13 @@ import {
   PageTitle,
   RandomnessNote,
   SectionHeading,
-  SourceLine,
   TableFrame,
   cellClass,
   inlineLinkClass,
   tableClass,
   thClass,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const PATH = '/resultados';
 const DESCRIPTION =
@@ -46,7 +45,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
   const newestYear = years[0];
 
   return (
-    <div className="container mx-auto max-w-5xl space-y-12 px-4 py-8">
+    <div className="space-y-16 lg:space-y-20">
       <PageJsonLd
         path={PATH}
         name="Resultados da Mega-Sena"
@@ -69,46 +68,41 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
         }
       />
 
-      <header className="space-y-5">
-        <Breadcrumbs items={BREADCRUMBS} />
-        <PageTitle>Resultados da Mega-Sena</PageTitle>
-        {latest ? (
-          <AnswerSummary>
-            O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado em{' '}
-            {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}.{' '}
-            {senaOutcome(latest)} O arquivo reúne{' '}
-            {countLabel(archive.totalDraws, 'concurso', 'concursos')}
-            {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
-          </AnswerSummary>
-        ) : (
-          <AnswerSummary>O arquivo de resultados está temporariamente vazio.</AnswerSummary>
-        )}
-        <ArchiveFreshness archive={archive} />
-      </header>
+      <div className="space-y-8">
+        <header className="space-y-5">
+          <Breadcrumbs items={BREADCRUMBS} />
+          <PageTitle>Resultados da Mega-Sena</PageTitle>
+          {latest ? (
+            <AnswerSummary>
+              O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado
+              em {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}.{' '}
+              {senaOutcome(latest)} O arquivo reúne{' '}
+              {countLabel(archive.totalDraws, 'concurso', 'concursos')}
+              {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
+            </AnswerSummary>
+          ) : (
+            <AnswerSummary>O arquivo de resultados está temporariamente vazio.</AnswerSummary>
+          )}
+          <ArchiveFreshness archive={archive} />
+        </header>
 
-      {latest ? (
-        <section
-          aria-labelledby="ultimo"
-          className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
-        >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                {formatDate(latest.drawDate)}
-              </span>
-            </div>
-            <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
-              Ver prêmios e análise do concurso {latest.contestNumber}
-            </ArchiveLink>
-          </div>
-          <NumberField
-            struck={latest.numbers}
-            linked
-            label={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
-          />
-        </section>
-      ) : null}
+        {latest ? (
+          <section aria-labelledby="ultimo">
+            <LatestDrawFigure
+              heading={<SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>}
+              numbers={latest.numbers}
+              fieldLabel={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
+            >
+              <p className="tabular-nums text-muted-foreground">
+                Sorteio de {formatDate(latest.drawDate)}
+              </p>
+              <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
+                Ver prêmios e análise do concurso {latest.contestNumber}
+              </ArchiveLink>
+            </LatestDrawFigure>
+          </section>
+        ) : null}
+      </div>
 
       {latest && latest.nextEstimatedPrize !== null ? (
         <section aria-labelledby="proximo" className="space-y-4 border-t-2 border-primary pt-5">
@@ -151,7 +145,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       {years.length > 0 ? (
         <section aria-labelledby="anos" className="space-y-4">
           <SectionHeading id="anos">Resultados por ano</SectionHeading>
-          <TableFrame>
+          <TableFrame label="Resultados da Mega-Sena por ano">
             <table className={tableClass}>
               <caption className="sr-only">Resultados da Mega-Sena por ano</caption>
               <thead>
@@ -159,13 +153,13 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
                   <th scope="col" className={thClass}>
                     Ano
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Concursos
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Primeiro
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Último
                   </th>
                 </tr>
@@ -178,15 +172,16 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
                         {summary.year}
                       </ArchiveLink>
                     </th>
-                    <td className={cellClass}>{formatNumber(summary.drawCount)}</td>
-                    <td className={cellClass}>{summary.firstContest}</td>
-                    <td className={cellClass}>{summary.lastContest}</td>
+                    <td className={cn(cellClass, 'text-right')}>
+                      {formatNumber(summary.drawCount)}
+                    </td>
+                    <td className={cn(cellClass, 'text-right')}>{summary.firstContest}</td>
+                    <td className={cn(cellClass, 'text-right')}>{summary.lastContest}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </TableFrame>
-          <SourceLine />
         </section>
       ) : null}
 

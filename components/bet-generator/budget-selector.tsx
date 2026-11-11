@@ -1,8 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { BET_GENERATION_LIMITS, BUDGET_PRESETS } from '@/lib/constants';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -37,8 +35,10 @@ export function BudgetSelector({
   const [inputValue, setInputValue] = useState(value.toString().replace('.', ','));
   const presetsLabelId = useId();
   const numericInputValue = parseBudget(inputValue);
-  const isBelowMin = inputValue.length > 0 && numericInputValue < min;
-  const isAboveMax = inputValue.length > 0 && numericInputValue > max;
+  // An empty or unparseable field reads as 0, so it shows the minimum message:
+  // the generate button is disabled for the same reason, and the user sees it.
+  const isBelowMin = numericInputValue < min;
+  const isAboveMax = numericInputValue > max;
   const hasBudgetError = isBelowMin || isAboveMax;
   const errorId = 'budget-input-error';
 
@@ -58,12 +58,14 @@ export function BudgetSelector({
       <h3 className="text-lg font-semibold leading-tight">{pt.betGenerator.budget.title}</h3>
       {/* Custom Input */}
       <div className="space-y-2">
-        <Label htmlFor="budget-input">{pt.betGenerator.budget.customValue}</Label>
+        <label htmlFor="budget-input" className="block text-sm font-medium">
+          {pt.betGenerator.budget.customValue}
+        </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             {pt.betGenerator.budget.currencyPrefix}
           </span>
-          <Input
+          <input
             id="budget-input"
             type="text"
             value={inputValue}
@@ -71,7 +73,7 @@ export function BudgetSelector({
             inputMode="decimal"
             aria-invalid={hasBudgetError ? 'true' : undefined}
             aria-errormessage={hasBudgetError ? errorId : undefined}
-            className="pl-10 text-lg font-semibold tabular-nums"
+            className="focus-ring flex h-11 w-full rounded-sm border border-input bg-card py-2 pl-10 pr-3 text-lg font-semibold tabular-nums transition-smooth placeholder:text-muted-foreground"
             placeholder={pt.betGenerator.budget.placeholder}
           />
         </div>
@@ -96,17 +98,17 @@ export function BudgetSelector({
         <p id={presetsLabelId} className="text-sm font-medium leading-none">
           {pt.betGenerator.budget.quickValues}
         </p>
-        <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-3 gap-2">
-          {BUDGET_PRESETS.slice(0, 9).map((preset) => (
+        <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-6 gap-1.5">
+          {BUDGET_PRESETS.map((preset) => (
             <Button
               key={preset}
               variant={value === preset ? 'default' : 'outline'}
               size="sm"
               onClick={() => handlePresetClick(preset)}
               aria-pressed={value === preset}
-              className="tabular-nums transition-smooth"
+              className="px-0 font-condensed tabular-nums"
             >
-              {formatCurrency(preset)}
+              R$ {preset}
             </Button>
           ))}
         </div>

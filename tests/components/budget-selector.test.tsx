@@ -17,10 +17,42 @@ describe('BudgetSelector', () => {
     expect(onChange).toHaveBeenLastCalledWith(expected);
   });
 
+  it('shows no error for the initial budget', () => {
+    render(<BudgetSelector value={50} onChange={vi.fn()} />);
+    const input = screen.getByLabelText(/Valor Personalizado/i);
+    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(input).not.toHaveAttribute('aria-errormessage');
+    expect(screen.queryByText(/Valor mínimo/)).toBeNull();
+  });
+
+  it.each(['', '   '])(
+    'explains an empty budget (%j) with the minimum message, wired like other invalid values',
+    (input) => {
+      render(<BudgetSelector value={50} onChange={vi.fn()} />);
+      const field = screen.getByLabelText(/Valor Personalizado/i);
+      fireEvent.change(field, { target: { value: input } });
+      expect(field).toHaveAttribute('aria-invalid', 'true');
+      const message = document.getElementById(field.getAttribute('aria-errormessage') ?? '');
+      expect(message?.textContent?.replace(/\s+/g, ' ')).toBe('Valor mínimo: R$ 6,00');
+      expect(message?.className).toContain('text-destructive');
+    }
+  );
+
   it('names the preset buttons as a group instead of an orphan label', () => {
     const { container } = render(<BudgetSelector value={50} onChange={vi.fn()} />);
     const group = screen.getByRole('group', { name: 'Valores Rápidos' });
-    expect(group.querySelectorAll('button').length).toBe(9);
-    expect([...container.querySelectorAll('label')].every(label => label.htmlFor || label.control)).toBe(true);
+    expect([...group.querySelectorAll('button')].map((button) => button.textContent)).toEqual([
+      'R$ 10',
+      'R$ 20',
+      'R$ 50',
+      'R$ 100',
+      'R$ 200',
+      'R$ 500',
+    ]);
+    // One compact row of six.
+    expect(group.className).toContain('grid-cols-6');
+    expect(
+      [...container.querySelectorAll('label')].every((label) => label.htmlFor || label.control)
+    ).toBe(true);
   });
 });

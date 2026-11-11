@@ -26,10 +26,6 @@ export function getDatabase(): DatabaseLike {
   return database;
 }
 
-export async function getDatabaseAsync(): Promise<DatabaseLike> {
-  return getDatabase();
-}
-
 function sqlBinding(value: unknown): string | number | null | ArrayBuffer {
   if (value === null || typeof value === 'string' || typeof value === 'number' || value instanceof ArrayBuffer) {
     return value;

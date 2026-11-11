@@ -10,7 +10,6 @@ import {
 } from '@/lib/constants';
 import { generateBets } from './actions';
 import { pt } from '@/lib/i18n';
-import { NumberField } from '@/components/number-field';
 
 export function GeneratorForm() {
   const [budget, setBudget] = useState<number>(50);
@@ -88,7 +87,7 @@ export function GeneratorForm() {
           role="alert"
           aria-live="assertive"
           tabIndex={-1}
-          className="mb-6 border-t-2 border-destructive pt-3 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="mb-6 border-t-2 border-destructive pt-3 text-destructive focus-ring"
         >
           <strong className="font-semibold">{pt.generatorForm.errorPrefix}:</strong> {error}
         </div>
@@ -130,14 +129,8 @@ export function GeneratorForm() {
         className="mt-8 focus-visible:outline-none"
       >
         {result ? (
-          <div>
-            <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
-          </div>
-        ) : (
-          <div className="border-t-2 border-primary pt-5">
-            <NumberField struck={[]} label="Volante vazio, de 01 a 60" />
-          </div>
-        )}
+          <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
+        ) : null}
       </div>
     </section>
   );

@@ -164,15 +164,4 @@ export class SumAnalysisEngine {
 
     return lowerValue * (1 - weight) + upperValue * weight;
   }
-
-  getSumCategory(sum: number): 'low' | 'normal' | 'high' {
-    const stats = this.getSumDistribution();
-    
-    if (sum < stats.percentiles.p25) {
-      return 'low';
-    } else if (sum > stats.percentiles.p75) {
-      return 'high';
-    }
-    return 'normal';
-  }
 }

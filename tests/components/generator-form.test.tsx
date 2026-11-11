@@ -90,9 +90,31 @@ describe('GeneratorForm', () => {
   it('renderiza o estado inicial com os controles principais', () => {
     render(<GeneratorForm />);
 
-    expect(screen.getByRole('list', { name: 'Volante vazio, de 01 a 60' })).toBeInTheDocument();
+    // Before the first generation there is nothing to show: no empty field of sixty.
+    expect(screen.queryByRole('list')).toBeNull();
     expect(screen.getByRole('button', { name: /Gerar Apostas/i })).toBeInTheDocument();
     expect(screen.getByText(/Configurações de Geração/i)).toBeInTheDocument();
+  });
+
+  it('explains why "Gerar Apostas" is disabled when the budget is cleared, and recovers at 50', () => {
+    render(<GeneratorForm />);
+    const field = screen.getByLabelText(/Valor Personalizado/i);
+    const button = screen.getByRole('button', { name: /Gerar Apostas/i });
+    expect(button).toBeEnabled();
+    expect(field).not.toHaveAttribute('aria-invalid');
+
+    fireEvent.change(field, { target: { value: '' } });
+    expect(button).toBeDisabled();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/Valor mínimo:/)).toHaveAttribute(
+      'id',
+      field.getAttribute('aria-errormessage')
+    );
+
+    fireEvent.change(field, { target: { value: '50' } });
+    expect(button).toBeEnabled();
+    expect(field).not.toHaveAttribute('aria-invalid');
+    expect(screen.queryByText(/Valor mínimo:/)).toBeNull();
   });
 
   it('envia a geração usando os valores padrão ao clicar no botão', async () => {

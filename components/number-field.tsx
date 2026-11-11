@@ -87,7 +87,7 @@ export function NumberField({
                 href={`/numeros/${number}`}
                 prefetch={false}
                 aria-label={`Dezena ${dezena(number)}: estatísticas`}
-                className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                className="block rounded-full focus-ring focus-visible:ring-offset-card"
               >
                 {mark}
               </Link>

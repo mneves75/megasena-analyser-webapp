@@ -62,7 +62,7 @@ export function SectionNav({ sections }: SectionNavProps): React.ReactNode {
                 href={`#${section.id}`}
                 aria-current={isActive ? 'true' : undefined}
                 className={cn(
-                  'inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-medium transition-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
+                  'inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-medium transition-smooth focus-ring-inset',
                   isActive
                     ? 'border-primary text-foreground'
                     : 'border-transparent text-muted-foreground hover:text-foreground'
