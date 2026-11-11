@@ -37,7 +37,7 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
   per-request CSP nonce and sets page security headers
 - **Database**: SQLite via Bun's native `bun:sqlite` (not `better-sqlite3`), WAL mode,
   migrations in `db/migrations/`
-- **Runtime**: Bun `>=1.4.2` on local/VPS; production and staging use Cloudflare Workers
+- **Runtime**: Bun `>=1.4.2` on local/VPS; production and staging Cloudflare paths use Workers
   with vinext/Vite and SQLite Durable Object storage.
 - **Deps**: pnpm 11 (`pnpm-lock.yaml`); overrides live in `pnpm-workspace.yaml`
 - **Styling**: Tailwind CSS with a semantic-token design system
@@ -143,6 +143,6 @@ verify it with `bun run test:cloudflare`; the Bun CLI does not migrate remote st
 
 - Never commit `.env` files; the database file is git-ignored
 - `IP_HASH_SECRET` (≥32 chars) required in production — the server exits without it
-- Zod validation on every API input; rate limiting 100 req/min/IP
-- Audit/log retention hard-deletes rows by design (`audit:prune`, `log:prune`) — the
-  only sanctioned exception to soft-delete
+- Zod validation on every API input; rate limiting 100 req/min per network (IPv6 /64, IPv4 address; `rateLimitSubject`)
+- Audit/log retention hard-deletes rows by design (`audit:prune`, `log:prune`); otherwise only
+  expired rate-limit windows, the rebuilt pair cache and the e2e fixture are cleared with DELETE

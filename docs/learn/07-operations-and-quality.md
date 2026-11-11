@@ -51,7 +51,8 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 - **E2E (Playwright):** `bun run test:e2e`. `playwright.config.ts` sobe a stack real via
   `prepare-e2e-db.ts && build && start`, injetando um `IP_HASH_SECRET` público de teste e
   `TRUST_PROXY_HEADERS=true`. Specs em `tests/app/*.spec.ts`. Cobertura legada: o
-  responsável exige Argent na verificação de UI; não execute Playwright (`AGENTS.md`).
+  responsável exige Argent na verificação de UI; confirme com ele antes de executar o
+  Playwright (`AGENTS.md`).
 - Rode um arquivo só: `bun x vitest tests/lib/bet-generator.test.ts --run`.
 
 ### Logs e observabilidade
