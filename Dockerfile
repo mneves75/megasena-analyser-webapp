@@ -11,18 +11,21 @@
 #   3. Build image:             docker build -t megasena-analyser .
 # ============================================================================
 
-# node:22-alpine — digest verified 2026-07-28 via `docker buildx imagetools inspect`.
+# node:<.nvmrc>-alpine — index digest verified 2026-11-11 via
+# `docker buildx imagetools inspect node:26.13.0-alpine`; the tag must equal .nvmrc
+# (tests/scripts/supply-chain-controls.test.ts).
 # Keep the comment on its own line: Docker has no inline comments, so a trailing
 # `# ...` after AS makes the parser see five arguments and reject the FROM.
-FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS deps
+FROM node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS deps
 
 WORKDIR /deps
 
 # pnpm gerencia dependências (nodeLinker: hoisted gera node_modules plano,
-# copiável para a imagem de runtime Bun). corepack respeita packageManager.
+# copiável para a imagem de runtime Bun). corepack respeita packageManager
+# (versão e hash sha512). Node 25+ não traz mais o corepack: instalamos a versão fixada.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN npm install -g corepack@0.36.0 && corepack enable && pnpm install --prod --frozen-lockfile
 
 # Stable Bun runtime pinned by immutable image digest.
 # Digest verified: 2026-09-15 / 1.4.2 via `docker buildx imagetools inspect oven/bun:1.4.2-alpine`

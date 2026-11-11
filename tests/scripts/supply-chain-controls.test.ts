@@ -155,6 +155,25 @@ describe('controles de supply chain', () => {
     expect(packageJson.engines.node).toBe(`>=${pinnedMajor}.0.0 <${Number(pinnedMajor) + 1}.0.0`);
   });
 
+  it('compila as dependências Docker com o Node de .nvmrc, pinado por digest', async () => {
+    const dockerfile = await read('Dockerfile');
+    const pinnedNode = (await read('.nvmrc')).trim();
+    const from = /^FROM node:(\S+?)-alpine@sha256:[0-9a-f]{64} AS deps$/m.exec(dockerfile);
+    expect(from?.[1]).toBe(pinnedNode);
+  });
+
+  it('só isenta da trustPolicy versões presentes no lockfile', async () => {
+    // A stale exclusion silently exempts a future reinstall of that version.
+    const workspace = await read('pnpm-workspace.yaml');
+    const lockfile = await read('pnpm-lock.yaml');
+    const block = /^trustPolicyExclude:\n((?: {2}- .+\n)+)/m.exec(workspace)?.[1] ?? '';
+    const entries = [...block.matchAll(/- '([^']+)'/g)].map(match => match[1]!);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const entry of entries) {
+      expect(lockfile, `${entry} não está no pnpm-lock.yaml`).toMatch(new RegExp(`^ {2}'?${entry.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}[:(']`, 'm'));
+    }
+  });
+
   it('mantém os pins de segurança apenas onde o pnpm os aplica', async () => {
     // npm's `overrides` and the duplicate `patchedDependencies` were inert under
     // pnpm; keeping them let a CVE pin land in the authoritative-looking file
