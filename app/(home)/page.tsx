@@ -80,7 +80,7 @@ interface LatestDraw {
 interface HomeSnapshot {
   latestDraw: LatestDraw | null;
   lastContestNumber: number | null;
-  /** False for the empty fallback rendered when the API request failed. */
+  /** True only when this request fetched the latest draw; false for every fallback. */
   fresh: boolean;
 }
 
@@ -106,7 +106,8 @@ async function getHomeSnapshot(): Promise<HomeSnapshot> {
     return {
       latestDraw,
       lastContestNumber: data.statistics?.lastContestNumber ?? latestDraw?.contestNumber ?? null,
-      fresh: true,
+      // Without a draw the hero shows the "unavailable" copy: never a page to store.
+      fresh: latestDraw !== null,
     };
   } catch (error) {
     logger.warn('home.snapshot_fallback', {

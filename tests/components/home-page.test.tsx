@@ -108,6 +108,7 @@ describe('HomePage', () => {
   it.each([
     ['the API is unreachable', () => fetchApi.mockRejectedValue(new Error('offline'))],
     ['the API answers an error', () => fetchApi.mockResolvedValue(new Response('down', { status: 503 }))],
+    ['the API answers without a draw', () => fetchApi.mockResolvedValue(Response.json({ statistics: {}, recentDraws: [] }))],
   ])('renders no edge-cache marker when %s (the empty fallback must not be stored)', async (_case, fail) => {
     fail();
     const { container } = render(await HomePage());
