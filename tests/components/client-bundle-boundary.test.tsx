@@ -28,4 +28,10 @@ describe('archive UI in the client graph', () => {
     const source = readFileSync('app/dashboard/generator/generator-form.tsx', 'utf8');
     expect(source).not.toMatch(/from '@\/components\/number-field'/);
   });
+
+  it('the error state stays out of archive-ui: error boundaries load on every route', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync('components/error-state.tsx', 'utf8');
+    expect(source).not.toMatch(/from '@\/app\/_components\/archive-ui'/);
+  });
 });
