@@ -8,6 +8,9 @@ com `Cache-Control: private, no-cache, no-store`. A única camada de armazenamen
 tiering ([doc](https://developers.cloudflare.com/workers/runtime-apis/cache/), lida
 em 2026-10-31). O app não tem autenticação nem cookies próprios. O isolamento por
 usuário se resume a **não armazenar nada que dependa da requisição**.
+A `<revisão>` das chaves abaixo é o valor opaco `<APP_VERSION do DO>:<revisão de draws>` de
+`MegaSenaData.drawsVersion()`, para que, num deploy gradual, um Worker novo que renderize a
+partir do DO antigo grave sob outra chave.
 
 ## Classe A — arquivos determinísticos
 

@@ -327,8 +327,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
 
     let entry = rateLimiterCache.get(key);
 
-    // Clean up expired entry or create new one
-    if (!entry || entry.resetAt < now) {
+    // A window expires at resetAt, as in the Durable Object (reset_at <= now).
+    if (!entry || entry.resetAt <= now) {
       entry = {
         count: 1,
         resetAt: now + RATE_LIMIT_WINDOW_MS,

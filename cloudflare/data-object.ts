@@ -86,6 +86,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   private readonly auditRetentionDays: number;
   private readonly logRetentionDays: number;
   private readonly dailyRefreshEnabled: boolean;
+  private readonly appVersion: string;
   private refreshInFlight: Promise<RefreshResult> | undefined;
 
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
@@ -93,6 +94,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     this.auditRetentionDays = Number(env.AUDIT_RETENTION_DAYS ?? '400');
     this.logRetentionDays = Number(env.LOG_RETENTION_DAYS ?? '30');
     this.dailyRefreshEnabled = env.DAILY_REFRESH_ENABLED === '1';
+    this.appVersion = env.APP_VERSION ?? 'unknown';
     if ((env.ENVIRONMENT ?? 'production') === 'production' && (env.IP_HASH_SECRET?.trim().length ?? 0) < 32) {
       throw new Error('IP_HASH_SECRET required in production (at least 32 characters)');
     }
@@ -114,7 +116,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       runWithDatabase(this.database, () => appendDraws(parseSeedDraws(publicSeed)));
     }
     this.handler = createApiHandler({
-      environment: env.ENVIRONMENT ?? 'production', appVersion: env.APP_VERSION ?? 'unknown',
+      environment: env.ENVIRONMENT ?? 'production', appVersion: this.appVersion,
       ipHashSecret: env.IP_HASH_SECRET, allowedOrigins: env.ALLOWED_ORIGINS,
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
@@ -178,9 +180,14 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     }));
   }
 
-  /** Cache key component for the Worker's edge cache; no request or visitor data. */
+  /**
+   * Cache key component for the Worker's edge cache; no request or visitor data.
+   * It carries this object's build so that, during a gradual deployment, a new
+   * Worker rendering from an old object stores under a different key. Opaque to the Worker.
+   */
   drawsVersion(): string | null {
-    return runWithDatabase(this.database, () => getDrawsVersion());
+    const revision = runWithDatabase(this.database, () => getDrawsVersion());
+    return revision === null ? null : `${this.appVersion}:${revision}`;
   }
 
   importDraws(input: unknown): number {

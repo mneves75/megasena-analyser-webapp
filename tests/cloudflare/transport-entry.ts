@@ -16,8 +16,11 @@ const worker = {
       method: 'POST', body: '{"budget":50.5}', signal: controller.signal,
       headers: { 'cf-connecting-ip': '192.0.2.1' },
     }));
-    const result = await response.json() as { peer: { internal: boolean; clientIp: string }; body: string };
-    if (!result.peer.internal || result.peer.clientIp !== '192.0.2.1' || result.body !== '{"budget":50.5}') throw new Error('RPC request changed.');
+    const result = await response.json() as { peer: unknown; body: string };
+    if (JSON.stringify(result.peer) !== '{"clientIp":"192.0.2.1","secure":true}' || result.body !== '{"budget":50.5}') throw new Error(`RPC request changed: ${JSON.stringify(result.peer)}`);
+    // No forwarded IP: the peer is not marked internal, so the limiter meters it as unknown.
+    const anonymous = await (await transport(new Request('https://private/api/health'))).json() as { peer: unknown };
+    if (JSON.stringify(anonymous.peer) !== '{"clientIp":null,"secure":true}') throw new Error(`Header-less SSR call must not be internal: ${JSON.stringify(anonymous.peer)}`);
     const timeout = new AbortController();
     const pending = transport(new Request('https://private/api/slow', { signal: timeout.signal }));
     timeout.abort(new Error('timeout control'));

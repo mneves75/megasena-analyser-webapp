@@ -27,7 +27,9 @@ API contract; `server.ts` is the local/VPS Bun adapter. New API routes belong in
 the shared handler. Database and log contexts are scoped per operation.
 `lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
 in the Worker Cache API keyed by `APP_VERSION` and the draws revision
-(`MegaSenaData.drawsVersion`), only for public 200 responses. Canonical archive HTML
+(`MegaSenaData.drawsVersion`), only for public 200 responses. `drawsVersion` returns the
+opaque `<object APP_VERSION>:<revision>`, so a gradual deployment cannot store HTML rendered
+from the old object under the new Worker build's key. Canonical archive HTML
 at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` uses this cache only
 without a query string; any nonempty HTML query bypasses reads and writes.
 Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML

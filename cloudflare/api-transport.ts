@@ -20,8 +20,9 @@ export function getServerApiTransport(): ServerApiTransport {
     request.signal.addEventListener('abort', onAbort, { once: true });
     try {
       return await Promise.race([
+        // Not marked internal: a call without the forwarded visitor IP is metered
+        // under the shared unknown subject instead of skipping the limiter.
         namespace.get(namespace.idFromName('megasena')).handle(detached, {
-          internal: true,
           clientIp: request.headers.get('cf-connecting-ip'),
           secure: true,
         }),

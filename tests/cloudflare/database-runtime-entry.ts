@@ -144,6 +144,17 @@ export class TestData extends DurableObject {
 }
 
 export class TestSeededData extends MegaSenaData {
+  /** A full window whose resetAt is exactly now, with the clock pinned for the call. */
+  rateLimitAtBoundary() {
+    const now = Date.now();
+    const realNow = Date.now;
+    Date.now = () => now;
+    try {
+      this.ctx.storage.sql.exec('INSERT OR REPLACE INTO rate_limit_windows (client_id, count, reset_at) VALUES (?, ?, ?)', 'boundary', 100, now);
+      const limit = (this as unknown as { checkRateLimit(clientId: string): { allowed: boolean; remaining: number; resetAt: number } }).checkRateLimit('boundary');
+      return { opened: limit.resetAt === now + 60_000, ...limit };
+    } finally { Date.now = realNow; }
+  }
   /** First difference between the bootstrapped rows and the public seed, or null. */
   seedMismatch(): string | null {
     const rows = this.ctx.storage.sql.exec(`SELECT ${drawColumns} FROM draws ORDER BY contest_number`).toArray();
@@ -161,6 +172,13 @@ export class TestSeededData extends MegaSenaData {
       if (JSON.stringify(stored) !== JSON.stringify(seed[index])) return `contest ${String(row['contest_number'])}: ${JSON.stringify(row)}`;
     }
     return null;
+  }
+}
+
+/** The same public seed under another build, as during a gradual deployment. */
+export class TestVersionedData extends MegaSenaData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    super(ctx, { ...env, APP_VERSION: '9.9.9-test' });
   }
 }
 
@@ -248,7 +266,7 @@ export class TestDisabledRetention extends TestRetryData {
 }
 
 const worker = {
-  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; PRELOADED: DurableObjectNamespace<TestPreloadedData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; RETENTION_INDEX: DurableObjectNamespace<TestRetentionIndex>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
+  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; PRELOADED: DurableObjectNamespace<TestPreloadedData>; VERSIONED: DurableObjectNamespace<TestVersionedData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; RETENTION_INDEX: DurableObjectNamespace<TestRetentionIndex>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
     try {
       const first = env.DATA.getByName('first');
       const second = env.DATA.getByName('second');
@@ -260,11 +278,22 @@ const worker = {
       assert(initial.numberOccurrences === seed.length * 6 && initial.cachedPairs === 1770, 'public seed caches rebuilt');
       const seedMismatch = await seeded.seedMismatch();
       assert(seedMismatch === null, `public seed readback: ${seedMismatch}`);
+      // The edge cache key carries the object's build and its draws revision.
+      const versioned = env.VERSIONED.getByName('versioned');
+      const unversionedKey = await seeded.drawsVersion();
+      const versionedKey = await versioned.drawsVersion();
+      const revision = versionedKey?.split(':')[1];
+      assert(versionedKey === `9.9.9-test:${revision}` && unversionedKey === `unknown:${revision}`, `drawsVersion carries the object build: ${versionedKey} / ${unversionedKey}`);
+      assert(await versioned.importDraws([{ ...seed[seed.length - 1]!, contest: seed.length + 1, date: '2026-10-04' }]) === 1, 'versioned append');
+      const nextKey = await versioned.drawsVersion();
+      assert(nextKey !== versionedKey && nextKey?.startsWith('9.9.9-test:'), `drawsVersion changes with the revision: ${versionedKey} -> ${nextKey}`);
+      const boundary = await seeded.rateLimitAtBoundary();
+      assert(boundary.opened && boundary.allowed && boundary.remaining === 99, `rate-limit window expires at exactly resetAt: ${JSON.stringify(boundary)}`);
       const preloaded = await env.PRELOADED.getByName('preloaded').status();
       assert(preloaded.draws === 1 && preloaded.lastContest === 1, `bootstrap only on an empty database: ${JSON.stringify(preloaded)}`);
       assert(await seeded.importDraws(seed.slice(0, 10)) === 0, 'seed append duplicate');
       assert((await seeded.status()).draws === seed.length, 'seed not replaced');
-      const health = await seeded.handle(new Request('https://example.com/api/health'), { internal: true, clientIp: null, secure: true });
+      const health = await seeded.handle(new Request('https://example.com/api/health'), { clientIp: null, secure: true });
       assert(health.status === 200, 'real API health request');
       const afterHealth = await seeded.status();
       assert(afterHealth.auditRows >= 1 && afterHealth.logRows >= 1, 'audit/log persisted before response');
