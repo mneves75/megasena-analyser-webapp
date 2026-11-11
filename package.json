@@ -29,6 +29,7 @@
     "db:import-draws": "bun run scripts/import-draws.ts",
     "seo:indexnow": "bun run scripts/indexnow-submit.ts",
     "audit:prune": "bun run scripts/prune-retention.ts audit",
+    "privacy:subject": "bun run scripts/erase-subject.ts",
     "log:prune": "bun run scripts/prune-retention.ts log",
     "doctor": "./node_modules/.bin/react-doctor",
     "dev:vinext": "vite dev --port 3001",

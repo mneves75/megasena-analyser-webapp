@@ -208,7 +208,7 @@ Não. Não vendemos, alugamos ou compartilhamos dados com terceiros para fins co
 
 ### Posso apagar meus dados?
 
-Sim. Para dados no servidor, envie e-mail para `privacidade@megasena-analyzer.com.br`. Para dados no navegador, limpe os dados do site nas configurações do navegador.
+Sim. Para dados no servidor, envie e-mail para `privacidade@megasena-analyzer.com.br` informando o(s) endereço(s) IP que usou e o período: sem cadastro, é assim que localizamos os registros pseudonimizados ligados a você. Para dados no navegador, limpe os dados do site nas configurações do navegador.
 
 ### Quanto tempo guardamos os dados operacionais?
 
