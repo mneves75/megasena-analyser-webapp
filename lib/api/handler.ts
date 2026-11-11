@@ -61,7 +61,15 @@ export interface ApiHandlerOptions {
   uptime?: () => number;
   schedulerStatus?: () => Promise<{ enabled: boolean; nextAlarmAt: number | null }>;
   audit: (event: AuditEventInput) => void | Promise<void>;
-  checkRateLimit?: (clientId: string) => { allowed: boolean; remaining: number; resetAt: number };
+  checkRateLimit?: (clientId: string) => RateLimitDecision;
+}
+
+/** `count` is the subject's requests in the current window, including this one. */
+export interface RateLimitDecision {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+  count: number;
 }
 export function createApiHandler(options: ApiHandlerOptions) {
   if (options.environment === 'production' && (options.ipHashSecret?.trim().length ?? 0) < 32) {
@@ -114,6 +122,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
     clientId: string;
     origin?: string | null;
     isSecure: boolean;
+    /** A repeated rejection in one rate-limit window: no audit row, no log row. */
+    unrecorded?: boolean;
     audit?: {
       event: AuditEventName;
       metadata?: Record<string, unknown>;
@@ -288,6 +298,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
     startTime: number
   ): Promise<Response> {
     const finalized = withRequestIdHeader(response, ctx);
+    if (ctx.unrecorded) {
+      return finalized;
+    }
 
     if (ctx.audit) {
       const auditEvent: AuditEventInput = {
@@ -322,7 +335,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     return finalized;
   }
 
-  function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetAt: number } {
+  function checkRateLimit(key: string): RateLimitDecision {
     const now = Date.now();
 
     let entry = rateLimiterCache.get(key);
@@ -338,7 +351,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
       return {
         allowed: true,
         remaining: RATE_LIMIT_MAX_REQUESTS - 1,
-        resetAt: entry.resetAt
+        resetAt: entry.resetAt,
+        count: 1,
       };
     }
 
@@ -348,7 +362,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     const allowed = entry.count <= RATE_LIMIT_MAX_REQUESTS;
     const remaining = Math.max(0, RATE_LIMIT_MAX_REQUESTS - entry.count);
 
-    return { allowed, remaining, resetAt: entry.resetAt };
+    return { allowed, remaining, resetAt: entry.resetAt, count: entry.count };
   }
 
   /**
@@ -973,23 +987,31 @@ export function createApiHandler(options: ApiHandlerOptions) {
             allowed: true,
             remaining: RATE_LIMIT_MAX_REQUESTS,
             resetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
+            count: 0,
           }
         : options.checkRateLimit?.(ctx.clientId) ?? checkRateLimit(ctx.clientId);
 
       if (!rateLimit.allowed) {
-        logger.warn('api.rate_limit_exceeded', {
-          requestId: ctx.requestId,
-          route: ctx.route,
-          method: ctx.method,
-          clientId: ctx.clientId,
-        });
+        // Only the first rejection in a window is written (audit row and log
+        // rows); later ones answer the same 429 and still count, but write
+        // nothing, so a flood cannot turn into a flood of rows.
+        if (rateLimit.count === RATE_LIMIT_MAX_REQUESTS + 1) {
+          logger.warn('api.rate_limit_exceeded', {
+            requestId: ctx.requestId,
+            route: ctx.route,
+            method: ctx.method,
+            clientId: ctx.clientId,
+          });
 
-        // A throttled request on a known route is audited like any other
-        // outcome. An unknown path keeps only the structured rate-limit log:
-        // labelling it as a dashboard read put a false event in the audit table.
-        const knownEvent = apiRoutes[url.pathname]?.auditEvent;
-        if (knownEvent) {
-          ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
+          // A known route is audited like any other outcome. An unknown path
+          // keeps only the structured rate-limit log: labelling it as a
+          // dashboard read put a false event in the audit table.
+          const knownEvent = apiRoutes[url.pathname]?.auditEvent;
+          if (knownEvent) {
+            ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
+          }
+        } else {
+          ctx.unrecorded = true;
         }
 
         const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);

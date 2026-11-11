@@ -144,6 +144,15 @@ export class TestData extends DurableObject {
 }
 
 export class TestSeededData extends MegaSenaData {
+  rateLimitedRows(): { audit: number; logs: number } {
+    const audit = this.ctx.storage.sql.exec("SELECT COUNT(*) AS count FROM audit_logs WHERE metadata_json LIKE '%rateLimited%'").one()['count'] as number;
+    const logs = this.ctx.storage.sql.exec("SELECT COUNT(*) AS count FROM log_events WHERE event = 'api.rate_limit_exceeded'").one()['count'] as number;
+    return { audit, logs };
+  }
+  /** Ends every current window, as the clock passing resetAt would. */
+  expireRateLimitWindows(): void {
+    this.ctx.storage.sql.exec('UPDATE rate_limit_windows SET reset_at = 0');
+  }
   /** A full window whose resetAt is exactly now, with the clock pinned for the call. */
   rateLimitAtBoundary() {
     const now = Date.now();
@@ -287,6 +296,18 @@ const worker = {
       assert(await versioned.importDraws([{ ...seed[seed.length - 1]!, contest: seed.length + 1, date: '2026-10-04' }]) === 1, 'versioned append');
       const nextKey = await versioned.drawsVersion();
       assert(nextKey !== versionedKey && nextKey?.startsWith('9.9.9-test:'), `drawsVersion changes with the revision: ${versionedKey} -> ${nextKey}`);
+      // Only the first rejection per window per subject is written; every one still answers 429.
+      const throttled = env.SEEDED.getByName('throttled');
+      const throttledPeer = { clientIp: '203.0.113.80', secure: true };
+      for (let window = 0; window < 2; window++) {
+        if (window > 0) await throttled.expireRateLimitWindows();
+        for (let index = 0; index < 100; index++) await throttled.handle(new Request('https://example.com/api/health'), throttledPeer);
+        const statuses: number[] = [];
+        for (let index = 0; index < 3; index++) statuses.push((await throttled.handle(new Request('https://example.com/api/health'), throttledPeer)).status);
+        const rows = await throttled.rateLimitedRows();
+        assert(statuses.join() === '429,429,429' && rows.audit === window + 1 && rows.logs === window + 1,
+          `one recorded rejection per window: window ${window}, ${statuses.join()}, ${JSON.stringify(rows)}`);
+      }
       const boundary = await seeded.rateLimitAtBoundary();
       assert(boundary.opened && boundary.allowed && boundary.remaining === 99, `rate-limit window expires at exactly resetAt: ${JSON.stringify(boundary)}`);
       const preloaded = await env.PRELOADED.getByName('preloaded').status();

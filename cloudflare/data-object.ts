@@ -167,6 +167,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
         allowed: row.count <= RATE_LIMIT_MAX_REQUESTS,
         remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - row.count),
         resetAt: row.reset_at,
+        count: row.count,
       };
     });
   }

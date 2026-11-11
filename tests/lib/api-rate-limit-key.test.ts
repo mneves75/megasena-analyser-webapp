@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as pseudonymize from '../../lib/security/pseudonymize';
 import { createApiHandler, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS } from '../../lib/api/handler';
+import '../../lib/log-context.runtime';
+import { runWithLogSink } from '../../lib/logger';
 
 vi.mock('../../lib/security/pseudonymize', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/security/pseudonymize')>();
@@ -23,7 +25,7 @@ describe('rate-limit key', () => {
 
   it('is computed once per request on the Worker path and is the audited client id', async () => {
     const audit = vi.fn();
-    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 7, resetAt: 1 }));
+    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 7, resetAt: 1, count: 1 }));
     const handler = createApiHandler({ ...options, audit, checkRateLimit });
     vi.mocked(pseudonymize.pseudonymizeClient).mockClear();
     const response = await handler.fetch(new Request('https://example.com/api/health'), { clientIp: '203.0.113.41' });
@@ -39,7 +41,7 @@ describe('Worker transport peers', () => {
   // The Worker transport no longer marks SSR calls internal: a loader that
   // forgets forwardedClientIpHeaders() is metered, not silently exempt.
   it('meters a call without a forwarded IP under the shared unknown subject', async () => {
-    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 98, resetAt: 1 }));
+    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 98, resetAt: 1, count: 1 }));
     const handler = createApiHandler({ ...options, audit: vi.fn(), checkRateLimit });
     const response = await handler.fetch(new Request('https://example.com/api/health'), { clientIp: null, secure: true });
     expect(checkRateLimit).toHaveBeenCalledWith('unknown');
@@ -47,7 +49,7 @@ describe('Worker transport peers', () => {
   });
 
   it('meters a call with the forwarded IP under that client subject', async () => {
-    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 98, resetAt: 1 }));
+    const checkRateLimit = vi.fn(() => ({ allowed: true, remaining: 98, resetAt: 1, count: 1 }));
     const handler = createApiHandler({ ...options, audit: vi.fn(), checkRateLimit });
     await handler.fetch(new Request('https://example.com/api/health'), { clientIp: '192.0.2.1', secure: true });
     const expected = (await vi.importActual<typeof import('../../lib/security/pseudonymize')>('../../lib/security/pseudonymize'))
@@ -70,6 +72,41 @@ describe('rate-limit window boundary', () => {
       const atReset = await handler.fetch(request(), peer);
       expect(atReset.status).toBe(404);
       expect(atReset.headers.get('X-RateLimit-Remaining')).toBe(String(RATE_LIMIT_MAX_REQUESTS - 1));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('rejected requests are recorded once per window', () => {
+  // Every rejection still answers 429 with the same headers and still counts;
+  // only the first rejection in a window per subject is written.
+  it('writes one audit row and its log rows for three rejections, and one more in a new window', async () => {
+    const start = Date.parse('2026-06-01T12:00:00.000Z');
+    vi.useFakeTimers({ now: start });
+    const audit = vi.fn();
+    const events: string[] = [];
+    const handler = createApiHandler({ ...options, audit });
+    const peer = { clientIp: '203.0.113.70' };
+    const health = () => new Request('https://example.com/api/health');
+    const rejectedAudits = () => audit.mock.calls.filter(([event]) => (event as { metadata?: { rateLimited?: boolean } }).metadata?.rateLimited).length;
+    try {
+      await runWithLogSink(entry => { events.push(entry.event); }, async () => {
+        for (let window = 0; window < 2; window++) {
+          vi.setSystemTime(start + window * RATE_LIMIT_WINDOW_MS);
+          for (let index = 0; index < RATE_LIMIT_MAX_REQUESTS; index++) await handler.fetch(health(), peer);
+          const before = events.length;
+          const rejected = [];
+          for (let index = 0; index < 3; index++) rejected.push(await handler.fetch(health(), peer));
+          expect(rejected.map(response => response.status)).toEqual([429, 429, 429]);
+          for (const response of rejected) {
+            expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
+            expect(response.headers.get('Retry-After')).toBe('60');
+          }
+          expect(rejectedAudits()).toBe(window + 1);
+          expect(events.slice(before)).toEqual(['api.rate_limit_exceeded', 'api.request_completed']);
+        }
+      });
     } finally {
       vi.useRealTimers();
     }

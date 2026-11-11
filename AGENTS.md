@@ -296,8 +296,9 @@ README.md for the isolated local production fixture and two-pass replay.
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting
-  (100 req/min per **network**, incl. `/api/health`; a 429 is audited like any other
-  outcome). `X-Forwarded-*` only trusted when
+  (100 req/min per **network**, incl. `/api/health`; only the first 429 per window per
+  subject is audited and logged, the rest answer the same 429 and still count but write
+  nothing). `X-Forwarded-*` only trusted when
   `TRUST_PROXY_HEADERS=true` + loopback/`TRUSTED_PROXY_IPS`. Internal rate-limit bypass
   needs a strong `INTERNAL_API_SECRET` + a **loopback** target — `API_HOST` must stay
   loopback or the secret is withheld and SSR calls fall back to the public quota.
