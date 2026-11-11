@@ -65,6 +65,20 @@ describe('runtime-neutral API handler', () => {
       spy.mockRestore();
     }
   });
+  it('still reports unhealthy when the analytics cache table is unreadable', async () => {
+    closeDatabase();
+    const database = getDatabase();
+    database.prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const handler = createApiHandler(options);
+    const health = () => handler.fetch(new Request('https://example.com/api/health'));
+    expect((await health()).status).toBe(200);
+    database.prepare('ALTER TABLE number_frequency RENAME TO number_frequency_gone').run();
+    const broken = await health();
+    expect(broken.status).toBe(503);
+    expect(await broken.json()).toMatchObject({ status: 'unhealthy' });
+    expect((await handler.fetch(new Request('https://example.com/api/dashboard'))).status).toBe(500);
+  });
   it('answers a wrong method on every route with the same 405 body, Allow header and audit event', async () => {
     const routes = [
       ['/api/health', 'GET', 'api.health_read'], ['/api/dashboard', 'GET', 'api.dashboard_read'],
