@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import {
   cn,
@@ -310,26 +309,6 @@ export default async function DashboardPage() {
             </tbody>
           </table>
         </TableFrame>
-      </section>
-
-      <section aria-labelledby="dashboard-tools">
-        <SectionHeading id="dashboard-tools">{pt.dashboard.toolsTitle}</SectionHeading>
-        <ul className="mt-6 border-t-2 border-primary">
-          {pt.dashboard.tools.map((tool) => (
-            <li
-              key={tool.href}
-              className="grid gap-1 border-b border-border py-5 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-8"
-            >
-              <Link
-                href={tool.href}
-                className="w-fit rounded-sm text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors [font-stretch:88%] hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                {tool.title}
-              </Link>
-              <p className="max-w-[68ch] text-muted-foreground">{tool.description}</p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <RandomnessNote />

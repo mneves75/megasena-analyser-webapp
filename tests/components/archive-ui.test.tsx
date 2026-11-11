@@ -110,6 +110,41 @@ describe('LatestDrawFigure', () => {
       'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'
     );
   });
+
+  it('without actions it renders exactly the text column and the field', () => {
+    const { container } = render(
+      <LatestDrawFigure heading={<h2>Concurso 3006</h2>} numbers={[2]} fieldLabel="Campo">
+        <p>Fatos</p>
+      </LatestDrawFigure>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toBe(
+      'grid grid-cols-1 items-start gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12'
+    );
+    expect([...root.children].map((child) => child.tagName)).toEqual(['DIV', 'OL']);
+    expect(root.lastElementChild?.className).not.toContain('row-span');
+  });
+
+  it('puts the actions after the field on phones and under the facts from lg', () => {
+    const { container } = render(
+      <LatestDrawFigure
+        heading={<h1>Título</h1>}
+        numbers={[2]}
+        fieldLabel="Campo"
+        actions={<a href="/dashboard">Acessar Dashboard</a>}
+      >
+        <p>Fatos</p>
+      </LatestDrawFigure>
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect([...root.children].map((child) => child.tagName)).toEqual(['DIV', 'OL', 'DIV']);
+    expect(root.className).toContain('lg:grid-rows-[auto_1fr]');
+    expect(screen.getByRole('list', { name: 'Campo' }).className).toContain('lg:row-span-2');
+    expect(root.lastElementChild).toContainElement(
+      screen.getByRole('link', { name: 'Acessar Dashboard' })
+    );
+    expect(root.lastElementChild?.className).toContain('lg:self-end');
+  });
 });
 
 describe('latest-draw block', () => {

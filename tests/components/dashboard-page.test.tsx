@@ -117,16 +117,11 @@ describe('DashboardPage', () => {
     expect(within(hot).getByText('2,5×')).toBeInTheDocument();
   });
 
-  it('links both tools', async () => {
+  it('does not repeat the navigation: the header and footer carry the tool links', async () => {
     render(await DashboardPage());
-    expect(screen.getByRole('link', { name: 'Estatísticas' })).toHaveAttribute(
-      'href',
-      '/dashboard/statistics'
-    );
-    expect(screen.getByRole('link', { name: 'Gerador de apostas' })).toHaveAttribute(
-      'href',
-      '/dashboard/generator'
-    );
+    expect(screen.queryByRole('heading', { name: 'Ferramentas' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Estatísticas' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Gerador de apostas' })).toBeNull();
   });
 });
 

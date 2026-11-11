@@ -31,12 +31,6 @@ describe('source line', () => {
     expect(sourceMentions(file)).toBe(1);
   });
 
-  it('home states it in its header, not under the latest draw', () => {
-    const source = readFileSync(path.join(process.cwd(), 'app/(home)/page.tsx'), 'utf8');
-    const header = source.slice(source.indexOf('<header'), source.indexOf('</header>'));
-    expect(header).toContain('<SourceLine');
-  });
-
   it('a draws table carries no source line of its own', () => {
     render(<DrawsTable caption="Concursos" draws={[]} />);
     expect(screen.queryByText(/Fonte:/)).not.toBeInTheDocument();

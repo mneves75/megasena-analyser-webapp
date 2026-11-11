@@ -127,46 +127,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       />
       <div className="space-y-16 lg:space-y-20">
         <header className="space-y-6">
-          <PageTitle>{pt.home.heroTitle}</PageTitle>
-          <p className="max-w-[68ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
-          <SourceLine through={lastContestNumber} />
-          <div className="grid grid-cols-2 gap-3 sm:flex">
-            <Button asChild size="lg">
-              <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/dashboard/generator">Gerar apostas</Link>
-            </Button>
-          </div>
+          <HomeLatestDraw draw={latestDraw} lastContestNumber={lastContestNumber} />
           <RandomnessNote>{pt.home.disclaimer.text}</RandomnessNote>
         </header>
-
-        <section aria-labelledby="home-latest">
-          <HomeLatestDraw draw={latestDraw} />
-        </section>
-
-        <section aria-labelledby="home-contents">
-          <SectionHeading id="home-contents">{pt.home.contentsTitle}</SectionHeading>
-          <ol className="mt-6 border-t-2 border-primary">
-            {pt.home.contents.map((entry) => {
-              const LinkComponent = entry.archive ? ArchiveLink : Link;
-              return (
-                <li
-                  key={entry.href}
-                  className="grid gap-1 border-b border-border py-5 sm:grid-cols-[16rem_minmax(0,1fr)] sm:gap-8"
-                >
-                  <LinkComponent
-                    href={entry.href}
-                    className="w-fit rounded-sm text-xl font-semibold text-foreground underline decoration-border underline-offset-4 transition-colors hover:text-primary hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [font-stretch:88%]"
-                  >
-                    {entry.title}
-                  </LinkComponent>
-                  <p className="max-w-[68ch] text-muted-foreground">{entry.description}</p>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
 
         <section
           aria-labelledby="home-about"
@@ -213,43 +176,66 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   );
 }
 
-function HomeLatestDraw({ draw }: { draw: LatestDraw | null }): React.JSX.Element {
-  if (!draw) {
-    return (
-      <LatestDrawFigure
-        heading={<SectionHeading id="home-latest">Último concurso</SectionHeading>}
-        numbers={[]}
-        fieldLabel="Dezenas de 01 a 60"
-      >
-        <p className="text-muted-foreground">
-          Os dados do último sorteio estão temporariamente indisponíveis. Os resultados de todos os
-          concursos continuam em{' '}
-          <ArchiveLink href="/resultados" className={textLinkClass}>
-            Resultados
-          </ArchiveLink>
-          .
-        </p>
-      </LatestDrawFigure>
-    );
-  }
+function HomeActions(): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:flex">
+      <Button asChild size="lg">
+        <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
+      </Button>
+      <Button asChild size="lg" variant="outline">
+        <Link href="/dashboard/generator">Gerar apostas</Link>
+      </Button>
+    </div>
+  );
+}
 
-  const prize =
-    draw.accumulated || draw.prizeSena <= 0 ? 'Acumulou' : formatCurrency(draw.prizeSena);
+/** The home hero: the page title over the latest draw, data before any prose. */
+function HomeLatestDraw({
+  draw,
+  lastContestNumber,
+}: {
+  draw: LatestDraw | null;
+  lastContestNumber: number | null;
+}): React.JSX.Element {
+  const facts = draw ? (
+    <>
+      <p className="text-lg tabular-nums">
+        Concurso {draw.contestNumber}, sorteado em {formatDate(draw.drawDate)}
+      </p>
+      <dl className="border-t border-border pt-4">
+        <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
+        <dd className="font-condensed text-2xl font-semibold tabular-nums">
+          {draw.accumulated || draw.prizeSena <= 0 ? 'Acumulou' : formatCurrency(draw.prizeSena)}
+        </dd>
+      </dl>
+      <p>
+        <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={textLinkClass}>
+          Ganhadores e rateio do concurso {draw.contestNumber}
+        </ArchiveLink>
+      </p>
+    </>
+  ) : (
+    <p className="text-muted-foreground">
+      Os dados do último sorteio estão temporariamente indisponíveis. Os resultados de todos os
+      concursos continuam em{' '}
+      <ArchiveLink href="/resultados" className={textLinkClass}>
+        Resultados
+      </ArchiveLink>
+      .
+    </p>
+  );
 
   return (
     <LatestDrawFigure
-      heading={<SectionHeading id="home-latest">Concurso {draw.contestNumber}</SectionHeading>}
-      numbers={draw.numbers}
-      fieldLabel={`Dezenas sorteadas no concurso ${draw.contestNumber}`}
+      heading={<PageTitle>{pt.home.heroTitle}</PageTitle>}
+      numbers={draw?.numbers ?? []}
+      fieldLabel={
+        draw ? `Dezenas sorteadas no concurso ${draw.contestNumber}` : 'Dezenas de 01 a 60'
+      }
+      actions={<HomeActions />}
     >
-      <p className="text-muted-foreground tabular-nums">Sorteio de {formatDate(draw.drawDate)}</p>
-      <dl className="border-t border-border pt-4">
-        <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
-        <dd className="font-condensed text-2xl font-semibold tabular-nums">{prize}</dd>
-      </dl>
-      <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={textLinkClass}>
-        Ganhadores e rateio do concurso {draw.contestNumber}
-      </ArchiveLink>
+      {facts}
+      <SourceLine through={lastContestNumber} />
     </LatestDrawFigure>
   );
 }

@@ -94,46 +94,7 @@ export const pt = {
     },
   },
   home: {
-    heroTitle: 'Mega-Sena Analyzer',
-    heroSubtitle:
-      'Todos os concursos desde 1996 com os dados oficiais da CAIXA: resultados, frequência das dezenas e um gerador de apostas que distribui o seu orçamento.',
-    contentsTitle: 'Neste site',
-    contents: [
-      {
-        title: 'Resultados',
-        description:
-          'Todos os concursos por ano, com as dezenas, os ganhadores e o prêmio de cada faixa.',
-        href: '/resultados',
-        archive: true,
-      },
-      {
-        title: 'Números de 01 a 60',
-        description:
-          'Quantas vezes cada dezena saiu, há quantos concursos não sai e com quais outras costuma sair.',
-        href: '/numeros',
-        archive: true,
-      },
-      {
-        title: 'Estatísticas',
-        description:
-          'Frequência, atraso, pares, paridade, primos e soma das dezenas em todo o histórico.',
-        href: '/dashboard/statistics',
-        archive: false,
-      },
-      {
-        title: 'Gerador de apostas',
-        description:
-          'Distribui um orçamento entre apostas simples e múltiplas com o menor desperdício.',
-        href: '/dashboard/generator',
-        archive: false,
-      },
-      {
-        title: 'Mega da Virada',
-        description: 'As edições de fim de ano, com as dezenas sorteadas e os prêmios pagos.',
-        href: '/mega-da-virada',
-        archive: true,
-      },
-    ],
+    heroTitle: 'Resultados e estatísticas da Mega-Sena desde 1996',
     disclaimer: {
       text: 'Esta ferramenta NÃO aumenta suas chances de ganhar. A Mega-Sena é puramente aleatória. Jogue com responsabilidade.',
       termsLinkLabel: 'Termos de uso',
@@ -152,20 +113,6 @@ export const pt = {
     hotNumbersTitle: 'Em alta nos últimos 10 concursos',
     hotNumbersCaption:
       'Saídas de cada dezena nos últimos 10 concursos, comparadas com a média histórica da própria dezena.',
-    toolsTitle: 'Ferramentas',
-    tools: [
-      {
-        title: 'Estatísticas',
-        description:
-          'Frequência, atraso, pares, paridade, soma e distribuição de todas as dezenas.',
-        href: '/dashboard/statistics',
-      },
-      {
-        title: 'Gerador de apostas',
-        description: 'Distribui o seu orçamento entre apostas simples e múltiplas.',
-        href: '/dashboard/generator',
-      },
-    ],
   },
   generatorPage: {
     title: 'Gerador de Apostas Otimizado',
