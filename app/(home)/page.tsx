@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { fetchApi } from '@/lib/api/api-fetch';
 import { forwardedClientIpHeaders } from '@/lib/api/forwarded-client-ip';
@@ -160,9 +159,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <details key={faq.question} className="group border-b border-border">
                   <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-ring-inset">
                     {faq.question}
-                    <ChevronDown
-                      aria-hidden
-                      className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
+                    <span
+                      aria-hidden="true"
+                      className="disclosure-chevron text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
                     />
                   </summary>
                   <p className="max-w-[68ch] pb-5 text-muted-foreground">{faq.answer}</p>

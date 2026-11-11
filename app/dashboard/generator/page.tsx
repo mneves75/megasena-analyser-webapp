@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
-import { ChevronDown } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -38,9 +37,9 @@ export default function GeneratorPage() {
             <span className="font-semibold">Nota.</span> Prever o resultado da loteria é
             estatisticamente impossível.
           </span>
-          <ChevronDown
-            aria-hidden
-            className="ml-auto h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
+          <span
+            aria-hidden="true"
+            className="ml-auto disclosure-chevron text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
           />
         </summary>
         <p className="pb-3 text-sm leading-6 text-muted-foreground">

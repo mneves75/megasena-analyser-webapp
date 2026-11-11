@@ -179,6 +179,32 @@
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring;
 }
 
+/* The disclosure chevron of a server-rendered <details>: an empty 1rem box with
+   a "v" drawn by two borders in currentColor, the same 8x4px mark the icon set
+   draws. CSS instead of an inline SVG, because an SVG with element children can
+   start a streamed piece that the CSP refuses (components/figures.tsx). The
+   drawing uses `transform`, so the caller's `group-open:rotate-180` (the
+   `rotate` property) turns the whole box without undoing it. */
+@utility disclosure-chevron {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0.354rem;
+    height: 0.354rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translate(-50%, calc(-50% - 0.125rem)) rotate(45deg);
+  }
+}
+
 /* The number field's one authored moment: struck discs press in, already visible. */
 @keyframes number-field-strike {
   from {

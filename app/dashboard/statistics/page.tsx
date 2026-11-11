@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { Bar, Columns, n } from '@/components/figures';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { cn, formatCurrency, formatDate, formatDecimal, formatNumber } from '@/lib/utils';
@@ -197,9 +196,9 @@ function Disclosure({
     >
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-ring-inset [&::-webkit-details-marker]:hidden">
         {label}
-        <ChevronDown
-          aria-hidden
-          className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
+        <span
+          aria-hidden="true"
+          className="disclosure-chevron text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
         />
       </summary>
       <div className="space-y-4 pb-5">{children}</div>
