@@ -1,23 +1,7 @@
 import { API_CONFIG } from '@/lib/constants';
+import type { Draw } from '@/lib/draw-ingestion';
 import { logger } from '@/lib/logger';
-
-export interface MegaSenaDrawData {
-  numero: number;
-  dataApuracao: string;
-  listaDezenas: string[];
-  rateioProcessamento?: Array<{
-    descricaoFaixa: string;
-    numeroDeGanhadores: number;
-    valorPremio: number;
-  }>;
-  valorArrecadado?: number;
-  valorAcumuladoConcurso?: number;
-  valorEstimadoProximoConcurso?: number;
-  acumulado?: boolean;
-  tipoJogo?: string;
-  /** Special contest that never rolls over: the Mega da Virada or an anniversary edition. */
-  concursoEspecial?: boolean;
-}
+import { toIsoDate } from '@/lib/utils';
 
 interface CaixaPrizeTier {
   descricaoFaixa?: string;
@@ -149,7 +133,7 @@ function validateMegaSenaDrawData(
   };
 }
 
-export function normalizePrizeDescription(
+function normalizePrizeDescription(
   description: string | undefined,
   faixa: number | undefined
 ): string {
@@ -168,41 +152,54 @@ export function normalizePrizeDescription(
   return description?.trim() || `Faixa ${faixa ?? 'desconhecida'}`;
 }
 
-export function normalizeMegaSenaDrawData(raw: CaixaRawDrawData): MegaSenaDrawData {
+function validateWinnerCount(value: number, field: string): void {
+  if (!Number.isInteger(value)) {
+    throw new Error(`Resposta da CAIXA inválida: ${field} deve ser um número inteiro.`);
+  }
+}
+
+/**
+ * Convert a validated CAIXA payload into a storage-ready draw. Only the tiers
+ * and fields that are stored are checked here; an unused tier was already
+ * shape-checked by validateMegaSenaDrawData.
+ */
+function toDraw(raw: CaixaRawDrawData): Draw {
   const prizeBreakdown = raw.rateioProcessamento?.length
     ? raw.rateioProcessamento
     : raw.listaRateioPremio ?? [];
-  const normalized: MegaSenaDrawData = {
-    numero: raw.numero,
-    dataApuracao: raw.dataApuracao,
-    listaDezenas: raw.listaDezenas,
-    rateioProcessamento: prizeBreakdown.map((tier) => ({
-      descricaoFaixa: normalizePrizeDescription(tier.descricaoFaixa, tier.faixa),
-      numeroDeGanhadores: tier.numeroDeGanhadores ?? 0,
-      valorPremio: tier.valorPremio ?? 0,
-    })),
+  // The first tier that maps to the name wins.
+  const tier = (name: string) => prizeBreakdown.find(
+    (entry) => normalizePrizeDescription(entry.descricaoFaixa, entry.faixa) === name
+  );
+  const sena = tier('Sena');
+  const quina = tier('Quina');
+  const quadra = tier('Quadra');
+  const draw: Draw = {
+    contest: raw.numero,
+    date: toIsoDate(raw.dataApuracao),
+    numbers: raw.listaDezenas.map(Number).sort((a, b) => a - b),
+    prizeSena: sena?.valorPremio ?? 0,
+    winnersSena: sena?.numeroDeGanhadores ?? 0,
+    prizeQuina: quina?.valorPremio ?? 0,
+    winnersQuina: quina?.numeroDeGanhadores ?? 0,
+    prizeQuadra: quadra?.valorPremio ?? 0,
+    winnersQuadra: quadra?.numeroDeGanhadores ?? 0,
+    // A non-numeric collection or estimate is ignored and stored as 0.
+    totalCollection: typeof raw.valorArrecadado === 'number' ? raw.valorArrecadado : 0,
+    accumulated: raw.acumulado === true,
     // The current CAIXA payload exposes carry-over value as valorAcumuladoProximoConcurso.
-    valorAcumuladoConcurso:
-      raw.valorAcumuladoConcurso ?? raw.valorAcumuladoProximoConcurso ?? 0,
+    accumulatedValue: raw.valorAcumuladoConcurso ?? raw.valorAcumuladoProximoConcurso ?? 0,
+    nextEstimatedPrize: typeof raw.valorEstimadoProximoConcurso === 'number' ? raw.valorEstimadoProximoConcurso : 0,
+    // tipoJogo is MEGA_SENA even for special contests; the indicator is what marks them.
+    specialDraw: raw.indicadorConcursoEspecial === 2,
   };
-
-  if (typeof raw.valorArrecadado === 'number') {
-    normalized.valorArrecadado = raw.valorArrecadado;
-  }
-  if (typeof raw.valorEstimadoProximoConcurso === 'number') {
-    normalized.valorEstimadoProximoConcurso = raw.valorEstimadoProximoConcurso;
-  }
-  if (typeof raw.acumulado === 'boolean') {
-    normalized.acumulado = raw.acumulado;
-  }
-  if (typeof raw.tipoJogo === 'string' && raw.tipoJogo.length > 0) {
-    normalized.tipoJogo = raw.tipoJogo;
-  }
-  if (typeof raw.indicadorConcursoEspecial === 'number') {
-    normalized.concursoEspecial = raw.indicadorConcursoEspecial === 2;
-  }
-
-  return normalized;
+  validateNonNegativeNumber(draw.totalCollection, 'valorArrecadado');
+  validateNonNegativeNumber(draw.accumulatedValue, 'valorAcumuladoConcurso');
+  validateNonNegativeNumber(draw.nextEstimatedPrize, 'valorEstimadoProximoConcurso');
+  validateWinnerCount(draw.winnersSena, 'numeroDeGanhadores (Sena)');
+  validateWinnerCount(draw.winnersQuina, 'numeroDeGanhadores (Quina)');
+  validateWinnerCount(draw.winnersQuadra, 'numeroDeGanhadores (Quadra)');
+  return draw;
 }
 
 export class CaixaAPIClient {
@@ -226,7 +223,7 @@ export class CaixaAPIClient {
     this.etags = new Map();
   }
 
-  async fetchDraw(contestNumber?: number): Promise<MegaSenaDrawData> {
+  async fetchDraw(contestNumber?: number): Promise<Draw> {
     // Validate contest number if provided
     if (contestNumber !== undefined) {
       if (!Number.isInteger(contestNumber) || contestNumber < 1) {
@@ -249,7 +246,7 @@ export class CaixaAPIClient {
       const response = await this.fetchWithRetry(url);
 
       const rawData = validateMegaSenaDrawData(await response.json(), contestNumber);
-      const data = normalizeMegaSenaDrawData(rawData);
+      const data = toDraw(rawData);
 
       // Cache the result
       this.cache.set(url, rawData);
@@ -376,15 +373,15 @@ export class CaixaAPIClient {
     startContest: number = 1,
     endContest?: number,
     options: { allowPartial?: boolean } = {}
-  ): Promise<MegaSenaDrawData[]> {
-    const draws: MegaSenaDrawData[] = [];
+  ): Promise<Draw[]> {
+    const draws: Draw[] = [];
     const failedContests: Array<{ contest: number; errorMessage: string }> = [];
 
     // First, get the latest draw to know the range
     if (!endContest) {
       logger.info('caixa.fetch_latest_range');
       const latestDraw = await this.fetchDraw();
-      endContest = latestDraw.numero;
+      endContest = latestDraw.contest;
     }
 
     logger.info('caixa.fetch_range', {

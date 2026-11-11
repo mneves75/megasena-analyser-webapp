@@ -18,8 +18,7 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-const draw = { numero: 1, dataApuracao: '11/03/1996', listaDezenas: ['04', '05', '30', '33', '41', '52'] };
-// The same contest as a storage-ready draw.
+// Contest 1 as a storage-ready draw.
 const storedDraw: Draw = { contest: 1, date: '1996-03-11', numbers: [4, 5, 30, 33, 41, 52],
   prizeSena: 0, winnersSena: 0, prizeQuina: 0, winnersQuina: 0, prizeQuadra: 0, winnersQuadra: 0,
   totalCollection: 0, accumulated: false, accumulatedValue: 0, nextEstimatedPrize: 0, specialDraw: false };
@@ -97,7 +96,7 @@ export class TestData extends DurableObject {
         fetchDraw: async contest => {
           assert(!inTransaction, 'network outside transaction');
           networkOutsideTransaction = true;
-          return { ...draw, numero: contest ?? 3 };
+          return { ...storedDraw, contest: contest ?? 3 };
         },
       }, { maxDraws: 1 });
       assert(networkOutsideTransaction && result.status === 'incomplete' && result.lastContest === 2 && result.latestContest === 3, 'bounded backlog status');

@@ -5,13 +5,10 @@
  * `runWithDatabase`.
  */
 import { z } from 'zod';
-import type { MegaSenaDrawData } from '@/lib/api/caixa-client';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
-import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
 import { getDatabase } from '@/lib/db';
 import { withDatabaseTransaction } from '@/lib/db-transaction';
-import { toIsoDate } from '@/lib/utils';
 
 /** A storage-ready draw in the public seed shape: ISO date, six ascending numbers. */
 export interface Draw {
@@ -73,7 +70,7 @@ export function parseSeedDraws(input: unknown): Draw[] {
 }
 
 export interface DrawSource {
-  fetchDraw(contest?: number): Promise<MegaSenaDrawData>;
+  fetchDraw(contest?: number): Promise<Draw>;
 }
 
 export class DrawSourceFailure extends Error {
@@ -82,36 +79,12 @@ export class DrawSourceFailure extends Error {
   }
 }
 
-function toDraw(draw: MegaSenaDrawData): Draw {
-  if (!Number.isInteger(draw.numero) || draw.numero < 1) throw new Error('Invalid contest number.');
-  const numbers = normalizeMegaSenaNumbers(draw.listaDezenas);
-  const tier = (name: string) => draw.rateioProcessamento?.find(item => item.descricaoFaixa === name);
-  const sena = tier('Sena');
-  const quina = tier('Quina');
-  const quadra = tier('Quadra');
-  const prizes = {
-    prizeSena: sena?.valorPremio ?? 0, winnersSena: sena?.numeroDeGanhadores ?? 0,
-    prizeQuina: quina?.valorPremio ?? 0, winnersQuina: quina?.numeroDeGanhadores ?? 0,
-    prizeQuadra: quadra?.valorPremio ?? 0, winnersQuadra: quadra?.numeroDeGanhadores ?? 0,
-    totalCollection: draw.valorArrecadado ?? 0, accumulatedValue: draw.valorAcumuladoConcurso ?? 0,
-    nextEstimatedPrize: draw.valorEstimadoProximoConcurso ?? 0,
-  };
-  if (Object.values(prizes).some(value => !Number.isFinite(value) || value < 0)) throw new Error('Invalid draw prize data.');
-  if (![prizes.winnersSena, prizes.winnersQuina, prizes.winnersQuadra].every(Number.isInteger)) {
-    throw new Error('Invalid draw winner count.');
-  }
-  return {
-    contest: draw.numero, date: toIsoDate(draw.dataApuracao), numbers, ...prizes,
-    accumulated: Boolean(draw.acumulado), specialDraw: Boolean(draw.concursoEspecial),
-  };
-}
-
-/** Fetch and convert inside one boundary: any bad payload becomes a source failure. */
+/** The source converts its payload; any failure there, a bad payload included, is a source failure. */
 async function fetchFromSource(source: DrawSource, contest?: number): Promise<Draw> {
   try {
     const draw = await source.fetchDraw(contest);
-    if (contest !== undefined && draw.numero !== contest) throw new Error(`Requested contest ${contest}, received ${draw.numero}.`);
-    return toDraw(draw);
+    if (contest !== undefined && draw.contest !== contest) throw new Error(`Requested contest ${contest}, received ${draw.contest}.`);
+    return draw;
   } catch (error) {
     throw new DrawSourceFailure(error);
   }

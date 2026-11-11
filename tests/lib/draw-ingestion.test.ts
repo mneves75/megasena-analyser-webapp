@@ -148,10 +148,10 @@ const CORPUS: PayloadCase[] = [
   },
   { name: 'valorArrecadado as a string', payload: { ...BASE, valorArrecadado: '123' }, worker: row(), pull: row() },
   { name: 'valorArrecadado as null', payload: { ...BASE, valorArrecadado: null }, worker: row(), pull: row() },
-  { name: 'a negative valorArrecadado', payload: { ...BASE, valorArrecadado: -1 }, worker: 'rejected', pull: row({ total_collection: -1 }) },
+  { name: 'a negative valorArrecadado', payload: { ...BASE, valorArrecadado: -1 }, worker: 'rejected', pull: 'rejected' },
   { name: 'valorEstimadoProximoConcurso as a string', payload: { ...BASE, valorEstimadoProximoConcurso: '5' }, worker: row(), pull: row() },
-  { name: 'a negative valorEstimadoProximoConcurso', payload: { ...BASE, valorEstimadoProximoConcurso: -1 }, worker: 'rejected', pull: row({ next_estimated_prize: -1 }) },
-  { name: 'valorAcumuladoConcurso as a string', payload: { ...BASE, valorAcumuladoConcurso: '5' }, worker: 'rejected', pull: row({ accumulated_value: 5 }) },
+  { name: 'a negative valorEstimadoProximoConcurso', payload: { ...BASE, valorEstimadoProximoConcurso: -1 }, worker: 'rejected', pull: 'rejected' },
+  { name: 'valorAcumuladoConcurso as a string', payload: { ...BASE, valorAcumuladoConcurso: '5' }, worker: 'rejected', pull: 'rejected' },
   {
     name: 'a null valorAcumuladoConcurso falls back to valorAcumuladoProximoConcurso',
     payload: { ...BASE, valorAcumuladoConcurso: null, valorAcumuladoProximoConcurso: 77 },
@@ -172,7 +172,7 @@ const CORPUS: PayloadCase[] = [
     name: 'fractional winners in a mapped tier',
     payload: { ...BASE, listaRateioPremio: [{ faixa: 1, numeroDeGanhadores: 1.5, valorPremio: 10 }] },
     worker: 'rejected',
-    pull: row({ prize_sena: 10, winners_sena: 1.5 }),
+    pull: 'rejected',
   },
   { name: 'an impossible calendar date', payload: { ...BASE, dataApuracao: '31/02/2026' }, worker: 'rejected', pull: 'rejected' },
   { name: 'an ISO date', payload: { ...BASE, dataApuracao: '1996-03-11' }, worker: row(), pull: row() },
@@ -247,11 +247,11 @@ describe('Worker ingestion core', () => {
     expect(storedRows()).toEqual([]);
   });
 
-  it('converts each fetched draw once', async () => {
+  it('binds each fetched draw once, without converting it again', async () => {
     let reads = 0;
-    const payload = new Proxy({ ...BASE }, {
+    const payload = new Proxy(seedDraw(1), {
       get(target, key, receiver) {
-        if (key === 'listaDezenas') reads++;
+        if (key === 'numbers') reads++;
         return Reflect.get(target, key, receiver) as unknown;
       },
     });
