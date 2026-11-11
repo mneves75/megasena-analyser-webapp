@@ -74,7 +74,7 @@ describe('prune CLIs (bun run audit:prune / log:prune)', () => {
   function retentionEvents(file: string, prefix: string): string[] {
     const db = new DatabaseSync(file, { readOnly: true });
     try {
-      const rows = db.prepare('SELECT event FROM log_events WHERE event LIKE ? ORDER BY timestamp, event').all(`${prefix}.retention_%`) as { event: string }[];
+      const rows = db.prepare('SELECT event FROM log_events WHERE event LIKE ? ORDER BY rowid').all(`${prefix}.retention_%`) as { event: string }[];
       return rows.map(row => row.event);
     } finally {
       db.close();
