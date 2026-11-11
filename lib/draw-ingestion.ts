@@ -9,6 +9,7 @@ import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { getDatabase } from '@/lib/db';
 import { withDatabaseTransaction } from '@/lib/db-transaction';
+import { toIsoDate } from '@/lib/utils';
 
 /** A storage-ready draw in the public seed shape: ISO date, six ascending numbers. */
 export interface Draw {
@@ -34,9 +35,13 @@ const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'data deve estar em YYYY-MM-DD')
   .refine((value) => {
-    // Runs even when the regex failed, so an unparsable value must not throw.
-    const date = new Date(`${value}T00:00:00Z`);
-    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    // The rule toIsoDate and formatDate apply (years 0000-0099 included), so a
+    // stored date always renders. Runs even when the regex failed: never throw.
+    try {
+      return toIsoDate(value) === value;
+    } catch {
+      return false;
+    }
   }, 'data inexistente no calendário');
 const seedDrawSchema = z.object({
   contest: z.number().int().positive(),

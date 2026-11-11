@@ -292,6 +292,10 @@ const worker = {
       const preloaded = await env.PRELOADED.getByName('preloaded').status();
       assert(preloaded.draws === 1 && preloaded.lastContest === 1, `bootstrap only on an empty database: ${JSON.stringify(preloaded)}`);
       assert(await seeded.importDraws(seed.slice(0, 10)) === 0, 'seed append duplicate');
+      let yearRejected = false;
+      const yearControl = env.PRELOADED.getByName('year-control');
+      try { await yearControl.importDraws([{ ...storedDraw, contest: 2, date: '0001-01-01' }]); } catch { yearRejected = true; }
+      assert(yearRejected && (await yearControl.status()).draws === 1, 'seed boundary rejects a year below 0100 like toIsoDate');
       assert((await seeded.status()).draws === seed.length, 'seed not replaced');
       const health = await seeded.handle(new Request('https://example.com/api/health'), { clientIp: null, secure: true });
       assert(health.status === 200, 'real API health request');

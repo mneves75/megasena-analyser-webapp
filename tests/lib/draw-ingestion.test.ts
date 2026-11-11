@@ -245,9 +245,29 @@ describe('Worker ingestion core', () => {
     expect(storedRows()).toEqual([]);
   });
 
-  it('parseSeedDraws rejects a repeated contest and more than 10,000 draws', () => {
+  it('parseSeedDraws rejects a year below 0100, which toIsoDate and formatDate reject', () => {
+    // Date.UTC maps years 0-99 to 1900-1999, so the old Worker path refused them.
+    for (const date of ['0001-01-01', '0099-12-31']) {
+      expect(() => parseSeedDraws([seedDraw(1, { date })])).toThrow(ZodError);
+    }
+    expect(parseSeedDraws([seedDraw(1, { date: '0100-01-01' })])[0]?.date).toBe('0100-01-01');
+  });
+
+  it('parseSeedDraws rejects a repeated contest', () => {
     expect(() => parseSeedDraws([seedDraw(1), seedDraw(1)])).toThrow(ZodError);
-    expect(() => parseSeedDraws(Array.from({ length: 10001 }, (_, index) => seedDraw(index + 1)))).toThrow(ZodError);
+  });
+
+  it('parseSeedDraws rejects more than 10,000 otherwise valid draws on the array length alone', () => {
+    const start = Date.parse('1996-03-11T00:00:00Z');
+    const draws = (length: number) => Array.from({ length }, (_, index) =>
+      seedDraw(index + 1, { date: new Date(start + index * 86_400_000).toISOString().slice(0, 10) }));
+    expect(parseSeedDraws(draws(10000))).toHaveLength(10000);
+    let error: unknown;
+    try { parseSeedDraws(draws(10001)); } catch (caught) { error = caught; }
+    expect(error).toBeInstanceOf(ZodError);
+    expect((error as ZodError).issues).toEqual([
+      expect.objectContaining({ code: 'too_big', origin: 'array', maximum: 10000, path: [] }),
+    ]);
   });
 
   it('stores unsorted seed numbers in ascending order', () => {
