@@ -8,6 +8,8 @@ Escrito contra commit: 9d5417f. Finding: PERF-02 (HIGH).
 - `lib/analytics/streak-analysis.ts:145-153`: `getHotNumbers()`+`getColdNumbers()` → 2× `getHotStreaks()`. `server.ts:568-570`.
 - `lib/analytics/delay-analysis.ts:129-131`: `getDelayDistribution()` re-chama `getNumberDelays()`. `server.ts:537-538`.
 
+> Nota (2026-11-11): `getLuckyNumbers()`, `getUnluckyNumbers()` e `getColdNumbers()` foram removidos na versão 1.20.0 porque nada os chamava.
+
 ## Mudanças
 
 Em cada engine, computar a lista completa uma vez e derivar os subconjuntos:

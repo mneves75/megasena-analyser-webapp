@@ -236,48 +236,68 @@ export async function generateBets(budget: number) {
 
 ## Padrão: Server Component + Client Leaf
 
-Esquema ilustrativo (o `app/dashboard/generator/page.tsx` real difere):
+Exemplo real, resumido: a página de estatísticas busca os dados no servidor e entrega ao cliente só a lista de seções, para o índice fixo que destaca a seção visível.
 
 ```typescript
-// Server Component (busca dados)
-import { BetGenerator } from '@/lib/analytics/bet-generator';
-import { BetGeneratorForm } from './bet-generator-form';
+// app/dashboard/statistics/page.tsx (Server Component: busca dados)
+import { SectionNav, type StatisticsSection } from '@/components/statistics/section-nav';
 
-export default async function GeneratorPage() {
-  const generator = new BetGenerator();
-  const availableBets = generator.getAvailableMultipleBets(1000);
+export default async function StatisticsPage() {
+  const { delays, decades /* , ... */ } = await getStatisticsData();
+
+  // Só entram as seções que têm dados.
+  const sections: StatisticsSection[] = [
+    { id: 'frequencia', label: 'Frequência' },
+    ...(delays && delays.length > 0 ? [{ id: 'atraso', label: 'Atraso' }] : []),
+    ...(decades && decades.length > 0 ? [{ id: 'dezenas', label: 'Dezenas' }] : []),
+    { id: 'tabelas', label: 'Tabelas' },
+  ];
 
   return (
     <div>
-      <h1>Gerador de Apostas</h1>
-      {/* Client Component recebe dados pré-buscados */}
-      <BetGeneratorForm availableBets={availableBets} />
+      {/* Client Component recebe dados já calculados no servidor */}
+      <SectionNav sections={sections} />
+      {/* ... seções renderizadas no servidor ... */}
     </div>
   );
 }
 ```
 
 ```typescript
-// components/bet-generator-form.tsx
-'use client'; // Necessário para useState e form handling
+// components/statistics/section-nav.tsx
+'use client'; // Necessário para useState, useEffect e IntersectionObserver
 
-interface BetGeneratorFormProps {
-  availableBets: Array<{ numbers: number; cost: number }>;
+export interface StatisticsSection {
+  id: string;
+  label: string;
 }
 
-export function BetGeneratorForm({ availableBets }: BetGeneratorFormProps) {
-  const [bets, setBets] = useState([]);
+export function SectionNav({ sections }: { sections: StatisticsSection[] }) {
+  const [activeId, setActiveId] = useState(sections[0]?.id ?? '');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.find((entry) => entry.isIntersecting);
+      if (visible) setActiveId(visible.target.id);
+    });
+    sections
+      .map((section) => document.getElementById(section.id))
+      .forEach((element) => element && observer.observe(element));
+    return () => observer.disconnect();
+  }, [sections]);
 
   return (
-    <form>
-      <select name="numbers">
-        {availableBets.map((bet) => (
-          <option key={bet.numbers} value={bet.numbers}>
-            {bet.numbers} números (R${bet.cost})
-          </option>
-        ))}
-      </select>
-    </form>
+    <nav aria-label="Seções da análise">
+      {sections.map((section) => (
+        <a
+          key={section.id}
+          href={`#${section.id}`}
+          aria-current={section.id === activeId ? 'true' : undefined}
+        >
+          {section.label}
+        </a>
+      ))}
+    </nav>
   );
 }
 ```
