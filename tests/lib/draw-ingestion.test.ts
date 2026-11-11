@@ -238,6 +238,18 @@ describe('Worker ingestion core', () => {
     expect(() => importSeed([seedDraw(2), seedDraw(3)])).toThrow();
     expect(storedRows()).toEqual([]);
   });
+
+  it('converts each fetched draw once', async () => {
+    let reads = 0;
+    const payload = new Proxy({ ...BASE }, {
+      get(target, key, receiver) {
+        if (key === 'listaDezenas') reads++;
+        return Reflect.get(target, key, receiver) as unknown;
+      },
+    });
+    await expect(refreshDraws(getDatabase(), { fetchDraw: async () => payload })).resolves.toMatchObject({ inserted: 1 });
+    expect(reads).toBe(1);
+  });
 });
 
 describe('Bun CLIs that store draws', () => {

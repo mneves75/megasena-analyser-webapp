@@ -3,7 +3,7 @@ import { createDurableDatabase, getDatabase, runWithDatabase } from '../../lib/c
 import { withDatabaseTransaction } from '../../lib/db-transaction';
 import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
-import { appendDraws, DrawSourceFailure, refreshDraws } from '../../cloudflare/ingestion';
+import { appendDraws, DrawSourceFailure, refreshDraws, type Draw } from '../../cloudflare/ingestion';
 import { CaixaAPIClient } from '../../lib/api/caixa-client';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
@@ -19,6 +19,10 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const draw = { numero: 1, dataApuracao: '11/03/1996', listaDezenas: ['04', '05', '30', '33', '41', '52'] };
+// The same contest as a storage-ready draw.
+const storedDraw: Draw = { contest: 1, date: '1996-03-11', numbers: [4, 5, 30, 33, 41, 52],
+  prizeSena: 0, winnersSena: 0, prizeQuina: 0, winnersQuina: 0, prizeQuadra: 0, winnersQuadra: 0,
+  totalCollection: 0, accumulated: false, accumulatedValue: 0, nextEstimatedPrize: 0, specialDraw: false };
 const drawColumns = `contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6,
   prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
   total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw`;
@@ -74,15 +78,15 @@ export class TestData extends DurableObject {
       let rolledBack = false;
       try {
         withDatabaseTransaction(db, () => {
-          appendDraws(db, [draw]);
+          appendDraws(db, [storedDraw]);
           throw new Error('outer rollback');
         });
       } catch { rolledBack = true; }
       assert(rolledBack, 'outer failure must surface');
       assert((db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === 0, 'nested draw rollback');
       assert((db.prepare('SELECT SUM(frequency) AS count FROM number_frequency').get() as { count: number }).count === 0, 'nested cache rollback');
-      const first = appendDraws(db, [draw]);
-      const repeat = appendDraws(db, [draw]);
+      const first = appendDraws(db, [storedDraw]);
+      const repeat = appendDraws(db, [storedDraw]);
       assert(first === 1 && repeat === 0, 'idempotent append and actual changes');
       assert((db.prepare('SELECT COUNT(*) AS count FROM number_pair_frequency').get() as { count: number }).count === 15, 'pair cache real SQL');
       let networkOutsideTransaction = false;
@@ -106,7 +110,7 @@ export class TestData extends DurableObject {
       } catch (error) { rejected = error instanceof DrawSourceFailure; }
       assert(rejected && (db.prepare('SELECT MAX(contest_number) AS last FROM draws').get() as { last: number }).last === 3, 'invalid source control');
       rejected = false;
-      try { appendDraws(db, [{ ...draw, listaDezenas: ['1', '2', '3', '4', '5', '6'] }]); } catch { rejected = true; }
+      try { appendDraws(db, [{ ...storedDraw, numbers: [1, 2, 3, 4, 5, 6] }]); } catch { rejected = true; }
       assert(rejected, 'existing draw conflict');
       const before = (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
       rejected = false;

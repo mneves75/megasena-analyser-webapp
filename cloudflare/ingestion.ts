@@ -7,6 +7,24 @@ import { withDatabaseTransaction, type DatabaseLike } from '@/lib/db-transaction
 import { runWithDatabase } from '@/lib/cloudflare/database';
 import { toIsoDate } from '@/lib/utils';
 
+/** A storage-ready draw in the public seed shape: ISO date, six ascending numbers. */
+export interface Draw {
+  contest: number;
+  date: string;
+  numbers: number[];
+  prizeSena: number | null;
+  winnersSena: number;
+  prizeQuina: number | null;
+  winnersQuina: number;
+  prizeQuadra: number | null;
+  winnersQuadra: number;
+  totalCollection: number | null;
+  accumulated: boolean;
+  accumulatedValue: number | null;
+  nextEstimatedPrize: number | null;
+  specialDraw: boolean;
+}
+
 const money = z.number().finite().nonnegative().nullable();
 const winners = z.number().int().nonnegative();
 const seedSchema = z.object({
@@ -28,12 +46,36 @@ export class DrawSourceFailure extends Error {
   }
 }
 
-async function fetchValidatedDraw(source: DrawSource, contest?: number): Promise<MegaSenaDrawData> {
+function toDraw(draw: MegaSenaDrawData): Draw {
+  if (!Number.isInteger(draw.numero) || draw.numero < 1) throw new Error('Invalid contest number.');
+  const numbers = normalizeMegaSenaNumbers(draw.listaDezenas);
+  const tier = (name: string) => draw.rateioProcessamento?.find(item => item.descricaoFaixa === name);
+  const sena = tier('Sena');
+  const quina = tier('Quina');
+  const quadra = tier('Quadra');
+  const prizes = {
+    prizeSena: sena?.valorPremio ?? 0, winnersSena: sena?.numeroDeGanhadores ?? 0,
+    prizeQuina: quina?.valorPremio ?? 0, winnersQuina: quina?.numeroDeGanhadores ?? 0,
+    prizeQuadra: quadra?.valorPremio ?? 0, winnersQuadra: quadra?.numeroDeGanhadores ?? 0,
+    totalCollection: draw.valorArrecadado ?? 0, accumulatedValue: draw.valorAcumuladoConcurso ?? 0,
+    nextEstimatedPrize: draw.valorEstimadoProximoConcurso ?? 0,
+  };
+  if (Object.values(prizes).some(value => !Number.isFinite(value) || value < 0)) throw new Error('Invalid draw prize data.');
+  if (![prizes.winnersSena, prizes.winnersQuina, prizes.winnersQuadra].every(Number.isInteger)) {
+    throw new Error('Invalid draw winner count.');
+  }
+  return {
+    contest: draw.numero, date: toIsoDate(draw.dataApuracao), numbers, ...prizes,
+    accumulated: Boolean(draw.acumulado), specialDraw: Boolean(draw.concursoEspecial),
+  };
+}
+
+/** Fetch and convert inside one boundary: any bad payload becomes a source failure. */
+async function fetchFromSource(source: DrawSource, contest?: number): Promise<Draw> {
   try {
     const draw = await source.fetchDraw(contest);
     if (contest !== undefined && draw.numero !== contest) throw new Error(`Requested contest ${contest}, received ${draw.numero}.`);
-    drawValues(draw);
-    return draw;
+    return toDraw(draw);
   } catch (error) {
     throw new DrawSourceFailure(error);
   }
@@ -53,36 +95,26 @@ const insertSql = `INSERT INTO draws (
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(contest_number) DO NOTHING`;
 
-function drawValues(draw: MegaSenaDrawData): unknown[] {
-  if (!Number.isInteger(draw.numero) || draw.numero < 1) throw new Error('Invalid contest number.');
-  const numbers = normalizeMegaSenaNumbers(draw.listaDezenas);
-  const tier = (name: string) => draw.rateioProcessamento?.find(item => item.descricaoFaixa === name);
-  const values = [
-    tier('Sena')?.valorPremio ?? 0, tier('Sena')?.numeroDeGanhadores ?? 0,
-    tier('Quina')?.valorPremio ?? 0, tier('Quina')?.numeroDeGanhadores ?? 0,
-    tier('Quadra')?.valorPremio ?? 0, tier('Quadra')?.numeroDeGanhadores ?? 0,
-    draw.valorArrecadado ?? 0, draw.acumulado ? 1 : 0,
-    draw.valorAcumuladoConcurso ?? 0, draw.valorEstimadoProximoConcurso ?? 0,
-    draw.concursoEspecial ? 1 : 0,
-  ];
-  if (values.some(value => !Number.isFinite(value) || value < 0)) throw new Error('Invalid draw prize data.');
-  for (const index of [1, 3, 5]) {
-    if (!Number.isInteger(values[index])) throw new Error('Invalid draw winner count.');
-  }
-  return [draw.numero, toIsoDate(draw.dataApuracao), ...numbers, ...values];
+/** The Durable Object adapter rejects boolean and undefined bindings: booleans bind as 0/1. */
+function bindings(draw: Draw): (string | number | null)[] {
+  return [draw.contest, draw.date, ...draw.numbers,
+    draw.prizeSena, draw.winnersSena, draw.prizeQuina, draw.winnersQuina,
+    draw.prizeQuadra, draw.winnersQuadra, draw.totalCollection, Number(draw.accumulated),
+    draw.accumulatedValue, draw.nextEstimatedPrize, Number(draw.specialDraw)];
 }
 
-function appendValues(database: DatabaseLike, entries: unknown[][]): number {
+export function appendDraws(database: DatabaseLike, draws: readonly Draw[]): number {
   return runWithDatabase(database, () => withDatabaseTransaction(database, () => {
     const insert = database.prepare(insertSql);
     let inserted = 0;
-    for (const values of entries) {
+    for (const draw of draws) {
+      const values = bindings(draw);
       const existing = database.prepare(`SELECT draw_date, number_1, number_2, number_3,
-        number_4, number_5, number_6 FROM draws WHERE contest_number = ?`).get(values[0]) as Record<string, unknown> | undefined;
+        number_4, number_5, number_6 FROM draws WHERE contest_number = ?`).get(draw.contest) as Record<string, unknown> | undefined;
       if (existing) {
         const stored = [existing['draw_date'], ...Array.from({ length: 6 }, (_, index) => existing[`number_${index + 1}`])];
         if (stored.some((value, index) => value !== values[index + 1])) {
-          throw new Error(`Existing contest ${values[0]} conflicts with incoming date or numbers.`);
+          throw new Error(`Existing contest ${draw.contest} conflicts with incoming date or numbers.`);
         }
       }
       insert.run(...values);
@@ -102,23 +134,15 @@ function appendValues(database: DatabaseLike, entries: unknown[][]): number {
   }));
 }
 
-export function appendDraws(database: DatabaseLike, draws: MegaSenaDrawData[]): number {
-  return appendValues(database, draws.map(drawValues));
-}
-
 /** Binding-only administration: append validated public seed rows without replacing existing data. */
 export function importSeedDraws(database: DatabaseLike, input: unknown): number {
   const draws = z.array(seedSchema).max(10000).parse(input);
   const seen = new Set<number>();
-  const entries = draws.map(draw => {
+  return appendDraws(database, draws.map(draw => {
     if (seen.has(draw.contest)) throw new Error(`Duplicate seed contest ${draw.contest}.`);
     seen.add(draw.contest);
-    return [draw.contest, toIsoDate(draw.date), ...normalizeMegaSenaNumbers(draw.numbers),
-      draw.prizeSena, draw.winnersSena, draw.prizeQuina, draw.winnersQuina,
-      draw.prizeQuadra, draw.winnersQuadra, draw.totalCollection, Number(draw.accumulated),
-      draw.accumulatedValue, draw.nextEstimatedPrize, Number(draw.specialDraw)];
-  });
-  return appendValues(database, entries);
+    return { ...draw, date: toIsoDate(draw.date), numbers: normalizeMegaSenaNumbers(draw.numbers) };
+  }));
 }
 
 export async function refreshDraws(
@@ -129,17 +153,16 @@ export async function refreshDraws(
   const maxDraws = options.maxDraws ?? 5;
   if (!Number.isInteger(maxDraws) || maxDraws < 1 || maxDraws > 20) throw new Error('Refresh batch must contain 1–20 draws.');
   const previous = database.prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { last: number };
-  const latest = await fetchValidatedDraw(source);
-  if (latest.numero < previous.last) throw new DrawSourceFailure('CAIXA latest contest is older than stored data.');
-  const end = Math.min(latest.numero, previous.last + maxDraws);
-  const draws: MegaSenaDrawData[] = [];
+  const latest = await fetchFromSource(source);
+  if (latest.contest < previous.last) throw new DrawSourceFailure('CAIXA latest contest is older than stored data.');
+  const end = Math.min(latest.contest, previous.last + maxDraws);
+  const draws: Draw[] = [];
   // All network work completes before the first SQLite write or writer transaction.
   for (let contest = previous.last + 1; contest <= end; contest++) {
-    const draw = contest === latest.numero ? latest : await fetchValidatedDraw(source, contest);
-    draws.push(draw);
+    draws.push(contest === latest.contest ? latest : await fetchFromSource(source, contest));
   }
   if (draws.length === 0) draws.push(latest);
   const inserted = appendDraws(database, draws);
   const current = database.prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { last: number };
-  return { status: current.last === latest.numero ? 'success' : 'incomplete', inserted, lastContest: current.last, latestContest: latest.numero };
+  return { status: current.last === latest.contest ? 'success' : 'incomplete', inserted, lastContest: current.last, latestContest: latest.contest };
 }
