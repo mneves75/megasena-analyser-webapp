@@ -99,8 +99,14 @@ export class StatisticsEngine {
     }
   }
 
-  /** Draw count and latest draw: all the health check needs. */
+  /**
+   * Draw count and latest draw: all the health check reports. It also touches the
+   * frequency cache table, so health still fails when the analytics schema is
+   * unreadable, as it did when it built the full statistics.
+   */
   getDrawSummary(): Pick<DrawStatistics, 'totalDraws' | 'lastDrawDate' | 'lastContestNumber'> {
+    this.db.prepare('SELECT 1 FROM number_frequency LIMIT 1').get();
+
     const totalDraws = (
       this.db.prepare('SELECT COUNT(*) as count FROM draws').get() as { count: number }
     ).count;
