@@ -34,6 +34,7 @@ import {
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 interface DrawRouteProps {
@@ -204,6 +205,7 @@ export default async function DrawResultPage({
         datePublished={draw.drawDate}
         dateModified={page.lastModified}
       />
+      <EdgeCacheable />
 
       <header className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />

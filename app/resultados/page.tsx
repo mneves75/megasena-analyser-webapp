@@ -21,6 +21,7 @@ import {
   tableClass,
   thClass,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const PATH = '/resultados';
@@ -67,6 +68,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
             : []
         }
       />
+      <EdgeCacheable />
 
       <div className="space-y-8">
         <header className="space-y-5">

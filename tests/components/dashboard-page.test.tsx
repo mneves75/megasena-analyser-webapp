@@ -5,10 +5,13 @@ import { pt } from '@/lib/i18n';
 
 vi.mock('@/components/seo/page-json-ld', () => ({ PageJsonLd: () => null }));
 vi.mock('@/lib/api/forwarded-client-ip', () => ({ forwardedClientIpHeaders: async () => ({}) }));
+const api = vi.hoisted(() => ({ fail: false }));
+
 vi.mock('@/lib/api/api-fetch', () => ({
   buildApiUrl: (path: string) => `http://localhost${path}`,
-  fetchApi: async () =>
-    Response.json({
+  fetchApi: async () => {
+    if (api.fail) throw new Error('API unavailable');
+    return Response.json({
       statistics: {
         totalDraws: 3006,
         lastDrawDate: '2026-05-12',
@@ -44,10 +47,28 @@ vi.mock('@/lib/api/api-fetch', () => ({
         },
       ],
       hotNumbers: [{ number: 42, recentOccurrences: 4, trend: 'hot', streakIntensity: 2.5 }],
-    }),
+    });
+  },
 }));
 
 describe('DashboardPage', () => {
+  it('marks only a render from data fetched in this request as complete for the edge cache', async () => {
+    const fresh = render(await DashboardPage());
+    expect(fresh.container.querySelectorAll('[data-edge-cache="complete"]')).toHaveLength(1);
+    fresh.unmount();
+
+    // The module-level copy keeps the page available, but it is not this request's data.
+    api.fail = true;
+    try {
+      const stale = render(await DashboardPage());
+      expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+      expect(stale.container.querySelector('[data-edge-cache]')).toBeNull();
+      stale.unmount();
+    } finally {
+      api.fail = false;
+    }
+  });
+
   it('keeps a strict heading outline: one h1, then h2 sections, no level skipped', async () => {
     render(await DashboardPage());
     const levels = screen.getAllByRole('heading').map((h) => Number(h.tagName.slice(1)));

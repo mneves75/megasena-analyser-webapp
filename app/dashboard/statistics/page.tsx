@@ -33,6 +33,7 @@ import {
   phoneLineClass,
   wideCellClass,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -74,7 +75,8 @@ interface StatisticsApiResponse {
 const STATISTICS_CACHE_TTL_MS = 10 * 60 * 1000;
 let cachedStatistics: { data: StatisticsApiResponse; fetchedAt: number } | null = null;
 
-async function getStatisticsData(): Promise<StatisticsApiResponse> {
+/** `fresh` is false when the data is the module-level copy from an earlier request. */
+async function getStatisticsData(): Promise<{ data: StatisticsApiResponse; fresh: boolean }> {
   // Build query string with all required parameters
   const params = new URLSearchParams({
     delays: 'true',
@@ -112,7 +114,7 @@ async function getStatisticsData(): Promise<StatisticsApiResponse> {
 
     const data = (await response.json()) as StatisticsApiResponse;
     cachedStatistics = { data, fetchedAt: Date.now() };
-    return data;
+    return { data, fresh: true };
   } catch (error) {
     const cached = cachedStatistics;
     const now = Date.now();
@@ -123,7 +125,7 @@ async function getStatisticsData(): Promise<StatisticsApiResponse> {
         cacheAgeMs: now - cached.fetchedAt,
         errorMessage: error instanceof Error ? error.message : String(error),
       });
-      return cached.data;
+      return { data: cached.data, fresh: false };
     }
 
     if (!responseErrorLogged) {
@@ -448,6 +450,7 @@ function signedPoints(value: number): string {
 }
 
 export default async function StatisticsPage() {
+  const { data, fresh } = await getStatisticsData();
   const {
     summary,
     frequencies,
@@ -464,7 +467,7 @@ export default async function StatisticsPage() {
     coldNumbers,
     luckyNumbers,
     unluckyNumbers,
-  } = await getStatisticsData();
+  } = data;
 
   const through = summary.lastContestNumber;
   const topCount = STATISTICS_DISPLAY.TOP_NUMBERS_COUNT;
@@ -516,6 +519,7 @@ export default async function StatisticsPage() {
           { name: 'Estatísticas', url: '/dashboard/statistics' },
         ]}
       />
+      {fresh ? <EdgeCacheable /> : null}
 
       <header className="mb-6 space-y-3">
         <PageTitle>{pt.statistics.title}</PageTitle>

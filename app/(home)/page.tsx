@@ -18,6 +18,7 @@ import {
   textLinkClass,
 } from '@/app/_components/archive-ui';
 import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 
 const homeFaqs = [
   {
@@ -79,6 +80,8 @@ interface LatestDraw {
 interface HomeSnapshot {
   latestDraw: LatestDraw | null;
   lastContestNumber: number | null;
+  /** True only when this request fetched the latest draw; false for every fallback. */
+  fresh: boolean;
 }
 
 async function getHomeSnapshot(): Promise<HomeSnapshot> {
@@ -103,18 +106,20 @@ async function getHomeSnapshot(): Promise<HomeSnapshot> {
     return {
       latestDraw,
       lastContestNumber: data.statistics?.lastContestNumber ?? latestDraw?.contestNumber ?? null,
+      // Without a draw the hero shows the "unavailable" copy: never a page to store.
+      fresh: latestDraw !== null,
     };
   } catch (error) {
     logger.warn('home.snapshot_fallback', {
       route: '/api/dashboard',
       errorMessage: error instanceof Error ? error.message : String(error),
     });
-    return { latestDraw: null, lastContestNumber: null };
+    return { latestDraw: null, lastContestNumber: null, fresh: false };
   }
 }
 
 export default async function HomePage(): Promise<React.JSX.Element> {
-  const { latestDraw, lastContestNumber } = await getHomeSnapshot();
+  const { latestDraw, lastContestNumber, fresh } = await getHomeSnapshot();
 
   return (
     <>
@@ -124,6 +129,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         description={pt.meta.home.description}
         extra={[generateFAQSchema(homeFaqs)]}
       />
+      {fresh ? <EdgeCacheable /> : null}
       <div className="space-y-16 lg:space-y-20">
         <header className="space-y-6">
           <HomeLatestDraw draw={latestDraw} lastContestNumber={lastContestNumber} />

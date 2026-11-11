@@ -3,13 +3,16 @@ import { render, screen, within } from '@testing-library/react';
 import StatisticsPage from '@/app/dashboard/statistics/page';
 import { pt } from '@/lib/i18n';
 
-const api = vi.hoisted(() => ({ payload: {} as Record<string, unknown> }));
+const api = vi.hoisted(() => ({ payload: {} as Record<string, unknown>, fail: false }));
 
 vi.mock('@/components/seo/page-json-ld', () => ({ PageJsonLd: () => null }));
 vi.mock('@/lib/api/forwarded-client-ip', () => ({ forwardedClientIpHeaders: async () => ({}) }));
 vi.mock('@/lib/api/api-fetch', () => ({
   buildApiUrl: (path: string) => `http://localhost${path}`,
-  fetchApi: async () => Response.json(api.payload),
+  fetchApi: async () => {
+    if (api.fail) throw new Error('API unavailable');
+    return Response.json(api.payload);
+  },
 }));
 
 const numbers = Array.from({ length: 60 }, (_, index) => index + 1);
@@ -265,6 +268,23 @@ describe('StatisticsPage', () => {
       expect(lines[0]?.className).toMatch(/\bblock\b/);
       expect(lines[0]?.className).toContain('text-muted-foreground');
       expect(lines[0]?.closest('td')?.textContent).toMatch(/^\d+,\d{2}%/);
+    }
+  });
+
+  it('marks only a render from data fetched in this request as complete for the edge cache', async () => {
+    const fresh = render(await StatisticsPage());
+    expect(fresh.container.querySelectorAll('[data-edge-cache="complete"]')).toHaveLength(1);
+    fresh.unmount();
+
+    // The module-level copy keeps the page available, but it is not this request's data.
+    api.fail = true;
+    try {
+      const stale = render(await StatisticsPage());
+      expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+      expect(stale.container.querySelector('[data-edge-cache]')).toBeNull();
+      stale.unmount();
+    } finally {
+      api.fail = false;
     }
   });
 
