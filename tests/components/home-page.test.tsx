@@ -42,7 +42,9 @@ describe('HomePage', () => {
       'href',
       '/concurso/3006'
     );
-    expect(hero.getByRole('list', { name: 'Dezenas sorteadas no concurso 3006' })).toBeInTheDocument();
+    expect(
+      hero.getByRole('list', { name: 'Dezenas sorteadas no concurso 3006' })
+    ).toBeInTheDocument();
     expect(hero.getByRole('link', { name: 'Acessar Dashboard' })).toHaveAttribute(
       'href',
       '/dashboard'

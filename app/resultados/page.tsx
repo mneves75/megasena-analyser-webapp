@@ -68,39 +68,41 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
         }
       />
 
-      <header className="space-y-5">
-        <Breadcrumbs items={BREADCRUMBS} />
-        <PageTitle>Resultados da Mega-Sena</PageTitle>
-        {latest ? (
-          <AnswerSummary>
-            O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado em{' '}
-            {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}.{' '}
-            {senaOutcome(latest)} O arquivo reúne{' '}
-            {countLabel(archive.totalDraws, 'concurso', 'concursos')}
-            {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
-          </AnswerSummary>
-        ) : (
-          <AnswerSummary>O arquivo de resultados está temporariamente vazio.</AnswerSummary>
-        )}
-        <ArchiveFreshness archive={archive} />
-      </header>
+      <div className="space-y-8">
+        <header className="space-y-5">
+          <Breadcrumbs items={BREADCRUMBS} />
+          <PageTitle>Resultados da Mega-Sena</PageTitle>
+          {latest ? (
+            <AnswerSummary>
+              O resultado mais recente do arquivo é o do concurso {latest.contestNumber}, sorteado
+              em {formatDate(latest.drawDate)}: {joinPtBr(latest.numbers.map(dezena))}.{' '}
+              {senaOutcome(latest)} O arquivo reúne{' '}
+              {countLabel(archive.totalDraws, 'concurso', 'concursos')}
+              {oldestYear ? ` desde ${oldestYear.year}` : ''}, com dados oficiais da CAIXA.
+            </AnswerSummary>
+          ) : (
+            <AnswerSummary>O arquivo de resultados está temporariamente vazio.</AnswerSummary>
+          )}
+          <ArchiveFreshness archive={archive} />
+        </header>
 
-      {latest ? (
-        <section aria-labelledby="ultimo">
-          <LatestDrawFigure
-            heading={<SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>}
-            numbers={latest.numbers}
-            fieldLabel={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
-          >
-            <p className="tabular-nums text-muted-foreground">
-              Sorteio de {formatDate(latest.drawDate)}
-            </p>
-            <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
-              Ver prêmios e análise do concurso {latest.contestNumber}
-            </ArchiveLink>
-          </LatestDrawFigure>
-        </section>
-      ) : null}
+        {latest ? (
+          <section aria-labelledby="ultimo">
+            <LatestDrawFigure
+              heading={<SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>}
+              numbers={latest.numbers}
+              fieldLabel={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
+            >
+              <p className="tabular-nums text-muted-foreground">
+                Sorteio de {formatDate(latest.drawDate)}
+              </p>
+              <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
+                Ver prêmios e análise do concurso {latest.contestNumber}
+              </ArchiveLink>
+            </LatestDrawFigure>
+          </section>
+        ) : null}
+      </div>
 
       {latest && latest.nextEstimatedPrize !== null ? (
         <section aria-labelledby="proximo" className="space-y-4 border-t-2 border-primary pt-5">

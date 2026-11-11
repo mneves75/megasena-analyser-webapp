@@ -62,4 +62,16 @@ describe('page shell', () => {
     expect(offenders).toEqual([]);
     expect(read('app/dashboard/page.tsx')).toContain('space-y-16 lg:space-y-20');
   });
+
+  it.each(['app/dashboard/page.tsx', 'app/resultados/page.tsx', 'app/mega-da-virada/page.tsx'])(
+    '%s sets its header and first figure as one opening, not two sections apart',
+    (file) => {
+      const source = read(file);
+      const opening = source.match(
+        /<div className="space-y-8">\s*<header[\s\S]*?\n {6}<\/div>/
+      )?.[0];
+      expect(opening).toBeDefined();
+      expect(opening).toContain('<LatestDrawFigure');
+    }
+  );
 });

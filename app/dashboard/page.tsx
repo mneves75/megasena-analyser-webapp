@@ -158,38 +158,42 @@ export default async function DashboardPage() {
         ]}
       />
 
-      <header className="space-y-3">
-        <PageTitle>{pt.dashboard.title}</PageTitle>
-        <SourceLine through={through} />
-      </header>
+      <div className="space-y-8">
+        <header className="space-y-3">
+          <PageTitle>{pt.dashboard.title}</PageTitle>
+          <SourceLine through={through} />
+        </header>
 
-      {lastDraw ? (
-        <section aria-labelledby="dashboard-last">
-          <LatestDrawFigure
-            heading={
-              <SectionHeading id="dashboard-last">Concurso {lastDraw.contestNumber}</SectionHeading>
-            }
-            numbers={lastDraw.numbers}
-            fieldLabel={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
-          >
-            <p className="text-muted-foreground tabular-nums">
-              Sorteio de {formatDate(lastDraw.drawDate)}
-            </p>
-            <dl className="border-t border-border pt-4">
-              <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
-              <dd className="font-condensed text-2xl font-semibold tabular-nums">
-                {lastDraw.accumulated ? 'Acumulou' : formatCurrency(lastDraw.prizeSena)}
-              </dd>
-            </dl>
-            <ArchiveLink
-              href={`/concurso/${lastDraw.contestNumber}`}
-              className={cn('inline-block', inlineLinkClass)}
+        {lastDraw ? (
+          <section aria-labelledby="dashboard-last">
+            <LatestDrawFigure
+              heading={
+                <SectionHeading id="dashboard-last">
+                  Concurso {lastDraw.contestNumber}
+                </SectionHeading>
+              }
+              numbers={lastDraw.numbers}
+              fieldLabel={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
             >
-              Ganhadores e rateio do concurso {lastDraw.contestNumber}
-            </ArchiveLink>
-          </LatestDrawFigure>
-        </section>
-      ) : null}
+              <p className="text-muted-foreground tabular-nums">
+                Sorteio de {formatDate(lastDraw.drawDate)}
+              </p>
+              <dl className="border-t border-border pt-4">
+                <dt className="text-sm text-muted-foreground">Prêmio da sena</dt>
+                <dd className="font-condensed text-2xl font-semibold tabular-nums">
+                  {lastDraw.accumulated ? 'Acumulou' : formatCurrency(lastDraw.prizeSena)}
+                </dd>
+              </dl>
+              <ArchiveLink
+                href={`/concurso/${lastDraw.contestNumber}`}
+                className={cn('inline-block', inlineLinkClass)}
+              >
+                Ganhadores e rateio do concurso {lastDraw.contestNumber}
+              </ArchiveLink>
+            </LatestDrawFigure>
+          </section>
+        ) : null}
+      </div>
 
       <section aria-labelledby="dashboard-archive" className="space-y-4">
         <SectionHeading id="dashboard-archive">{pt.dashboard.archiveTitle}</SectionHeading>

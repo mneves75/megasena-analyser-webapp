@@ -134,6 +134,17 @@ describe('DashboardPage latest draw', () => {
   });
 });
 
+describe('DashboardPage opening', () => {
+  it('keeps the latest draw next to the header, inside one opening block', async () => {
+    const { container } = render(await DashboardPage());
+    const header = container.querySelector('header') as HTMLElement;
+    expect(header.parentElement?.className).toBe('space-y-8');
+    expect(header.nextElementSibling).toContainElement(
+      screen.getByRole('heading', { level: 2, name: 'Concurso 3006' })
+    );
+  });
+});
+
 describe('DashboardPage source', () => {
   it('states the source once, in the page header', async () => {
     const { container } = render(await DashboardPage());

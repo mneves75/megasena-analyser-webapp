@@ -157,49 +157,51 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         {...(lastModified ? { dateModified: lastModified } : {})}
       />
 
-      <header className="space-y-5">
-        <Breadcrumbs items={BREADCRUMBS} />
-        <PageTitle>{HEADING}</PageTitle>
-        {latest ? (
-          <AnswerSummary>
-            A Mega da Virada mais recente do arquivo é a de {latest.edition}: concurso{' '}
-            {latest.draw.contestNumber}, sorteado em {formatDate(latest.draw.drawDate)}, com as
-            dezenas {joinPtBr(latest.draw.numbers.map(dezena))}. {senaOutcome(latest.draw)}
-            {first && editions.length > 1
-              ? ` O arquivo reúne ${editions.length} edições, de ${first.edition} a ${latest.edition}${
-                  everyEditionHadWinners
-                    ? ', e todas tiveram apostas que acertaram as seis dezenas'
-                    : ''
-                }.`
-              : ''}
-          </AnswerSummary>
-        ) : (
-          <AnswerSummary>
-            Nenhuma edição da Mega da Virada está no arquivo no momento.
-          </AnswerSummary>
-        )}
-        <p className="text-sm text-muted-foreground">Fonte: CAIXA Econômica Federal.</p>
-      </header>
+      <div className="space-y-8">
+        <header className="space-y-5">
+          <Breadcrumbs items={BREADCRUMBS} />
+          <PageTitle>{HEADING}</PageTitle>
+          {latest ? (
+            <AnswerSummary>
+              A Mega da Virada mais recente do arquivo é a de {latest.edition}: concurso{' '}
+              {latest.draw.contestNumber}, sorteado em {formatDate(latest.draw.drawDate)}, com as
+              dezenas {joinPtBr(latest.draw.numbers.map(dezena))}. {senaOutcome(latest.draw)}
+              {first && editions.length > 1
+                ? ` O arquivo reúne ${editions.length} edições, de ${first.edition} a ${latest.edition}${
+                    everyEditionHadWinners
+                      ? ', e todas tiveram apostas que acertaram as seis dezenas'
+                      : ''
+                  }.`
+                : ''}
+            </AnswerSummary>
+          ) : (
+            <AnswerSummary>
+              Nenhuma edição da Mega da Virada está no arquivo no momento.
+            </AnswerSummary>
+          )}
+          <p className="text-sm text-muted-foreground">Fonte: CAIXA Econômica Federal.</p>
+        </header>
 
-      {latest ? (
-        <section aria-labelledby="ultima">
-          <LatestDrawFigure
-            heading={<SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>}
-            numbers={latest.draw.numbers}
-            fieldLabel={`Dezenas sorteadas na Mega da Virada ${latest.edition}`}
-          >
-            <p className="tabular-nums text-muted-foreground">
-              Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
-            </p>
-            <ArchiveLink
-              href={`/concurso/${latest.draw.contestNumber}`}
-              className={inlineLinkClass}
+        {latest ? (
+          <section aria-labelledby="ultima">
+            <LatestDrawFigure
+              heading={<SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>}
+              numbers={latest.draw.numbers}
+              fieldLabel={`Dezenas sorteadas na Mega da Virada ${latest.edition}`}
             >
-              Ver prêmios e análise do concurso {latest.draw.contestNumber}
-            </ArchiveLink>
-          </LatestDrawFigure>
-        </section>
-      ) : null}
+              <p className="tabular-nums text-muted-foreground">
+                Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
+              </p>
+              <ArchiveLink
+                href={`/concurso/${latest.draw.contestNumber}`}
+                className={inlineLinkClass}
+              >
+                Ver prêmios e análise do concurso {latest.draw.contestNumber}
+              </ArchiveLink>
+            </LatestDrawFigure>
+          </section>
+        ) : null}
+      </div>
 
       {editions.length > 1 ? <FactList facts={recordFacts(editions)} /> : null}
 
