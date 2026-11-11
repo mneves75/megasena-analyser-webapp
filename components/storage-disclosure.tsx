@@ -2,6 +2,8 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { pt } from '@/lib/i18n';
 
 const STORAGE_KEY = 'megasena-privacy-ack';
@@ -30,7 +32,9 @@ function getServerSnapshot(): string {
 }
 
 /**
- * Storage disclosure rendered in the document flow, directly above the page.
+ * Storage disclosure rendered in the document flow, between the header and
+ * the page: one line (the short statement and the button), with the
+ * key-by-key text and the links inside a native disclosure.
  *
  * It used to be a fixed bottom bar, which sat on top of the generator's submit
  * button and the home hero's last-draw numbers until the visitor dismissed it.
@@ -61,33 +65,40 @@ export function StorageDisclosure(): React.ReactElement | null {
       aria-label={pt.storageBanner.ariaLabel}
       className="border-b border-border bg-tint"
     >
-      <div className="page flex items-start gap-3 py-3">
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-sm font-semibold text-foreground">{pt.storageBanner.title}</p>
-          <p className="text-xs text-muted-foreground">{pt.storageBanner.body}</p>
-          <p className="text-xs text-muted-foreground">
-            <Link
-              href={pt.storageBanner.learnMoreHref}
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              {pt.storageBanner.learnMore}
-            </Link>
-            <span aria-hidden> · </span>
-            <Link
-              href={pt.storageBanner.rightsLinkHref}
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              {pt.storageBanner.rightsLink}
-            </Link>
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleAccept}
-          className="inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
+      <div className="page flex items-start gap-3 py-1.5">
+        <details className="group min-w-0 flex-1 text-sm">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-tint [&::-webkit-details-marker]:hidden">
+            <span>
+              <span className="font-semibold text-foreground">{pt.storageBanner.title}.</span>{' '}
+              <span className="text-muted-foreground">{pt.storageBanner.summary}</span>
+            </span>
+            <ChevronDown
+              aria-hidden
+              className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
+            />
+          </summary>
+          <div className="max-w-[68ch] space-y-1 pb-3 text-xs text-muted-foreground">
+            <p>{pt.storageBanner.body}</p>
+            <p>
+              <Link
+                href={pt.storageBanner.learnMoreHref}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                {pt.storageBanner.learnMore}
+              </Link>
+              <span aria-hidden> · </span>
+              <Link
+                href={pt.storageBanner.rightsLinkHref}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                {pt.storageBanner.rightsLink}
+              </Link>
+            </p>
+          </div>
+        </details>
+        <Button size="sm" onClick={handleAccept} className="shrink-0">
           {pt.storageBanner.accept}
-        </button>
+        </Button>
       </div>
     </div>
   );

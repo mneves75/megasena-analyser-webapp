@@ -600,6 +600,7 @@ export const pt = {
   },
   storageBanner: {
     title: 'Aviso de privacidade',
+    summary: 'Sem cookies; até dois valores funcionais ficam no seu navegador.',
     body: 'O Mega-Sena Analyzer não usa cookies HTTP nem autenticação. Apenas dois valores funcionais ficam no localStorage do seu navegador: megasena-theme (preferência de tema) e, ao confirmar este aviso, megasena-privacy-ack (versão deste aviso já visualizada, para não exibi-lo novamente).',
     accept: 'Entendi',
     learnMore: 'Política de Privacidade',

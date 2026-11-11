@@ -96,11 +96,7 @@ export default async function RootLayout({
   ];
 
   return (
-    <html
-      lang="pt-BR"
-      className={fontVariables}
-      suppressHydrationWarning
-    >
+    <html lang="pt-BR" className={fontVariables} suppressHydrationWarning>
       <body className="antialiased flex min-h-screen flex-col font-sans">
         <ThemeScript nonce={nonce} />
         <a
@@ -112,9 +108,9 @@ export default async function RootLayout({
         <MultiJsonLd schemas={schemas} nonce={nonce} />
         <ThemeProvider defaultTheme="system">
           <SiteHeader />
-          <main id="main-content" className="flex-1">
-            <StorageDisclosure />
-            <div className="page pb-16 pt-8 sm:pt-10">{children}</div>
+          <StorageDisclosure />
+          <main id="main-content" className="page flex-1 pb-16 pt-8 sm:pt-10">
+            {children}
           </main>
           <Footer />
         </ThemeProvider>

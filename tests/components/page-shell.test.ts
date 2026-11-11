@@ -33,8 +33,20 @@ describe('page shell', () => {
     expect(block).toMatch(/width:\s*100%/);
   });
 
-  it('the root layout wraps every page in the shell with its vertical padding', () => {
-    expect(read('app/layout.tsx')).toMatch(/className="page [^"]*py?[tb]?-\d+[^"]*"/);
+  it('the shell sits on <main> itself, with its vertical padding and no inner wrapper', () => {
+    const layout = read('app/layout.tsx');
+    expect(layout).toMatch(/<main id="main-content" className="page [^"]*\bp[tb]-\d+[^"]*"/);
+    expect(layout).not.toMatch(/<div className="page/);
+  });
+
+  it('the storage band sits between the header and <main>, outside the page content', () => {
+    const layout = read('app/layout.tsx');
+    const header = layout.indexOf('<SiteHeader />');
+    const band = layout.indexOf('<StorageDisclosure />');
+    const main = layout.indexOf('<main');
+    expect(header).toBeGreaterThan(-1);
+    expect(band).toBeGreaterThan(header);
+    expect(main).toBeGreaterThan(band);
   });
 
   it.each([
