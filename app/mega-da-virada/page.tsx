@@ -17,7 +17,6 @@ import {
   PageTitle,
   RandomnessNote,
   SectionHeading,
-  SourceLine,
   TableFrame,
   cellClass,
   frequencyShadeClass,
@@ -201,12 +200,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         </section>
       ) : null}
 
-      {editions.length > 1 ? (
-        <div className="space-y-2">
-          <FactList facts={recordFacts(editions)} />
-          <SourceLine />
-        </div>
-      ) : null}
+      {editions.length > 1 ? <FactList facts={recordFacts(editions)} /> : null}
 
       {editions.length > 0 ? (
         <section aria-labelledby="edicoes" className="space-y-4">
@@ -267,7 +261,6 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
               </tbody>
             </table>
           </TableFrame>
-          <SourceLine />
         </section>
       ) : null}
 

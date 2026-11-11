@@ -153,7 +153,10 @@ export default async function DashboardPage() {
         ]}
       />
 
-      <PageTitle>{pt.dashboard.title}</PageTitle>
+      <header className="space-y-3">
+        <PageTitle>{pt.dashboard.title}</PageTitle>
+        <SourceLine through={through} />
+      </header>
 
       {lastDraw ? (
         <section aria-labelledby="dashboard-last">
@@ -179,7 +182,6 @@ export default async function DashboardPage() {
             >
               Ganhadores e rateio do concurso {lastDraw.contestNumber}
             </ArchiveLink>
-            <SourceLine through={lastDraw.contestNumber} />
           </LatestDrawFigure>
         </section>
       ) : null}
@@ -187,7 +189,6 @@ export default async function DashboardPage() {
       <section aria-labelledby="dashboard-archive" className="space-y-4">
         <SectionHeading id="dashboard-archive">{pt.dashboard.archiveTitle}</SectionHeading>
         <FactList facts={facts} />
-        <SourceLine through={through} />
       </section>
 
       <div className="grid gap-12 lg:grid-cols-2">
@@ -210,9 +211,6 @@ export default async function DashboardPage() {
             )}
           />
         </section>
-        <div className="lg:col-span-2">
-          <SourceLine through={through} />
-        </div>
       </div>
 
       {hotNumbers && hotNumbers.length > 0 ? (
@@ -254,7 +252,6 @@ export default async function DashboardPage() {
               </tbody>
             </table>
           </TableFrame>
-          <SourceLine through={through} />
         </section>
       ) : null}
 
@@ -302,7 +299,6 @@ export default async function DashboardPage() {
             </tbody>
           </table>
         </TableFrame>
-        <SourceLine through={through} />
       </section>
 
       <section aria-labelledby="dashboard-tools">

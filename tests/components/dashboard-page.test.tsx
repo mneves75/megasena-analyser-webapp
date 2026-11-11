@@ -138,3 +138,11 @@ describe('DashboardPage latest draw', () => {
     expect(heading.className).toBe(section.className);
   });
 });
+
+describe('DashboardPage source', () => {
+  it('states the source once, in the page header', async () => {
+    const { container } = render(await DashboardPage());
+    expect(container.textContent?.match(/Fonte: CAIXA/g)).toHaveLength(1);
+    expect(container.querySelector('header')).toHaveTextContent(/Fonte: CAIXA/);
+  });
+});

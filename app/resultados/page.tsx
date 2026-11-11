@@ -16,7 +16,6 @@ import {
   PageTitle,
   RandomnessNote,
   SectionHeading,
-  SourceLine,
   TableFrame,
   cellClass,
   inlineLinkClass,
@@ -179,7 +178,6 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
               </tbody>
             </table>
           </TableFrame>
-          <SourceLine />
         </section>
       ) : null}
 

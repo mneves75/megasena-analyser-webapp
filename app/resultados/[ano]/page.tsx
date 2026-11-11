@@ -21,6 +21,7 @@ import {
   Pager,
   RandomnessNote,
   SectionHeading,
+  SourceLine,
 } from '@/app/_components/archive-ui';
 
 interface YearRouteProps {
@@ -31,7 +32,12 @@ const TOP_NUMBERS_LISTED = 6;
 
 async function getYearArchive(params: YearRouteProps['params']): Promise<YearArchive> {
   const { ano } = await params;
-  const year = resolveIntegerParam(ano, FIRST_DRAW_YEAR, LAST_ACCEPTED_YEAR, (value) => `/resultados/${value}`);
+  const year = resolveIntegerParam(
+    ano,
+    FIRST_DRAW_YEAR,
+    LAST_ACCEPTED_YEAR,
+    (value) => `/resultados/${value}`
+  );
   const archive = await loadYearArchive(year);
   if (!archive) {
     notFound();
@@ -88,7 +94,9 @@ export async function generateMetadata({ params }: YearRouteProps): Promise<Meta
   });
 }
 
-export default async function YearResultsPage({ params }: YearRouteProps): Promise<React.JSX.Element> {
+export default async function YearResultsPage({
+  params,
+}: YearRouteProps): Promise<React.JSX.Element> {
   const { year, draws, previousYear, nextYear, lastModified } = await getYearArchive(params);
   const { first, last } = yearBounds(draws);
   const path = `/resultados/${year}`;
@@ -119,8 +127,9 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
         <AnswerSummary>
           Em {year}, a Mega-Sena teve {countLabel(draws.length, 'concurso', 'concursos')}, do{' '}
           {first.contestNumber} ({formatDate(first.drawDate)}) ao {last.contestNumber} (
-          {formatDate(last.drawDate)}). {countLabel(withWinner.length, 'concurso teve', 'concursos tiveram')}{' '}
-          ganhador na sena e {formatNumber(accumulated)} {accumulated === 1 ? 'acumulou' : 'acumularam'}.
+          {formatDate(last.drawDate)}).{' '}
+          {countLabel(withWinner.length, 'concurso teve', 'concursos tiveram')} ganhador na sena e{' '}
+          {formatNumber(accumulated)} {accumulated === 1 ? 'acumulou' : 'acumularam'}.
           {biggest
             ? ` O maior prêmio por aposta foi de ${formatCurrency(biggest.sena.prize)}, no concurso ${biggest.contestNumber}.`
             : ''}{' '}
@@ -130,6 +139,7 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
                 top.numbers.length > topListed.length ? ' e outras' : ''
               } (${countLabel(top.times, 'vez', 'vezes')} cada).`}
         </AnswerSummary>
+        <SourceLine />
       </header>
 
       <section aria-labelledby="concursos" className="space-y-4">
@@ -141,7 +151,11 @@ export default async function YearResultsPage({ params }: YearRouteProps): Promi
         label="Outros anos"
         previous={
           previousYear !== null
-            ? { href: `/resultados/${previousYear}`, label: 'Ano anterior', detail: String(previousYear) }
+            ? {
+                href: `/resultados/${previousYear}`,
+                label: 'Ano anterior',
+                detail: String(previousYear),
+              }
             : null
         }
         next={

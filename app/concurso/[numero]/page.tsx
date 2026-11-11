@@ -27,7 +27,6 @@ import {
   Pager,
   RandomnessNote,
   SectionHeading,
-  SourceLine,
   TableFrame,
   inlineLinkClass,
   tableClass,
@@ -274,13 +273,11 @@ export default async function DrawResultPage({
           </table>
         </TableFrame>
         {prizeFacts.length > 0 ? <FactList facts={prizeFacts} /> : null}
-        <SourceLine />
       </section>
 
       <section aria-labelledby="analise" className="space-y-4">
         <SectionHeading id="analise">Análise do sorteio</SectionHeading>
         <FactList facts={analysisFacts} />
-        <SourceLine through={contest} />
       </section>
 
       <section aria-labelledby="historico" className="space-y-4">
@@ -342,7 +339,6 @@ export default async function DrawResultPage({
             </tbody>
           </table>
         </TableFrame>
-        <SourceLine through={contest} />
       </section>
 
       <Pager

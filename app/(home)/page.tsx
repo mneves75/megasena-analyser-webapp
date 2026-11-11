@@ -129,6 +129,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         <header className="space-y-6">
           <PageTitle>{pt.home.heroTitle}</PageTitle>
           <p className="max-w-[68ch] text-lg text-muted-foreground">{pt.home.heroSubtitle}</p>
+          <SourceLine through={lastContestNumber} />
           <div className="grid grid-cols-2 gap-3 sm:flex">
             <Button asChild size="lg">
               <Link href="/dashboard">{pt.nav.accessDashboard}</Link>
@@ -141,7 +142,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
         </header>
 
         <section aria-labelledby="home-latest">
-          <HomeLatestDraw draw={latestDraw} contestNumber={lastContestNumber} />
+          <HomeLatestDraw draw={latestDraw} />
         </section>
 
         <section aria-labelledby="home-contents">
@@ -212,13 +213,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
   );
 }
 
-function HomeLatestDraw({
-  draw,
-  contestNumber,
-}: {
-  draw: LatestDraw | null;
-  contestNumber: number | null;
-}): React.JSX.Element {
+function HomeLatestDraw({ draw }: { draw: LatestDraw | null }): React.JSX.Element {
   if (!draw) {
     return (
       <LatestDrawFigure
@@ -255,7 +250,6 @@ function HomeLatestDraw({
       <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={textLinkClass}>
         Ganhadores e rateio do concurso {draw.contestNumber}
       </ArchiveLink>
-      <SourceLine through={contestNumber} />
     </LatestDrawFigure>
   );
 }

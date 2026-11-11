@@ -282,7 +282,6 @@ export function DrawsTable({
           </tbody>
         </table>
       </TableFrame>
-      <SourceLine />
     </>
   );
 }
@@ -330,14 +329,14 @@ export function FrequencyGrid({
   );
 }
 
-/** The yearbook's source line under a table or figure. */
+/** The page's one source line, set in its header beside the freshness statement. */
 export function SourceLine({
   through,
 }: {
   through?: number | null | undefined;
 }): React.JSX.Element {
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-sm text-muted-foreground">
       Fonte: CAIXA Econômica Federal{through ? `, concursos 1 a ${through}` : ''}.
     </p>
   );
