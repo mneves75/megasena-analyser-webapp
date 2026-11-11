@@ -58,7 +58,10 @@ export class TestData extends DurableObject {
       try { applyMigrations(db, [['failure_control.sql', 'CREATE TABLE failure_control (id INTEGER); INSERT INTO nonexistent VALUES (1);']]); } catch { failedMigration = true; }
       assert(failedMigration && !db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'failure_control'").get(), 'migration SQL rollback');
       assert(!db.prepare("SELECT 1 FROM migrations WHERE name = 'failure_control.sql'").get(), 'migration marker rollback');
-      assert((db.prepare('SELECT COUNT(*) AS count FROM migrations').get() as { count: number }).count === 10, 'migration ledger/idempotence');
+      assert((db.prepare('SELECT COUNT(*) AS count FROM migrations').get() as { count: number }).count === 11, 'migration ledger/idempotence');
+      // Only the timestamp indexes, which retention reads, remain on the two write-heavy tables.
+      const logIndexes = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name IN ('audit_logs', 'log_events') AND name NOT LIKE 'sqlite_autoindex_%' ORDER BY name").all() as { name: string }[]).map(row => row.name).join();
+      assert(logIndexes === 'idx_audit_logs_timestamp,idx_log_events_timestamp', `audit/log secondary indexes: ${logIndexes}`);
       db.exec("INSERT INTO draws (contest_number,draw_date,number_1,number_2,number_3,number_4,number_5,number_6) VALUES (1,'1996-03-11',4,5,30,33,41,52)");
       const failures: string[] = [];
       for (const [name, check] of [
@@ -133,7 +136,7 @@ export class TestData extends DurableObject {
         assert(ids === 'at-cutoff,newer', `${table} retention boundary: ${ids}`);
       }
       assert(getDatabase() === db, 'async database scope');
-      return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };
+      return { migrations: 11, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };
     });
   }
   count() {

@@ -26,6 +26,7 @@ import migration007 from '../db/migrations/007_draw_number_integrity.sql?raw';
 import migration008 from '../db/migrations/008_draw_date_iso.sql?raw';
 import migration009 from '../db/migrations/009_number_frequency_date_iso.sql?raw';
 import migration010 from '../db/migrations/010_draws_cache_revision.sql?raw';
+import migration011 from '../db/migrations/011_drop_unread_log_indexes.sql?raw';
 
 const migrations = [
   ['001_initial_schema.sql', migration001], ['002_add_performance_indexes.sql', migration002],
@@ -33,6 +34,7 @@ const migrations = [
   ['005_log_events.sql', migration005], ['006_remove_deleted_at.sql', migration006],
   ['007_draw_number_integrity.sql', migration007], ['008_draw_date_iso.sql', migration008],
   ['009_number_frequency_date_iso.sql', migration009], ['010_draws_cache_revision.sql', migration010],
+  ['011_drop_unread_log_indexes.sql', migration011],
 ] as const;
 
 export function applyMigrations(database: DatabaseLike, entries: readonly (readonly [string, string])[] = migrations): void {
