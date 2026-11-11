@@ -3,7 +3,7 @@ import { createDurableDatabase, getDatabase, runWithDatabase } from '../../lib/c
 import { withDatabaseTransaction } from '../../lib/db-transaction';
 import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
-import { appendDraws, refreshDraws } from '../../cloudflare/ingestion';
+import { appendDraws, DrawSourceFailure, refreshDraws } from '../../cloudflare/ingestion';
 import { CaixaAPIClient } from '../../lib/api/caixa-client';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
@@ -101,8 +101,10 @@ export class TestData extends DurableObject {
       const storedCaixa = db.prepare(`SELECT ${drawColumns} FROM draws WHERE contest_number = 3`).get();
       assert(JSON.stringify(storedCaixa) === JSON.stringify(caixaRow), `CAIXA payload stored values: ${JSON.stringify(storedCaixa)}`);
       let rejected = false;
-      try { appendDraws(db, [{ ...draw, numero: 3, listaDezenas: ['1', '1', '2', '3', '4', '5'] }]); } catch { rejected = true; }
-      assert(rejected, 'invalid source control');
+      try {
+        await refreshFromPayload(db, { numero: 4, dataApuracao: '18/03/1996', listaDezenas: ['1', '1', '2', '3', '4', '5'] });
+      } catch (error) { rejected = error instanceof DrawSourceFailure; }
+      assert(rejected && (db.prepare('SELECT MAX(contest_number) AS last FROM draws').get() as { last: number }).last === 3, 'invalid source control');
       rejected = false;
       try { appendDraws(db, [{ ...draw, listaDezenas: ['1', '2', '3', '4', '5', '6'] }]); } catch { rejected = true; }
       assert(rejected, 'existing draw conflict');
