@@ -348,7 +348,9 @@ README.md for the isolated local production fixture and two-pass replay.
   `docs/LGPD-COMPLIANCE.md`, `lib/i18n.ts`, and the storage-disclosure banner
   (`components/storage-disclosure.tsx` must list every `localStorage` key).
   Per-subject access/erasure is `bun run privacy:subject` (`scripts/erase-subject.ts`): it
-  recomputes the subject's `client_id_hash` per salt window and exports or erases its rows.
+  recomputes the subject's `client_id_hash` per salt window, plus the window just before the period
+  (the hash is taken when a request starts, the row is stamped when it ends), and exports or erases
+  its audit rows and every log row sharing a request id with the subject's audit or log rows.
 - Use semantic design tokens only (`bg-background`, `text-foreground`) — no hardcoded
   color classes. Edit the design system (`app/globals.css`, `tailwind.config.cjs`)
   before components. `lang="pt-BR"` in `app/layout.tsx`.
