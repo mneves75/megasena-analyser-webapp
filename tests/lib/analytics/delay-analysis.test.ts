@@ -1,3 +1,6 @@
+// @vitest-environment node
+// This suite also runs under Bun (`bun run test:sqlite`). It touches only the database, and
+// jsdom 31 cannot start under Bun 1.4.2, the project's minimum, so it must not ask for a DOM.
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { DelayAnalysisEngine } from '@/lib/analytics/delay-analysis';
 import { getDatabase, runMigrations } from '@/lib/db';
