@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
-import { NumberField } from '@/components/number-field';
 import {
   cn,
   formatCurrency,
@@ -16,6 +15,7 @@ import {
   ArchiveLink,
   DezenaChips,
   FactList,
+  LatestDrawFigure,
   RandomnessNote,
   RankedList,
   SectionHeading,
@@ -155,17 +155,19 @@ export default async function DashboardPage() {
       <h1 className="text-4xl font-semibold sm:text-5xl">{pt.dashboard.title}</h1>
 
       {lastDraw ? (
-        <section
-          aria-labelledby="dashboard-last"
-          className="grid gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12"
-        >
-          <div className="space-y-4">
-            <h2
-              id="dashboard-last"
-              className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"
-            >
-              Concurso {lastDraw.contestNumber}
-            </h2>
+        <section aria-labelledby="dashboard-last">
+          <LatestDrawFigure
+            heading={
+              <h2
+                id="dashboard-last"
+                className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl"
+              >
+                Concurso {lastDraw.contestNumber}
+              </h2>
+            }
+            numbers={lastDraw.numbers}
+            fieldLabel={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
+          >
             <p className="text-muted-foreground tabular-nums">
               Sorteio de {formatDate(lastDraw.drawDate)}
             </p>
@@ -181,18 +183,8 @@ export default async function DashboardPage() {
             >
               Ganhadores e rateio do concurso {lastDraw.contestNumber}
             </ArchiveLink>
-          </div>
-          <figure className="space-y-3">
-            <NumberField
-              struck={lastDraw.numbers}
-              linked
-              size="lg"
-              label={`Dezenas sorteadas no concurso ${lastDraw.contestNumber}`}
-            />
-            <figcaption>
-              <SourceLine through={lastDraw.contestNumber} />
-            </figcaption>
-          </figure>
+            <SourceLine through={lastDraw.contestNumber} />
+          </LatestDrawFigure>
         </section>
       ) : null}
 

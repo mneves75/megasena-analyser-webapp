@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import { FrequencyGrid, RankedList, rankBy } from '@/app/_components/archive-ui';
+import { FrequencyGrid, LatestDrawFigure, RankedList, rankBy } from '@/app/_components/archive-ui';
 
 const items = [
   { number: 4, frequency: 30 },
@@ -77,5 +79,42 @@ describe('FrequencyGrid', () => {
       screen.getByText('Quanto mais forte a cor da casa, mais vezes a dezena foi sorteada.')
     ).toBeInTheDocument();
     expect(screen.queryByText(/Fonte:/)).not.toBeInTheDocument();
+  });
+});
+
+describe('LatestDrawFigure', () => {
+  it('sets the caller heading and facts left of the field of sixty, at 5fr / 7fr from lg', () => {
+    const { container } = render(
+      <LatestDrawFigure
+        heading={<h1 id="titulo">Resultado da Mega-Sena 3006</h1>}
+        numbers={[2, 10, 18, 26, 34, 52]}
+        fieldLabel="Dezenas sorteadas no concurso 3006"
+      >
+        <p>Sorteio de 12/05/2026.</p>
+      </LatestDrawFigure>
+    );
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Resultado da Mega-Sena 3006'
+    );
+    expect(screen.getByText('Sorteio de 12/05/2026.')).toBeInTheDocument();
+    const field = screen.getByRole('list', { name: 'Dezenas sorteadas no concurso 3006' });
+    expect(within(field).getAllByRole('link')).toHaveLength(6);
+    expect(container.firstElementChild?.className).toContain(
+      'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]'
+    );
+  });
+});
+
+describe('latest-draw block', () => {
+  it.each([
+    'app/(home)/page.tsx',
+    'app/dashboard/page.tsx',
+    'app/resultados/page.tsx',
+    'app/mega-da-virada/page.tsx',
+    'app/concurso/[numero]/page.tsx',
+  ])('%s uses the shared figure instead of its own copy', (file) => {
+    const source = readFileSync(path.join(process.cwd(), file), 'utf8');
+    expect(source).toContain('<LatestDrawFigure');
+    expect(source).not.toContain('<NumberField');
   });
 });

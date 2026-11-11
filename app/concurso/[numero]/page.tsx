@@ -6,7 +6,6 @@ import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadDrawPage } from '@/app/_lib/archive';
-import { NumberField } from '@/components/number-field';
 import {
   countLabel,
   describeDraw,
@@ -23,6 +22,7 @@ import {
   ArchiveLink,
   Breadcrumbs,
   FactList,
+  LatestDrawFigure,
   PageTitle,
   Pager,
   RandomnessNote,
@@ -207,45 +207,30 @@ export default async function DrawResultPage({
 
       <header className="space-y-6">
         <Breadcrumbs items={breadcrumbs} />
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <PageTitle>{heading}</PageTitle>
-              <p className="text-muted-foreground">
-                Sorteio de {weekdayPtBr(draw.drawDate)},{' '}
-                <span className="tabular-nums">{date}</span>. Fonte: CAIXA Econômica Federal.
-              </p>
-            </div>
-            <AnswerSummary>
-              {megaDaViradaEdition === null
-                ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
-                : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
-              As dezenas sorteadas foram {joinPtBr(dezenas)}. {senaOutcome(draw)}
-              {comeback
-                ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
-                : ''}
-              {draw.nextEstimatedPrize !== null
-                ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
-                    draw.nextEstimatedPrize
-                  )}.`
-                : ''}
-            </AnswerSummary>
-          </div>
-          <figure className="space-y-3 self-start border-t-2 border-primary pt-4">
-            <figcaption className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <span className="font-condensed text-4xl font-semibold tabular-nums sm:text-5xl">
-                Concurso {contest}
-              </span>
-              <span className="text-muted-foreground tabular-nums">{date}</span>
-            </figcaption>
-            <NumberField
-              struck={draw.numbers}
-              linked
-              size="lg"
-              label={`Dezenas sorteadas no concurso ${contest}`}
-            />
-          </figure>
-        </div>
+        <LatestDrawFigure
+          heading={<PageTitle>{heading}</PageTitle>}
+          numbers={draw.numbers}
+          fieldLabel={`Dezenas sorteadas no concurso ${contest}`}
+        >
+          <p className="text-muted-foreground">
+            Sorteio de {weekdayPtBr(draw.drawDate)}, <span className="tabular-nums">{date}</span>.
+            Fonte: CAIXA Econômica Federal.
+          </p>
+          <AnswerSummary>
+            {megaDaViradaEdition === null
+              ? `O concurso ${contest} da Mega-Sena foi sorteado em ${date}.`
+              : `O concurso ${contest} foi a Mega da Virada ${megaDaViradaEdition}, sorteada em ${date}.`}{' '}
+            As dezenas sorteadas foram {joinPtBr(dezenas)}. {senaOutcome(draw)}
+            {comeback
+              ? ` A dezena ${dezena(comeback.number)} voltou depois de ${countLabel(comeback.gap, 'concurso', 'concursos')} sem sair.`
+              : ''}
+            {draw.nextEstimatedPrize !== null
+              ? ` A estimativa de prêmio para o concurso ${contest + 1} ${estimateVerb} de ${formatCurrency(
+                  draw.nextEstimatedPrize
+                )}.`
+              : ''}
+          </AnswerSummary>
+        </LatestDrawFigure>
       </header>
 
       <section aria-labelledby="premiacao" className="space-y-4">

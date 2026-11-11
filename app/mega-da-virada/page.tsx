@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { NumberField } from '@/components/number-field';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { countNumbers, groupByCount } from '@/lib/analytics/mega-da-virada';
 import type { MegaDaViradaArchive } from '@/lib/api/archive-contract';
@@ -14,6 +13,7 @@ import {
   Breadcrumbs,
   DezenaChips,
   FactList,
+  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -182,29 +182,22 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
       </header>
 
       {latest ? (
-        <section
-          aria-labelledby="ultima"
-          className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
-        >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
-              </span>
-            </div>
+        <section aria-labelledby="ultima">
+          <LatestDrawFigure
+            heading={<SectionHeading id="ultima">Mega da Virada {latest.edition}</SectionHeading>}
+            numbers={latest.draw.numbers}
+            fieldLabel={`Dezenas sorteadas na Mega da Virada ${latest.edition}`}
+          >
+            <p className="tabular-nums text-muted-foreground">
+              Concurso {latest.draw.contestNumber} · {formatDate(latest.draw.drawDate)}
+            </p>
             <ArchiveLink
               href={`/concurso/${latest.draw.contestNumber}`}
               className={inlineLinkClass}
             >
               Ver prêmios e análise do concurso {latest.draw.contestNumber}
             </ArchiveLink>
-          </div>
-          <NumberField
-            struck={latest.draw.numbers}
-            linked
-            label={`Dezenas sorteadas na Mega da Virada ${latest.edition}`}
-          />
+          </LatestDrawFigure>
         </section>
       ) : null}
 

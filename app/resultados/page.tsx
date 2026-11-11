@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { NumberField } from '@/components/number-field';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
@@ -13,6 +12,7 @@ import {
   Breadcrumbs,
   DrawsTable,
   FactList,
+  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -87,26 +87,19 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       </header>
 
       {latest ? (
-        <section
-          aria-labelledby="ultimo"
-          className="grid gap-6 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12"
-        >
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                {formatDate(latest.drawDate)}
-              </span>
-            </div>
+        <section aria-labelledby="ultimo">
+          <LatestDrawFigure
+            heading={<SectionHeading id="ultimo">Concurso {latest.contestNumber}</SectionHeading>}
+            numbers={latest.numbers}
+            fieldLabel={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
+          >
+            <p className="tabular-nums text-muted-foreground">
+              Sorteio de {formatDate(latest.drawDate)}
+            </p>
             <ArchiveLink href={`/concurso/${latest.contestNumber}`} className={inlineLinkClass}>
               Ver prêmios e análise do concurso {latest.contestNumber}
             </ArchiveLink>
-          </div>
-          <NumberField
-            struck={latest.numbers}
-            linked
-            label={`Dezenas sorteadas no concurso ${latest.contestNumber}`}
-          />
+          </LatestDrawFigure>
         </section>
       ) : null}
 
