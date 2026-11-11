@@ -121,7 +121,7 @@ describe('StatisticsPage', () => {
     expect(
       screen.getByRole('heading', { name: pt.statistics.streaks.coldTitle })
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sequências' })).toHaveAttribute('href', '#sequencias');
+    expect(screen.getByRole('link', { name: 'Tabelas' })).toHaveAttribute('href', '#tabelas');
     expect(
       screen.getByRole('table', { name: pt.statistics.streaks.coldTitle })
     ).toBeInTheDocument();
@@ -187,10 +187,36 @@ describe('StatisticsPage', () => {
       'sequencias',
       'premios',
       'todos',
+      'tabelas',
     ]) {
       expect(container.querySelector(`#${id}`), id).not.toBeNull();
     }
     expect(screen.queryByRole('link', { name: 'Todos' })).not.toBeInTheDocument();
+  });
+
+  it('gathers streaks, prizes and patterns as closed disclosures in one appendix', async () => {
+    const { container } = render(await StatisticsPage());
+    const appendix = container.querySelector('section#tabelas');
+    expect(appendix).not.toBeNull();
+    expect(
+      within(appendix as HTMLElement).getByRole('heading', { name: 'Tabelas complementares' })
+    ).toBeInTheDocument();
+    const details = Array.from((appendix as HTMLElement).querySelectorAll('details'));
+    expect(details.map((element) => element.id)).toEqual(['sequencias', 'premios', 'padroes']);
+    expect(details.every((element) => !element.open)).toBe(true);
+    expect(details.map((element) => element.querySelector('summary')?.textContent)).toEqual([
+      'Números em sequência nos últimos 10 concursos',
+      'Correlação com prêmios',
+      'Padrões detectados',
+    ]);
+  });
+
+  it('links the appendix once from the section nav, replacing the three table sections', async () => {
+    render(await StatisticsPage());
+    expect(screen.getByRole('link', { name: 'Tabelas' })).toHaveAttribute('href', '#tabelas');
+    for (const name of ['Sequências', 'Prêmios', 'Padrões']) {
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
   });
 
   it('shows ten pairs and keeps the next ten in a disclosure', async () => {

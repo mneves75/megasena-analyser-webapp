@@ -166,16 +166,33 @@ function SubHeading({ id, children }: { id: string; children: ReactNode }): Reac
   );
 }
 
+/** Facts beside their figure from `lg`, stacked below it; both aligned to the top. */
+function FactsWithFigure({ children }: { children: ReactNode }): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      {children}
+    </div>
+  );
+}
+
 /** A closed ruled row that opens on the full table; the same disclosure as the home FAQ. */
 function Disclosure({
+  id,
   label,
   children,
 }: {
+  id?: string;
   label: string;
   children: ReactNode;
 }): React.JSX.Element {
   return (
-    <details className="group border-y border-border">
+    <details
+      id={id}
+      className={cn(
+        'group border-y border-border [details+&]:border-t-0',
+        id ? SECTION_SCROLL_MARGIN : undefined
+      )}
+    >
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 py-4 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
         {label}
         <ChevronDown
@@ -183,7 +200,7 @@ function Disclosure({
           className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 ease-out-quint group-open:rotate-180"
         />
       </summary>
-      <div className="pb-5">{children}</div>
+      <div className="space-y-4 pb-5">{children}</div>
     </details>
   );
 }
@@ -506,11 +523,7 @@ export default async function StatisticsPage() {
     ...(parity && parity.length > 0 ? [{ id: 'paridade', label: 'Par/Ímpar' }] : []),
     ...(primes ? [{ id: 'primos', label: 'Primos' }] : []),
     ...(sumStats ? [{ id: 'soma', label: 'Soma' }] : []),
-    ...(hotNumbers?.length || coldNumbers?.length
-      ? [{ id: 'sequencias', label: 'Sequências' }]
-      : []),
-    ...(luckyNumbers && luckyNumbers.length > 0 ? [{ id: 'premios', label: 'Prêmios' }] : []),
-    { id: 'padroes', label: 'Padrões' },
+    { id: 'tabelas', label: 'Tabelas' },
   ];
 
   const topPairs = pairs?.slice(0, 10) ?? [];
@@ -738,33 +751,34 @@ export default async function StatisticsPage() {
 
         {parity && parity.length > 0 && (
           <StatSection id="paridade" title={pt.statistics.parity.title}>
-            {parityStats && (
-              <FactList
-                facts={[
-                  {
-                    term: pt.statistics.parity.mostCommonLabel,
-                    value: `${parityStats.mostCommon.evenCount} pares / ${parityStats.mostCommon.oddCount} ímpares`,
-                    hint: `${formatDecimal(parityStats.mostCommon.percentage, 2)}% dos concursos`,
-                  },
-                  {
-                    term: pt.statistics.parity.balancedLabel,
-                    value: `${formatDecimal(parityStats.balancedPercentage, 2)}%`,
-                    hint: pt.statistics.parity.drawsLabel,
-                  },
-                ]}
+            <FactsWithFigure>
+              {parityStats && (
+                <FactList
+                  facts={[
+                    {
+                      term: pt.statistics.parity.mostCommonLabel,
+                      value: `${parityStats.mostCommon.evenCount} pares / ${parityStats.mostCommon.oddCount} ímpares`,
+                      hint: `${formatDecimal(parityStats.mostCommon.percentage, 2)}% dos concursos`,
+                    },
+                    {
+                      term: pt.statistics.parity.balancedLabel,
+                      value: `${formatDecimal(parityStats.balancedPercentage, 2)}%`,
+                      hint: pt.statistics.parity.drawsLabel,
+                    },
+                  ]}
+                />
+              )}
+              <Columns
+                columns={[...parity]
+                  .sort((a, b) => a.evenCount - b.evenCount)
+                  .map((row) => ({
+                    label: `${row.evenCount} / ${row.oddCount}`,
+                    value: row.percentage,
+                    detail: percentText(row.percentage),
+                  }))}
+                label={pt.statistics.parity.figureLabel}
               />
-            )}
-            <Columns
-              columns={[...parity]
-                .sort((a, b) => a.evenCount - b.evenCount)
-                .map((row) => ({
-                  label: `${row.evenCount} / ${row.oddCount}`,
-                  value: row.percentage,
-                  detail: percentText(row.percentage),
-                }))}
-              label={pt.statistics.parity.figureLabel}
-              className="max-w-3xl"
-            />
+            </FactsWithFigure>
             <Disclosure label={pt.statistics.fullTable}>
               <TableFrame>
                 <table className={tableClass}>
@@ -805,26 +819,26 @@ export default async function StatisticsPage() {
 
         {primes && (
           <StatSection id="primos" title={pt.statistics.primes.title}>
-            <FactList
-              facts={[
-                {
-                  term: pt.statistics.primes.totalLabel,
-                  value: primes.totalPrimes,
-                  hint: pt.statistics.primes.totalSuffix,
-                },
-                {
-                  term: pt.statistics.primes.averageLabel,
-                  value: formatDecimal(primes.averagePrimesPerDraw, 2),
-                  hint: pt.statistics.primes.averageSuffix,
-                },
-                {
-                  term: pt.statistics.primes.mostCommonLabel,
-                  value: primes.mostCommonCount,
-                  hint: pt.statistics.primes.mostCommonSuffix,
-                },
-              ]}
-            />
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <FactsWithFigure>
+              <FactList
+                facts={[
+                  {
+                    term: pt.statistics.primes.totalLabel,
+                    value: primes.totalPrimes,
+                    hint: pt.statistics.primes.totalSuffix,
+                  },
+                  {
+                    term: pt.statistics.primes.averageLabel,
+                    value: formatDecimal(primes.averagePrimesPerDraw, 2),
+                    hint: pt.statistics.primes.averageSuffix,
+                  },
+                  {
+                    term: pt.statistics.primes.mostCommonLabel,
+                    value: primes.mostCommonCount,
+                    hint: pt.statistics.primes.mostCommonSuffix,
+                  },
+                ]}
+              />
               <div className="space-y-2">
                 <SubHeading id="primos-distribuicao">
                   {pt.statistics.primes.distributionTitle}
@@ -840,19 +854,19 @@ export default async function StatisticsPage() {
                   label={pt.statistics.primes.figureLabel}
                 />
               </div>
-              <div className="space-y-2">
-                <SubHeading id="primos-mais">{pt.statistics.primes.topTitle}</SubHeading>
-                <RankedList
-                  labelId="primos-mais"
-                  entries={rankBy(
-                    topCount,
-                    primes.primeFrequencies,
-                    (prime) => prime.frequency,
-                    (prime) => countLabel(prime.frequency, 'vez', 'vezes')
-                  )}
-                  barMax={Math.max(0, ...primes.primeFrequencies.map((prime) => prime.frequency))}
-                />
-              </div>
+            </FactsWithFigure>
+            <div className="max-w-3xl space-y-2">
+              <SubHeading id="primos-mais">{pt.statistics.primes.topTitle}</SubHeading>
+              <RankedList
+                labelId="primos-mais"
+                entries={rankBy(
+                  topCount,
+                  primes.primeFrequencies,
+                  (prime) => prime.frequency,
+                  (prime) => countLabel(prime.frequency, 'vez', 'vezes')
+                )}
+                barMax={Math.max(0, ...primes.primeFrequencies.map((prime) => prime.frequency))}
+              />
             </div>
             <Disclosure label={pt.statistics.fullTable}>
               <TableFrame>
@@ -894,25 +908,29 @@ export default async function StatisticsPage() {
 
         {sumStats && (
           <StatSection id="soma" title={pt.statistics.sum.title}>
-            <FactList
-              facts={[
-                { term: pt.statistics.sum.meanLabel, value: formatDecimal(sumStats.mean) },
-                { term: pt.statistics.sum.medianLabel, value: formatDecimal(sumStats.median) },
-                { term: pt.statistics.sum.modeLabel, value: formatDecimal(sumStats.mode) },
-                { term: pt.statistics.sum.stdDevLabel, value: formatDecimal(sumStats.stdDev) },
-              ]}
-            />
-            <SumStrip stats={sumStats} />
-            <p className="max-w-[68ch] text-sm text-muted-foreground tabular-nums">
-              {pt.statistics.sum.spread(
-                shareOfDraws(sumStats, sumStats.percentiles.p25, sumStats.percentiles.p75),
-                formatDecimal(sumStats.percentiles.p25),
-                formatDecimal(sumStats.percentiles.p75),
-                shareOfDraws(sumStats, sumStats.percentiles.p5, sumStats.percentiles.p95),
-                formatDecimal(sumStats.percentiles.p5),
-                formatDecimal(sumStats.percentiles.p95)
-              )}
-            </p>
+            <FactsWithFigure>
+              <FactList
+                facts={[
+                  { term: pt.statistics.sum.meanLabel, value: formatDecimal(sumStats.mean) },
+                  { term: pt.statistics.sum.medianLabel, value: formatDecimal(sumStats.median) },
+                  { term: pt.statistics.sum.modeLabel, value: formatDecimal(sumStats.mode) },
+                  { term: pt.statistics.sum.stdDevLabel, value: formatDecimal(sumStats.stdDev) },
+                ]}
+              />
+              <div className="space-y-4">
+                <SumStrip stats={sumStats} />
+                <p className="max-w-[68ch] text-sm text-muted-foreground tabular-nums">
+                  {pt.statistics.sum.spread(
+                    shareOfDraws(sumStats, sumStats.percentiles.p25, sumStats.percentiles.p75),
+                    formatDecimal(sumStats.percentiles.p25),
+                    formatDecimal(sumStats.percentiles.p75),
+                    shareOfDraws(sumStats, sumStats.percentiles.p5, sumStats.percentiles.p95),
+                    formatDecimal(sumStats.percentiles.p5),
+                    formatDecimal(sumStats.percentiles.p95)
+                  )}
+                </p>
+              </div>
+            </FactsWithFigure>
             <Disclosure label={pt.statistics.fullTable}>
               <TableFrame>
                 <table className={tableClass}>
@@ -951,82 +969,90 @@ export default async function StatisticsPage() {
           </StatSection>
         )}
 
-        {Boolean(hotNumbers?.length || coldNumbers?.length) && (
-          <StatSection id="sequencias" title={pt.statistics.streaks.title}>
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              {hotNumbers && hotNumbers.length > 0 && (
-                <div className="space-y-2">
-                  <SubHeading id="sequencias-quentes">{pt.statistics.streaks.hotTitle}</SubHeading>
-                  <StreakTable labelId="sequencias-quentes" streaks={hotNumbers} />
+        <StatSection id="tabelas" title={pt.statistics.appendixTitle}>
+          <div>
+            {Boolean(hotNumbers?.length || coldNumbers?.length) && (
+              <Disclosure id="sequencias" label={pt.statistics.streaks.title}>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                  {hotNumbers && hotNumbers.length > 0 && (
+                    <div className="space-y-2">
+                      <SubHeading id="sequencias-quentes">
+                        {pt.statistics.streaks.hotTitle}
+                      </SubHeading>
+                      <StreakTable labelId="sequencias-quentes" streaks={hotNumbers} />
+                    </div>
+                  )}
+                  {coldNumbers && coldNumbers.length > 0 && (
+                    <div className="space-y-2">
+                      <SubHeading id="sequencias-frias">
+                        {pt.statistics.streaks.coldTitle}
+                      </SubHeading>
+                      <StreakTable labelId="sequencias-frias" streaks={coldNumbers} />
+                    </div>
+                  )}
                 </div>
-              )}
-              {coldNumbers && coldNumbers.length > 0 && (
-                <div className="space-y-2">
-                  <SubHeading id="sequencias-frias">{pt.statistics.streaks.coldTitle}</SubHeading>
-                  <StreakTable labelId="sequencias-frias" streaks={coldNumbers} />
-                </div>
-              )}
-            </div>
-            <RandomnessNote>{pt.statistics.streaks.disclaimerBody}</RandomnessNote>
-          </StatSection>
-        )}
+                <RandomnessNote>{pt.statistics.streaks.disclaimerBody}</RandomnessNote>
+              </Disclosure>
+            )}
 
-        {luckyNumbers && luckyNumbers.length > 0 && (
-          <StatSection id="premios" title={pt.statistics.prizeCorrelation.title}>
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              <div className="space-y-2">
-                <SubHeading id="premios-acima">
-                  {pt.statistics.prizeCorrelation.luckyTitle}
-                </SubHeading>
-                <PrizeTable labelId="premios-acima" rows={luckyNumbers.slice(0, 10)} />
-              </div>
-              {unluckyNumbers && unluckyNumbers.length > 0 && (
-                <div className="space-y-2">
-                  <SubHeading id="premios-abaixo">
-                    {pt.statistics.prizeCorrelation.unluckyTitle}
-                  </SubHeading>
-                  <PrizeTable labelId="premios-abaixo" rows={unluckyNumbers.slice(0, 10)} />
+            {luckyNumbers && luckyNumbers.length > 0 && (
+              <Disclosure id="premios" label={pt.statistics.prizeCorrelation.title}>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <SubHeading id="premios-acima">
+                      {pt.statistics.prizeCorrelation.luckyTitle}
+                    </SubHeading>
+                    <PrizeTable labelId="premios-acima" rows={luckyNumbers.slice(0, 10)} />
+                  </div>
+                  {unluckyNumbers && unluckyNumbers.length > 0 && (
+                    <div className="space-y-2">
+                      <SubHeading id="premios-abaixo">
+                        {pt.statistics.prizeCorrelation.unluckyTitle}
+                      </SubHeading>
+                      <PrizeTable labelId="premios-abaixo" rows={unluckyNumbers.slice(0, 10)} />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <RandomnessNote>{pt.statistics.prizeCorrelation.disclaimerBody}</RandomnessNote>
-          </StatSection>
-        )}
+                <RandomnessNote>{pt.statistics.prizeCorrelation.disclaimerBody}</RandomnessNote>
+              </Disclosure>
+            )}
 
-        <StatSection id="padroes" title={pt.statistics.patterns.title}>
-          <TableFrame>
-            <table className={tableClass}>
-              <caption className="sr-only">{pt.statistics.patterns.title}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className={thClass}>
-                    Padrão
-                  </th>
-                  <th scope="col" className={cn(thClass, 'text-right')}>
-                    Concursos
-                  </th>
-                  <th scope="col" className={thClass}>
-                    {pt.statistics.patterns.lastSeenLabel}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {patterns.map((pattern) => (
-                  <tr key={pattern.type}>
-                    <th scope="row" className={cn(cellClass, 'font-medium')}>
-                      {getPatternDescription(pattern)}
-                    </th>
-                    <td className={cn(cellClass, 'text-right')}>
-                      {formatNumber(pattern.occurrences)}
-                    </td>
-                    <td className={cellClass}>
-                      {pattern.lastSeen ? formatDate(pattern.lastSeen) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+            <Disclosure id="padroes" label={pt.statistics.patterns.title}>
+              <TableFrame>
+                <table className={tableClass}>
+                  <caption className="sr-only">{pt.statistics.patterns.title}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" className={thClass}>
+                        Padrão
+                      </th>
+                      <th scope="col" className={cn(thClass, 'text-right')}>
+                        Concursos
+                      </th>
+                      <th scope="col" className={thClass}>
+                        {pt.statistics.patterns.lastSeenLabel}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patterns.map((pattern) => (
+                      <tr key={pattern.type}>
+                        <th scope="row" className={cn(cellClass, 'font-medium')}>
+                          {getPatternDescription(pattern)}
+                        </th>
+                        <td className={cn(cellClass, 'text-right')}>
+                          {formatNumber(pattern.occurrences)}
+                        </td>
+                        <td className={cellClass}>
+                          {pattern.lastSeen ? formatDate(pattern.lastSeen) : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableFrame>
+            </Disclosure>
+          </div>
         </StatSection>
 
         <RandomnessNote />

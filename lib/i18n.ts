@@ -289,6 +289,7 @@ export const pt = {
     lead: (draws: string, most: string, least: string, average: string) =>
       `Em ${draws}, ${most} e ${least}. Se todas saíssem igualmente, cada uma teria saído ${average} vezes.`,
     fullTable: 'Tabela completa',
+    appendixTitle: 'Tabelas complementares',
     hotNumbersTitle: 'Dezenas mais sorteadas',
     coldNumbersTitle: 'Dezenas menos sorteadas',
     frequencyFigureLabel: (min: string, max: string) =>
@@ -296,7 +297,7 @@ export const pt = {
     frequencyReference: (average: string) =>
       `Média se todas as dezenas saíssem igualmente: ${average} vezes`,
     patterns: {
-      title: 'Padrões Detectados',
+      title: 'Padrões detectados',
       lastSeenLabel: 'Última ocorrência',
       descriptions: {
         consecutive: 'Números consecutivos no sorteio',
@@ -355,14 +356,14 @@ export const pt = {
         `${middle} dos concursos somaram entre ${p25} e ${p75}; ${outer} entre ${p5} e ${p95}.`,
     },
     streaks: {
-      title: 'Números em Sequência (Últimos 10 Sorteios)',
+      title: 'Números em sequência nos últimos 10 concursos',
       disclaimerBody:
         'Cada sorteio é um evento independente. A frequência recente de um número não influencia sua probabilidade em sorteios futuros. Esta análise é apenas histórica e não possui valor preditivo.',
       hotTitle: 'Números Quentes (Alta Intensidade)',
       coldTitle: 'Números Frios (Baixa Intensidade)',
     },
     prizeCorrelation: {
-      title: 'Correlação com Prêmios',
+      title: 'Correlação com prêmios',
       disclaimerBody:
         'Os valores dos prêmios dependem do acúmulo do jackpot e do número de ganhadores, não dos números sorteados. Esta correlação é coincidência estatística, não indica causalidade.',
       luckyTitle: 'Números "Sortudos" (Prêmios Acima da Média)',
