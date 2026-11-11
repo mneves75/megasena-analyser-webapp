@@ -234,7 +234,7 @@ export default async function DrawResultPage({
 
       <section aria-labelledby="premiacao" className="space-y-4">
         <SectionHeading id="premiacao">Premiação</SectionHeading>
-        <TableFrame>
+        <TableFrame label={`Premiação do concurso ${contest}`}>
           <table className={tableClass}>
             <caption className="sr-only">Premiação do concurso {contest}</caption>
             <thead>
@@ -255,7 +255,9 @@ export default async function DrawResultPage({
                 <tr key={label}>
                   <th scope="row" className={`${cellClass} font-medium`}>
                     {label}{' '}
-                    <span className="font-normal text-muted-foreground">({hits} acertos)</span>
+                    <span className="hidden font-normal text-muted-foreground sm:inline">
+                      ({hits} acertos)
+                    </span>
                   </th>
                   <td className={`${cellClass} text-right`}>
                     {tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}
@@ -286,7 +288,7 @@ export default async function DrawResultPage({
           Quantas vezes cada dezena tinha saído até o concurso {contest}, e há quantos concursos ela
           não aparecia antes deste sorteio.
         </p>
-        <TableFrame>
+        <TableFrame label={`Histórico das dezenas até o concurso ${contest}`}>
           <table className={tableClass}>
             <caption className="sr-only">Histórico das dezenas até o concurso {contest}</caption>
             <thead>
@@ -294,13 +296,13 @@ export default async function DrawResultPage({
                 <th scope="col" className={thClass}>
                   Dezena
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Vezes sorteada
                 </th>
                 <th scope="col" className={thClass}>
                   Aparição anterior
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={`${thClass} text-right`}>
                   Concursos sem sair
                 </th>
               </tr>
@@ -313,7 +315,7 @@ export default async function DrawResultPage({
                       {dezena(entry.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={cellClass}>{formatNumber(entry.timesDrawn)}</td>
+                  <td className={`${cellClass} text-right`}>{formatNumber(entry.timesDrawn)}</td>
                   <td className={cellClass}>
                     {entry.previous ? (
                       <>
@@ -323,7 +325,7 @@ export default async function DrawResultPage({
                         >
                           {entry.previous.contestNumber}
                         </ArchiveLink>{' '}
-                        <span className="text-muted-foreground">
+                        <span className="hidden text-muted-foreground sm:inline">
                           ({formatDate(entry.previous.drawDate)})
                         </span>
                       </>
@@ -331,7 +333,7 @@ export default async function DrawResultPage({
                       'Primeira vez'
                     )}
                   </td>
-                  <td className={cellClass}>
+                  <td className={`${cellClass} text-right`}>
                     {entry.previous ? formatNumber(entry.previous.drawsBetween) : '—'}
                   </td>
                 </tr>

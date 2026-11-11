@@ -6,12 +6,7 @@ import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate, formatNumber } from '@/lib/utils';
 import { NumberField } from '@/components/number-field';
 import { loadNumberProfile } from '@/app/_lib/archive';
-import {
-  countLabel,
-  dezena,
-  formatDecimal,
-  formatPercentPtBr,
-} from '@/app/_lib/format';
+import { countLabel, dezena, formatDecimal, formatPercentPtBr } from '@/app/_lib/format';
 import { resolveIntegerParam } from '@/app/_lib/route-params';
 import {
   AnswerSummary,
@@ -175,7 +170,7 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
       {appearances.length > 0 ? (
         <section aria-labelledby="aparicoes" className="space-y-4">
           <SectionHeading id="aparicoes">Últimas aparições</SectionHeading>
-          <TableFrame>
+          <TableFrame label={`Últimas vezes que o ${number} saiu`}>
             <table className={tableClass}>
               <caption className="sr-only">Últimas vezes que o {number} saiu</caption>
               <thead>

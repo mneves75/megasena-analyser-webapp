@@ -3,7 +3,8 @@ import type { NumberSummary } from '@/lib/api/archive-contract';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatNumber } from '@/lib/utils';
+import { cn, formatNumber } from '@/lib/utils';
+import { Bar } from '@/components/figures';
 import { loadNumbersIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, formatPercentPtBr, joinPtBr } from '@/app/_lib/format';
 import {
@@ -22,6 +23,7 @@ import {
   inlineLinkClass,
   tableClass,
   thClass,
+  wideCellClass,
 } from '@/app/_components/archive-ui';
 
 const PATH = '/numeros';
@@ -137,7 +139,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
 
       <section aria-labelledby="tabela" className="space-y-4">
         <SectionHeading id="tabela">Frequência e atraso de cada número</SectionHeading>
-        <TableFrame>
+        <TableFrame label="Frequência e atraso dos números de 1 a 60">
           <table className={tableClass}>
             <caption className="sr-only">Frequência e atraso dos números de 1 a 60</caption>
             <thead>
@@ -145,19 +147,19 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                 <th scope="col" className={thClass}>
                   Número
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, 'w-2/5 text-right')}>
                   Vezes
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   % dos concursos
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   Ranking
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, 'text-right')}>
                   Atraso
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   Última vez
                 </th>
               </tr>
@@ -170,15 +172,20 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                       {dezena(summary.number)}
                     </ArchiveLink>
                   </th>
-                  <td className={cellClass}>{formatNumber(summary.frequency)}</td>
                   <td className={cellClass}>
+                    <span className="grid grid-cols-[minmax(2rem,1fr)_4ch] items-center gap-3">
+                      <Bar value={summary.frequency} max={maxFrequency} />
+                      <span className="text-right">{formatNumber(summary.frequency)}</span>
+                    </span>
+                  </td>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {formatPercentPtBr(summary.frequency, archive.totalDraws)}
                   </td>
-                  <td className={cellClass}>{summary.rank}º</td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>{summary.rank}º</td>
+                  <td className={cn(cellClass, 'text-right')}>
                     {summary.lastAppearance ? formatNumber(summary.lastAppearance.drawsSince) : '—'}
                   </td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {summary.lastAppearance ? (
                       <ArchiveLink
                         href={`/concurso/${summary.lastAppearance.contestNumber}`}

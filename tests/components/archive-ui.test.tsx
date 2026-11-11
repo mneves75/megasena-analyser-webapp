@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
-import { FrequencyGrid, LatestDrawFigure, RankedList, rankBy } from '@/app/_components/archive-ui';
+import {
+  DrawsTable,
+  FrequencyGrid,
+  LatestDrawFigure,
+  RankedList,
+  TableFrame,
+  rankBy,
+} from '@/app/_components/archive-ui';
 
 const items = [
   { number: 4, frequency: 30 },
@@ -116,5 +123,75 @@ describe('latest-draw block', () => {
     const source = readFileSync(path.join(process.cwd(), file), 'utf8');
     expect(source).toContain('<LatestDrawFigure');
     expect(source).not.toContain('<NumberField');
+  });
+});
+
+const draw = (contestNumber: number, winners: number) => ({
+  contestNumber,
+  drawDate: '2026-05-12',
+  numbers: [2, 10, 18, 26, 34, 52],
+  sena: { winners, prize: winners > 0 ? 1_000_000 : 0 },
+  quina: { winners: 10, prize: 1000 },
+  quadra: { winners: 100, prize: 100 },
+  accumulated: winners === 0,
+  accumulatedValue: null,
+  nextEstimatedPrize: null,
+  totalCollection: null,
+});
+
+describe('TableFrame', () => {
+  it('is a named, keyboard-reachable scroll region with a visible focus ring', () => {
+    render(
+      <TableFrame label="Concursos de 2026">
+        <table />
+      </TableFrame>
+    );
+    const region = screen.getByRole('region', { name: 'Concursos de 2026' });
+    expect(region).toHaveAttribute('tabindex', '0');
+    expect(region.className).toMatch(/overflow-x-auto/);
+    expect(region.className).toMatch(/focus-visible:ring-2/);
+  });
+
+  it('can take its name from a visible heading', () => {
+    render(
+      <>
+        <h3 id="sequencias">Sequências</h3>
+        <TableFrame labelledBy="sequencias">
+          <table />
+        </TableFrame>
+      </>
+    );
+    expect(screen.getByRole('region', { name: 'Sequências' })).toBeInTheDocument();
+  });
+});
+
+describe('DrawsTable on phones', () => {
+  it('keeps contest and dezenas, drops date and sena below sm, and never forces a scroll', () => {
+    render(<DrawsTable caption="Concursos" draws={[draw(3006, 0), draw(3005, 2)]} />);
+    const table = screen.getByRole('table', { name: 'Concursos' });
+    expect(table.className).not.toMatch(/min-w-/);
+    const head = within(table).getAllByRole('columnheader');
+    expect(head.map((cell) => cell.className.includes('hidden sm:table-cell'))).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
+    const firstRow = within(table).getAllByRole('row')[1]!;
+    const cells = within(firstRow).getAllByRole('cell');
+    expect(cells[0]?.className).toContain('hidden sm:table-cell');
+    expect(cells[1]?.className).toContain('whitespace-nowrap');
+    expect(cells[2]?.className).toContain('hidden sm:table-cell');
+    expect(cells[2]?.className).toContain('text-right');
+  });
+});
+
+describe('dense tables', () => {
+  it.each([
+    'app/_components/archive-ui.tsx',
+    'app/mega-da-virada/page.tsx',
+    'app/dashboard/statistics/page.tsx',
+  ])('%s sets no minimum table width', (file) => {
+    expect(readFileSync(path.join(process.cwd(), file), 'utf8')).not.toMatch(/min-w-\[\d+rem\]/);
   });
 });

@@ -27,6 +27,7 @@ import {
   rankBy,
   tableClass,
   thClass,
+  wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
 import { logger } from '@/lib/logger';
@@ -127,6 +128,11 @@ export default async function DashboardPage() {
   const lastDraw = recentDraws[0];
   const through = statistics.lastContestNumber;
   const times = (entry: NumberFrequency): string => countLabel(entry.frequency, 'vez', 'vezes');
+  // Both rankings draw against the most drawn number, so their bars compare.
+  const maxFrequency = Math.max(
+    0,
+    ...statistics.mostFrequentNumbers.map((entry) => entry.frequency)
+  );
   const facts: Fact[] = [
     { term: pt.dashboard.totalDraws, value: formatNumber(statistics.totalDraws) },
     {
@@ -197,6 +203,7 @@ export default async function DashboardPage() {
           <RankedList
             labelId="dashboard-most"
             entries={rankBy(10, statistics.mostFrequentNumbers, (entry) => entry.frequency, times)}
+            barMax={maxFrequency}
           />
         </section>
         <section aria-labelledby="dashboard-least" className="space-y-4">
@@ -207,8 +214,10 @@ export default async function DashboardPage() {
               10,
               statistics.leastFrequentNumbers,
               (entry) => -entry.frequency,
-              times
+              times,
+              (entry) => entry.frequency
             )}
+            barMax={maxFrequency}
           />
         </section>
       </div>
@@ -216,7 +225,7 @@ export default async function DashboardPage() {
       {hotNumbers && hotNumbers.length > 0 ? (
         <section aria-labelledby="dashboard-hot" className="space-y-4">
           <SectionHeading id="dashboard-hot">{pt.dashboard.hotNumbersTitle}</SectionHeading>
-          <TableFrame>
+          <TableFrame label={pt.dashboard.hotNumbersTitle}>
             <table className={tableClass}>
               <caption className="px-4 py-3 text-left text-sm text-muted-foreground">
                 {pt.dashboard.hotNumbersCaption}
@@ -226,10 +235,10 @@ export default async function DashboardPage() {
                   <th scope="col" className={thClass}>
                     Dezena
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Saídas nos últimos 10
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Em relação à média
                   </th>
                 </tr>
@@ -245,8 +254,10 @@ export default async function DashboardPage() {
                         {dezena(hot.number)}
                       </ArchiveLink>
                     </th>
-                    <td className={cellClass}>{hot.recentOccurrences}</td>
-                    <td className={cellClass}>{formatDecimal(hot.streakIntensity, 1)}×</td>
+                    <td className={cn(cellClass, 'text-right')}>{hot.recentOccurrences}</td>
+                    <td className={cn(cellClass, 'text-right')}>
+                      {formatDecimal(hot.streakIntensity, 1)}×
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -257,7 +268,7 @@ export default async function DashboardPage() {
 
       <section aria-labelledby="dashboard-recent" className="space-y-4">
         <SectionHeading id="dashboard-recent">{pt.dashboard.recentDraws}</SectionHeading>
-        <TableFrame>
+        <TableFrame label={pt.dashboard.recentDraws}>
           <table className={tableClass}>
             <caption className="sr-only">{pt.dashboard.recentDraws}</caption>
             <thead>
@@ -265,13 +276,13 @@ export default async function DashboardPage() {
                 <th scope="col" className={thClass}>
                   Concurso
                 </th>
-                <th scope="col" className={thClass}>
+                <th scope="col" className={cn(thClass, wideCellClass)}>
                   Data
                 </th>
                 <th scope="col" className={thClass}>
                   Dezenas
                 </th>
-                <th scope="col" className={cn(thClass, 'text-right')}>
+                <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                   Prêmio da sena
                 </th>
               </tr>
@@ -287,11 +298,11 @@ export default async function DashboardPage() {
                       {draw.contestNumber}
                     </ArchiveLink>
                   </th>
-                  <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-                  <td className={cellClass}>
+                  <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
+                  <td className={cn(cellClass, 'whitespace-nowrap')}>
                     <DezenaChips numbers={draw.numbers} />
                   </td>
-                  <td className={cn(cellClass, 'text-right')}>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {draw.accumulated ? 'Acumulou' : formatCurrency(draw.prizeSena)}
                   </td>
                 </tr>

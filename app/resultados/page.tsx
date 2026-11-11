@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { PageJsonLd } from '@/components/seo/page-json-ld';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import { generateResultsDatasetSchema, type BreadcrumbItem } from '@/lib/seo/schemas';
-import { formatCurrency, formatDate, formatNumber } from '@/lib/utils';
+import { cn, formatCurrency, formatDate, formatNumber } from '@/lib/utils';
 import { loadArchiveIndex } from '@/app/_lib/archive';
 import { countLabel, dezena, joinPtBr, senaOutcome } from '@/app/_lib/format';
 import {
@@ -143,7 +143,7 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
       {years.length > 0 ? (
         <section aria-labelledby="anos" className="space-y-4">
           <SectionHeading id="anos">Resultados por ano</SectionHeading>
-          <TableFrame>
+          <TableFrame label="Resultados da Mega-Sena por ano">
             <table className={tableClass}>
               <caption className="sr-only">Resultados da Mega-Sena por ano</caption>
               <thead>
@@ -151,13 +151,13 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
                   <th scope="col" className={thClass}>
                     Ano
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Concursos
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Primeiro
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, 'text-right')}>
                     Último
                   </th>
                 </tr>
@@ -170,9 +170,11 @@ export default async function ResultsHubPage(): Promise<React.JSX.Element> {
                         {summary.year}
                       </ArchiveLink>
                     </th>
-                    <td className={cellClass}>{formatNumber(summary.drawCount)}</td>
-                    <td className={cellClass}>{summary.firstContest}</td>
-                    <td className={cellClass}>{summary.lastContest}</td>
+                    <td className={cn(cellClass, 'text-right')}>
+                      {formatNumber(summary.drawCount)}
+                    </td>
+                    <td className={cn(cellClass, 'text-right')}>{summary.firstContest}</td>
+                    <td className={cn(cellClass, 'text-right')}>{summary.lastContest}</td>
                   </tr>
                 ))}
               </tbody>

@@ -146,3 +146,25 @@ describe('DashboardPage source', () => {
     expect(container.querySelector('header')).toHaveTextContent(/Fonte: CAIXA/);
   });
 });
+
+describe('DashboardPage rankings', () => {
+  it('draws each ranked row against the most drawn number, the least drawn by frequency', async () => {
+    render(await DashboardPage());
+    const widths = (name: string): (string | null | undefined)[] =>
+      Array.from(screen.getByRole('list', { name }).querySelectorAll('svg')).map((svg) =>
+        svg.querySelectorAll('rect')[1]?.getAttribute('width')
+      );
+    expect(widths(pt.dashboard.mostFrequent)).toEqual(['100', '100', String((340 / 356) * 100)]);
+    expect(widths(pt.dashboard.leastFrequent)).toEqual([
+      String((250 / 356) * 100),
+      String((260 / 356) * 100),
+    ]);
+  });
+
+  it('right-aligns the hot numbers measures', async () => {
+    render(await DashboardPage());
+    const hot = screen.getByRole('table', { name: pt.dashboard.hotNumbersCaption });
+    const cells = within(within(hot).getAllByRole('row')[1]!).getAllByRole('cell');
+    expect(cells.every((cell) => cell.className.includes('text-right'))).toBe(true);
+  });
+});

@@ -31,6 +31,7 @@ import {
   rankBy,
   tableClass,
   thClass,
+  wideCellClass,
 } from '@/app/_components/archive-ui';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
@@ -249,7 +250,7 @@ function PairsTable({
   max: number;
 }): React.JSX.Element {
   return (
-    <TableFrame>
+    <TableFrame label={caption}>
       <table className={tableClass}>
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -379,7 +380,7 @@ function StreakTable({
   streaks: readonly StreakStats[];
 }): React.JSX.Element {
   return (
-    <TableFrame>
+    <TableFrame labelledBy={labelId}>
       <table aria-labelledby={labelId} className={tableClass}>
         <thead>
           <tr>
@@ -433,7 +434,7 @@ function PrizeTable({
   rows: readonly PrizeCorrelation[];
 }): React.JSX.Element {
   return (
-    <TableFrame>
+    <TableFrame labelledBy={labelId}>
       <table aria-labelledby={labelId} className={tableClass}>
         <thead>
           <tr>
@@ -673,7 +674,7 @@ export default async function StatisticsPage() {
               className="max-w-3xl"
             />
             <Disclosure label={pt.statistics.fullTable}>
-              <TableFrame>
+              <TableFrame label={pt.statistics.decades.title}>
                 <table className={tableClass}>
                   <caption className="sr-only">{pt.statistics.decades.title}</caption>
                   <thead>
@@ -681,7 +682,7 @@ export default async function StatisticsPage() {
                       <th scope="col" className={thClass}>
                         Faixa
                       </th>
-                      <th scope="col" className={cn(thClass, 'text-right')}>
+                      <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                         Ocorrências
                       </th>
                       <th scope="col" className={cn(thClass, 'text-right')}>
@@ -701,7 +702,7 @@ export default async function StatisticsPage() {
                         <th scope="row" className={cn(cellClass, 'font-medium')}>
                           {decade.decade}
                         </th>
-                        <td className={cn(cellClass, 'text-right')}>
+                        <td className={cn(cellClass, wideCellClass, 'text-right')}>
                           {formatNumber(decade.totalOccurrences)}
                         </td>
                         <td className={cn(cellClass, 'text-right')}>
@@ -781,7 +782,7 @@ export default async function StatisticsPage() {
               />
             </FactsWithFigure>
             <Disclosure label={pt.statistics.fullTable}>
-              <TableFrame>
+              <TableFrame label={pt.statistics.parity.title}>
                 <table className={tableClass}>
                   <caption className="sr-only">{pt.statistics.parity.title}</caption>
                   <thead>
@@ -870,7 +871,7 @@ export default async function StatisticsPage() {
               />
             </div>
             <Disclosure label={pt.statistics.fullTable}>
-              <TableFrame>
+              <TableFrame label={pt.statistics.primes.distributionTitle}>
                 <table className={tableClass}>
                   <caption className="sr-only">{pt.statistics.primes.distributionTitle}</caption>
                   <thead>
@@ -933,7 +934,7 @@ export default async function StatisticsPage() {
               </div>
             </FactsWithFigure>
             <Disclosure label={pt.statistics.fullTable}>
-              <TableFrame>
+              <TableFrame label="Percentis da soma das seis dezenas">
                 <table className={tableClass}>
                   <caption className="sr-only">Percentis da soma das seis dezenas</caption>
                   <thead>
@@ -1019,7 +1020,7 @@ export default async function StatisticsPage() {
             )}
 
             <Disclosure id="padroes" label={pt.statistics.patterns.title}>
-              <TableFrame>
+              <TableFrame label={pt.statistics.patterns.title}>
                 <table className={tableClass}>
                   <caption className="sr-only">{pt.statistics.patterns.title}</caption>
                   <thead>

@@ -208,11 +208,33 @@ export function LatestDrawFigure({
   );
 }
 
-export function TableFrame({ children }: { children: ReactNode }): React.JSX.Element {
-  return <div className="overflow-x-auto border-y-2 border-y-primary bg-card">{children}</div>;
+type TableName = { label: string; labelledBy?: never } | { labelledBy: string; label?: never };
+
+/**
+ * The ruled frame around a table. It is a named region in the tab order, so a
+ * table wider than the screen can be scrolled from the keyboard; phones drop
+ * low-value columns (wideCellClass) so the common tables fit without it.
+ */
+export function TableFrame({
+  children,
+  ...name
+}: TableName & { children: ReactNode }): React.JSX.Element {
+  return (
+    <div
+      role="region"
+      aria-label={name.label}
+      aria-labelledby={name.labelledBy}
+      tabIndex={0}
+      className={cn('overflow-x-auto border-y-2 border-y-primary bg-card', focusRing)}
+    >
+      {children}
+    </div>
+  );
 }
 
-export const tableClass = 'w-full min-w-[32rem] border-collapse text-left text-sm';
+export const tableClass = 'w-full border-collapse text-left text-sm';
+/** A column phones drop: shown from `sm`. Put it on the head cell and every body cell. */
+export const wideCellClass = 'hidden sm:table-cell';
 /** Head cells sit on the tinted band, set in the condensed width. */
 export const thClass = 'bg-tint px-4 py-2.5 font-condensed text-sm font-semibold text-foreground';
 /** Body cells, including row headers (`<th scope="row">`). */
@@ -221,7 +243,7 @@ export const cellClass = 'border-t border-border px-4 py-2.5 tabular-nums';
 /** Dezenas in dense tables: plain figures in fixed slots, the yearbook way. */
 export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.JSX.Element {
   return (
-    <span className="flex flex-wrap gap-x-2 gap-y-1 font-condensed text-base font-semibold">
+    <span className="flex gap-x-1.5 font-condensed text-base font-semibold sm:gap-x-2">
       {numbers.map((number) => (
         <span key={number} className="w-6 text-center tabular-nums">
           {dezena(number)}
@@ -241,7 +263,7 @@ export function DrawsTable({
 }): React.JSX.Element {
   return (
     <>
-      <TableFrame>
+      <TableFrame label={caption}>
         <table className={tableClass}>
           <caption className="sr-only">{caption}</caption>
           <thead>
@@ -249,13 +271,13 @@ export function DrawsTable({
               <th scope="col" className={thClass}>
                 Concurso
               </th>
-              <th scope="col" className={thClass}>
+              <th scope="col" className={cn(thClass, wideCellClass)}>
                 Data
               </th>
               <th scope="col" className={thClass}>
                 Dezenas
               </th>
-              <th scope="col" className={thClass}>
+              <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                 Sena
               </th>
             </tr>
@@ -268,11 +290,11 @@ export function DrawsTable({
                     {draw.contestNumber}
                   </ArchiveLink>
                 </th>
-                <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-                <td className={cellClass}>
+                <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
+                <td className={cn(cellClass, 'whitespace-nowrap')}>
                   <DezenaChips numbers={draw.numbers} />
                 </td>
-                <td className={cellClass}>
+                <td className={cn(cellClass, wideCellClass, 'text-right')}>
                   {draw.sena.winners === 0
                     ? 'Acumulou'
                     : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}

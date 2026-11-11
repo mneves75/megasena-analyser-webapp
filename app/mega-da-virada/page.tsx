@@ -24,6 +24,7 @@ import {
   tableClass,
   textLinkClass,
   thClass,
+  wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
 
@@ -205,8 +206,8 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
       {editions.length > 0 ? (
         <section aria-labelledby="edicoes" className="space-y-4">
           <SectionHeading id="edicoes">Resultados de todas as edições</SectionHeading>
-          <TableFrame>
-            <table className={cn(tableClass, 'min-w-[46rem]')}>
+          <TableFrame label="Resultados de todas as edições da Mega da Virada">
+            <table className={tableClass}>
               <caption className="sr-only">
                 Resultados de todas as edições da Mega da Virada
               </caption>
@@ -218,16 +219,16 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
                   <th scope="col" className={thClass}>
                     Concurso
                   </th>
-                  <th scope="col" className={thClass}>
+                  <th scope="col" className={cn(thClass, wideCellClass)}>
                     Data
                   </th>
                   <th scope="col" className={thClass}>
                     Dezenas
                   </th>
-                  <th scope="col" className={cn(thClass, 'text-right')}>
+                  <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                     Apostas ganhadoras
                   </th>
-                  <th scope="col" className={cn(thClass, 'text-right')}>
+                  <th scope="col" className={cn(thClass, wideCellClass, 'text-right')}>
                     Prêmio por aposta
                   </th>
                 </tr>
@@ -246,14 +247,14 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
                         {draw.contestNumber}
                       </ArchiveLink>
                     </td>
-                    <td className={cellClass}>{formatDate(draw.drawDate)}</td>
-                    <td className={cn(cellClass, 'min-w-[14rem]')}>
+                    <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
+                    <td className={cn(cellClass, 'whitespace-nowrap')}>
                       <DezenaChips numbers={draw.numbers} />
                     </td>
-                    <td className={cn(cellClass, 'text-right')}>
+                    <td className={cn(cellClass, wideCellClass, 'text-right')}>
                       {draw.sena.winners === 0 ? 'Nenhuma' : formatNumber(draw.sena.winners)}
                     </td>
-                    <td className={cn(cellClass, 'text-right')}>
+                    <td className={cn(cellClass, wideCellClass, 'text-right')}>
                       {draw.sena.winners > 0 ? formatCurrency(draw.sena.prize) : '—'}
                     </td>
                   </tr>
