@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { StatisticsEngine } from '../analytics/statistics';
 import { BetGenerator } from '../analytics/bet-generator';
 import { BetGenerationInputError } from '../analytics/bet-generator';
-import { BET_GENERATION_LIMITS, BET_GENERATION_MODE } from '../constants';
+import { BET_GENERATION_LIMITS, BET_GENERATION_MODE, MEGASENA_CONSTANTS } from '../constants';
 import siteDomains from '../site-domains.json';
 import { DelayAnalysisEngine } from '../analytics/delay-analysis';
 import { DecadeAnalysisEngine } from '../analytics/decade-analysis';
@@ -14,7 +14,12 @@ import { SumAnalysisEngine } from '../analytics/sum-analysis';
 import { StreakAnalysisEngine } from '../analytics/streak-analysis';
 import { PrizeCorrelationEngine } from '../analytics/prize-correlation';
 import { DrawArchiveEngine } from '../analytics/draw-archive';
-import { parseDrawsQuery, parseNumbersQuery } from './archive-contract';
+import {
+  FIRST_DRAW_YEAR,
+  LAST_ACCEPTED_YEAR,
+  parseDrawsQuery,
+  parseNumbersQuery,
+} from './archive-contract';
 import { logger } from '../logger';
 import type { AuditEventInput, AuditEventName } from '../audit';
 import { buildApiSecurityHeaders } from '../security/csp';
@@ -177,12 +182,14 @@ export function createApiHandler(options: ApiHandlerOptions) {
   // Trends keys derive from user-chosen number sets (high cardinality); a separate
   // instance keeps that traffic from evicting the shared analytics entries above.
   const trendsResponseCache = new ContestResponseCache(64);
-  // Public archive views crawled page by page. Listings shared by many pages
-  // (60 number profiles, the number index, ~31 years, the archive index, Mega da
-  // Virada and the sitemap: under 100 validated keys) each scan the whole draws
-  // table, so they are cached by draws revision. Single draws are 3,000+ crawl-once
-  // keys and bypass the cache.
-  const archiveResponseCache = new ContestResponseCache(128);
+  // Public archive views crawled page by page. Listings shared by many pages each
+  // scan the whole draws table, so they are cached by draws revision, sized to hold
+  // every validated key: each accepted year (empty years cache their 404 body too),
+  // the number profiles, plus the number index, archive index, Mega da Virada and
+  // sitemap. Single draws are 3,000+ crawl-once keys and bypass the cache.
+  const archiveResponseCache = new ContestResponseCache(
+    LAST_ACCEPTED_YEAR - FIRST_DRAW_YEAR + 1 + MEGASENA_CONSTANTS.MAX_NUMBER + 4
+  );
 
   /**
    * Per-handler salt for environments that have no `IP_HASH_SECRET`.

@@ -260,6 +260,32 @@ describe('runtime-neutral API handler', () => {
     }
     expect((await handler.fetch(request(), { internal: true, clientIp: '203.0.113.2' })).status).toBe(429);
   });
+  it('keeps every validated archive listing key cached at once', async () => {
+    closeDatabase();
+    getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
+      number_3, number_4, number_5, number_6) VALUES (1, '2025-01-01', 1, 2, 3, 4, 5, 6)`).run();
+    const handler = createApiHandler(options);
+    const get = async (route: string) =>
+      (await handler.fetch(new Request(`https://example.com${route}`), { internal: true })).status;
+    const years = vi.spyOn(DrawArchiveEngine.prototype, 'getYearArchive');
+    const profiles = vi.spyOn(DrawArchiveEngine.prototype, 'getNumberProfile');
+    try {
+      const routes = [
+        ...Array.from({ length: 2100 - 1996 + 1 }, (_, i) => `/api/draws?year=${1996 + i}`),
+        ...Array.from({ length: 60 }, (_, i) => `/api/numbers?n=${i + 1}`),
+        '/api/numbers', '/api/draws', '/api/draws?view=mega-da-virada', '/api/sitemap',
+      ];
+      expect(routes).toHaveLength(169);
+      for (const route of routes) expect([200, 404]).toContain(await get(route));
+      expect(await get('/api/draws?year=1996')).toBe(404);
+      expect(await get('/api/numbers?n=1')).toBe(200);
+      expect(years).toHaveBeenCalledTimes(105);
+      expect(profiles).toHaveBeenCalledTimes(60);
+    } finally {
+      years.mockRestore();
+      profiles.mockRestore();
+    }
+  });
   it('serves shared archive listings from the revision cache and keeps draw pages uncached', async () => {
     closeDatabase();
     const insert = getDatabase().prepare(`INSERT INTO draws (contest_number, draw_date, number_1, number_2,
