@@ -7,7 +7,7 @@
  * pseudonymizeClient), and selects:
  *   - audit_logs rows carrying one of those hashes;
  *   - log_events rows carrying one in metadata `clientId`, or sharing a
- *     request id with one of those audit rows.
+ *     request id with one of those audit rows or of those log rows.
  *
  * --export prints the rows as JSON. --erase deletes them in one transaction on
  * the Bun database (DATABASE_PATH) and prints only counts; --dry-run counts
@@ -107,8 +107,12 @@ function subjectHashes(subjects: string[], secret: string, fromMs: number, toExc
 // Hashes travel as one JSON array parameter; the SQL text is fixed.
 const RANGE = 'timestamp >= ? AND timestamp < ?';
 const AUDIT_WHERE = `client_id_hash IN (SELECT value FROM json_each(?)) AND ${RANGE}`;
-const LOG_WHERE = `(CASE WHEN json_valid(metadata_json) THEN json_extract(metadata_json, '$.clientId') END IN (SELECT value FROM json_each(?))
-  OR request_id IN (SELECT request_id FROM audit_logs WHERE client_id_hash IN (SELECT value FROM json_each(?)) AND request_id IS NOT NULL))
+const LOG_CLIENT = `CASE WHEN json_valid(metadata_json) THEN json_extract(metadata_json, '$.clientId') END IN (SELECT value FROM json_each(?))`;
+// A rate-limited unknown route writes a warning with the client id and a completion
+// log, but no audit row: the request id is followed from both tables.
+const LOG_WHERE = `(${LOG_CLIENT}
+  OR request_id IN (SELECT request_id FROM audit_logs WHERE client_id_hash IN (SELECT value FROM json_each(?)) AND request_id IS NOT NULL)
+  OR request_id IN (SELECT request_id FROM log_events WHERE ${LOG_CLIENT} AND request_id IS NOT NULL))
   AND ${RANGE}`;
 
 interface Query { sql: string; params: string[] }
@@ -117,7 +121,7 @@ function queries(request: SubjectRequest, hashes: string[]): { logs: (select: st
   const list = JSON.stringify(hashes);
   const range = [new Date(request.fromMs).toISOString(), new Date(request.toExclusiveMs).toISOString()];
   return {
-    logs: select => ({ sql: `${select} log_events WHERE ${LOG_WHERE}`, params: [list, list, ...range] }),
+    logs: select => ({ sql: `${select} log_events WHERE ${LOG_WHERE}`, params: [list, list, list, ...range] }),
     audit: select => ({ sql: `${select} audit_logs WHERE ${AUDIT_WHERE}`, params: [list, ...range] }),
   };
 }

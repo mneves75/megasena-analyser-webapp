@@ -153,6 +153,37 @@ describe('privacy:subject', () => {
     expect(ids(file, 'audit_logs')).toEqual(ALL_AUDIT);
   }, 30_000);
 
+  /** A rate-limited request to an unknown route: a warning carrying the client id, a completion log, no audit row. */
+  function addUnknownRouteRejections(file: string): void {
+    const db = new DatabaseSync(file);
+    try {
+      const log = db.prepare('INSERT INTO log_events (id, timestamp, level, event, request_id, metadata_json) VALUES (?, ?, ?, ?, ?, ?)');
+      for (const [id, address] of [['ua', CLIENT_A], ['ub', CLIENT_B]] as const) {
+        const clientId = hashAt(address, WINDOW_ONE);
+        log.run(`warn-${id}`, WINDOW_ONE, 'warn', 'api.rate_limit_exceeded', `request-${id}`, JSON.stringify({ route: '/api/missing', clientId }));
+        log.run(`done-${id}`, WINDOW_ONE, 'info', 'api.request_completed', `request-${id}`, JSON.stringify({ route: '/api/missing', status: 429 }));
+      }
+    } finally {
+      db.close();
+    }
+  }
+
+  it('follows the request id of the subject own log rows when no audit row exists', () => {
+    const exportFile = database();
+    addUnknownRouteRejections(exportFile);
+    const exported = subject(exportFile, ['--ip', CLIENT_A, ...RANGE, '--export']);
+    expect(exported.status, exported.stderr).toBe(0);
+    const rows = JSON.parse(exported.stdout) as { logEvents: { id: string }[] };
+    expect(rows.logEvents.map(row => row.id).sort()).toEqual(['done-a1', 'done-a2', 'done-ua', 'warn-a1', 'warn-a2', 'warn-ua']);
+
+    const eraseFile = database();
+    addUnknownRouteRejections(eraseFile);
+    const erased = subject(eraseFile, ['--ip', CLIENT_A, ...RANGE, '--erase']);
+    expect(erased.status, erased.stderr).toBe(0);
+    expect(JSON.parse(erased.stdout)).toEqual({ mode: 'erase', dryRun: false, auditLogs: 2, logEvents: 6 });
+    expect(ids(eraseFile, 'log_events')).toEqual(['done-a3', 'done-b1', 'done-b2', 'done-ub', 'warn-a3', 'warn-b1', 'warn-b2', 'warn-ub']);
+  }, 30_000);
+
   it.each([
     ['an invalid IP', ['--ip', '203.0.113.300', '--erase'], { IP_HASH_SECRET: SECRET }, /--ip/],
     ['a missing secret', ['--ip', CLIENT_A, '--erase'], {}, /IP_HASH_SECRET/],
