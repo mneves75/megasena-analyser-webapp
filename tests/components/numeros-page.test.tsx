@@ -24,6 +24,11 @@ vi.mock('@/app/_lib/archive', () => ({
 }));
 
 describe('NumbersHubPage table', () => {
+  it('marks the rendered page complete for the edge cache exactly once', async () => {
+    const { container } = render(await NumbersHubPage());
+    expect(container.querySelectorAll('[data-edge-cache="complete"]')).toHaveLength(1);
+  });
+
   it('draws the frequency against the most drawn number and keeps three columns on phones', async () => {
     render(await NumbersHubPage());
     const table = screen.getByRole('table', { name: 'Frequência e atraso dos números de 1 a 60' });

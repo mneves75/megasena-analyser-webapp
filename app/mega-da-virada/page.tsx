@@ -27,6 +27,7 @@ import {
   wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const PATH = '/mega-da-virada';
@@ -167,6 +168,7 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
         type="CollectionPage"
         {...(lastModified ? { dateModified: lastModified } : {})}
       />
+      <EdgeCacheable />
 
       <div className="space-y-8">
         <header className="space-y-5">

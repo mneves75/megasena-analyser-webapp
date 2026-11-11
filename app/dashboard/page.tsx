@@ -30,6 +30,7 @@ import {
   type Fact,
 } from '@/app/_components/archive-ui';
 import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
@@ -73,7 +74,8 @@ interface DashboardApiResponse {
 const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
 let cachedDashboard: { data: DashboardApiResponse; fetchedAt: number } | null = null;
 
-async function getDashboardData(): Promise<DashboardApiResponse> {
+/** `fresh` is false when the data is the module-level copy from an earlier request. */
+async function getDashboardData(): Promise<{ data: DashboardApiResponse; fresh: boolean }> {
   const url = buildApiUrl('/api/dashboard');
   let responseErrorLogged = false;
 
@@ -102,7 +104,7 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
 
     const data = (await response.json()) as DashboardApiResponse;
     cachedDashboard = { data, fetchedAt: Date.now() };
-    return data;
+    return { data, fresh: true };
   } catch (error) {
     const cached = cachedDashboard;
     const now = Date.now();
@@ -113,7 +115,7 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
         cacheAgeMs: now - cached.fetchedAt,
         errorMessage: error instanceof Error ? error.message : String(error),
       });
-      return cached.data;
+      return { data: cached.data, fresh: false };
     }
 
     if (!responseErrorLogged) {
@@ -127,7 +129,10 @@ async function getDashboardData(): Promise<DashboardApiResponse> {
 }
 
 export default async function DashboardPage() {
-  const { statistics, recentDraws, hotNumbers } = await getDashboardData();
+  const {
+    data: { statistics, recentDraws, hotNumbers },
+    fresh,
+  } = await getDashboardData();
   const lastDraw = recentDraws[0];
   const through = statistics.lastContestNumber;
   const times = (entry: NumberFrequency): string => countLabel(entry.frequency, 'vez', 'vezes');
@@ -161,6 +166,7 @@ export default async function DashboardPage() {
           { name: 'Dashboard', url: '/dashboard' },
         ]}
       />
+      {fresh ? <EdgeCacheable /> : null}
 
       <div className="space-y-8">
         <header className="space-y-3">

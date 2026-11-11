@@ -25,6 +25,7 @@ import {
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 
 interface NumberRouteProps {
   params: Promise<{ numero: string }>;
@@ -137,6 +138,7 @@ export default async function NumberPage({ params }: NumberRouteProps): Promise<
         breadcrumbs={breadcrumbs}
         {...(archive.lastModified ? { dateModified: archive.lastModified } : {})}
       />
+      <EdgeCacheable />
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />

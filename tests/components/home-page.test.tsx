@@ -100,6 +100,21 @@ describe('HomePage', () => {
     expect(screen.getByRole('heading', { name: 'Perguntas frequentes' })).toBeVisible();
   });
 
+  it('marks the page complete for the edge cache exactly once when the snapshot loads', async () => {
+    const { container } = render(await HomePage());
+    expect(container.querySelectorAll('[data-edge-cache="complete"]')).toHaveLength(1);
+  });
+
+  it.each([
+    ['the API is unreachable', () => fetchApi.mockRejectedValue(new Error('offline'))],
+    ['the API answers an error', () => fetchApi.mockResolvedValue(new Response('down', { status: 503 }))],
+  ])('renders no edge-cache marker when %s (the empty fallback must not be stored)', async (_case, fail) => {
+    fail();
+    const { container } = render(await HomePage());
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(TITLE);
+    expect(container.querySelector('[data-edge-cache]')).toBeNull();
+  });
+
   it('keeps the title and the actions when the latest draw is unavailable', async () => {
     fetchApi.mockRejectedValue(new Error('offline'));
     render(await HomePage());

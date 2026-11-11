@@ -26,6 +26,7 @@ import {
   phoneLineClass,
   wideCellClass,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 
 const PATH = '/numeros';
 const TITLE = 'Números da Mega-Sena: frequência e atraso de 1 a 60';
@@ -79,6 +80,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
         type="CollectionPage"
         {...(archive.lastModified ? { dateModified: archive.lastModified } : {})}
       />
+      <EdgeCacheable />
 
       <header className="space-y-5">
         <Breadcrumbs items={BREADCRUMBS} />

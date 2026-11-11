@@ -23,6 +23,7 @@ import {
   SectionHeading,
   SourceLine,
 } from '@/app/_components/archive-ui';
+import { EdgeCacheable } from '@/app/_components/edge-cacheable';
 
 interface YearRouteProps {
   params: Promise<{ ano: string }>;
@@ -120,6 +121,7 @@ export default async function YearResultsPage({
         type="CollectionPage"
         dateModified={lastModified}
       />
+      <EdgeCacheable />
 
       <header className="space-y-5">
         <Breadcrumbs items={breadcrumbs} />

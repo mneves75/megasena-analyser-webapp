@@ -28,6 +28,12 @@ const EDGE_TTL_SECONDS = 86400;
 const ORIGINAL_CACHE_CONTROL = 'X-Megasena-Origin-Cache-Control';
 const CSP_NONCE = /'nonce-([^']+)'/;
 const FRAMEWORK_HEADER = /^(?:rsc$|next-|x-(?:vinext-|nextjs-|middleware-|rsc-))/i;
+/**
+ * HTML serialization of `app/_components/edge-cacheable.tsx`. The quoted value
+ * cannot occur in the JSON-escaped RSC payload inlined in the same document, so
+ * only an element React actually rendered into the HTML matches.
+ */
+export const EDGE_CACHE_MARKER = 'data-edge-cache="complete"';
 
 export function isDeterministicRoute(url: URL): boolean {
   return DETERMINISTIC_ROUTE.test(url.pathname);
