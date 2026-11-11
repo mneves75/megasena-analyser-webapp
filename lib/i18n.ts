@@ -610,8 +610,6 @@ export const pt = {
     ariaLabel: 'Aviso de privacidade e armazenamento local',
   },
   footer: {
-    aboutText:
-      'Ferramenta de análise estatística da Mega-Sena para visualização de padrões e geração de sugestões de apostas baseadas em dados históricos.',
     legalTitle: 'Legal',
     termsLink: 'Termos de Serviço',
     privacyLink: 'Política de Privacidade',
