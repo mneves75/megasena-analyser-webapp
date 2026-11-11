@@ -3,7 +3,7 @@
  * Per-subject access and erasure (LGPD Art. 18, II, IV and V) over audit_logs
  * and log_events. The titular states the IP address(es) and the period; this
  * computes the subject's `client_id_hash` for every 30-day salt window in that
- * period exactly as the request path does (rateLimitSubject, then
+ * period, and the one just before it, exactly as the request path does (rateLimitSubject, then
  * pseudonymizeClient), and selects:
  *   - audit_logs rows carrying one of those hashes;
  *   - log_events rows carrying one in metadata `clientId`, or sharing a
@@ -95,11 +95,19 @@ function parseArgs(argv: string[], now: number): SubjectRequest {
   return { subjects: [...new Set(ips.map(rateLimitSubject))], fromMs, toExclusiveMs: toMs + DAY_MS, mode, dryRun, ...(sqlOut ? { sqlOut } : {}) };
 }
 
-/** The subject's pseudonyms in every salt window the period touches (one per day, deduplicated). */
+/**
+ * The subject's pseudonyms in every salt window the period touches (one per day,
+ * deduplicated), plus the window in force just before the period: the hash is
+ * taken when a request starts and its rows are stamped later, so a request that
+ * straddles a window boundary leaves the previous window's hash on rows inside
+ * the next one.
+ */
 function subjectHashes(subjects: string[], secret: string, fromMs: number, toExclusiveMs: number): string[] {
+  const instants = [fromMs - 1];
+  for (let day = fromMs; day < toExclusiveMs; day += DAY_MS) instants.push(day);
   const hashes = new Set<string>();
-  for (let day = fromMs; day < toExclusiveMs; day += DAY_MS) {
-    for (const subject of subjects) hashes.add(pseudonymizeClient(subject, secret, new Uint8Array(0), day));
+  for (const instant of instants) {
+    for (const subject of subjects) hashes.add(pseudonymizeClient(subject, secret, new Uint8Array(0), instant));
   }
   return [...hashes];
 }

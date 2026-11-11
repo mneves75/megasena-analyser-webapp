@@ -184,6 +184,36 @@ describe('privacy:subject', () => {
     expect(ids(eraseFile, 'log_events')).toEqual(['done-a3', 'done-b1', 'done-b2', 'done-ub', 'warn-a3', 'warn-b1', 'warn-b2', 'warn-ub']);
   }, 30_000);
 
+  it('includes the salt window before the first one: a request that straddled the boundary', () => {
+    // 2026-04-01 starts salt window 3; the hash was taken when the request began, in window 2.
+    const started = '2026-03-31T23:59:59.900Z';
+    const stamped = '2026-04-01T00:00:00.500Z';
+    const straddle = (file: string) => {
+      const db = new DatabaseSync(file);
+      try {
+        const audit = db.prepare("INSERT INTO audit_logs (id, timestamp, event, request_id, client_id_hash) VALUES (?, ?, 'api.health', ?, ?)");
+        for (const [id, address] of [['sa', CLIENT_A], ['sb', CLIENT_B]] as const) {
+          audit.run(`audit-${id}`, stamped, `request-${id}`, hashAt(address, started));
+        }
+      } finally {
+        db.close();
+      }
+    };
+    const range = ['--from', '2026-04-01', '--to', '2026-04-30'];
+
+    const exportFile = database();
+    straddle(exportFile);
+    const exported = subject(exportFile, ['--ip', CLIENT_A, ...range, '--export']);
+    expect(exported.status, exported.stderr).toBe(0);
+    expect((JSON.parse(exported.stdout) as { auditLogs: { id: string }[] }).auditLogs.map(row => row.id).sort()).toEqual(['audit-a2', 'audit-sa']);
+
+    const eraseFile = database();
+    straddle(eraseFile);
+    const erased = subject(eraseFile, ['--ip', CLIENT_A, ...range, '--erase']);
+    expect(erased.status, erased.stderr).toBe(0);
+    expect(ids(eraseFile, 'audit_logs')).toEqual(['audit-a1', 'audit-a3', 'audit-b1', 'audit-b2', 'audit-sb']);
+  }, 30_000);
+
   it.each([
     ['an invalid IP', ['--ip', '203.0.113.300', '--erase'], { IP_HASH_SECRET: SECRET }, /--ip/],
     ['a missing secret', ['--ip', CLIENT_A, '--erase'], {}, /IP_HASH_SECRET/],
