@@ -1,8 +1,8 @@
 # 02 - Mapa do Repositório
 
-## Cloudflare em staging
+## Cloudflare em produção e staging
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 
 ## O que este capítulo ensina
@@ -35,7 +35,7 @@ Três zonas:
 | `proxy.ts` | Middleware Next.js: nonce + CSP + headers de segurança |
 | `next.config.js` | `output: standalone`, rewrite `/api/*`, exclusões de tracing |
 | `app/` | Rotas do App Router (páginas, route handlers de metadados, ícones OG) |
-| `components/` | UI reutilizável (`ui/`, `bet-generator/`, `privacy/`, `seo/`, `statistics/`, e `number-field.tsx`, o volante de 60) |
+| `components/` | UI reutilizável (`ui/`, `bet-generator/`, `privacy/`, `seo/`, `statistics/`, `number-field.tsx`, o volante de 60, e `figures.tsx`, as figuras SVG renderizadas no servidor) |
 | `lib/` | Lógica de negócio e utilidades |
 | `lib/analytics/` | Engines estatísticos + gerador de apostas |
 | `lib/api/` | Cliente CAIXA e helper de fetch RSC→API |
@@ -112,9 +112,9 @@ find tests -type f | sort
 
 ## Mal-entendidos comuns
 
-- **"`app/api/` é a API."** Em `app/api/*` existem apenas **diretórios vazios** (sem
-  nenhum `route.ts`/arquivo — verificado). A API real que toca o banco é o servidor Bun
-  (`server.ts`); o `next.config.js` reescreve `/api/*` para ele.
+- **"`app/api/` é a API."** Não existe `app/api/`. O contrato da API é
+  `lib/api/handler.ts`; no caminho Bun, `server.ts` o serve e o `next.config.js`
+  reescreve `/api/*` para ele.
 - **"`dist/standalone` é gerado no build."** É sincronizado por `bun run dist:standalone`
   (`sync-standalone-dist.ts`), um passo separado do `bun run build`.
 - **"Posso editar uma migração antiga."** Não; crie uma nova migração.
@@ -134,6 +134,6 @@ find tests -type f | sort
 
 - **Verificado no código:** árvore de pastas e entrypoints (listagem do repo,
   `package.json`, `next.config.js`, `Dockerfile`); ordem de migrações.
-- **Verificado no código:** `app/api/*` contém apenas diretórios vazios (sem arquivos);
-  a API que consulta o banco está em `server.ts`, alcançada pelo rewrite do `next.config.js`.
+- **Verificado no código:** não existe `app/api/`; a API está em `lib/api/handler.ts`,
+  servida por `server.ts` e alcançada pelo rewrite do `next.config.js`.
 - **Conhecimento externo:** convenções de App Router.

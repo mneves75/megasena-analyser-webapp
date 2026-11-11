@@ -1,8 +1,8 @@
 # 01 - Visão Geral do Sistema
 
-## Cloudflare em staging
+## Cloudflare em produção e staging
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 
 ## O que este capítulo ensina
@@ -39,8 +39,9 @@ recepcionista, que repassa os pedidos.
 3. **Analisa** padrões históricos — `lib/analytics/*` (frequência, atrasos, décadas,
    pares, paridade, primos, soma, streaks, correlação com prêmio).
 4. **Gera** estratégias de aposta dentro de um orçamento — `lib/analytics/bet-generator.ts`.
-5. **Expõe** tudo via API JSON — `server.ts` (rotas `/api/health`, `/api/dashboard`,
-   `/api/statistics`, `/api/trends`, `/api/generate-bets`).
+5. **Expõe** tudo via API JSON — `lib/api/handler.ts`, servido por `server.ts` (rotas
+   `/api/health`, `/api/dashboard`, `/api/statistics`, `/api/trends`, `/api/draws`,
+   `/api/numbers`, `/api/sitemap`, `/api/generate-bets`).
 6. **Apresenta** em páginas web — `app/dashboard/*`.
 
 Premissa explícita do produto (não é marketing, está no código e nas páginas):
@@ -158,9 +159,9 @@ grep -n "use server" app/dashboard/generator/actions.ts
 
 ## Exercícios
 
-1. **(Fácil)** Liste as 5 rotas `/api/*` lendo o objeto `apiHandlers` em `server.ts`.
-   **Gabarito:** `/api/health`, `/api/dashboard`, `/api/statistics`, `/api/trends`,
-   `/api/generate-bets`.
+1. **(Fácil)** Liste as 8 rotas `/api/*` lendo o objeto `apiRoutes` em `lib/api/handler.ts`.
+   **Gabarito:** `/api/health`, `/api/dashboard`, `/api/statistics`, `/api/trends`, `/api/draws`,
+   `/api/numbers`, `/api/sitemap`, `/api/generate-bets`.
 2. **(Médio)** Desenhe, sem olhar o diagrama acima, o caminho de um clique em "Gerar
    apostas" até o banco. Depois confira em `generator-form.tsx` →
    `actions.ts` → `server.ts` (`/api/generate-bets`) → `BetGenerator`.
@@ -173,7 +174,7 @@ grep -n "use server" app/dashboard/generator/actions.ts
 ### Procedência das afirmações
 
 - **Verificado no código:** dois processos e portas (`server.ts`, `scripts/dev.ts`,
-  `next.config.js`); fronteira RSC→API (`fetchApi`, `actions.ts`); rotas (`apiHandlers`);
+  `next.config.js`); fronteira RSC→API (`fetchApi`, `actions.ts`); rotas (`apiRoutes`);
   ausência de uso de `user_bets`; textos de aviso nas páginas.
 - **Inferido do código:** a motivação "Node vs Bun" para separar processos (apoiada
   pelo comentário em `actions.ts`).

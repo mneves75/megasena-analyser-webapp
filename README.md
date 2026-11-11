@@ -4,7 +4,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Hospedagem e atualização diária
 
-A versão 1.19.3 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e linha de fonte da CAIXA. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
+A versão 1.20.0 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e figuras SVG, com uma linha de fonte da CAIXA por página. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
 
 - `cloudflare/worker.ts` atende páginas App Router via vinext/Vite e encaminha `/api/*` ao Durable Object SQLite `MegaSenaData` pelo binding privado `DATA`.
 - `lib/api/handler.ts` contém o contrato compartilhado da API; `server.ts` é o adaptador Bun. Contextos de banco e log isolam operações concorrentes.
@@ -37,7 +37,7 @@ Use `bun run dev:vinext` para desenvolvimento Worker; `bun run build:cloudflare`
 - **Frontend**: App Router/React 19.3.1; Next.js 16.4.6 no caminho Bun e vinext/Vite no Worker
 - **Runtime**: Worker com `nodejs_compat` em produção; Bun >=1.4.2 no caminho local/CI; imagem Docker de recuperação com digest imutável
 - **Banco de Dados**: SQLite Durable Object em produção; `bun:sqlite` no caminho local e de recuperação
-- **Estilização**: Tailwind CSS + componentes shadcn/ui
+- **Estilização**: Tailwind CSS 4.3.5 com tokens semânticos; sem biblioteca de componentes nem de gráficos
 - **TypeScript**: Tipagem completa
 - **Analytics**: Motor estatístico customizado
 
@@ -123,7 +123,7 @@ O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no base
 
 ## Scripts de Banco de Dados
 
-O seed versionado inclui 3.064 concursos, até #3064 (29/09/2026). Para atualizar
+O seed versionado inclui 3.065 concursos, até #3065 (01/10/2026). Para atualizar
 somente os concursos posteriores ao último armazenado, o entry point legado
 `bun run scripts/fetch-missing.ts` usa a mesma ingestão incremental, validação,
 `DATABASE_PATH` e transação de `db:pull`.
@@ -269,15 +269,17 @@ Staging segue o mesmo artefato self-hosted documentado em `docs/DEPLOY.md`, mas 
 │   ├── sitemap.xml/, robots.ts, llms.txt/  # Superfície para buscadores e IAs
 │   └── layout.tsx        # Layout raiz
 ├── components/            # Componentes React
-│   ├── ui/               # Componentes shadcn/ui
+│   ├── ui/               # `Button` escrito à mão
+│   ├── figures.tsx       # Figuras SVG renderizadas no servidor
 │   └── *.tsx             # Componentes customizados
 ├── lib/                   # Bibliotecas principais
 │   ├── analytics/        # Estatísticas e geração de apostas
-│   ├── api/              # Cliente da API CAIXA
+│   ├── api/              # Cliente da API CAIXA e contrato compartilhado da API (`handler.ts`)
 │   ├── security/         # CSP e headers de segurança
 │   ├── db.ts             # Utilitários do banco de dados
 │   ├── constants.ts      # Constantes compartilhadas
 │   └── utils.ts          # Funções auxiliares
+├── cloudflare/            # Worker vinext e Durable Object SQLite (produção e staging)
 ├── db/                    # Banco de dados SQLite
 │   ├── migrations/       # Migrações SQL
 │   └── mega-sena.db      # Arquivo do banco (gerado)
@@ -369,9 +371,8 @@ O projeto cumpre a Lei nº 13.709/2018 (LGPD):
 
 A aplicação segue um design limpo e minimalista inspirado em Apple/Linear/Mercury com:
 
-- **Tipografia**: Fonte Inter com espaçamento apertado
+- **Tipografia**: Fonte Archivo, com o eixo de largura para títulos e numerais
 - **Paleta de Cores**: Base neutra + destaque cyan elétrico
-- **Componentes**: Cards arredondados com sombras suaves
 - **Micro-interações**: Transições suaves e estados de hover
 - **Responsivo**: Abordagem mobile-first
 

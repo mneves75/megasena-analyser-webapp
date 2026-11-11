@@ -387,10 +387,10 @@ function StreakTable({
             <th scope="col" className={thClass}>
               Dezena
             </th>
-            <th scope="col" className={thClass}>
+            <th scope="col" className={cn(thClass, 'text-right')}>
               Saídas nos últimos 10
             </th>
-            <th scope="col" className={thClass}>
+            <th scope="col" className={cn(thClass, 'text-right')}>
               Em relação à média
             </th>
             <th scope="col" className={thClass}>
@@ -404,8 +404,10 @@ function StreakTable({
               <th scope="row" className={cellClass}>
                 <DezenaLink number={streak.number} />
               </th>
-              <td className={cellClass}>{streak.recentOccurrences}</td>
-              <td className={cellClass}>{fixedDecimal(streak.streakIntensity, 2)}×</td>
+              <td className={cn(cellClass, 'text-right')}>{streak.recentOccurrences}</td>
+              <td className={cn(cellClass, 'text-right')}>
+                {fixedDecimal(streak.streakIntensity, 2)}×
+              </td>
               <td className={cellClass}>
                 {streak.lastDrawnContest ? (
                   <ArchiveLink

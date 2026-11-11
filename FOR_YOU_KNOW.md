@@ -33,4 +33,4 @@ Bun é o runtime: a aplicação depende de `bun:sqlite` e não roda sob Node.js.
 
 ## Caminho curto para validar uma mudança
 
-Comece pelo teste do módulo tocado. Depois rode `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run`, `pnpm audit --prod` e `bun run build`. Mudança visual também exige `bun run test:e2e` e inspeção real em desktop e mobile.
+Comece pelo teste do módulo tocado. Depois rode `bun run lint`, `bun run lint:ast`, `bun run typecheck`, `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit` e `bun run build`, a lista de `AGENTS.md`. Mudança visual também exige verificação com Argent Chromium em desktop e mobile; não rode Playwright (`bun run test:e2e`).

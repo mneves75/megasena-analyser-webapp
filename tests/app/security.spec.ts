@@ -26,7 +26,7 @@ test('production pages expose strict CSP headers without browser CSP violations'
   expect(scriptSrc).not.toContain("'unsafe-inline'");
   expect(styleSrc).not.toContain("'unsafe-inline'");
 
-  await expect(page.getByRole('heading', { name: 'Mega-Sena Analyzer', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Resultados e estatísticas da Mega-Sena desde 1996' })).toBeVisible();
   expect(consoleErrors.filter((message) => message.includes('Content Security Policy'))).toEqual([]);
 });
 

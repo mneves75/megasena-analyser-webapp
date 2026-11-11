@@ -14,7 +14,7 @@ Ferramenta gratuita de análise estatística e geração de apostas da Mega-Sena
 
 ## Brand Personality
 
-Precisa, honesta, calma. "Cientista de dados, não vendedor de milagre". A identidade visual é teal sóbrio sobre neutros frios, com as bolas de loteria como assinatura visual. Tom pt-BR direto, sem hype.
+Precisa, honesta, calma. "Cientista de dados, não vendedor de milagre". A identidade visual é teal sóbrio sobre neutros frios, com o campo completo das sessenta dezenas, as sorteadas marcadas a tinta, como assinatura visual. Tom pt-BR direto, sem hype.
 
 ## Anti-references
 

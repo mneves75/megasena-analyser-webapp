@@ -1,6 +1,6 @@
 # 05 - Subsistemas Centrais
 
-O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. Os motores estatísticos são compartilhados, mas o Worker seleciona SQLite Durable Object e transporte privado pelo binding `DATA`. O contrato da API fica em `lib/api/handler.ts`; `server.ts` é o adaptador Bun da produção atual/VPS. Contextos de banco e log isolam operações concorrentes. Veja [03](03-runtime-architecture.md) e [DEPLOY.md](../DEPLOY.md).
+O Worker Cloudflare atende produção e staging. Os motores estatísticos são compartilhados, mas o Worker seleciona SQLite Durable Object e transporte privado pelo binding `DATA`. O contrato da API fica em `lib/api/handler.ts`; `server.ts` é o adaptador Bun do caminho local e de recuperação. Contextos de banco e log isolam operações concorrentes. Veja [03](03-runtime-architecture.md) e [DEPLOY.md](../DEPLOY.md).
 
 ## O que este capítulo ensina
 
@@ -37,12 +37,13 @@ registrar e apresentar. Cada caixa fala com as vizinhas por contratos pequenos.
 
 - **Propósito:** abrir o SQLite, aplicar migrações e oferecer um substituto em memória
   para testes.
-- **I/O:** `getDatabase()`/`getDatabaseAsync()`, `runMigrations()`, `closeDatabase()`.
+- **I/O:** `getDatabase()`, `runMigrations()`, `closeDatabase()`.
 - **Abstrações:** PRAGMAs de performance/segurança (WAL, `foreign_keys=ON`,
-  `trusted_schema=OFF`, etc.); `InMemoryDatabase` que **normaliza SQL** e responde a um
-  conjunto fixo de queries (ativada quando `process.env.VITEST` está setado).
-- **Tradeoffs:** o banco em memória acelera testes, mas só conhece os SQLs que o app
-  usa — SQL novo pode não ser interpretado (ver `09-open-questions-and-risks.md`).
+  `trusted_schema=OFF`, etc.); em Vitest, um `node:sqlite` `:memory:` com as migrações
+  reais (ativado quando `process.env.VITEST` está setado).
+- **Tradeoffs:** o banco de teste é SQLite real, mas não é o SQLite do Durable Object:
+  um SELECT composto com mais de cinco termos passa no Vitest e falha no Worker
+  (só `bun run test:cloudflare` pega).
   Migração tolerante a legado (adiciona colunas `status`/`error_message` via `ALTER`).
 
 ### 3. Motor estatístico — `lib/analytics/statistics.ts`
@@ -50,15 +51,15 @@ registrar e apresentar. Cada caixa fala com as vizinhas por contratos pequenos.
 - **Propósito:** resumo do dashboard e detecção de padrões simples.
 - **I/O:** `getDrawStatistics()` (`DrawStatistics`), `getNumberFrequencies()`,
   `detectPatterns()`, `getDrawHistory(limit)`, `updateNumberFrequencies()`.
-- **Abstrações:** queries pré-geradas e seguras por coluna
-  (`NUMBER_COLUMN_COUNT_QUERIES`) — evita interpolação de string em SQL. O recálculo de
-  frequências roda em transação `BEGIN IMMEDIATE` com rollback em erro.
+- **Abstrações:** o recálculo de frequências é uma única consulta agregada sobre as
+  seis colunas de dezenas (as duas últimas aninhadas, pelo limite de cinco termos do
+  Durable Object), dentro de `withDatabaseTransaction` com rollback em erro.
 - **Tradeoffs:** `number_frequency` é cache; precisa ser recalculado após ingestão.
 
 ### 4. Engines de análise avançada — `lib/analytics/*`
 
 Todos recebem o banco no construtor e leem `draws`. Wiring em `/api/statistics` por
-flags de query (`server.ts`). Resumo:
+flags de query (`lib/api/handler.ts`). Resumo:
 
 | Engine | Flag | Conceito | Observação de custo |
 | --- | --- | --- | --- |
@@ -71,7 +72,6 @@ flags de query (`server.ts`). Resumo:
 | `StreakAnalysisEngine` | `streaks` | quentes/frios via janela recente vs total | janela + CTE |
 | `PrizeCorrelationEngine` | `prize` | prêmio médio quando o número está presente | 1 CTE UNION ALL |
 | `TimeSeriesEngine` | (via `/api/trends`) | frequência ao longo de períodos | muito "chatty" |
-| `ComplexityScoreEngine` | (não usada) | pontua "complexidade" de uma aposta | em memória, sem SQL; definida mas sem chamador |
 
 - **Tradeoffs:** vários engines fazem N consultas pequenas (decade, prime, time-series).
   Para o volume atual de sorteios funciona, mas é a primeira coisa a otimizar se a base
@@ -117,7 +117,7 @@ flags de query (`server.ts`). Resumo:
 - **Filas assíncronas:** `log-store.ts` (→ `log_events`) e `audit.ts` (→ `audit_logs`)
   com flush por intervalo (2s) e por limiar, transação em lote e re-enfileiramento em
   erro de DB.
-- **Retenção:** `audit-retention.ts` (default 365 no código; 400 via env) e
+- **Retenção:** `audit-retention.ts` (default 400; configurável via env) e
   `log-retention.ts` (30 dias); schedulers de 24h iniciados no boot.
 - **Tradeoff:** `log-store` chama `.unref()` no timer; `audit.ts` não — pequena
   assimetria (ver riscos).
@@ -125,20 +125,21 @@ flags de query (`server.ts`). Resumo:
 ### 8. Apresentação — `app/*` + `components/*`
 
 - **Server Components** por padrão; `'use client'` só onde há interatividade
-  (formulário do gerador, gráficos, tema, banner de privacidade).
+  (formulário do gerador, tema, aviso de armazenamento). As figuras são SVG
+  renderizado no servidor (`components/figures.tsx`), sem JavaScript no cliente.
 - **SEO/JSON-LD:** `lib/seo/schemas.ts` gera schemas (`WebSite`, `Organization`,
   `WebApplication`, `BreadcrumbList`, `FAQPage`); o componente `MultiJsonLd`
   (`components/seo/json-ld.tsx`) serializa com nonce e escapa `<`.
 - **Requisito de produto atendido:** a página de estatísticas mostra o concurso e a
-  data-base da análise num card próprio (`app/dashboard/statistics/page.tsx`, labels
-  `pt.statistics.freshness.*`).
+  data-base da análise na linha de fonte do cabeçalho (`app/dashboard/statistics/page.tsx`,
+  `pt.statistics.freshness`).
 
 ## Como verificar isso no código
 
 ```bash
 grep -n "buildOptimizedBetSizes\|getBetSignature\|FALLBACK_THRESHOLD" lib/analytics/bet-generator.ts
-grep -n "includeDelays\|includeDecades\|includePairs" server.ts
-grep -n "InMemoryDatabase\|VITEST" lib/db.ts
+grep -n "includeDelays\|includeDecades\|includePairs" lib/api/handler.ts
+grep -n "node:sqlite\|VITEST" lib/db.ts
 grep -n "generateWebApplicationSchema\|generateFAQSchema" lib/seo/schemas.ts
 ```
 
@@ -158,12 +159,8 @@ grep -n "generateWebApplicationSchema\|generateFAQSchema" lib/seo/schemas.ts
 2. **(Médio)** Em `buildOptimizedBetSizes`, explique o papel de `resolveCostUnitCents`.
    **Gabarito:** acha o GCD dos preços em centavos para discretizar o orçamento e
    tornar a DP exata sem ponto flutuante.
-3. **(Médio)** Aponte um engine que escreve no banco e um que não toca o banco.
-   **Gabarito:** escreve: `PairAnalysisEngine`; não toca: `ComplexityScoreEngine`.
-4. **(Difícil / mudança)** Adicione uma flag `?complexity=true` em `/api/statistics`
-   que retorne o score de um array fixo. Quais arquivos mudam? **Gabarito:** `server.ts`
-   (handler), `ComplexityScoreEngine` (a classe já existe mas hoje **não tem chamador** —
-   bom candidato a finalmente aproveitar), e o tipo de resposta consumido pela página.
+3. **(Médio)** Aponte um engine que escreve no banco.
+   **Gabarito:** `PairAnalysisEngine` (cache `number_pair_frequency`).
 
 ---
 

@@ -1,6 +1,6 @@
 # 10 - LGPD: Verificação e Plano de Conformidade (2026+)
 
-O staging Cloudflare já executa a aplicação e armazena seus próprios logs/auditoria no SQLite Durable Object. A produção continua no VPS; a transferência dos registros reais e a restauração verificável ainda são requisitos do cutover. O estado vigente e as atualizações obrigatórias pertencem a [LGPD-COMPLIANCE.md](../LGPD-COMPLIANCE.md) e [PRIVACY.md](../PRIVACY.md).
+Produção e staging executam a aplicação no Worker Cloudflare e armazenam seus logs/auditoria no SQLite Durable Object; o VPS é o caminho de recuperação. O estado vigente e as atualizações obrigatórias pertencem a [LGPD-COMPLIANCE.md](../LGPD-COMPLIANCE.md) e [PRIVACY.md](../PRIVACY.md).
 
 > Aviso: este capítulo descreve o que o **código** faz e propõe ações técnicas. Não é
 > parecer jurídico. Decisões de base legal e prazos devem ser validadas pelo
@@ -97,7 +97,7 @@ banner as nomeia explicitamente.
      SQLCipher no código.
 
 3. **Definir o prazo oficial de retenção de auditoria.**
-   - Estado: 400 dias (`.env.example`) vs 365 (default do CLI `prune-audit-logs.ts`) vs
+   - Estado: 400 dias (`.env.example` e default do CLI `prune-audit-logs.ts`) vs
      recomendação de 180 dias em `docs/LGPD-COMPLIANCE.md`.
    - Ação: decidir um número, alinhar `.env.example`, o default do CLI e o RoPA;
      justificar o prazo (princípio da necessidade, Art. 15-16).

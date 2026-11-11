@@ -134,7 +134,7 @@ bun run typecheck            # tsc --noEmit
 bun run test -- --run        # vitest once (omit -- --run for watch; add --coverage for the gate)
 bun run test:sqlite          # delay analytics on bun:sqlite, isolated disposable DB
 bun x vitest tests/lib/bet-generator.test.ts --run   # single test file
-bun run test:e2e             # playwright
+bun run test:e2e             # playwright (legacy; do not run, see Done-when)
 bun run test:argent          # Argent Chromium mobile generator regression
 bun run build                # next build + assert-standalone-clean gate
 bun run start                # serve production stack locally
@@ -195,8 +195,15 @@ README.md for the isolated local production fixture and two-pass replay.
 - `proxy.ts` — the Next.js 16 middleware (Next renamed `middleware` → `proxy`).
   Mints the per-request CSP nonce, forwards it as the `x-nonce` request header, and
   sets page security headers.
-- `proxy.ts` and the Bun API have separate header paths using the shared
-  `buildApiSecurityHeaders` helper in `lib/security/csp.ts`; review both when changing CSP.
+- Pages and the API have separate header paths in `lib/security/csp.ts`: `proxy.ts`
+  uses `buildCsp` + `buildSecurityHeaders`, and the shared API handler
+  (`lib/api/handler.ts`) uses `buildApiSecurityHeaders`; review both when changing CSP.
+- `components/` — presentation. `figures.tsx` holds the server-rendered SVG figures
+  (`Bar`, `Columns`); `error-state.tsx` is the shared error state;
+  `app/_components/latest-draw-figure.tsx` is the latest-draw figure every draw page
+  reuses. `components/ui/` holds only a hand-written `Button` (no shadcn/ui, no
+  `components.json`). `app/globals.css` defines the `page`, `focus-ring` and
+  `focus-ring-inset` utilities.
 - `lib/analytics/` — statistics engine + `bet-generator.ts` (DP bet-size optimizer).
 - `lib/api/caixa-client.ts` — CAIXA API client; `lib/db.ts` — SQLite layer.
 - `lib/constants.ts` — centralized config; `BASE_URL` lives here (never hardcode the
@@ -204,10 +211,13 @@ README.md for the isolated local production fixture and two-pass replay.
 - `server.ts` — standalone Bun adapter for **every** `/api/*` endpoint (port
   3201). `next.config.js` `rewrites()` forwards `/api/:path*` to it, and
   `scripts/dev.ts` boots both processes, waiting on `/api/health` before Next
-  starts. New endpoints go in `lib/api/handler.ts`, never in `app/`.
+  starts. New endpoints go in `lib/api/handler.ts`, never in `app/`, as one
+  `apiRoutes` record holding the route's methods, audit event and handler.
 - `scripts/` — Bun CLIs (pull-draws, migrate, optimize-db, prune, security scans,
   deploy checks).
-- `db/` — SQLite DB + migrations. `tests/` — Vitest, mirrors source. `docs/` — specs,
+- `db/` — SQLite DB + migrations. A new `db/migrations/*.sql` file must also enter the
+  Worker's migration list in `cloudflare/data-object.ts`;
+  `tests/cloudflare/migration-list.test.ts` fails otherwise. `tests/` — Vitest, mirrors source. `docs/` — specs,
   privacy/LGPD, deploy, security decision records.
 - Vitest excludes `tests/app/**` (Playwright). Coverage counts `components/**` and
   `lib/**` against the coverage gate (CI runs it); a new `lib/` module enters it unless
@@ -274,7 +284,9 @@ README.md for the isolated local production fixture and two-pass replay.
   switch to a static/SRI CSP (breaks App Router streaming hydration) without E2E proof.
   There is no `unsafe-inline` anywhere in production, including `style` attributes:
   render no `style=` prop in server HTML (React's client-side style props go through
-  CSSOM and are allowed). Client modules never import `zod`: v4 probes `eval` on load and
+  CSSOM and are allowed). There is no chart library: figures are SVG rendered on the
+  server by `components/figures.tsx`, with geometry in SVG attributes and colour in
+  token classes, so they add no `style` attribute and no client JavaScript. Client modules never import `zod`: v4 probes `eval` on load and
   the CSP reports it (`tests/components/client-bundle-boundary.test.tsx`). Public edge/proxy must not define its own CSP — run `security:csp:edge` after
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,

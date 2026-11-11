@@ -1,6 +1,6 @@
 # 08 - Exercícios
 
-Os exercícios de processos/SQLite local descrevem o caminho Bun/VPS. Para o Worker Cloudflare publicado em staging, compare `cloudflare/worker.ts`, `cloudflare/data-object.ts`, `cloudflare/ingestion.ts` e `lib/api/handler.ts`; valide o runtime com `bun run test:cloudflare`. Deploy e dados recentes não podem ser inferidos desses testes locais.
+Os exercícios de processos/SQLite local descrevem o caminho Bun/VPS. Para o Worker Cloudflare de produção e staging, compare `cloudflare/worker.ts`, `cloudflare/data-object.ts`, `cloudflare/ingestion.ts` e `lib/api/handler.ts`; valide o runtime com `bun run test:cloudflare`. Deploy e dados recentes não podem ser inferidos desses testes locais.
 
 ## O que este capítulo ensina
 
@@ -20,12 +20,11 @@ forçam leitura ativa e mudanças pequenas e verificáveis.
 
 ## Capítulo 01 - Visão geral
 
-1. **Mapear as rotas** · Dificuldade: fácil · Arquivos: `server.ts`.
-   - Objetivo: listar as 5 rotas e seus métodos a partir de `apiHandlers` e
-     `apiAllowedMethods`.
+1. **Mapear as rotas** · Dificuldade: fácil · Arquivos: `lib/api/handler.ts`.
+   - Objetivo: listar as 8 rotas e seus métodos a partir de `apiRoutes`.
    - Aprendizado: a superfície real da API.
-   - Gabarito: `/api/health` GET, `/api/dashboard` GET, `/api/statistics` GET,
-     `/api/trends` GET, `/api/generate-bets` POST.
+   - Gabarito: `/api/health`, `/api/dashboard`, `/api/statistics`, `/api/trends`,
+     `/api/draws`, `/api/numbers` e `/api/sitemap` GET; `/api/generate-bets` POST.
 2. **Traçar o gerador** · Médio · `generator-form.tsx`, `actions.ts`, `server.ts`.
    - Objetivo: documentar o caminho do clique "Gerar" até o `BetGenerator`.
    - Gabarito: form (cliente) → Server Action `generateBets` → `fetchApi POST
@@ -75,18 +74,18 @@ forçam leitura ativa e mudanças pequenas e verificáveis.
 1. **Estratégias do gerador** · Fácil · `bet-generator.ts`.
 2. **Custo por engine** · Médio · `lib/analytics/*`.
    - Objetivo: classificar cada engine como "1 query", "full scan + JS" ou "chatty".
-3. **Nova flag de estatística** · Difícil · `server.ts`, `complexity-score.ts`.
-   - Objetivo: adicionar `?complexity=true` retornando o score de `[5,10,23,34,45,60]`.
-   - Aprendizado: como uma nova capacidade entra na API sem tocar o banco.
 
 ## Capítulo 06 - Tecnologias
 
-1. **Dependências não usadas** · Fácil · `package.json`.
-   - Gabarito: `framer-motion`, `date-fns`.
+1. **Dependências usadas** · Fácil · `package.json`.
+   - Gabarito: todas as dependências de produção têm uso (`react-dom` pelo Next, sem
+     import direto); `framer-motion` e `date-fns` não são dependências (formatação via
+     `Intl` em `lib/utils.ts`).
 2. **Token de design** · Médio · `globals.css`, `tailwind.config.cjs`.
    - Objetivo: criar `--info` e usá-lo sem cor fixa.
-3. **Por que Vite?** · Difícil · `vitest.config.ts`.
-   - Gabarito: Vitest roda sobre Vite; plugin React compila JSX nos testes.
+3. **Por que Vite?** · Difícil · `vite.config.ts`, `vitest.config.ts`.
+   - Gabarito: o vinext usa o Vite para gerar o Worker; Vitest roda sobre Vite; plugin
+     React compila JSX nos testes.
 
 ## Capítulo 07 - Operações
 

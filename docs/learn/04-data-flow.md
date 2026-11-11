@@ -1,8 +1,8 @@
 # 04 - Fluxo de Dados e Modelo de Dados (MER)
 
-## Cloudflare em staging
+## Cloudflare em produção e staging
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 O Cron chama `refresh()` às 06:00 UTC (03:00 Brasília). `cloudflare/ingestion.ts` consulta a CAIXA fora da transação, valida datas/dezenas/prêmios e grava concursos novos/caches atomicamente. Conflitos ou lacunas abortam o lote; repetições são idempotentes. Falhas e lotes incompletos permitem até três alarmes de retry. Seed até 3064 inicializa apenas banco vazio; não comprova frescor da CAIXA.
 
@@ -228,8 +228,8 @@ grep -n "DELETE FROM number_pair_frequency\|INSERT INTO number_pair_frequency" l
 
 ## Mal-entendidos comuns
 
-- **"Os números ficam num array no banco."** Não: 6 colunas separadas. Consultas e
-  o `InMemoryDatabase` de teste dependem disso.
+- **"Os números ficam num array no banco."** Não: 6 colunas separadas. As consultas
+  dependem disso.
 - **"`number_frequency` é a fonte de verdade."** É um **cache derivado** de `draws`;
   se você inserir sorteios sem rodar `updateNumberFrequencies`, ele fica desatualizado.
 - **"A UI grava apostas no banco."** Não. O gerador devolve apostas na resposta; nada

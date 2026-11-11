@@ -7,8 +7,28 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-11
+
+O site ganha figuras, uma moldura única e páginas mais curtas, sem mudar nenhuma URL, metadado ou resposta da API. Junto vão uma limpeza de código, correções de eficiência e a atualização das dependências.
+
+- Figuras: `components/figures.tsx` desenha barras e colunas em SVG no servidor, com a geometria em atributos, a cor em classes de token, nenhum atributo `style` (a CSP não tem exceção para ele) e nenhum JavaScript no navegador. Não há biblioteca de gráficos.
+- Estatísticas: a página abre com o achado em uma frase (a dezena mais e a menos sorteada e a média esperada), um gráfico de 60 colunas com a linha da média, listas com barras e os fatos ao lado das figuras. As três seções só de tabela (sequências, correlação com prêmios, padrões) foram para o apêndice "Tabelas complementares", fechado por padrão; os links antigos para `#sequencias`, `#premios` e `#padroes` continuam chegando. Com o arquivo completo, a altura a 1440 px caiu de 9.328 px para cerca de 6.200 px.
+- Moldura única: o utilitário `page` alinha marca, título e rodapé na mesma margem em todas as páginas (antes eram três posições). Um só ritmo entre seções e uma só medida de leitura.
+- Último sorteio: um componente (`LatestDrawFigure`) substitui as cinco cópias. A home abre com ele: o título diz o que o site oferece ("Resultados e estatísticas da Mega-Sena desde 1996") e o último sorteio aparece inteiro na primeira tela.
+- Tabelas: no celular, colunas de menor valor somem em vez de forçar rolagem lateral; as regiões roláveis têm nome e recebem foco pelo teclado; colunas de medida ficam alinhadas à direita.
+- Menos repetição: uma linha de fonte por página, no cabeçalho; três níveis de título; o aviso de armazenamento vira uma linha com os detalhes recolhidos (mesmos fatos e as duas chaves de `localStorage`); o rodapé tem três linhas; home e dashboard deixam de repetir a navegação; erro e 404 usam um único estado alinhado à esquerda; o esqueleto de carregamento tem a forma das páginas.
+- Gerador: nenhuma grade vazia antes da primeira geração e seis valores rápidos em uma linha. Nenhuma estratégia ou modo mudou.
+- Código sem uso removido: `scripts/start-docker-distroless.ts` (dependia de um binário que nada gera), onze métodos e exportações sem chamador, o plugin `tailwindcss-animate`, as variantes `secondary` e `destructive` do botão e os componentes `ui/input` e `ui/label`.
+- `/api/health` responde a partir da contagem de concursos e do último sorteio, sem montar as estatísticas completas, e continua respondendo 503 quando a tabela de frequência está ilegível. O corpo da resposta é o mesmo.
+- A chave do limite de requisições (um HMAC) é calculada uma vez por requisição, não duas ou três.
+- A reconstrução do cache de frequência usa uma consulta agregada no lugar de 720, com tabela idêntica nos 3.065 concursos do seed. O SQLite do Durable Object aceita no máximo cinco termos em um SELECT composto: a suíte do runtime do Worker pegou a sexta `UNION ALL` antes do deploy, e o limite está registrado no `AGENTS.md`.
+- O cache das listagens do arquivo comporta as 169 chaves válidas (guardava 128 e descartava listagens quentes durante uma varredura por ano).
+- As rotas da API têm métodos, evento de auditoria e handler em um único registro; as respostas 405 foram fixadas byte a byte antes da mudança. Um teste reprova quando a lista de migrações do Worker deixa um arquivo de `db/migrations/` de fora.
+- Dependências: Next.js 16.4.6, Vite 8.3.7, Tailwind CSS 4.3.5, vinext 1.4.4 e ferramentas; e as majors Vitest 5, jsdom 31, `@testing-library/jest-dom` 7, tailwind-merge 3 e lucide-react 1.x. O eslint 10 fica para depois: três plugins ainda exigem o eslint 9 e ele conflita com o override de segurança do `minimatch`. A CLI `cf` segue na 1.0.0-beta.5. As travas de cadeia de suprimentos não mudaram.
+- Cobertura: o Vitest 5 mede só `components/` e `lib/`, como o projeto documenta; a versão 4 também contava três arquivos de `app/`.
 - Node 26.13.0: `docs/DEPLOY.md`, `AGENTS.md` e `@types/node` acompanham o pin de `.nvmrc`; o teste de supply chain deriva de `.nvmrc` a frase do guia de deploy e a faixa de `engines.node`, para que nenhum dos dois fique para trás. A imagem Docker de recuperação continua em `node:22-alpine` até ter sua própria verificação de digest.
 - Medição: resultados do 1.19.3 em `docs/perf/RESULTS.md`, com status de todos os budgets em `docs/perf/budgets.json`. O harness ignora o beacon RUM que o lab bloqueia de propósito, repete falhas da ferramenta Lighthouse (sem amostra) e grava capturas por caminho absoluto, falhando se o arquivo não existir.
+- `DESIGN.md` descreve o sistema como ele foi construído, incluindo as figuras e os valores do tema escuro; a documentação deixa de citar shadcn/ui, que o projeto não usa.
 
 ## [1.19.3] - 2026-10-31
 

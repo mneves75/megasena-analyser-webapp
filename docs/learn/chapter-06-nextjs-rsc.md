@@ -75,7 +75,7 @@ Use `'use client'` APENAS quando precisa de:
 - React hooks (`useState`, `useEffect`, `useRef`)
 - Browser APIs (`window`, `document`, `localStorage`)
 
-Abra `components/ui/button.tsx`:
+Esquema ilustrativo (o `components/ui/button.tsx` real usa `cva` e tokens semânticos):
 
 ```typescript
 'use client'; // Necessário para onClick
@@ -236,7 +236,7 @@ export async function generateBets(budget: number) {
 
 ## Padrão: Server Component + Client Leaf
 
-Abra `app/dashboard/generator/page.tsx`:
+Esquema ilustrativo (o `app/dashboard/generator/page.tsx` real difere):
 
 ```typescript
 // Server Component (busca dados)

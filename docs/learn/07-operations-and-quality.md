@@ -1,8 +1,8 @@
 # 07 - Operações e Qualidade
 
-## Cloudflare em staging
+## Cloudflare em produção e staging
 
-A produção permanece no VPS/Coolify v1.16.3. O Worker Cloudflare está publicado em staging; o cutover de produção continua pendente. O caminho novo executa páginas App Router via vinext/Vite em um Worker e armazena SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. O caminho Next standalone + API Bun descrito abaixo continua disponível localmente e para rollback. Critérios de transferência: [DEPLOY.md](../DEPLOY.md).
+Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
 Acrescentar `bun run build:cloudflare`, `bun run build:cloudflare:production` e `bun run test:cloudflare` aos gates existentes; usar Argent no runtime Worker, sem Playwright nesta migração. Staging, backup/restauração e retenção precedem DNS; aceite público precede desligamento do VPS.
 
@@ -46,11 +46,12 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 
 - **Unit (Vitest):** `bun run test` (watch) / `bun run test -- --run` (CI). Config em
   `vitest.config.ts` (jsdom, setup `tests/setup.ts`, cobertura v8 com thresholds que sobem do patamar medido rumo a 80%).
-- **Banco em memória:** em Vitest, `lib/db.ts` usa `InMemoryDatabase` (sem I/O). Force
-  banco real com `VITEST_FORCE_FILE_DB=1`.
+- **Banco em memória:** em Vitest, `lib/db.ts` abre um `node:sqlite` `:memory:` com as
+  migrações reais. Force o banco Bun em arquivo com `VITEST_FORCE_FILE_DB=1`.
 - **E2E (Playwright):** `bun run test:e2e`. `playwright.config.ts` sobe a stack real via
   `prepare-e2e-db.ts && build && start`, injetando um `IP_HASH_SECRET` público de teste e
-  `TRUST_PROXY_HEADERS=true`. Specs em `tests/app/*.spec.ts`.
+  `TRUST_PROXY_HEADERS=true`. Specs em `tests/app/*.spec.ts`. Cobertura legada: o
+  responsável exige Argent na verificação de UI; não execute Playwright (`AGENTS.md`).
 - Rode um arquivo só: `bun x vitest tests/lib/bet-generator.test.ts --run`.
 
 ### Logs e observabilidade
