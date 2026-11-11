@@ -35,8 +35,10 @@ export function BudgetSelector({
   const [inputValue, setInputValue] = useState(value.toString().replace('.', ','));
   const presetsLabelId = useId();
   const numericInputValue = parseBudget(inputValue);
-  const isBelowMin = inputValue.length > 0 && numericInputValue < min;
-  const isAboveMax = inputValue.length > 0 && numericInputValue > max;
+  // An empty or unparseable field reads as 0, so it shows the minimum message:
+  // the generate button is disabled for the same reason, and the user sees it.
+  const isBelowMin = numericInputValue < min;
+  const isAboveMax = numericInputValue > max;
   const hasBudgetError = isBelowMin || isAboveMax;
   const errorId = 'budget-input-error';
 
