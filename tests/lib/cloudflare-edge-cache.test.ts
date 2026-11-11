@@ -219,7 +219,7 @@ describe('Worker edge cache for deterministic draw-derived routes', () => {
 
   it('does not consult the data revision for routes that are never cached', async () => {
     const { deps } = setup();
-    await withDrawsEdgeCache(new Request('https://example.com/dashboard'), image(), deps);
+    await withDrawsEdgeCache(new Request('https://example.com/dashboard/generator'), image(), deps);
     expect(deps.drawsVersion).not.toHaveBeenCalled();
   });
 
@@ -243,7 +243,19 @@ describe('Worker edge cache for deterministic draw-derived routes', () => {
 });
 
 const STORED_NONCE = 'MDEyMzQ1Njc4OWFiY2RlZg==';
-const HTML_BODY = `<!doctype html><html lang="pt-BR"><head><style nonce="${STORED_NONCE}">body{margin:0}</style></head><body><h1>Concurso 3000</h1><script nonce="${STORED_NONCE}">self.__next_f.push([1, '${STORED_NONCE}', {"nonce":"${STORED_NONCE}"}]);</script><p>${STORED_NONCE}</p></body></html>`;
+// Complete pages carry the marker rendered by app/_components/edge-cacheable.tsx.
+const MARKER_HTML = '<div hidden="" data-edge-cache="complete"></div>';
+const HTML_BODY = `<!doctype html><html lang="pt-BR"><head><style nonce="${STORED_NONCE}">body{margin:0}</style></head><body>${MARKER_HTML}<h1>Concurso 3000</h1><script nonce="${STORED_NONCE}">self.__next_f.push([1, '${STORED_NONCE}', {"nonce":"${STORED_NONCE}"}]);</script><p>${STORED_NONCE}</p></body></html>`;
+// What a fallback, a streamed error boundary or a loading shell looks like: no marker.
+const DEGRADED_HTML_BODY = HTML_BODY.replace(MARKER_HTML, '');
+// RSC rendered the marker but SSR did not: only its JSON-escaped flight form is present.
+const FLIGHT_ONLY_HTML_BODY = DEGRADED_HTML_BODY.replace(
+  '</body>',
+  `<script nonce="${STORED_NONCE}">self.__next_f.push([1,"0:[\\"$\\",\\"div\\",null,{\\"hidden\\":true,\\"data-edge-cache\\":\\"complete\\"}]"])</script></body>`
+);
+// Two markers mean two renders in one body (e.g. concatenated documents): not one complete page.
+const DOUBLE_MARKER_HTML_BODY = HTML_BODY.replace('</body>', `${MARKER_HTML}</body>`);
+const PAGE_ROUTES = ['/', '/dashboard', '/dashboard/statistics', '/resultados', '/numeros', '/mega-da-virada'];
 const HTML_HEADERS = {
   'Content-Type': 'text/html; charset=utf-8',
   'Cache-Control': 'no-store',
@@ -445,7 +457,7 @@ describe('Worker edge cache for archive HTML', () => {
     expect(cache.entries.size).toBe(1);
   });
 
-  it.each(['/', '/resultados', '/numeros', '/concurso/abc', '/concurso/0', '/concurso/01', '/concurso/1000000', '/concurso/3000/', '/concurso/3000/extra', '/numeros/0', '/numeros/61', '/numeros/01', '/resultados/1995', '/resultados/2101', '/resultados/02025', '/concurso/1.5', '/numeros/-1'])(
+  it.each(['/dashboard/generator', '/numeros/', '/resultados/', '/dashboard/', '/mega-da-virada/', '/Dashboard', '/Numeros', '/about', '/index.html', '//', '/concurso/abc', '/concurso/0', '/concurso/01', '/concurso/1000000', '/concurso/3000/', '/concurso/3000/extra', '/numeros/0', '/numeros/61', '/numeros/01', '/resultados/1995', '/resultados/2101', '/resultados/02025', '/concurso/1.5', '/numeros/-1'])(
     'never caches HTML at non-archive or invalid path %s', async (path) => {
       const { cache, deps, flush } = setup();
       const render = html();
@@ -457,6 +469,90 @@ describe('Worker edge cache for archive HTML', () => {
       expect(render).toHaveBeenCalledTimes(2);
       expect(cache.entries.size).toBe(0);
       expect(deps.drawsVersion).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(PAGE_ROUTES)('caches the complete page %s and gives each HIT a fresh nonce', async (path) => {
+    const { cache, deps, flush } = setup();
+    const render = html();
+    const request = () => new Request(`https://example.com${path}`);
+    const miss = await withDrawsEdgeCache(request(), render, deps);
+    await flush();
+    expect(miss.headers.get('X-Megasena-Cache')).toBe('MISS');
+    expect(await miss.text()).toBe(HTML_BODY);
+    expect(cache.entries.size).toBe(1);
+    const hits = [await withDrawsEdgeCache(request(), render, deps), await withDrawsEdgeCache(request(), render, deps)];
+    const nonces = [];
+    for (const hit of hits) {
+      expect(hit.headers.get('X-Megasena-Cache')).toBe('HIT');
+      expect(hit.headers.get('Cache-Control')).toBe('no-store');
+      const nonce = nonceOf(hit)!;
+      expect(nonce).not.toBe(STORED_NONCE);
+      expect(hit.headers.get('X-Nonce')).toBe(nonce);
+      expect(await hit.text()).toBe(HTML_BODY.replaceAll(STORED_NONCE, nonce));
+      nonces.push(nonce);
+    }
+    expect(nonces[0]).not.toBe(nonces[1]);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([...PAGE_ROUTES, '/concurso/3000', '/numeros/10', '/resultados/2025'])(
+    'never stores %s without exactly one completeness marker: every request renders and reports MISS', async (path) => {
+      for (const body of [DEGRADED_HTML_BODY, FLIGHT_ONLY_HTML_BODY, DOUBLE_MARKER_HTML_BODY]) {
+        const { cache, deps, flush } = setup();
+        const put = vi.spyOn(cache, 'put');
+        const render = vi.fn(async () => new Response(body, { headers: HTML_HEADERS }));
+        for (let pass = 0; pass < 3; pass++) {
+          const response = await withDrawsEdgeCache(new Request(`https://example.com${path}`), render, deps);
+          await flush();
+          expect(response.status).toBe(200);
+          expect(response.headers.get('X-Megasena-Cache')).toBe('MISS');
+          expect(response.headers.get('Cache-Control')).toBe('no-store');
+          // The degraded page still reaches the reader unchanged, with its own nonce.
+          expect(nonceOf(response)).toBe(STORED_NONCE);
+          expect(await response.text()).toBe(body);
+        }
+        expect(render).toHaveBeenCalledTimes(3);
+        expect(put).not.toHaveBeenCalled();
+        expect(cache.entries.size).toBe(0);
+      }
+    }
+  );
+
+  it.each(['/?x=1', '/dashboard?_rsc=1', '/dashboard/statistics?tab=1', '/resultados?utm_source=x', '/numeros?&', '/mega-da-virada?_rsc'])(
+    'bypasses reads and writes for the page request %s', async (target) => {
+      for (const warm of [false, true]) {
+        const { cache, deps, flush } = setup();
+        const url = new URL(`https://example.com${target}`);
+        if (warm) {
+          await withDrawsEdgeCache(new Request(`${url.origin}${url.pathname}`), html(), deps);
+          await flush();
+        }
+        deps.drawsVersion.mockClear();
+        const match = vi.spyOn(cache, 'match');
+        const put = vi.spyOn(cache, 'put');
+        const render = html();
+        const response = await withDrawsEdgeCache(new Request(url), render, deps);
+        await flush();
+        expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+        expect(render).toHaveBeenCalledTimes(1);
+        expect(deps.drawsVersion).not.toHaveBeenCalled();
+        expect(match).not.toHaveBeenCalled();
+        expect(put).not.toHaveBeenCalled();
+        expect(cache.entries.size).toBe(warm ? 1 : 0);
+      }
+    }
+  );
+
+  it.each(['Cookie', 'Authorization', 'rsc', 'next-router-state-tree', 'x-vinext-rsc-render-mode', 'Range', 'If-Modified-Since'])(
+    'bypasses page HTML at / when %s is present', async (header) => {
+      const { cache, deps, flush } = setup();
+      const put = vi.spyOn(cache, 'put');
+      const response = await withDrawsEdgeCache(new Request('https://example.com/', { headers: { [header]: '1' } }), html(), deps);
+      await flush();
+      expect(response.headers.has('X-Megasena-Cache')).toBe(false);
+      expect(deps.drawsVersion).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
     }
   );
 

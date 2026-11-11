@@ -1,7 +1,8 @@
 /**
  * Worker-side Cache API layer for public routes whose output is a pure function
- * of the stored draws. Archive HTML gets a fresh CSP nonce throughout its
- * headers and body on every HIT; the stored policy is never exposed to clients.
+ * of the stored draws. Allowlisted HTML is stored only when it carries the
+ * completeness marker, and gets a fresh CSP nonce throughout its headers and
+ * body on every HIT; the stored policy is never exposed to clients.
  */
 import { FIRST_DRAW_YEAR, LAST_ACCEPTED_YEAR, MAX_CONTEST_NUMBER } from '../api/archive-contract';
 
@@ -23,6 +24,8 @@ export interface DrawsEdgeCacheDependencies {
 // them read cookies, headers or query parameters.
 const DETERMINISTIC_ROUTE = /^\/(?:(?:concurso\/[1-9]\d{0,5}\/)?(?:opengraph|twitter)-image|sitemap\.xml|llms\.txt)$/;
 const HTML_ARCHIVE_ROUTE = /^\/(concurso|numeros|resultados)\/([1-9]\d{0,5})$/;
+// Public pages whose HTML changes only with the draws revision. Exact, case-sensitive.
+const HTML_PAGE_ROUTES = new Set(['/', '/dashboard', '/dashboard/statistics', '/resultados', '/numeros', '/mega-da-virada']);
 // Upper bound for the stored copy; the revision in the key handles invalidation.
 const EDGE_TTL_SECONDS = 86400;
 const ORIGINAL_CACHE_CONTROL = 'X-Megasena-Origin-Cache-Control';
@@ -39,7 +42,8 @@ export function isDeterministicRoute(url: URL): boolean {
   return DETERMINISTIC_ROUTE.test(url.pathname);
 }
 
-function isHtmlArchiveRoute(url: URL): boolean {
+function isCacheableHtmlRoute(url: URL): boolean {
+  if (HTML_PAGE_ROUTES.has(url.pathname)) return true;
   const match = HTML_ARCHIVE_ROUTE.exec(url.pathname);
   if (!match) return false;
   const value = Number(match[2]);
@@ -100,9 +104,9 @@ export async function withDrawsEdgeCache(
   { cache, buildVersion, drawsVersion, waitUntil }: DrawsEdgeCacheDependencies
 ): Promise<Response> {
   const url = new URL(request.url);
-  const htmlArchive = isHtmlArchiveRoute(url);
-  if (request.method !== 'GET' || (!htmlArchive && !isDeterministicRoute(url))
-    || (htmlArchive && url.search !== '')
+  const html = isCacheableHtmlRoute(url);
+  if (request.method !== 'GET' || (!html && !isDeterministicRoute(url))
+    || (html && url.search !== '')
     || request.headers.has('Authorization') || request.headers.has('Cookie')
     || [...request.headers.keys()].some(name => FRAMEWORK_HEADER.test(name) || /^(?:range$|if-)/i.test(name))
     || url.searchParams.has('_rsc')) return render();
@@ -125,7 +129,7 @@ export async function withDrawsEdgeCache(
   const vary = response.headers.get('Vary')?.split(',').map(name => name.trim()).filter(Boolean) ?? [];
   if (vary.some(name => !FRAMEWORK_HEADER.test(name) && name.toLowerCase() !== 'accept-encoding')) return response;
   const nonce = cspNonce(response.headers);
-  if (htmlArchive) {
+  if (html) {
     // Only this allowlist may override no-store for the internal Cache API copy.
     if (response.status !== 200 || response.headers.has('Set-Cookie') || !isHtmlResponse(response) || !nonce
       || response.headers.has('Content-Encoding') || /\bno-transform\b/i.test(response.headers.get('Cache-Control') ?? '')) return response;
@@ -133,9 +137,14 @@ export async function withDrawsEdgeCache(
 
   const body = await response.arrayBuffer();
   const cacheControl = response.headers.get('Cache-Control');
-  // Other routes retain their original policy: only archive HTML supports body rewriting.
+  // A streamed page answers 200 even when a fallback or error boundary rendered,
+  // so only HTML that carries the completeness marker exactly once may be stored.
+  if (html && new TextDecoder().decode(body).split(EDGE_CACHE_MARKER).length !== 2) {
+    return withCacheStatus(new Response(body, response), 'MISS', cacheControl);
+  }
+  // Other routes retain their original policy: only cacheable HTML supports body rewriting.
   // UTF-8 decoding keeps ASCII runs intact even inside binary data.
-  if (!htmlArchive && nonce && new TextDecoder().decode(body).includes(nonce)) {
+  if (!html && nonce && new TextDecoder().decode(body).includes(nonce)) {
     return new Response(body, response);
   }
   const stored = new Headers(response.headers);
