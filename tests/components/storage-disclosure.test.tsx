@@ -43,6 +43,15 @@ describe('StorageDisclosure', () => {
     ).toHaveAttribute('href', '/privacy/direitos');
   });
 
+  it('gives both links the shared focus ring, offset from the tinted band', () => {
+    render(<StorageDisclosure />);
+    for (const name of [pt.storageBanner.learnMore, pt.storageBanner.rightsLink]) {
+      const link = screen.getByRole('link', { name });
+      expect(link.className).toMatch(/\bfocus-ring\b/);
+      expect(link.className).toContain('focus-visible:ring-offset-tint');
+    }
+  });
+
   it('uses the shared Button and records the acknowledgement', () => {
     render(<StorageDisclosure />);
     const button = screen.getByRole('button', { name: pt.storageBanner.accept });

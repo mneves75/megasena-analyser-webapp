@@ -82,14 +82,14 @@ export function StorageDisclosure(): React.ReactElement | null {
             <p>
               <Link
                 href={pt.storageBanner.learnMoreHref}
-                className="underline underline-offset-2 hover:text-foreground"
+                className="focus-ring rounded-sm underline underline-offset-2 hover:text-foreground focus-visible:ring-offset-tint"
               >
                 {pt.storageBanner.learnMore}
               </Link>
               <span aria-hidden> · </span>
               <Link
                 href={pt.storageBanner.rightsLinkHref}
-                className="underline underline-offset-2 hover:text-foreground"
+                className="focus-ring rounded-sm underline underline-offset-2 hover:text-foreground focus-visible:ring-offset-tint"
               >
                 {pt.storageBanner.rightsLink}
               </Link>
