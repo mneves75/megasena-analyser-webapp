@@ -60,8 +60,9 @@ varredura de segurança → deploy → verificação pós-deploy**. Cada estági
 - Logs estruturados via `logger` (console + sink SQLite `log_events`). Eventos têm
   nomes pontilhados; `debug` só com `DEBUG=true`.
 - Auditoria de negócio em `audit_logs` (eventos `api.*`, `bets.generate_requested`).
-- Toda requisição da API gera `api.request_received` e `api.request_completed` com
-  `requestId`, `route`, `statusCode`, `durationMs`.
+- Toda requisição da API gera um único evento de log, `api.request_completed`, com
+  `requestId`, `route`, `statusCode`, `durationMs`; user agent e cliente
+  pseudonimizado ficam na linha de auditoria da mesma requisição.
 - Retenção automática (hard delete) por schedulers de 24h; também manual:
   `bun run audit:prune` / `bun run log:prune` (aceitam `--days`, `--before`, `--dry-run`).
 - Health: `GET /api/health` retorna `status`, `version`, `database.totalDraws`,

@@ -196,6 +196,7 @@ runtime workerd (`tests/cloudflare/*-runtime.ts`). Se índices de auditoria sem
 consulta (`idx_audit_logs_event`, `_route`, `_request_id`) dominarem as escritas,
 propor a remoção. A remoção é uma migração no DO de produção: **parada obrigatória**.
 Hoje está dentro da franquia, então isso não entra nesta rodada sem dado que justifique.
+*Feito na 1.21.0, com aprovação do dono: a migração 011 removeu os índices sem consulta de `audit_logs` e `log_events` (ficam os de `timestamp`), e cada requisição grava um único evento de log.*
 
 **W8 — CLS.** (a) Banner de armazenamento: renderizar no servidor e escondê-lo antes
 da primeira pintura para quem já aceitou, com um script inline com nonce no mesmo

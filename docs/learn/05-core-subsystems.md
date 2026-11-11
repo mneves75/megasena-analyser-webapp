@@ -24,11 +24,11 @@ registrar e apresentar. Cada caixa fala com as vizinhas por contratos pequenos.
 ### 1. Cliente CAIXA — `lib/api/caixa-client.ts`
 
 - **Propósito:** trazer sorteios oficiais com robustez de rede.
-- **Entradas/Saídas:** `fetchDraw(contestNumber?)` → `MegaSenaDrawData`;
-  `fetchAllDraws(start, end?, {allowPartial})` → `MegaSenaDrawData[]`.
+- **Entradas/Saídas:** `fetchDraw(contestNumber?)` → `Draw`;
+  `fetchAllDraws(start, end?, {allowPartial})` → `Draw[]` (tipo de `lib/draw-ingestion.ts`).
 - **Abstrações:** `fetchWithRetry` (backoff exponencial 2^n + jitter, respeita
   `Retry-After`), cache por ETag + tratamento de `304`, `CaixaAPIError` com flag
-  `retryable`. Normalização em `normalizeMegaSenaDrawData`.
+  `retryable`. A resposta é validada e convertida uma vez, no `toDraw` privado do cliente.
 - **Tradeoffs:** simula headers de navegador (User-Agent/Referer) para a API pública;
   rate limiting progressivo deixa a importação lenta de propósito para não ser
   bloqueado. Status retentáveis: 429/500/502/503/504.
@@ -117,8 +117,8 @@ flags de query (`lib/api/handler.ts`). Resumo:
 - **Filas assíncronas:** `log-store.ts` (→ `log_events`) e `audit.ts` (→ `audit_logs`)
   com flush por intervalo (2s) e por limiar, transação em lote e re-enfileiramento em
   erro de DB.
-- **Retenção:** `audit-retention.ts` (default 400; configurável via env) e
-  `log-retention.ts` (30 dias); schedulers de 24h iniciados no boot.
+- **Retenção:** `retention.ts`, uma política por tabela: `audit_logs` (default 400;
+  configurável via env) e `log_events` (30 dias); schedulers de 24h iniciados no boot.
 - **Tradeoff:** `log-store` chama `.unref()` no timer; `audit.ts` não — pequena
   assimetria (ver riscos).
 

@@ -5,10 +5,10 @@ describe('audit retention', () => {
     process.env.VITEST = '1';
     vi.resetModules();
     const { runMigrations } = await import('@/lib/db');
-    const { runAuditRetention } = await import('@/lib/audit-retention');
+    const { runRetention } = await import('@/lib/retention');
 
     runMigrations();
-    const result = await runAuditRetention({ dryRun: true, reason: 'default-check' });
+    const result = await runRetention('audit_logs', { dryRun: true, reason: 'default-check' });
 
     const cutoff = Date.parse(result.cutoffIso);
     const expected = Date.now() - 400 * 24 * 60 * 60 * 1000;
@@ -20,7 +20,7 @@ describe('audit retention', () => {
     vi.resetModules();
 
     const { runMigrations, getDatabase, closeDatabase } = await import('@/lib/db');
-    const { runAuditRetention } = await import('@/lib/audit-retention');
+    const { runRetention } = await import('@/lib/retention');
 
     closeDatabase();
     runMigrations();
@@ -66,7 +66,7 @@ describe('audit retention', () => {
       JSON.stringify({ ok: true })
     );
 
-    const result = await runAuditRetention({ retentionDays: 1, reason: 'test' });
+    const result = await runRetention('audit_logs', { retentionDays: 1, reason: 'test' });
     expect(result.eligibleCount).toBeGreaterThanOrEqual(1);
     expect(result.deletedCount).toBeGreaterThanOrEqual(1);
   });
@@ -76,7 +76,7 @@ describe('audit retention', () => {
     vi.resetModules();
 
     const { runMigrations, getDatabase, closeDatabase } = await import('@/lib/db');
-    const { runAuditRetention } = await import('@/lib/audit-retention');
+    const { runRetention } = await import('@/lib/retention');
 
     closeDatabase();
     runMigrations();
@@ -102,7 +102,7 @@ describe('audit retention', () => {
       JSON.stringify({ ok: true })
     );
 
-    const result = await runAuditRetention({ retentionDays: 1, dryRun: true, reason: 'test' });
+    const result = await runRetention('audit_logs', { retentionDays: 1, dryRun: true, reason: 'test' });
     expect(result.eligibleCount).toBeGreaterThanOrEqual(1);
     expect(result.dryRun).toBe(true);
   });

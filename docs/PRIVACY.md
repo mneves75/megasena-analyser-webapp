@@ -86,7 +86,7 @@ Esses dados são usados para:
 
 O banco SQLite do Durable Object permite à operação restaurá-lo a qualquer ponto dos últimos 30 dias. Por isso, um registro eliminado pela rotina de retenção continua recuperável por esse mecanismo do provedor por até 30 dias e só então deixa de existir.
 
-Retenção é executada por agendadores diários (`runLogRetention` / `runAuditRetention`). Você pode solicitar redução antecipada por meio do canal de privacidade.
+Retenção é executada por agendadores diários (`runRetention`, um por tabela). Você pode solicitar redução antecipada por meio do canal de privacidade.
 
 ---
 
@@ -208,7 +208,7 @@ Não. Não vendemos, alugamos ou compartilhamos dados com terceiros para fins co
 
 ### Posso apagar meus dados?
 
-Sim. Para dados no servidor, envie e-mail para `privacidade@megasena-analyzer.com.br`. Para dados no navegador, limpe os dados do site nas configurações do navegador.
+Sim. Para dados no servidor, envie e-mail para `privacidade@megasena-analyzer.com.br` informando o(s) endereço(s) IP que usou e o período: sem cadastro, é assim que localizamos os registros pseudonimizados ligados a você. Para dados no navegador, limpe os dados do site nas configurações do navegador.
 
 ### Quanto tempo guardamos os dados operacionais?
 

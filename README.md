@@ -4,7 +4,7 @@ Análise estatística avançada da Mega-Sena com gerador inteligente de apostas 
 
 ## Hospedagem e atualização diária
 
-A versão 1.20.0 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e figuras SVG, com uma linha de fonte da CAIXA por página. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
+A versão 1.21.0 mantém frontend, API e banco SQLite em Workers/Durable Objects, com atualização diária da CAIXA em produção, e apresenta o site como um anuário estatístico: cada sorteio aparece no volante completo de 60 dezenas com as seis sorteadas marcadas, e números, prêmios e frequências viram tabelas com fio fino e figuras SVG, com uma linha de fonte da CAIXA por página. Pedidos de acesso ou eliminação de dados (LGPD) são atendidos por titular com `bun run privacy:subject`. Produção e staging usam ambientes separados; staging bloqueia indexação e não agenda trabalho autônomo. A origem anterior foi arquivada após aceite público e reconciliação final dos dados. Veja os requisitos em [docs/DEPLOY.md](docs/DEPLOY.md). Contas, inventários e evidências de implantação ficam fora deste repositório público. As instruções Bun/Docker abaixo descrevem o caminho local e de recuperação.
 
 - `cloudflare/worker.ts` atende páginas App Router via vinext/Vite e encaminha `/api/*` ao Durable Object SQLite `MegaSenaData` pelo binding privado `DATA`.
 - `lib/api/handler.ts` contém o contrato compartilhado da API; `server.ts` é o adaptador Bun. Contextos de banco e log isolam operações concorrentes.
@@ -119,6 +119,7 @@ O repositório usa `bunfig.toml` com `run.noOrphans = true`, disponível no base
 - `bun run seo:indexnow -- --contests N[,M] [--dry-run]` - Avisar o IndexNow (Bing e parceiros) das páginas que mudaram; exige `INDEXNOW_KEY`
 - `bun run audit:prune` - Hard delete de logs de auditoria antigos (retenção)
 - `bun run log:prune` - Hard delete de eventos de log antigos (retenção)
+- `bun run privacy:subject -- --ip <ip> (--export | --erase) [--dry-run] [--sql-out <arquivo>]` - Exportar ou eliminar os registros de um titular (LGPD; exige `IP_HASH_SECRET`, ver `docs/LGPD-COMPLIANCE.md`)
 - `bun scripts/optimize-db.ts` - Otimizar banco de dados (checkpoint WAL + VACUUM + ANALYZE)
 
 ## Scripts de Banco de Dados

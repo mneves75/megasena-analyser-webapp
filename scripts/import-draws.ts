@@ -9,48 +9,15 @@
  * whose date or numbers differ aborts the import (divergence to investigate);
  * a differing prize field is only reported. Everything happens in one
  * transaction together with the derived caches, and the result must still be a
- * gap-free contest sequence.
+ * gap-free contest sequence starting at contest 1.
  *
  * Usage: bun run scripts/import-draws.ts <seed.json> [--dry-run]   (honors DATABASE_PATH)
  */
 
 import { readFileSync } from 'node:fs';
-import { z } from 'zod';
+import { ZodError } from 'zod';
 import { closeDatabase, getDatabase } from '@/lib/db';
-import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
-import { StatisticsEngine } from '@/lib/analytics/statistics';
-
-const nullablePrize = z.number().nonnegative().nullable();
-const winners = z.number().int().nonnegative();
-
-const seedDrawSchema = z.object({
-  contest: z.number().int().positive(),
-  date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'data deve estar em YYYY-MM-DD')
-    .refine((value) => {
-      // Runs even when the regex failed, so an unparsable value must not throw.
-      const date = new Date(`${value}T00:00:00Z`);
-      return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-    }, 'data inexistente no calendário'),
-  numbers: z
-    .array(z.number().int().min(1).max(60))
-    .length(6)
-    .refine((numbers) => new Set(numbers).size === 6, 'dezenas repetidas'),
-  prizeSena: nullablePrize,
-  winnersSena: winners,
-  prizeQuina: nullablePrize,
-  winnersQuina: winners,
-  prizeQuadra: nullablePrize,
-  winnersQuadra: winners,
-  totalCollection: nullablePrize,
-  accumulated: z.boolean(),
-  accumulatedValue: nullablePrize,
-  nextEstimatedPrize: nullablePrize,
-  specialDraw: z.boolean(),
-});
-
-type SeedDraw = z.infer<typeof seedDrawSchema>;
+import { appendDraws, parseSeedDraws, type Draw } from '@/lib/draw-ingestion';
 
 interface ExistingRow {
   contest_number: number;
@@ -80,7 +47,7 @@ function fail(message: string): never {
   throw new ImportError(message);
 }
 
-function readSeed(file: string): SeedDraw[] {
+function readSeed(file: string): Draw[] {
   let raw: string;
   try {
     raw = readFileSync(file, 'utf8');
@@ -93,22 +60,16 @@ function readSeed(file: string): SeedDraw[] {
   } catch {
     fail(`JSON inválido em ${file}.`);
   }
-  const parsed = z.array(seedDrawSchema).safeParse(json);
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0];
+  try {
+    return parseSeedDraws(json);
+  } catch (error) {
+    if (!(error instanceof ZodError)) throw error;
+    const issue = error.issues[0];
     fail(`Entrada inválida em [${issue?.path.join('.')}]: ${issue?.message}`);
   }
-  const seen = new Set<number>();
-  for (const draw of parsed.data) {
-    if (seen.has(draw.contest)) {
-      fail(`Concurso ${draw.contest} duplicado na entrada.`);
-    }
-    seen.add(draw.contest);
-  }
-  return parsed.data;
 }
 
-const sameNumbers = (row: ExistingRow, draw: SeedDraw): boolean => {
+const sameNumbers = (row: ExistingRow, draw: Draw): boolean => {
   const stored = [row.number_1, row.number_2, row.number_3, row.number_4, row.number_5, row.number_6].sort(
     (a, b) => a - b
   );
@@ -117,7 +78,7 @@ const sameNumbers = (row: ExistingRow, draw: SeedDraw): boolean => {
 };
 
 /** Prize and accumulation data; reported when it differs, never rewritten. */
-const samePrizeData = (row: ExistingRow, draw: SeedDraw): boolean =>
+const samePrizeData = (row: ExistingRow, draw: Draw): boolean =>
   (row.prize_sena ?? 0) === (draw.prizeSena ?? 0) &&
   (row.winners_sena ?? 0) === draw.winnersSena &&
   (row.prize_quina ?? 0) === (draw.prizeQuina ?? 0) &&
@@ -131,19 +92,19 @@ const samePrizeData = (row: ExistingRow, draw: SeedDraw): boolean =>
   Boolean(row.special_draw) === draw.specialDraw;
 
 /**
- * The archive after the import must stay a gap-free contest sequence whose
- * dates increase with the contest number. Checked before writing (so --dry-run
- * gives the same verdict as a real run) and again inside the transaction.
+ * The archive after the import must stay a gap-free contest sequence from
+ * contest 1 whose dates increase with the contest number. Checked before
+ * writing, so --dry-run gives the same verdict as a real run; appendDraws
+ * enforces the sequence again inside the transaction.
  */
-function assertSequence(existing: Map<number, ExistingRow>, toInsert: SeedDraw[]): void {
+function assertSequence(existing: Map<number, ExistingRow>, toInsert: Draw[]): void {
   const merged = [
     ...[...existing.values()].map((row) => ({ contest: row.contest_number, date: row.draw_date, isNew: false })),
     ...toInsert.map((draw) => ({ contest: draw.contest, date: draw.date, isNew: true })),
   ].sort((a, b) => a.contest - b.contest);
-  const first = merged[0];
   const last = merged.at(-1);
-  if (first && last && merged.length !== last.contest - first.contest + 1) {
-    fail(`A importação deixaria lacunas: ${merged.length} concursos entre ${first.contest} e ${last.contest}.`);
+  if (last && merged.length !== last.contest) {
+    fail(`A importação deixaria lacunas: ${merged.length} concursos entre 1 e ${last.contest}.`);
   }
   merged.forEach((entry, index) => {
     const previous = merged[index - 1];
@@ -181,7 +142,7 @@ function main(): void {
 
   const diverged: number[] = [];
   const prizeDifferences: number[] = [];
-  const toInsert: SeedDraw[] = [];
+  const toInsert: Draw[] = [];
   for (const draw of seed) {
     const row = existing.get(draw.contest);
     if (!row) {
@@ -212,47 +173,14 @@ function main(): void {
   // app's own short audit writes.
   db.exec('BEGIN IMMEDIATE');
   try {
-    const insert = db.prepare(`
-      INSERT INTO draws (
-        contest_number, draw_date,
-        number_1, number_2, number_3, number_4, number_5, number_6,
-        prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
-        total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-    for (const draw of toInsert) {
-      const numbers = [...draw.numbers].sort((a, b) => a - b);
-      insert.run(
-        draw.contest,
-        draw.date,
-        ...numbers,
-        draw.prizeSena ?? 0,
-        draw.winnersSena,
-        draw.prizeQuina ?? 0,
-        draw.winnersQuina,
-        draw.prizeQuadra ?? 0,
-        draw.winnersQuadra,
-        draw.totalCollection ?? 0,
-        draw.accumulated ? 1 : 0,
-        draw.accumulatedValue ?? 0,
-        draw.nextEstimatedPrize ?? 0,
-        draw.specialDraw ? 1 : 0
-      );
-    }
-
+    // A contest stored by another writer since the plan is skipped, so this is the real count.
+    const inserted = appendDraws(toInsert);
     const range = db
-      .prepare('SELECT COUNT(*) AS count, MIN(contest_number) AS first, MAX(contest_number) AS last FROM draws')
-      .get() as { count: number; first: number | null; last: number | null };
-    if (range.first !== null && range.last !== null && range.count !== range.last - range.first + 1) {
-      fail(`A importação deixaria lacunas: ${range.count} concursos entre ${range.first} e ${range.last}.`);
-    }
-
-    if (toInsert.length > 0) {
-      new StatisticsEngine().updateNumberFrequencies();
-      new PairAnalysisEngine().updatePairFrequencies();
-    }
+      .prepare('SELECT COUNT(*) AS count, MAX(contest_number) AS last FROM draws')
+      .get() as { count: number; last: number | null };
     db.exec('COMMIT');
     console.log(
-      JSON.stringify({ inserted: toInsert.length, ...plan, totalDraws: range.count, lastContest: range.last })
+      JSON.stringify({ inserted, ...plan, totalDraws: range.count, lastContest: range.last })
     );
   } catch (error) {
     try {

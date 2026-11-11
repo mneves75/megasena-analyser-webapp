@@ -12,7 +12,9 @@ import { getDrawsVersion } from '@/lib/api/response-cache';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { logger, runWithLogSink } from '@/lib/logger';
-import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from './ingestion';
+import { CaixaAPIClient } from '@/lib/api/caixa-client';
+import { appendDraws, DrawSourceFailure, parseSeedDraws, refreshDraws, type RefreshResult } from '@/lib/draw-ingestion';
+import { deleteExpired } from '@/lib/retention';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
 import migration002 from '../db/migrations/002_add_performance_indexes.sql?raw';
@@ -24,6 +26,7 @@ import migration007 from '../db/migrations/007_draw_number_integrity.sql?raw';
 import migration008 from '../db/migrations/008_draw_date_iso.sql?raw';
 import migration009 from '../db/migrations/009_number_frequency_date_iso.sql?raw';
 import migration010 from '../db/migrations/010_draws_cache_revision.sql?raw';
+import migration011 from '../db/migrations/011_drop_unread_log_indexes.sql?raw';
 
 const migrations = [
   ['001_initial_schema.sql', migration001], ['002_add_performance_indexes.sql', migration002],
@@ -31,6 +34,7 @@ const migrations = [
   ['005_log_events.sql', migration005], ['006_remove_deleted_at.sql', migration006],
   ['007_draw_number_integrity.sql', migration007], ['008_draw_date_iso.sql', migration008],
   ['009_number_frequency_date_iso.sql', migration009], ['010_draws_cache_revision.sql', migration010],
+  ['011_drop_unread_log_indexes.sql', migration011],
 ] as const;
 
 export function applyMigrations(database: DatabaseLike, entries: readonly (readonly [string, string])[] = migrations): void {
@@ -84,6 +88,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   private readonly auditRetentionDays: number;
   private readonly logRetentionDays: number;
   private readonly dailyRefreshEnabled: boolean;
+  private readonly appVersion: string;
   private refreshInFlight: Promise<RefreshResult> | undefined;
 
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
@@ -91,6 +96,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     this.auditRetentionDays = Number(env.AUDIT_RETENTION_DAYS ?? '400');
     this.logRetentionDays = Number(env.LOG_RETENTION_DAYS ?? '30');
     this.dailyRefreshEnabled = env.DAILY_REFRESH_ENABLED === '1';
+    this.appVersion = env.APP_VERSION ?? 'unknown';
     if ((env.ENVIRONMENT ?? 'production') === 'production' && (env.IP_HASH_SECRET?.trim().length ?? 0) < 32) {
       throw new Error('IP_HASH_SECRET required in production (at least 32 characters)');
     }
@@ -108,12 +114,11 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       next_kind TEXT NOT NULL CHECK(next_kind IN ('daily', 'retry')),
       revision INTEGER NOT NULL
     )`);
-    const stored = this.database.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number };
-    if (env.BOOTSTRAP_PUBLIC_SEED === '1' && stored.count === 0) {
-      importSeedDraws(this.database, publicSeed);
+    if (env.BOOTSTRAP_PUBLIC_SEED === '1' && !this.database.prepare('SELECT 1 FROM draws LIMIT 1').get()) {
+      runWithDatabase(this.database, () => appendDraws(parseSeedDraws(publicSeed)));
     }
     this.handler = createApiHandler({
-      environment: env.ENVIRONMENT ?? 'production', appVersion: env.APP_VERSION ?? 'unknown',
+      environment: env.ENVIRONMENT ?? 'production', appVersion: this.appVersion,
       ipHashSecret: env.IP_HASH_SECRET, allowedOrigins: env.ALLOWED_ORIGINS,
       audit: async event => { this.audit.enqueue(event); await this.audit.stop(); },
       checkRateLimit: clientId => this.checkRateLimit(clientId),
@@ -164,6 +169,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
         allowed: row.count <= RATE_LIMIT_MAX_REQUESTS,
         remaining: Math.max(0, RATE_LIMIT_MAX_REQUESTS - row.count),
         resetAt: row.reset_at,
+        count: row.count,
       };
     });
   }
@@ -177,13 +183,18 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     }));
   }
 
-  /** Cache key component for the Worker's edge cache; no request or visitor data. */
+  /**
+   * Cache key component for the Worker's edge cache; no request or visitor data.
+   * It carries this object's build so that, during a gradual deployment, a new
+   * Worker rendering from an old object stores under a different key. Opaque to the Worker.
+   */
   drawsVersion(): string | null {
-    return runWithDatabase(this.database, () => getDrawsVersion());
+    const revision = runWithDatabase(this.database, () => getDrawsVersion());
+    return revision === null ? null : `${this.appVersion}:${revision}`;
   }
 
   importDraws(input: unknown): number {
-    return runWithDatabase(this.database, () => importSeedDraws(this.database, input));
+    return runWithDatabase(this.database, () => appendDraws(parseSeedDraws(input)));
   }
 
   status() {
@@ -221,7 +232,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       let result: RefreshResult;
       try {
         this.pruneRetention();
-        result = await refreshDraws(this.database);
+        result = await refreshDraws(new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 3, maxRetryDelayMs: 10000 }));
       } catch (error) {
         if (this.schedule()?.revision === reservation) {
           this.database.prepare("UPDATE ingestion_status SET status = 'failed', error_message = ? WHERE id = 1").run(error instanceof Error ? error.message : String(error));
@@ -276,10 +287,10 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     withDatabaseTransaction(this.database, () => {
       // Match Bun: invalid or nonpositive settings disable deletion, never shorten retention.
       if (Number.isFinite(this.auditRetentionDays) && this.auditRetentionDays > 0) {
-        this.database.prepare("DELETE FROM audit_logs WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.auditRetentionDays} days`);
+        deleteExpired('audit_logs', this.auditRetentionDays);
       }
       if (Number.isFinite(this.logRetentionDays) && this.logRetentionDays > 0) {
-        this.database.prepare("DELETE FROM log_events WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.logRetentionDays} days`);
+        deleteExpired('log_events', this.logRetentionDays);
       }
       this.database.prepare('DELETE FROM rate_limit_windows WHERE reset_at <= ?').run(Date.now());
     });

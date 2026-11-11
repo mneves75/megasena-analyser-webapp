@@ -19,7 +19,7 @@ const worker = {
     }
     if (pathname === '/status') return Response.json(await object.status());
     if (pathname === '/stages') return Response.json(await object.launchStages());
-    return object.handle(new Request('https://example.com/api/health'), { clientIp: '203.0.113.8', internal: false, secure: true });
+    return object.handle(new Request('https://example.com/api/health'), { clientIp: '203.0.113.8', secure: true });
   },
 };
 export default worker;

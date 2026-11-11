@@ -44,7 +44,6 @@ const worker = {
       })
       : url.pathname.startsWith('/api/')
       ? await database().handle(request, {
-        internal: false,
         clientIp: request.headers.get('cf-connecting-ip'),
         secure: url.protocol === 'https:',
       })

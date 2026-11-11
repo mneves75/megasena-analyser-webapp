@@ -1,7 +1,7 @@
 # Resultados — 1.19.3
 
-Candidato: versão Worker 1.19.3, implantada a 0% ao lado da 1.19.2 (100%) e atingida
-com `Cloudflare-Workers-Version-Overrides`. Mesmo harness do `BASELINE.md`, mesmo ponto de
+Candidato: versão 1.19.3 medida, atingida com `Cloudflare-Workers-Version-Overrides`
+ao lado da versão 1.19.2 medida; os brutos usam esses rótulos no lugar dos IDs de versão. Mesmo harness do `BASELINE.md`, mesmo ponto de
 medição (Mac no Brasil, colo GIG), UA `megasena-perf-harness/1`, beacon RUM bloqueado no
 lab. Cada medição roda três braços intercalados: `current`, `current` (A/A, o piso de
 ruído) e o candidato. Só o W1 (preload apenas do subset latin da Archivo) mudou.

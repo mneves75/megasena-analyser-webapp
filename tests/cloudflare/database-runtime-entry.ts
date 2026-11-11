@@ -3,7 +3,9 @@ import { createDurableDatabase, getDatabase, runWithDatabase } from '../../lib/c
 import { withDatabaseTransaction } from '../../lib/db-transaction';
 import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
-import { appendDraws, refreshDraws } from '../../cloudflare/ingestion';
+import { appendDraws, DrawSourceFailure, refreshDraws, type Draw } from '../../lib/draw-ingestion';
+import { CaixaAPIClient } from '../../lib/api/caixa-client';
+import { deleteExpired, retentionCutoff } from '../../lib/retention';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
 import { PrimeAnalysisEngine } from '../../lib/analytics/prime-analysis';
@@ -17,7 +19,34 @@ function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-const draw = { numero: 1, dataApuracao: '11/03/1996', listaDezenas: ['04', '05', '30', '33', '41', '52'] };
+// Contest 1 as a storage-ready draw.
+const storedDraw: Draw = { contest: 1, date: '1996-03-11', numbers: [4, 5, 30, 33, 41, 52],
+  prizeSena: 0, winnersSena: 0, prizeQuina: 0, winnersQuina: 0, prizeQuadra: 0, winnersQuadra: 0,
+  totalCollection: 0, accumulated: false, accumulatedValue: 0, nextEstimatedPrize: 0, specialDraw: false };
+const drawColumns = `contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6,
+  prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
+  total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw`;
+// A CAIXA payload with every stored field distinct, and the row it must produce.
+const caixaPayload = { numero: 3, dataApuracao: '15/03/1996', listaDezenas: ['33', '01', '17', '60', '42', '08'],
+  listaRateioPremio: [
+    { descricaoFaixa: '6 acertos', faixa: 1, numeroDeGanhadores: 1, valorPremio: 1000000.5 },
+    { descricaoFaixa: '5 acertos', faixa: 2, numeroDeGanhadores: 20, valorPremio: 30000.25 },
+    { descricaoFaixa: '4 acertos', faixa: 3, numeroDeGanhadores: 400, valorPremio: 900.75 },
+  ],
+  valorArrecadado: 50000000, acumulado: true, valorAcumuladoProximoConcurso: 2000000,
+  valorEstimadoProximoConcurso: 3000000, indicadorConcursoEspecial: 2 };
+const caixaRow = { contest_number: 3, draw_date: '1996-03-15', number_1: 1, number_2: 8, number_3: 17, number_4: 33,
+  number_5: 42, number_6: 60, prize_sena: 1000000.5, winners_sena: 1, prize_quina: 30000.25, winners_quina: 20,
+  prize_quadra: 900.75, winners_quadra: 400, total_collection: 50000000, accumulated: 1, accumulated_value: 2000000,
+  next_estimated_prize: 3000000, special_draw: 1 };
+
+/** Refresh through the real CAIXA client with the network replaced by one fixed payload. */
+async function refreshFromPayload(payload: unknown) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json(payload);
+  try { return await refreshDraws(new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 1 }), { maxDraws: 1 }); }
+  finally { globalThis.fetch = originalFetch; }
+}
 
 export class TestData extends DurableObject {
   async verify() {
@@ -29,7 +58,10 @@ export class TestData extends DurableObject {
       try { applyMigrations(db, [['failure_control.sql', 'CREATE TABLE failure_control (id INTEGER); INSERT INTO nonexistent VALUES (1);']]); } catch { failedMigration = true; }
       assert(failedMigration && !db.prepare("SELECT 1 FROM sqlite_master WHERE name = 'failure_control'").get(), 'migration SQL rollback');
       assert(!db.prepare("SELECT 1 FROM migrations WHERE name = 'failure_control.sql'").get(), 'migration marker rollback');
-      assert((db.prepare('SELECT COUNT(*) AS count FROM migrations').get() as { count: number }).count === 10, 'migration ledger/idempotence');
+      assert((db.prepare('SELECT COUNT(*) AS count FROM migrations').get() as { count: number }).count === 11, 'migration ledger/idempotence');
+      // Only the timestamp indexes, which retention reads, remain on the two write-heavy tables.
+      const logIndexes = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name IN ('audit_logs', 'log_events') AND name NOT LIKE 'sqlite_autoindex_%' ORDER BY name").all() as { name: string }[]).map(row => row.name).join();
+      assert(logIndexes === 'idx_audit_logs_timestamp,idx_log_events_timestamp', `audit/log secondary indexes: ${logIndexes}`);
       db.exec("INSERT INTO draws (contest_number,draw_date,number_1,number_2,number_3,number_4,number_5,number_6) VALUES (1,'1996-03-11',4,5,30,33,41,52)");
       const failures: string[] = [];
       for (const [name, check] of [
@@ -49,47 +81,126 @@ export class TestData extends DurableObject {
       let rolledBack = false;
       try {
         withDatabaseTransaction(db, () => {
-          appendDraws(db, [draw]);
+          appendDraws([storedDraw]);
           throw new Error('outer rollback');
         });
       } catch { rolledBack = true; }
       assert(rolledBack, 'outer failure must surface');
       assert((db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === 0, 'nested draw rollback');
       assert((db.prepare('SELECT SUM(frequency) AS count FROM number_frequency').get() as { count: number }).count === 0, 'nested cache rollback');
-      const first = appendDraws(db, [draw]);
-      const repeat = appendDraws(db, [draw]);
+      const first = appendDraws([storedDraw]);
+      const repeat = appendDraws([storedDraw]);
       assert(first === 1 && repeat === 0, 'idempotent append and actual changes');
       assert((db.prepare('SELECT COUNT(*) AS count FROM number_pair_frequency').get() as { count: number }).count === 15, 'pair cache real SQL');
       let networkOutsideTransaction = false;
       let inTransaction = false;
       const originalTransaction = db.transactionSync!;
       db.transactionSync = fn => { inTransaction = true; try { return originalTransaction(fn); } finally { inTransaction = false; } };
-      const result = await refreshDraws(db, {
+      const result = await refreshDraws({
         fetchDraw: async contest => {
           assert(!inTransaction, 'network outside transaction');
           networkOutsideTransaction = true;
-          return { ...draw, numero: contest ?? 3 };
+          return { ...storedDraw, contest: contest ?? 3 };
         },
       }, { maxDraws: 1 });
       assert(networkOutsideTransaction && result.status === 'incomplete' && result.lastContest === 2 && result.latestContest === 3, 'bounded backlog status');
+      await refreshFromPayload(caixaPayload);
+      const storedCaixa = db.prepare(`SELECT ${drawColumns} FROM draws WHERE contest_number = 3`).get();
+      assert(JSON.stringify(storedCaixa) === JSON.stringify(caixaRow), `CAIXA payload stored values: ${JSON.stringify(storedCaixa)}`);
       let rejected = false;
-      try { appendDraws(db, [{ ...draw, numero: 3, listaDezenas: ['1', '1', '2', '3', '4', '5'] }]); } catch { rejected = true; }
-      assert(rejected, 'invalid source control');
+      try {
+        await refreshFromPayload({ numero: 4, dataApuracao: '18/03/1996', listaDezenas: ['1', '1', '2', '3', '4', '5'] });
+      } catch (error) { rejected = error instanceof DrawSourceFailure; }
+      assert(rejected && (db.prepare('SELECT MAX(contest_number) AS last FROM draws').get() as { last: number }).last === 3, 'invalid source control');
       rejected = false;
-      try { appendDraws(db, [{ ...draw, listaDezenas: ['1', '2', '3', '4', '5', '6'] }]); } catch { rejected = true; }
+      try { appendDraws([{ ...storedDraw, numbers: [1, 2, 3, 4, 5, 6] }]); } catch { rejected = true; }
       assert(rejected, 'existing draw conflict');
       const before = (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
       rejected = false;
-      try { await refreshDraws(db, { fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
+      try { await refreshDraws({ fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
       assert(rejected && (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === before, 'outage preserves data');
+      // Retention boundary is strict: a row exactly at the cutoff is kept.
+      const now = Date.parse('2026-06-01T12:00:00.000Z');
+      const cutoff = retentionCutoff(30, now);
+      assert(cutoff === '2026-05-02T12:00:00.000Z', `retention cutoff: ${cutoff}`);
+      const older = new Date(now - 30 * 86_400_000 - 1).toISOString();
+      const newer = new Date(now - 30 * 86_400_000 + 1).toISOString();
+      for (const [id, timestamp] of [['older', older], ['at-cutoff', cutoff], ['newer', newer]]) {
+        db.prepare('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)').run(id, timestamp, 'test');
+        db.prepare('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)').run(id, timestamp, 'info', 'test');
+      }
+      deleteExpired('audit_logs', 30, now);
+      deleteExpired('log_events', 30, now);
+      for (const table of ['audit_logs', 'log_events']) {
+        const ids = (db.prepare(`SELECT id FROM ${table} ORDER BY id`).all() as { id: string }[]).map(row => row.id).join();
+        assert(ids === 'at-cutoff,newer', `${table} retention boundary: ${ids}`);
+      }
       assert(getDatabase() === db, 'async database scope');
-      return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, boundedBacklog: true };
+      return { migrations: 11, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };
     });
   }
   count() {
     const db = createDurableDatabase(this.ctx.storage);
     applyMigrations(db);
     return (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
+  }
+}
+
+export class TestSeededData extends MegaSenaData {
+  rateLimitedRows(): { audit: number; logs: number } {
+    const audit = this.ctx.storage.sql.exec("SELECT COUNT(*) AS count FROM audit_logs WHERE metadata_json LIKE '%rateLimited%'").one()['count'] as number;
+    const logs = this.ctx.storage.sql.exec("SELECT COUNT(*) AS count FROM log_events WHERE event = 'api.rate_limit_exceeded'").one()['count'] as number;
+    return { audit, logs };
+  }
+  /** Ends every current window, as the clock passing resetAt would. */
+  expireRateLimitWindows(): void {
+    this.ctx.storage.sql.exec('UPDATE rate_limit_windows SET reset_at = 0');
+  }
+  /** A full window whose resetAt is exactly now, with the clock pinned for the call. */
+  rateLimitAtBoundary() {
+    const now = Date.now();
+    const realNow = Date.now;
+    Date.now = () => now;
+    try {
+      this.ctx.storage.sql.exec('INSERT OR REPLACE INTO rate_limit_windows (client_id, count, reset_at) VALUES (?, ?, ?)', 'boundary', 100, now);
+      const limit = (this as unknown as { checkRateLimit(clientId: string): { allowed: boolean; remaining: number; resetAt: number } }).checkRateLimit('boundary');
+      return { opened: limit.resetAt === now + 60_000, ...limit };
+    } finally { Date.now = realNow; }
+  }
+  /** First difference between the bootstrapped rows and the public seed, or null. */
+  seedMismatch(): string | null {
+    const rows = this.ctx.storage.sql.exec(`SELECT ${drawColumns} FROM draws ORDER BY contest_number`).toArray();
+    if (rows.length !== seed.length) return `row count ${rows.length}`;
+    for (const [index, row] of rows.entries()) {
+      const stored = {
+        contest: row['contest_number'], date: row['draw_date'],
+        numbers: [row['number_1'], row['number_2'], row['number_3'], row['number_4'], row['number_5'], row['number_6']],
+        prizeSena: row['prize_sena'], winnersSena: row['winners_sena'], prizeQuina: row['prize_quina'],
+        winnersQuina: row['winners_quina'], prizeQuadra: row['prize_quadra'], winnersQuadra: row['winners_quadra'],
+        totalCollection: row['total_collection'], accumulated: row['accumulated'] === 1,
+        accumulatedValue: row['accumulated_value'], nextEstimatedPrize: row['next_estimated_prize'],
+        specialDraw: row['special_draw'] === 1,
+      };
+      if (JSON.stringify(stored) !== JSON.stringify(seed[index])) return `contest ${String(row['contest_number'])}: ${JSON.stringify(row)}`;
+    }
+    return null;
+  }
+}
+
+/** The same public seed under another build, as during a gradual deployment. */
+export class TestVersionedData extends MegaSenaData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    super(ctx, { ...env, APP_VERSION: '9.9.9-test' });
+  }
+}
+
+/** A database that already holds one draw before the object starts: bootstrap must not run. */
+export class TestPreloadedData extends MegaSenaData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    const database = createDurableDatabase(ctx.storage);
+    applyMigrations(database);
+    runWithDatabase(database, () => appendDraws([storedDraw]));
+    super(ctx, env);
   }
 }
 
@@ -120,6 +231,38 @@ export class TestRetryData extends MegaSenaData {
   }
 }
 
+/** Retention against tables larger than the expired set, measuring the rows each DELETE reads. */
+export class TestRetentionIndex extends TestRetryData {
+  insertIndexedEvents(retained: number): void {
+    const sql = this.ctx.storage.sql;
+    const now = Date.now();
+    for (let index = 0; index < retained; index++) {
+      const timestamp = new Date(now - index * 60_000).toISOString();
+      sql.exec('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)', `audit-${index}`, timestamp, 'test');
+      sql.exec('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)', `log-${index}`, timestamp, 'info', 'test');
+    }
+    for (const day of ['2000-01-01', '2000-01-02']) {
+      sql.exec('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)', `expired-audit-${day}`, `${day}T00:00:00.000Z`, 'test');
+      sql.exec('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)', `expired-log-${day}`, `${day}T00:00:00.000Z`, 'info', 'test');
+    }
+  }
+  /** Run the real refresh path and report rowsRead for each retention DELETE. */
+  async refreshMeasuringRetention(): Promise<{ table: string; rowsRead: number }[]> {
+    const sql = this.ctx.storage.sql;
+    const exec = sql.exec.bind(sql);
+    const deletes: { table: string; cursor: SqlStorageCursor<Record<string, SqlStorageValue>> }[] = [];
+    sql.exec = ((query: string, ...bindings: unknown[]) => {
+      const cursor = exec(query, ...bindings);
+      const table = /^\s*DELETE FROM (audit_logs|log_events)\b/.exec(query)?.[1];
+      if (table) deletes.push({ table, cursor });
+      return cursor;
+    }) as typeof sql.exec;
+    try { await this.refreshDue(); } catch { /* Retention runs before the CAIXA outage control. */ }
+    finally { sql.exec = exec; }
+    return deletes.map(({ table, cursor }) => ({ table, rowsRead: cursor.rowsRead }));
+  }
+}
+
 export class TestConfiguredRetention extends TestRetryData {
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
     const configured = { ...env, AUDIT_RETENTION_DAYS: '730', LOG_RETENTION_DAYS: '90' };
@@ -135,7 +278,7 @@ export class TestDisabledRetention extends TestRetryData {
 }
 
 const worker = {
-  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<MegaSenaData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
+  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; PRELOADED: DurableObjectNamespace<TestPreloadedData>; VERSIONED: DurableObjectNamespace<TestVersionedData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; RETENTION_INDEX: DurableObjectNamespace<TestRetentionIndex>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
     try {
       const first = env.DATA.getByName('first');
       const second = env.DATA.getByName('second');
@@ -145,12 +288,57 @@ const worker = {
       const initial = await seeded.status();
       assert(initial.draws === seed.length, 'public seed bootstrap');
       assert(initial.numberOccurrences === seed.length * 6 && initial.cachedPairs === 1770, 'public seed caches rebuilt');
+      const seedMismatch = await seeded.seedMismatch();
+      assert(seedMismatch === null, `public seed readback: ${seedMismatch}`);
+      // The edge cache key carries the object's build and its draws revision.
+      const versioned = env.VERSIONED.getByName('versioned');
+      const unversionedKey = await seeded.drawsVersion();
+      const versionedKey = await versioned.drawsVersion();
+      const revision = versionedKey?.split(':')[1];
+      assert(versionedKey === `9.9.9-test:${revision}` && unversionedKey === `unknown:${revision}`, `drawsVersion carries the object build: ${versionedKey} / ${unversionedKey}`);
+      assert(await versioned.importDraws([{ ...seed[seed.length - 1]!, contest: seed.length + 1, date: '2026-10-04' }]) === 1, 'versioned append');
+      const nextKey = await versioned.drawsVersion();
+      assert(nextKey !== versionedKey && nextKey?.startsWith('9.9.9-test:'), `drawsVersion changes with the revision: ${versionedKey} -> ${nextKey}`);
+      // Only the first rejection per window per subject is written; every one still answers 429.
+      const throttled = env.SEEDED.getByName('throttled');
+      const throttledPeer = { clientIp: '203.0.113.80', secure: true };
+      for (let window = 0; window < 2; window++) {
+        if (window > 0) await throttled.expireRateLimitWindows();
+        for (let index = 0; index < 100; index++) await throttled.handle(new Request('https://example.com/api/health'), throttledPeer);
+        const statuses: number[] = [];
+        for (let index = 0; index < 3; index++) statuses.push((await throttled.handle(new Request('https://example.com/api/health'), throttledPeer)).status);
+        const rows = await throttled.rateLimitedRows();
+        assert(statuses.join() === '429,429,429' && rows.audit === window + 1 && rows.logs === window + 1,
+          `one recorded rejection per window: window ${window}, ${statuses.join()}, ${JSON.stringify(rows)}`);
+      }
+      // Every log/audit row of repeated rejections is suppressed, including the CORS rejection log.
+      const untrusted = env.SEEDED.getByName('untrusted-origin');
+      const untrustedRequest = () => new Request('https://example.com/api/health', { headers: { Origin: 'https://untrusted.example' } });
+      const untrustedPeer = { clientIp: '203.0.113.81', secure: true };
+      for (let index = 0; index < 100; index++) await untrusted.handle(untrustedRequest(), untrustedPeer);
+      const beforeRejections = await untrusted.status();
+      for (let index = 0; index < 3; index++) assert((await untrusted.handle(untrustedRequest(), untrustedPeer)).status === 429, 'untrusted origin 429');
+      const afterRejections = await untrusted.status();
+      const rejectionRows = { audit: afterRejections.auditRows - beforeRejections.auditRows, logs: afterRejections.logRows - beforeRejections.logRows };
+      assert(rejectionRows.audit === 1 && rejectionRows.logs === 3, `only the first rejection writes rows (all log_events): ${JSON.stringify(rejectionRows)}`);
+      const boundary = await seeded.rateLimitAtBoundary();
+      assert(boundary.opened && boundary.allowed && boundary.remaining === 99, `rate-limit window expires at exactly resetAt: ${JSON.stringify(boundary)}`);
+      const preloaded = await env.PRELOADED.getByName('preloaded').status();
+      assert(preloaded.draws === 1 && preloaded.lastContest === 1, `bootstrap only on an empty database: ${JSON.stringify(preloaded)}`);
       assert(await seeded.importDraws(seed.slice(0, 10)) === 0, 'seed append duplicate');
+      let yearRejected = false;
+      const yearControl = env.PRELOADED.getByName('year-control');
+      try { await yearControl.importDraws([{ ...storedDraw, contest: 2, date: '0001-01-01' }]); } catch { yearRejected = true; }
+      assert(yearRejected && (await yearControl.status()).draws === 1, 'seed boundary rejects a year below 0100 like toIsoDate');
       assert((await seeded.status()).draws === seed.length, 'seed not replaced');
-      const health = await seeded.handle(new Request('https://example.com/api/health'), { internal: true, clientIp: null, secure: true });
+      const health = await seeded.handle(new Request('https://example.com/api/health'), { clientIp: null, secure: true });
       assert(health.status === 200, 'real API health request');
       const afterHealth = await seeded.status();
       assert(afterHealth.auditRows >= 1 && afterHealth.logRows >= 1, 'audit/log persisted before response');
+      await seeded.handle(new Request('https://example.com/api/health'), { clientIp: '203.0.113.60', secure: true });
+      const afterSecond = await seeded.status();
+      assert(afterSecond.auditRows - afterHealth.auditRows === 1 && afterSecond.logRows - afterHealth.logRows === 1,
+        `one API request writes one audit row and one log row: ${afterSecond.auditRows - afterHealth.auditRows} / ${afterSecond.logRows - afterHealth.logRows}`);
       const retry = env.RETRY.getByName('retries');
       await retry.insertExpiredEvents();
       let rejected = false;
@@ -177,14 +365,21 @@ const worker = {
       try { await retention.refreshDue(); } catch { /* Retention also runs during an upstream outage. */ }
       const retained = await retention.status();
       assert(retained.auditRows === 1 && retained.logRows === 1, 'configured retention preserves eligible history and deletes expired rows');
+      const indexed = env.RETENTION_INDEX.getByName('indexed');
+      await indexed.insertIndexedEvents(50);
+      const reads = await indexed.refreshMeasuringRetention();
+      const afterIndexed = await indexed.status();
+      assert(afterIndexed.auditRows === 50 && afterIndexed.logRows === 50, `indexed retention deletes only expired rows: ${JSON.stringify(afterIndexed)}`);
+      assert(reads.map(read => read.table).join() === 'audit_logs,log_events', `retention deletes both tables: ${JSON.stringify(reads)}`);
+      assert(reads.every(read => read.rowsRead < 52), `retention DELETE reads the timestamp index, not the table (52 rows): ${JSON.stringify(reads)}`);
       const disabled = env.DISABLED_RETENTION.getByName('disabled');
       await disabled.insertRetainedEvents();
       try { await disabled.refreshDue(); } catch { /* Invalid/disabled settings must never trigger fallback deletion. */ }
       const unpruned = await disabled.status();
       assert(unpruned.auditRows === 2 && unpruned.logRows === 2, 'disabled or invalid retention preserves records like Bun');
       return Response.json({ pass: true, ...result, objectIsolation: true, publicSeedDraws: initial.draws,
-        seedOccurrences: initial.numberOccurrences, seedPairs: initial.cachedPairs,
-        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, disabledRetention: true, nativeBunTransactions: true });
+        seedOccurrences: initial.numberOccurrences, seedReadback: true, seedPairs: initial.cachedPairs,
+        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, indexedRetention: true, disabledRetention: true, nativeBunTransactions: true });
     } catch (error) {
       return Response.json({ pass: false, error: String(error) }, { status: 500 });
     }

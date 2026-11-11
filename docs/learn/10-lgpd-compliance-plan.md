@@ -57,8 +57,8 @@ banner as nomeia explicitamente.
   entre registros do mesmo IP.
 - **Sanitização recursiva de metadados:** `sanitize-metadata.ts` (profundidade 4, array
   25, string 500, detecção de ciclo).
-- **Retenção automatizada (hard delete):** `audit-retention.ts` e `log-retention.ts`
-  (24h; defaults 400/30 dias). Migração `006` removeu `deleted_at` (exceção de
+- **Retenção automatizada (hard delete):** `retention.ts` (uma política
+  por tabela; 24h; defaults 400/30 dias). Migração `006` removeu `deleted_at` (exceção de
   no-soft-delete aprovada).
 - **Banner de transparência:** `storage-disclosure.tsx` exige reconhecimento e cita as
   chaves; some após aceite.
@@ -97,7 +97,7 @@ banner as nomeia explicitamente.
      SQLCipher no código.
 
 3. **Definir o prazo oficial de retenção de auditoria.**
-   - Estado: 400 dias (`.env.example` e default do CLI `prune-audit-logs.ts`) vs
+   - Estado: 400 dias (`.env.example` e default do CLI `prune-retention.ts audit`) vs
      recomendação de 180 dias em `docs/LGPD-COMPLIANCE.md`.
    - Ação: decidir um número, alinhar `.env.example`, o default do CLI e o RoPA;
      justificar o prazo (princípio da necessidade, Art. 15-16).

@@ -27,7 +27,9 @@ API contract; `server.ts` is the local/VPS Bun adapter. New API routes belong in
 the shared handler. Database and log contexts are scoped per operation.
 `lib/cloudflare/edge-cache.ts` stores social images, `sitemap.xml` and `llms.txt`
 in the Worker Cache API keyed by `APP_VERSION` and the draws revision
-(`MegaSenaData.drawsVersion`), only for public 200 responses. Canonical archive HTML
+(`MegaSenaData.drawsVersion`), only for public 200 responses. `drawsVersion` returns the
+opaque `<object APP_VERSION>:<revision>`, so a gradual deployment cannot store HTML rendered
+from the old object under the new Worker build's key. Canonical archive HTML
 at `/concurso/:numero`, `/numeros/:numero` and `/resultados/:ano` uses this cache only
 without a query string; any nonempty HTML query bypasses reads and writes.
 Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
@@ -157,7 +159,8 @@ silently stops running.
 
 Security/ops helpers: `security:secrets`, `security:secrets:history` (redacted git
 history scan, fails on findings), `security:csp:edge` (verify edge did not replace app
-CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`.
+CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`
+(one CLI, `scripts/prune-retention.ts`), `privacy:subject` (per-subject export/erasure).
 
 **Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
 `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit`, and `bun run build` all pass;
@@ -294,8 +297,9 @@ README.md for the isolated local production fixture and two-pass replay.
   Cloudflare/Traefik changes.
 - **Bun `/api/*`** keeps its own defensive headers (deny-by-default JSON CSP, nosniff,
   frame deny, `Cache-Control: no-store`, HSTS on secure prod only) and rate limiting
-  (100 req/min per **network**, incl. `/api/health`; a 429 is audited like any other
-  outcome). `X-Forwarded-*` only trusted when
+  (100 req/min per **network**, incl. `/api/health`; only the first 429 per window per
+  subject is audited and logged, the rest answer the same 429 and still count but write
+  nothing). `X-Forwarded-*` only trusted when
   `TRUST_PROXY_HEADERS=true` + loopback/`TRUSTED_PROXY_IPS`. Internal rate-limit bypass
   needs a strong `INTERNAL_API_SECRET` + a **loopback** target — `API_HOST` must stay
   loopback or the secret is withheld and SSR calls fall back to the public quota.
@@ -307,7 +311,7 @@ README.md for the isolated local production fixture and two-pass replay.
   random per-process salt, never an unsalted SHA-256 of the address.
 - **Quota and retention constants are shared, never duplicated.** `RATE_LIMIT_MAX_REQUESTS`
   and `RATE_LIMIT_WINDOW_MS` (`lib/api/handler.ts`) feed both the Bun cache and the
-  Durable Object; `audit:prune`, `runAuditRetention`, the Bun server and the Worker all
+  Durable Object; `audit:prune`, `runRetention`, the Bun server and the Worker all
   default to 400 audit days.
 - **Forwarded-IP trust is an ops contract, not just code.** The header chosen for the
   client IP becomes the rate-limit key, so the public edge must rewrite it on every
@@ -343,6 +347,10 @@ README.md for the isolated local production fixture and two-pass replay.
 - **LGPD:** changes to collection/retention/purpose must sync `docs/PRIVACY.md`,
   `docs/LGPD-COMPLIANCE.md`, `lib/i18n.ts`, and the storage-disclosure banner
   (`components/storage-disclosure.tsx` must list every `localStorage` key).
+  Per-subject access/erasure is `bun run privacy:subject` (`scripts/erase-subject.ts`): it
+  recomputes the subject's `client_id_hash` per salt window, plus the window just before the period
+  (the hash is taken when a request starts, the row is stamped when it ends), and exports or erases
+  its audit rows and every log row sharing a request id with the subject's audit or log rows.
 - Use semantic design tokens only (`bg-background`, `text-foreground`) — no hardcoded
   color classes. Edit the design system (`app/globals.css`, `tailwind.config.cjs`)
   before components. `lang="pt-BR"` in `app/layout.tsx`.

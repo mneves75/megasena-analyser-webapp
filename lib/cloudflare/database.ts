@@ -44,7 +44,7 @@ export function createDurableDatabase(storage: DurableStorageLike): DatabaseLike
         run(...params) {
           // No `SELECT changes()` here. It was a second statement on every write,
           // and only the ingestion counter consumes the count, so that caller
-          // reads it explicitly (cloudflare/ingestion.ts). `rowsWritten` is not
+          // reads it explicitly (lib/draw-ingestion.ts). `rowsWritten` is not
           // a substitute: it counts trigger writes, `changes()` does not.
           storage.sql.exec(sql, ...params.map(sqlBinding)).toArray();
           return { changes: 0 };

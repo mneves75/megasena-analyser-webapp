@@ -13,7 +13,7 @@ describe('CaixaAPIClient', () => {
         listaDezenas: ['08', '10', '30', '38', '50', '53'],
       })));
     }));
-    await expect(client.fetchDraw(3065)).resolves.toMatchObject({ numero: 3065 });
+    await expect(client.fetchDraw(3065)).resolves.toMatchObject({ contest: 3065 });
   });
   it('keeps the request deadline active while a response body is stalled', async () => {
     const client = new CaixaAPIClient();
@@ -47,7 +47,7 @@ describe('CaixaAPIClient', () => {
       .mockResolvedValueOnce(new Response(null, { status: 304 })));
     const first = await client.fetchDraw(3010);
     const second = await client.fetchDraw(3010);
-    expect(first.concursoEspecial).toBe(true);
+    expect(first.specialDraw).toBe(true);
     expect(second).toEqual(first);
   });
   it('uses listaRateioPremio when the legacy prize array is empty', async () => {
@@ -60,9 +60,7 @@ describe('CaixaAPIClient', () => {
       listaRateioPremio: [{ faixa: 2, numeroDeGanhadores: 82, valorPremio: 24039.44 }],
     }))));
     const draw = await client.fetchDraw(3064);
-    expect(draw.rateioProcessamento).toEqual([
-      { descricaoFaixa: 'Quina', numeroDeGanhadores: 82, valorPremio: 24039.44 },
-    ]);
+    expect(draw).toMatchObject({ prizeQuina: 24039.44, winnersQuina: 82 });
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -93,7 +91,7 @@ describe('CaixaAPIClient', () => {
 
     const data = await client.fetchDraw(1);
 
-    expect(data.numero).toBe(1);
+    expect(data.contest).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(delaySpy).toHaveBeenCalled();
   });
@@ -144,7 +142,7 @@ describe('CaixaAPIClient', () => {
 
     const data = await client.fetchDraw(2);
 
-    expect(data.numero).toBe(2);
+    expect(data.contest).toBe(2);
     expect(delaySpy).toHaveBeenCalledWith(2000);
   });
 
@@ -179,21 +177,20 @@ describe('CaixaAPIClient', () => {
 
     const data = await client.fetchDraw(2985);
 
-    expect(data.rateioProcessamento?.map((item) => item.descricaoFaixa)).toEqual([
-      'Sena',
-      'Quina',
-      'Quadra',
-    ]);
-    expect(data.rateioProcessamento?.[0]?.valorPremio).toBe(34856052.53);
-    expect(data.valorAcumuladoConcurso).toBe(12540698.04);
-    expect(data.valorEstimadoProximoConcurso).toBe(3500000);
+    expect(data).toMatchObject({
+      prizeSena: 34856052.53, winnersSena: 3,
+      prizeQuina: 34815.62, winnersQuina: 96,
+      prizeQuadra: 1225.92, winnersQuadra: 4494,
+    });
+    expect(data.accumulatedValue).toBe(12540698.04);
+    expect(data.nextEstimatedPrize).toBe(3500000);
   });
 
   it.each([
     [2, true],
     [1, false],
   ])(
-    'reads indicadorConcursoEspecial %i as concursoEspecial %s (tipoJogo is always MEGA_SENA)',
+    'reads indicadorConcursoEspecial %i as specialDraw %s (tipoJogo is always MEGA_SENA)',
     async (indicator, special) => {
       const client = new CaixaAPIClient();
       vi.stubGlobal(
@@ -215,7 +212,7 @@ describe('CaixaAPIClient', () => {
 
       const data = await client.fetchDraw(2810);
 
-      expect(data.concursoEspecial).toBe(special);
+      expect(data.specialDraw).toBe(special);
     }
   );
 

@@ -58,7 +58,7 @@ const worker = {
     const object = env.DATA.getByName(url.searchParams.get('object') ?? 'scheduler-fixture');
     const now = url.searchParams.has('now') ? Number(url.searchParams.get('now')) : undefined;
     try {
-      if (url.pathname === '/api/health') return object.handle(request, { internal: true });
+      if (url.pathname === '/api/health') return object.handle(request, { clientIp: null, secure: true });
       if (url.pathname === '/fail-read') {
         await object.failNextAlarmRead();
         return new Response(null, { status: 204 });

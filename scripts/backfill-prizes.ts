@@ -21,7 +21,8 @@
  *   bun run db:backfill-prizes -- --delay 500  # ms between CAIXA requests
  */
 
-import { caixaClient, type MegaSenaDrawData } from '@/lib/api/caixa-client';
+import { caixaClient } from '@/lib/api/caixa-client';
+import type { Draw } from '@/lib/draw-ingestion';
 import { getDatabase, closeDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
@@ -32,10 +33,6 @@ import { parsePositiveIntegerArg } from '@/scripts/cli-args';
 const DEFAULT_DELAY_MS = 350;
 const COMMIT_BATCH_SIZE = 100;
 const MAX_CONSECUTIVE_FAILURES = 25;
-
-function findPrizeTier(draw: MegaSenaDrawData, description: string) {
-  return draw.rateioProcessamento?.find((tier) => tier.descricaoFaixa === description);
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -91,27 +88,24 @@ async function main(): Promise<void> {
   let updated = 0;
   let failed = 0;
   let consecutiveFailures = 0;
-  let pending: MegaSenaDrawData[] = [];
+  let pending: Draw[] = [];
   const commitBatch = (): void => {
     if (pending.length === 0) return;
     db.exec('BEGIN IMMEDIATE TRANSACTION');
     try {
       for (const draw of pending) {
-        const sena = findPrizeTier(draw, 'Sena');
-        const quina = findPrizeTier(draw, 'Quina');
-        const quadra = findPrizeTier(draw, 'Quadra');
         update.run(
-          sena?.valorPremio ?? 0,
-          sena?.numeroDeGanhadores ?? 0,
-          quina?.valorPremio ?? 0,
-          quina?.numeroDeGanhadores ?? 0,
-          quadra?.valorPremio ?? 0,
-          quadra?.numeroDeGanhadores ?? 0,
-          draw.valorArrecadado ?? 0,
-          draw.acumulado ? 1 : 0,
-          draw.valorAcumuladoConcurso ?? 0,
-          draw.valorEstimadoProximoConcurso ?? 0,
-          draw.numero
+          draw.prizeSena,
+          draw.winnersSena,
+          draw.prizeQuina,
+          draw.winnersQuina,
+          draw.prizeQuadra,
+          draw.winnersQuadra,
+          draw.totalCollection,
+          Number(draw.accumulated),
+          draw.accumulatedValue,
+          draw.nextEstimatedPrize,
+          draw.contest
         );
       }
       db.exec('COMMIT');
@@ -126,7 +120,7 @@ async function main(): Promise<void> {
 
   try {
     for (const [index, contest] of contests.entries()) {
-      let draw: MegaSenaDrawData | null = null;
+      let draw: Draw | null = null;
       try {
         draw = await caixaClient.fetchDraw(contest);
       } catch (error) {

@@ -61,7 +61,15 @@ export interface ApiHandlerOptions {
   uptime?: () => number;
   schedulerStatus?: () => Promise<{ enabled: boolean; nextAlarmAt: number | null }>;
   audit: (event: AuditEventInput) => void | Promise<void>;
-  checkRateLimit?: (clientId: string) => { allowed: boolean; remaining: number; resetAt: number };
+  checkRateLimit?: (clientId: string) => RateLimitDecision;
+}
+
+/** `count` is the subject's requests in the current window, including this one. */
+export interface RateLimitDecision {
+  allowed: boolean;
+  remaining: number;
+  resetAt: number;
+  count: number;
 }
 export function createApiHandler(options: ApiHandlerOptions) {
   if (options.environment === 'production' && (options.ipHashSecret?.trim().length ?? 0) < 32) {
@@ -114,6 +122,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
     clientId: string;
     origin?: string | null;
     isSecure: boolean;
+    /** A repeated rejection in one rate-limit window: no audit row, no log row. */
+    unrecorded?: boolean;
     audit?: {
       event: AuditEventName;
       metadata?: Record<string, unknown>;
@@ -288,6 +298,9 @@ export function createApiHandler(options: ApiHandlerOptions) {
     startTime: number
   ): Promise<Response> {
     const finalized = withRequestIdHeader(response, ctx);
+    if (ctx.unrecorded) {
+      return finalized;
+    }
 
     if (ctx.audit) {
       const auditEvent: AuditEventInput = {
@@ -322,13 +335,13 @@ export function createApiHandler(options: ApiHandlerOptions) {
     return finalized;
   }
 
-  function checkRateLimit(key: string): { allowed: boolean; remaining: number; resetAt: number } {
+  function checkRateLimit(key: string): RateLimitDecision {
     const now = Date.now();
 
     let entry = rateLimiterCache.get(key);
 
-    // Clean up expired entry or create new one
-    if (!entry || entry.resetAt < now) {
+    // A window expires at resetAt, as in the Durable Object (reset_at <= now).
+    if (!entry || entry.resetAt <= now) {
       entry = {
         count: 1,
         resetAt: now + RATE_LIMIT_WINDOW_MS,
@@ -338,7 +351,8 @@ export function createApiHandler(options: ApiHandlerOptions) {
       return {
         allowed: true,
         remaining: RATE_LIMIT_MAX_REQUESTS - 1,
-        resetAt: entry.resetAt
+        resetAt: entry.resetAt,
+        count: 1,
       };
     }
 
@@ -348,7 +362,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     const allowed = entry.count <= RATE_LIMIT_MAX_REQUESTS;
     const remaining = Math.max(0, RATE_LIMIT_MAX_REQUESTS - entry.count);
 
-    return { allowed, remaining, resetAt: entry.resetAt };
+    return { allowed, remaining, resetAt: entry.resetAt, count: entry.count };
   }
 
   /**
@@ -356,7 +370,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
    * Validates origin against allowed list and returns appropriate headers
    * In production, only HTTPS origins are allowed
    */
-  function getCorsHeaders(origin: string | null): Record<string, string> {
+  function getCorsHeaders(origin: string | null, logRejection: boolean): Record<string, string> {
     // If no origin header (same-origin request), don't add CORS headers
     if (!origin) {
       return {};
@@ -366,7 +380,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
     const isAllowed = ALLOWED_ORIGINS.includes(origin);
 
     if (!isAllowed) {
-      logger.warn('security.cors_origin_rejected', {
+      if (logRejection) logger.warn('security.cors_origin_rejected', {
         origin,
         allowedOriginsCount: ALLOWED_ORIGINS.length,
       });
@@ -938,7 +952,6 @@ export function createApiHandler(options: ApiHandlerOptions) {
       getRateLimitKey(clientIp),
       peer.secure ?? url.protocol === 'https:'
     );
-    const corsHeaders = getCorsHeaders(ctx.origin ?? null);
     const rateLimitHeaders = (limit: {
       remaining: number;
       resetAt: number;
@@ -948,19 +961,12 @@ export function createApiHandler(options: ApiHandlerOptions) {
       'X-RateLimit-Reset': limit.resetAt.toString(),
     });
 
-    logger.info('api.request_received', {
-      requestId: ctx.requestId,
-      route: ctx.route,
-      method: ctx.method,
-      userAgent: ctx.userAgent,
-      clientId: ctx.clientId,
-    });
-
     try {
       // A non-API path is never registered: answer the preflight and 404 the
       // rest. This replaces a branch that could not be reached, because every
       // registered handler lives under /api/.
       if (!url.pathname.startsWith('/api/')) {
+        const corsHeaders = getCorsHeaders(ctx.origin ?? null, true);
         const response =
           req.method === 'OPTIONS'
             ? new Response(null, { status: 204, headers: corsHeaders })
@@ -981,23 +987,37 @@ export function createApiHandler(options: ApiHandlerOptions) {
             allowed: true,
             remaining: RATE_LIMIT_MAX_REQUESTS,
             resetAt: Date.now() + RATE_LIMIT_WINDOW_MS,
+            count: 0,
           }
         : options.checkRateLimit?.(ctx.clientId) ?? checkRateLimit(ctx.clientId);
+      // Decided after the limiter: a 429 past the first in its window writes no row
+      // at all, the CORS rejection log included.
+      const corsHeaders = getCorsHeaders(
+        ctx.origin ?? null,
+        rateLimit.allowed || rateLimit.count === RATE_LIMIT_MAX_REQUESTS + 1
+      );
 
       if (!rateLimit.allowed) {
-        logger.warn('api.rate_limit_exceeded', {
-          requestId: ctx.requestId,
-          route: ctx.route,
-          method: ctx.method,
-          clientId: ctx.clientId,
-        });
+        // Only the first rejection in a window is written (audit row and log
+        // rows); later ones answer the same 429 and still count, but write
+        // nothing, so a flood cannot turn into a flood of rows.
+        if (rateLimit.count === RATE_LIMIT_MAX_REQUESTS + 1) {
+          logger.warn('api.rate_limit_exceeded', {
+            requestId: ctx.requestId,
+            route: ctx.route,
+            method: ctx.method,
+            clientId: ctx.clientId,
+          });
 
-        // A throttled request on a known route is audited like any other
-        // outcome. An unknown path keeps only the structured rate-limit log:
-        // labelling it as a dashboard read put a false event in the audit table.
-        const knownEvent = apiRoutes[url.pathname]?.auditEvent;
-        if (knownEvent) {
-          ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
+          // A known route is audited like any other outcome. An unknown path
+          // keeps only the structured rate-limit log: labelling it as a
+          // dashboard read put a false event in the audit table.
+          const knownEvent = apiRoutes[url.pathname]?.auditEvent;
+          if (knownEvent) {
+            ctx.audit = { event: knownEvent, metadata: { rateLimited: true } };
+          }
+        } else {
+          ctx.unrecorded = true;
         }
 
         const retryAfter = Math.ceil((rateLimit.resetAt - Date.now()) / 1000);

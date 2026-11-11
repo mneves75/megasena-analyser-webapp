@@ -1,27 +1,20 @@
 #!/usr/bin/env bun
 
-import { caixaClient, type MegaSenaDrawData } from '@/lib/api/caixa-client';
+import { caixaClient } from '@/lib/api/caixa-client';
+import type { Draw } from '@/lib/draw-ingestion';
 import { getDatabase, closeDatabase } from '@/lib/db';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
-import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
 import { assertContiguousArchive } from '@/lib/analytics/archive-sequence';
-import { toIsoDate } from '@/lib/utils';
 import { parsePositiveIntegerArg } from '@/scripts/cli-args';
 
 interface SaveDrawOptions {
-  draw: MegaSenaDrawData;
+  draw: Draw;
   db: ReturnType<typeof getDatabase>;
   incremental?: boolean;
 }
 
 function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
-  const numbers = normalizeMegaSenaNumbers(draw.listaDezenas);
-
-  const senaInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Sena');
-  const quinaInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Quina');
-  const quadraInfo = draw.rateioProcessamento?.find((r) => r.descricaoFaixa === 'Quadra');
-
   const conflictClause = incremental
     ? 'ON CONFLICT(contest_number) DO NOTHING'
     : `ON CONFLICT(contest_number) DO UPDATE SET
@@ -61,30 +54,24 @@ function saveDraw({ draw, db, incremental = false }: SaveDrawOptions): boolean {
 
   const existing = db
     .prepare('SELECT 1 FROM draws WHERE contest_number = ?')
-    .get(draw.numero) as { 1?: number } | undefined;
+    .get(draw.contest) as { 1?: number } | undefined;
   const hadRow = Boolean(existing);
 
   const result = stmt.run(
-    draw.numero,
-    toIsoDate(draw.dataApuracao),
-    numbers[0],
-    numbers[1],
-    numbers[2],
-    numbers[3],
-    numbers[4],
-    numbers[5],
-    senaInfo?.valorPremio || 0,
-    senaInfo?.numeroDeGanhadores || 0,
-    quinaInfo?.valorPremio || 0,
-    quinaInfo?.numeroDeGanhadores || 0,
-    quadraInfo?.valorPremio || 0,
-    quadraInfo?.numeroDeGanhadores || 0,
-    draw.valorArrecadado || 0,
-    draw.acumulado ? 1 : 0,
-    draw.valorAcumuladoConcurso || 0,
-    draw.valorEstimadoProximoConcurso || 0,
-    // tipoJogo is MEGA_SENA even for special contests; the indicator is what marks them.
-    draw.concursoEspecial ? 1 : 0
+    draw.contest,
+    draw.date,
+    ...draw.numbers,
+    draw.prizeSena ?? 0,
+    draw.winnersSena,
+    draw.prizeQuina ?? 0,
+    draw.winnersQuina,
+    draw.prizeQuadra ?? 0,
+    draw.winnersQuadra,
+    draw.totalCollection ?? 0,
+    Number(draw.accumulated),
+    draw.accumulatedValue ?? 0,
+    draw.nextEstimatedPrize ?? 0,
+    Number(draw.specialDraw)
   ) as { changes: number; lastInsertRowid: number };
 
   // Return true only if a new row was inserted.
@@ -123,15 +110,15 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
     // one request per contest with a delay; holding the writer lock across it
     // starves the audit and log writers for the whole run (they drop rows once
     // their queues fill) and turns one upstream failure into a total rollback.
-    let drawsToStore: MegaSenaDrawData[];
+    let drawsToStore: Draw[];
     if (limit) {
       console.log(`Fetching latest draw...`);
       const latestDraw = await caixaClient.fetchDraw();
-      const startContest = Math.max(1, latestDraw.numero - limit + 1);
+      const startContest = Math.max(1, latestDraw.contest - limit + 1);
 
-      console.log(`Fetching draws from ${startContest} to ${latestDraw.numero}...`);
+      console.log(`Fetching draws from ${startContest} to ${latestDraw.contest}...`);
       drawsToStore = [];
-      for (let contest = startContest; contest <= latestDraw.numero; contest++) {
+      for (let contest = startContest; contest <= latestDraw.contest; contest++) {
         drawsToStore.push(await caixaClient.fetchDraw(contest));
       }
     } else {
@@ -146,7 +133,7 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
       .get() as { last: number };
     if (!limit || stored.last > 0) {
       assertContiguousArchive(
-        drawsToStore.map((draw) => draw.numero),
+        drawsToStore.map((draw) => draw.contest),
         stored.last
       );
     }
@@ -159,11 +146,11 @@ export async function pullDraws(args: string[] = process.argv.slice(2)) {
 
       if (wasInserted) {
         newDraws++;
-        if (limit) console.log(`[OK] Added draw #${draw.numero}`);
+        if (limit) console.log(`[OK] Added draw #${draw.contest}`);
       } else {
         skippedDraws++;
         if (limit && incremental) {
-          console.log(`[SKIP] Skipped draw #${draw.numero} (already exists)`);
+          console.log(`[SKIP] Skipped draw #${draw.contest} (already exists)`);
         }
       }
     }

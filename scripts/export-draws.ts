@@ -15,23 +15,7 @@ import { Database } from 'bun:sqlite';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { resolveDatabasePath } from '@/lib/db-path';
-
-interface DrawSeed {
-  contest: number;
-  date: string;
-  numbers: number[];
-  prizeSena: number | null;
-  winnersSena: number;
-  prizeQuina: number | null;
-  winnersQuina: number;
-  prizeQuadra: number | null;
-  winnersQuadra: number;
-  totalCollection: number | null;
-  accumulated: boolean;
-  accumulatedValue: number | null;
-  nextEstimatedPrize: number | null;
-  specialDraw: boolean;
-}
+import type { Draw } from '@/lib/draw-ingestion';
 
 interface DrawRow {
   contest_number: number;
@@ -59,7 +43,7 @@ function nullableNumber(value: number | null): number | null {
   return value === null ? null : Number(value);
 }
 
-function toSeed(row: DrawRow): DrawSeed {
+function toSeed(row: DrawRow): Draw {
   return {
     contest: Number(row.contest_number),
     date: String(row.draw_date),

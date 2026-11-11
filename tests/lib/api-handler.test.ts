@@ -190,8 +190,8 @@ describe('runtime-neutral API handler', () => {
       if (previous === undefined) delete process.env['DEPLOYMENT_STAGE'];
       else process.env['DEPLOYMENT_STAGE'] = previous;
     }
-    expect(stages.length).toBeGreaterThan(1);
-    expect(new Set(stages)).toEqual(new Set(['staging']));
+    // One log entry per request (api.request_completed), carrying the stage.
+    expect(stages).toEqual(['staging']);
   });
   it('fails closed when production pseudonymization is unconfigured', () => {
     expect(() => createApiHandler({ ...options, ipHashSecret: '' })).toThrow('IP_HASH_SECRET');
