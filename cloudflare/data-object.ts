@@ -12,7 +12,8 @@ import { getDrawsVersion } from '@/lib/api/response-cache';
 import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { logger, runWithLogSink } from '@/lib/logger';
-import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from './ingestion';
+import { CaixaAPIClient } from '@/lib/api/caixa-client';
+import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from '@/lib/draw-ingestion';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
 import migration002 from '../db/migrations/002_add_performance_indexes.sql?raw';
@@ -110,7 +111,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     )`);
     const stored = this.database.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number };
     if (env.BOOTSTRAP_PUBLIC_SEED === '1' && stored.count === 0) {
-      importSeedDraws(this.database, publicSeed);
+      runWithDatabase(this.database, () => importSeedDraws(publicSeed));
     }
     this.handler = createApiHandler({
       environment: env.ENVIRONMENT ?? 'production', appVersion: env.APP_VERSION ?? 'unknown',
@@ -183,7 +184,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   }
 
   importDraws(input: unknown): number {
-    return runWithDatabase(this.database, () => importSeedDraws(this.database, input));
+    return runWithDatabase(this.database, () => importSeedDraws(input));
   }
 
   status() {
@@ -221,7 +222,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       let result: RefreshResult;
       try {
         this.pruneRetention();
-        result = await refreshDraws(this.database);
+        result = await refreshDraws(new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 3, maxRetryDelayMs: 10000 }));
       } catch (error) {
         if (this.schedule()?.revision === reservation) {
           this.database.prepare("UPDATE ingestion_status SET status = 'failed', error_message = ? WHERE id = 1").run(error instanceof Error ? error.message : String(error));

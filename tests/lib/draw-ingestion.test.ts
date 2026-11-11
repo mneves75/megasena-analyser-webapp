@@ -8,7 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import seed from '@/db/seed/draws.json';
 import { closeDatabase, getDatabase } from '@/lib/db';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
-import { DrawSourceFailure, importSeedDraws, refreshDraws } from '@/cloudflare/ingestion';
+import { DrawSourceFailure, importSeedDraws, refreshDraws } from '@/lib/draw-ingestion';
 
 /**
  * Characterisation of the draw write paths: the Worker ingestion core (seed
@@ -18,8 +18,8 @@ import { DrawSourceFailure, importSeedDraws, refreshDraws } from '@/cloudflare/i
  */
 
 // Adapter: the only place that names the ingestion module's API.
-const importSeed = (input: unknown): number => importSeedDraws(getDatabase(), input);
-const refresh = () => refreshDraws(getDatabase(), new CaixaAPIClient({ maxRetries: 1 }));
+const importSeed = (input: unknown): number => importSeedDraws(input);
+const refresh = () => refreshDraws(new CaixaAPIClient({ maxRetries: 1 }));
 
 const REPO = process.cwd();
 const COLUMNS = `contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6,
@@ -247,7 +247,7 @@ describe('Worker ingestion core', () => {
         return Reflect.get(target, key, receiver) as unknown;
       },
     });
-    await expect(refreshDraws(getDatabase(), { fetchDraw: async () => payload })).resolves.toMatchObject({ inserted: 1 });
+    await expect(refreshDraws({ fetchDraw: async () => payload })).resolves.toMatchObject({ inserted: 1 });
     expect(reads).toBe(1);
   });
 });

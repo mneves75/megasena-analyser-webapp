@@ -3,7 +3,7 @@ import { createDurableDatabase, getDatabase, runWithDatabase } from '../../lib/c
 import { withDatabaseTransaction } from '../../lib/db-transaction';
 import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
-import { appendDraws, DrawSourceFailure, refreshDraws, type Draw } from '../../cloudflare/ingestion';
+import { appendDraws, DrawSourceFailure, refreshDraws, type Draw } from '../../lib/draw-ingestion';
 import { CaixaAPIClient } from '../../lib/api/caixa-client';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
@@ -41,10 +41,10 @@ const caixaRow = { contest_number: 3, draw_date: '1996-03-15', number_1: 1, numb
   next_estimated_prize: 3000000, special_draw: 1 };
 
 /** Refresh through the real CAIXA client with the network replaced by one fixed payload. */
-async function refreshFromPayload(db: Parameters<typeof refreshDraws>[0], payload: unknown) {
+async function refreshFromPayload(payload: unknown) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json(payload);
-  try { return await refreshDraws(db, new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 1 }), { maxDraws: 1 }); }
+  try { return await refreshDraws(new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 1 }), { maxDraws: 1 }); }
   finally { globalThis.fetch = originalFetch; }
 }
 
@@ -78,22 +78,22 @@ export class TestData extends DurableObject {
       let rolledBack = false;
       try {
         withDatabaseTransaction(db, () => {
-          appendDraws(db, [storedDraw]);
+          appendDraws([storedDraw]);
           throw new Error('outer rollback');
         });
       } catch { rolledBack = true; }
       assert(rolledBack, 'outer failure must surface');
       assert((db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === 0, 'nested draw rollback');
       assert((db.prepare('SELECT SUM(frequency) AS count FROM number_frequency').get() as { count: number }).count === 0, 'nested cache rollback');
-      const first = appendDraws(db, [storedDraw]);
-      const repeat = appendDraws(db, [storedDraw]);
+      const first = appendDraws([storedDraw]);
+      const repeat = appendDraws([storedDraw]);
       assert(first === 1 && repeat === 0, 'idempotent append and actual changes');
       assert((db.prepare('SELECT COUNT(*) AS count FROM number_pair_frequency').get() as { count: number }).count === 15, 'pair cache real SQL');
       let networkOutsideTransaction = false;
       let inTransaction = false;
       const originalTransaction = db.transactionSync!;
       db.transactionSync = fn => { inTransaction = true; try { return originalTransaction(fn); } finally { inTransaction = false; } };
-      const result = await refreshDraws(db, {
+      const result = await refreshDraws({
         fetchDraw: async contest => {
           assert(!inTransaction, 'network outside transaction');
           networkOutsideTransaction = true;
@@ -101,20 +101,20 @@ export class TestData extends DurableObject {
         },
       }, { maxDraws: 1 });
       assert(networkOutsideTransaction && result.status === 'incomplete' && result.lastContest === 2 && result.latestContest === 3, 'bounded backlog status');
-      await refreshFromPayload(db, caixaPayload);
+      await refreshFromPayload(caixaPayload);
       const storedCaixa = db.prepare(`SELECT ${drawColumns} FROM draws WHERE contest_number = 3`).get();
       assert(JSON.stringify(storedCaixa) === JSON.stringify(caixaRow), `CAIXA payload stored values: ${JSON.stringify(storedCaixa)}`);
       let rejected = false;
       try {
-        await refreshFromPayload(db, { numero: 4, dataApuracao: '18/03/1996', listaDezenas: ['1', '1', '2', '3', '4', '5'] });
+        await refreshFromPayload({ numero: 4, dataApuracao: '18/03/1996', listaDezenas: ['1', '1', '2', '3', '4', '5'] });
       } catch (error) { rejected = error instanceof DrawSourceFailure; }
       assert(rejected && (db.prepare('SELECT MAX(contest_number) AS last FROM draws').get() as { last: number }).last === 3, 'invalid source control');
       rejected = false;
-      try { appendDraws(db, [{ ...storedDraw, numbers: [1, 2, 3, 4, 5, 6] }]); } catch { rejected = true; }
+      try { appendDraws([{ ...storedDraw, numbers: [1, 2, 3, 4, 5, 6] }]); } catch { rejected = true; }
       assert(rejected, 'existing draw conflict');
       const before = (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
       rejected = false;
-      try { await refreshDraws(db, { fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
+      try { await refreshDraws({ fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
       assert(rejected && (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === before, 'outage preserves data');
       assert(getDatabase() === db, 'async database scope');
       return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };

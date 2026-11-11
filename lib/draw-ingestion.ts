@@ -1,10 +1,16 @@
+/**
+ * The shared draw ingestion core. It writes through the ambient `getDatabase()`:
+ * the Bun file database locally, and the Durable Object's database in the Worker
+ * build, where `vite.config.ts` swaps `@/lib/db` and callers open the scope with
+ * `runWithDatabase`.
+ */
 import { z } from 'zod';
-import { CaixaAPIClient, type MegaSenaDrawData } from '@/lib/api/caixa-client';
+import type { MegaSenaDrawData } from '@/lib/api/caixa-client';
 import { StatisticsEngine } from '@/lib/analytics/statistics';
 import { PairAnalysisEngine } from '@/lib/analytics/pair-analysis';
 import { normalizeMegaSenaNumbers } from '@/lib/analytics/draw-validation';
-import { withDatabaseTransaction, type DatabaseLike } from '@/lib/db-transaction';
-import { runWithDatabase } from '@/lib/cloudflare/database';
+import { getDatabase } from '@/lib/db';
+import { withDatabaseTransaction } from '@/lib/db-transaction';
 import { toIsoDate } from '@/lib/utils';
 
 /** A storage-ready draw in the public seed shape: ISO date, six ascending numbers. */
@@ -103,8 +109,9 @@ function bindings(draw: Draw): (string | number | null)[] {
     draw.accumulatedValue, draw.nextEstimatedPrize, Number(draw.specialDraw)];
 }
 
-export function appendDraws(database: DatabaseLike, draws: readonly Draw[]): number {
-  return runWithDatabase(database, () => withDatabaseTransaction(database, () => {
+export function appendDraws(draws: readonly Draw[]): number {
+  const database = getDatabase();
+  return withDatabaseTransaction(database, () => {
     const insert = database.prepare(insertSql);
     let inserted = 0;
     for (const draw of draws) {
@@ -131,27 +138,24 @@ export function appendDraws(database: DatabaseLike, draws: readonly Draw[]): num
       new PairAnalysisEngine().updatePairFrequencies();
     }
     return inserted;
-  }));
+  });
 }
 
 /** Binding-only administration: append validated public seed rows without replacing existing data. */
-export function importSeedDraws(database: DatabaseLike, input: unknown): number {
+export function importSeedDraws(input: unknown): number {
   const draws = z.array(seedSchema).max(10000).parse(input);
   const seen = new Set<number>();
-  return appendDraws(database, draws.map(draw => {
+  return appendDraws(draws.map(draw => {
     if (seen.has(draw.contest)) throw new Error(`Duplicate seed contest ${draw.contest}.`);
     seen.add(draw.contest);
     return { ...draw, date: toIsoDate(draw.date), numbers: normalizeMegaSenaNumbers(draw.numbers) };
   }));
 }
 
-export async function refreshDraws(
-  database: DatabaseLike,
-  source: DrawSource = new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 3, maxRetryDelayMs: 10000 }),
-  options: { maxDraws?: number } = {}
-): Promise<RefreshResult> {
+export async function refreshDraws(source: DrawSource, options: { maxDraws?: number } = {}): Promise<RefreshResult> {
   const maxDraws = options.maxDraws ?? 5;
   if (!Number.isInteger(maxDraws) || maxDraws < 1 || maxDraws > 20) throw new Error('Refresh batch must contain 1–20 draws.');
+  const database = getDatabase();
   const previous = database.prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { last: number };
   const latest = await fetchFromSource(source);
   if (latest.contest < previous.last) throw new DrawSourceFailure('CAIXA latest contest is older than stored data.');
@@ -162,7 +166,7 @@ export async function refreshDraws(
     draws.push(contest === latest.contest ? latest : await fetchFromSource(source, contest));
   }
   if (draws.length === 0) draws.push(latest);
-  const inserted = appendDraws(database, draws);
+  const inserted = appendDraws(draws);
   const current = database.prepare('SELECT COALESCE(MAX(contest_number), 0) AS last FROM draws').get() as { last: number };
   return { status: current.last === latest.contest ? 'success' : 'incomplete', inserted, lastContest: current.last, latestContest: latest.contest };
 }
