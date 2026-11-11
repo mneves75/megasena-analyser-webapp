@@ -31,7 +31,7 @@ ruins. Aqui está a lista do que verificar antes de confiar.
 | 2 | ~~`package.json` lista `date-fns`~~ | Nenhum import; datas via `Intl` em `lib/utils.ts` | **Resolvido**: `date-fns` não é dependência |
 | 3 | ~~`.cursor/rules`: "Supabase keys", "Caixa tokens"~~ | Não há Supabase nem token CAIXA no código | **Resolvido em 2026-07-28**: as seis regras `.mdc` foram reescritas para o stack real (Bun + `bun:sqlite`, pnpm, Next.js 16) |
 | 4 | `migrations 004/005`: comentário "soft delete via deleted_at" | `006` removeu `deleted_at`; retenção é hard delete | Corrigir comentários das migrações |
-| 5 | ~~`.env.example`: `AUDIT_RETENTION_DAYS=400`~~ | `prune-audit-logs.ts` lê `AUDIT_RETENTION_DAYS` com default 400 | **Resolvido**: CLI e env usam 400 |
+| 5 | ~~`.env.example`: `AUDIT_RETENTION_DAYS=400`~~ | `prune-retention.ts audit` lê `AUDIT_RETENTION_DAYS` com default 400 | **Resolvido**: CLI e env usam 400 |
 | 6 | ~~Suposição de que `app/api/*` contém handlers~~ | Não existe `app/api/`; a API é `lib/api/handler.ts`, servida por `server.ts` via rewrite | **Resolvido**: diretórios removidos |
 
 > Estas seis são **falsificáveis** e foram verificadas por leitura/grep direto.

@@ -97,7 +97,7 @@ banner as nomeia explicitamente.
      SQLCipher no código.
 
 3. **Definir o prazo oficial de retenção de auditoria.**
-   - Estado: 400 dias (`.env.example` e default do CLI `prune-audit-logs.ts`) vs
+   - Estado: 400 dias (`.env.example` e default do CLI `prune-retention.ts audit`) vs
      recomendação de 180 dias em `docs/LGPD-COMPLIANCE.md`.
    - Ação: decidir um número, alinhar `.env.example`, o default do CLI e o RoPA;
      justificar o prazo (princípio da necessidade, Art. 15-16).
