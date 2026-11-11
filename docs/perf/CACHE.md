@@ -39,7 +39,7 @@ partir do DO antigo grave sob outra chave.
 | Staleness aceitável | Zero (revisão lida do DO por requisição) |
 | Invalidação | Implícita pela chave |
 | Nonce CSP | Todo HIT troca o nonce armazenado por um novo, nos headers e em todo o HTML/RSC; um nonce armazenado nunca é reenviado |
-| Não armazena | Não-200, `Set-Cookie`, sem nonce, `Content-Encoding`, `no-transform`, `Vary` não reconhecido, e HTML cujo corpo não traz exatamente uma vez o marcador de completude `data-edge-cache="complete"` (`app/_components/edge-cacheable.tsx`), que a página só renderiza com dados obtidos na própria requisição; sem ele a resposta sai como `MISS` e `no-store` |
+| Não armazena | Não-200, `Set-Cookie`, sem nonce, `Content-Encoding`, `no-transform`, `Vary` não reconhecido, e HTML cujo corpo não traz exatamente uma vez o marcador de completude `data-edge-cache="complete"` (`app/_components/edge-cacheable.tsx`), que a página só renderiza com dados obtidos na própria requisição; sem ele a resposta sai como `MISS` e `no-store`. No `MISS` o HTML segue em streaming para o visitante (`tee()`) e a cópia é conferida e gravada depois que termina. Requisições HTML sem `User-Agent` não leem nem gravam: o vinext ainda transmite os metadados no corpo para elas, apesar de `htmlLimitedBots: /.*/` |
 | Falha da origem | Igual à classe A |
 
 ## Proposta W2 — revisão de draws local ao colo (não implementada)

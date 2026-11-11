@@ -36,7 +36,7 @@ The pages `/`, `/dashboard`, `/dashboard/statistics`, `/resultados`, `/numeros` 
 `/mega-da-virada` (exact paths) follow the same rules, and all cached HTML is stored only
 when its body contains exactly once the marker rendered by `app/_components/edge-cacheable.tsx`,
 which a page renders only when built entirely from data fetched in that request (never from a
-fallback, stale copy, error boundary, not-found or loading state). Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
+fallback, stale copy, error boundary, not-found or loading state). A MISS streams to the visitor through `tee()`; the copy is checked and stored after the response completes. `next.config.js` sets `htmlLimitedBots: /.*/` so metadata renders in `<head>` for every User-Agent and one HTML variant exists per page; HTML requests without a `User-Agent` (vinext still streams metadata for them) bypass the cache. Each HIT rewrites its CSP nonce in headers and the complete HTML/RSC text. HTML
 sent to clients remains `no-store`. Compressed HTML and unkeyed `Vary` responses
 are not stored. Requests carrying `Authorization`, `Cookie`, framework navigation,
 range or conditional headers, or `_rsc`, bypass reads and writes. The API response cache

@@ -13,7 +13,8 @@ O cache de borda do Worker passa a cobrir as seis páginas públicas que ele ain
 
 - Uma página só é guardada quando foi montada inteira com dados buscados naquela requisição: ela marca isso com um elemento oculto (`data-edge-cache="complete"`), e o cache exige o marcador exatamente uma vez. Respostas de contingência (o último sorteio vazio da página inicial, as cópias de até 10 minutos do painel e das estatísticas), páginas de erro e 404 não levam o marcador e nunca são guardadas. A mesma regra passa a valer para as páginas de concurso, número e ano que já estavam no cache.
 - Continuam fora do cache o gerador e qualquer requisição com query string, `_rsc`, cookie, autorização, cabeçalhos do framework, `Range` ou condicionais. Cada resposta servida do cache recebe um nonce de CSP novo nos cabeçalhos e no HTML, e o navegador continua recebendo `no-store`.
-- Numa requisição que não encontra a página no cache, início, painel e estatísticas chegam inteiros de uma vez, em vez de mostrar primeiro o esqueleto de carregamento.
+- Numa requisição que não encontra a página no cache, o visitante continua recebendo a página em streaming (esqueleto de carregamento primeiro); a cópia guardada só é conferida e gravada depois que a resposta termina.
+- Os metadados (título, descrição, Open Graph) passam a ir no `<head>` para todo cliente (`htmlLimitedBots: /.*/`), e não só para robôs que não executam JavaScript. Assim existe uma única versão de cada página, e um robô de prévia de link nunca recebe do cache a versão montada para navegador. Requisições sem `User-Agent` não usam o cache.
 
 ## [1.21.0] - 2026-11-11
 

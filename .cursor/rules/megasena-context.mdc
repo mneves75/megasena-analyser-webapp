@@ -64,7 +64,7 @@ domain attachment after data and rollback acceptance. Ordinary builds do not cut
 - `lib/cloudflare/edge-cache.ts`: Worker Cache API layer for social images,
   `sitemap.xml`, `llms.txt`, canonical archive HTML and the pages `/`, `/dashboard`,
   `/dashboard/statistics`, `/resultados`, `/numeros` and `/mega-da-virada`; HTML is stored
-  only with exactly one `EdgeCacheable` completeness marker. Keyed by `APP_VERSION` and
+  only with exactly one `EdgeCacheable` completeness marker (MISS streams via `tee()`; metadata in `<head>` for all via `htmlLimitedBots: /.*/`; no-User-Agent HTML bypasses). Keyed by `APP_VERSION` and
   the draws revision (`MegaSenaData.drawsVersion()` = `<object APP_VERSION>:<revision>`). HTML requests with any nonempty query bypass reads and writes;
   query-independent image/index routes retain path-only keys.
   HTML HITs rewrite the CSP nonce in headers and body; clients

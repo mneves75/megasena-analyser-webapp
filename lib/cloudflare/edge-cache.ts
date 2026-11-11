@@ -109,7 +109,10 @@ export async function withDrawsEdgeCache(
     || (html && url.search !== '')
     || request.headers.has('Authorization') || request.headers.has('Cookie')
     || [...request.headers.keys()].some(name => FRAMEWORK_HEADER.test(name) || /^(?:range$|if-)/i.test(name))
-    || url.searchParams.has('_rsc')) return render();
+    || url.searchParams.has('_rsc')
+    // vinext streams metadata into the body when the User-Agent is empty, even
+    // with htmlLimitedBots matching everything, so that variant must not be shared.
+    || (html && !request.headers.get('User-Agent'))) return render();
 
   let key: Request;
   try {
@@ -135,24 +138,38 @@ export async function withDrawsEdgeCache(
       || response.headers.has('Content-Encoding') || /\bno-transform\b/i.test(response.headers.get('Cache-Control') ?? '')) return response;
   } else if (!isSharedCacheable(response)) return response;
 
-  const body = await response.arrayBuffer();
   const cacheControl = response.headers.get('Cache-Control');
-  // A streamed page answers 200 even when a fallback or error boundary rendered,
-  // so only HTML that carries the completeness marker exactly once may be stored.
-  if (html && new TextDecoder().decode(body).split(EDGE_CACHE_MARKER).length !== 2) {
-    return withCacheStatus(new Response(body, response), 'MISS', cacheControl);
+  const store = (body: ArrayBuffer) => {
+    const stored = new Headers(response.headers);
+    if (cacheControl === null) stored.delete(ORIGINAL_CACHE_CONTROL);
+    else stored.set(ORIGINAL_CACHE_CONTROL, cacheControl);
+    stored.set('Cache-Control', `public, max-age=${EDGE_TTL_SECONDS}`);
+    return cache.put(key, new Response(body, { status: 200, headers: stored }));
+  };
+  const storeFailed = (error: unknown) => {
+    console.warn('edge_cache.store_failed', error instanceof Error ? error.message : String(error));
+  };
+
+  if (html) {
+    // The visitor gets the stream as it renders (loading shell, theme script); the
+    // copy is checked once complete. A streamed page answers 200 even when a
+    // fallback or error boundary rendered, so only HTML that carries the
+    // completeness marker exactly once is stored.
+    if (!response.body) return response;
+    const [visitor, copy] = response.body.tee();
+    waitUntil(new Response(copy).arrayBuffer().then((body) => {
+      if (new TextDecoder().decode(body).split(EDGE_CACHE_MARKER).length !== 2) return;
+      return store(body);
+    }).catch(storeFailed));
+    return withCacheStatus(new Response(visitor, response), 'MISS', cacheControl);
   }
+
+  const body = await response.arrayBuffer();
   // Other routes retain their original policy: only cacheable HTML supports body rewriting.
   // UTF-8 decoding keeps ASCII runs intact even inside binary data.
-  if (!html && nonce && new TextDecoder().decode(body).includes(nonce)) {
+  if (nonce && new TextDecoder().decode(body).includes(nonce)) {
     return new Response(body, response);
   }
-  const stored = new Headers(response.headers);
-  if (cacheControl === null) stored.delete(ORIGINAL_CACHE_CONTROL);
-  else stored.set(ORIGINAL_CACHE_CONTROL, cacheControl);
-  stored.set('Cache-Control', `public, max-age=${EDGE_TTL_SECONDS}`);
-  waitUntil(cache.put(key, new Response(body.slice(0), { status: 200, headers: stored })).catch((error: unknown) => {
-    console.warn('edge_cache.store_failed', error instanceof Error ? error.message : String(error));
-  }));
+  waitUntil(store(body.slice(0)).catch(storeFailed));
   return withCacheStatus(new Response(body, response), 'MISS', cacheControl);
 }

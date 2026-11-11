@@ -3,6 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  // Metadata goes in <head> for every client, never streamed by User-Agent, so the
+  // Worker edge cache stores one HTML variant per page (lib/cloudflare/edge-cache.ts).
+  htmlLimitedBots: /.*/,
+
   // Ensure Turbopack/Next build uses this repo as the workspace root.
   // Prevents accidental inference from unrelated lockfiles elsewhere on disk.
   turbopack: {
