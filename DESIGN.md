@@ -226,7 +226,7 @@ One reading measure: 68ch for every block of running text (answer summaries, not
 
 Two-column editorial blocks use one proportion, 5fr to 7fr from `lg`: the draw block (heading and facts left, the field of sixty right), facts beside their figure on the statistics page, the home's prose beside its FAQ. Paired ranked lists split evenly from `md` or `lg`; the generator form is one third to two thirds from `lg`. Everything stacks in reading order on phones.
 
-Tables fit the phone instead of scrolling: columns that carry little are dropped below `sm` (date and prize in a draws table, share and rank in the numbers table), parenthetical detail inside a cell is dropped the same way, and the row of dezenas never wraps. The frame still scrolls sideways if a table is wider than the screen. Rows are 12px top and bottom; table cells 10px by 16px.
+Tables fit the phone instead of scrolling: secondary columns are hidden below `sm` (date and prize in a draws table, share, rank and last contest in the numbers table) and their values are stacked in a cell that stays, as a second small Graphite line shown on phones only (`phoneLineClass`): the date under the contest, the outcome under the dezenas. Parenthetical detail inside a cell moves to the same kind of line. A phone loses no value, and no width shows one twice. The row of dezenas never wraps. The frame still scrolls sideways if a table is wider than the screen. Rows are 12px top and bottom; table cells 10px by 16px.
 
 The sticky header is 3.5rem (`--app-header-height`); sticky sub-navs and anchor scroll offsets read that variable. Section navigation on the statistics page is a sticky, horizontally scrolling strip under the header, with the section in view underlined in ink.
 
@@ -269,7 +269,7 @@ These three variants and four sizes are all there is; a new look for a button is
 Figures as ruled rows between 2px ink rules. `FactList` sets the term left in Graphite and the figure right in condensed 600. Its optional note under the term qualifies the figure ("Edição de 2023, com ..."), set at 0.75rem; it is a table note, not interface help. `RankedList` sets the competition rank, a linked dezena and the measure; given a maximum it also draws each row's bar, on one grid for the whole list so every bar starts at the same origin and lists that share a maximum compare bar for bar. `TermRows` sets prose definitions against an 11rem term column under a 1px hairline, for reading pages (about, privacy, rights, terms) set in the shared `proseClass` measure.
 
 ### Tables
-`TableFrame` gives the 2px ink rules and the sheet ground. It is a named region in the tab order, so a table wider than the screen can be scrolled from the keyboard, and it takes the shared focus ring. Heads sit on the Ink Wash band in condensed 600; cells are hairline-ruled and tabular. Measure columns (counts, shares, prizes, delays) are right-aligned, head and body; names and links stay left. Columns marked wide are shown from `sm` only. Dezenas in tables are plain condensed figures in fixed 1.5rem slots on one line, not balls. Every table is named, by a caption (visible or for assistive technology) or by the subsection heading above it.
+`TableFrame` gives the 2px ink rules and the sheet ground. It is a named region in the tab order, so a table wider than the screen can be scrolled from the keyboard, and it takes the shared focus ring. Heads sit on the Ink Wash band in condensed 600; cells are hairline-ruled and tabular. Measure columns (counts, shares, prizes, delays) are right-aligned, head and body; names and links stay left. Columns marked wide are shown from `sm` only; below it each of their values is stacked in a cell that stays, on a 0.75rem Graphite line. Dezenas in tables are plain condensed figures in fixed 1.5rem slots on one line, not balls. Every table is named, by a caption (visible or for assistive technology) or by the subsection heading above it.
 
 ### Figures (Bar, Columns, range strip)
 The yearbook's plates, drawn on the server as SVG in the one ink.
@@ -325,7 +325,7 @@ A colophon on the page shell under a 2px ink rule: three hairline-ruled rows. Fi
 - **Do** put every full-width surface on the `page` shell, space sections 64px (80px from `lg`) and cap running text at 68ch.
 - **Do** keep to three heading levels.
 - **Do** draw bars and columns from zero, as server-rendered SVG, with the same numbers as text or a table beside the figure.
-- **Do** drop a low-value column below `sm` before letting a table scroll sideways.
+- **Do** hide a secondary column below `sm` and stack its value in a cell that stays, before letting a table scroll sideways.
 - **Do** fold a full table behind a native `<details>` row when a figure already tells it.
 - **Do** carry the "Nota." randomness note on every data surface; the legal pages carry their own disclaimer in the same single ink.
 - **Do** keep user-facing copy in pt-BR.

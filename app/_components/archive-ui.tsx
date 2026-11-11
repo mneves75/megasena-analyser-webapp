@@ -176,8 +176,9 @@ type TableName = { label: string; labelledBy?: never } | { labelledBy: string; l
 
 /**
  * The ruled frame around a table. It is a named region in the tab order, so a
- * table wider than the screen can be scrolled from the keyboard; phones drop
- * low-value columns (wideCellClass) so the common tables fit without it.
+ * table wider than the screen can be scrolled from the keyboard; phones hide
+ * secondary columns (wideCellClass) and stack their values in a cell that stays
+ * (phoneLineClass), so the common tables fit without scrolling and lose nothing.
  */
 export function TableFrame({
   children,
@@ -197,8 +198,17 @@ export function TableFrame({
 }
 
 export const tableClass = 'w-full border-collapse text-left text-sm';
-/** A column phones drop: shown from `sm`. Put it on the head cell and every body cell. */
+/**
+ * A column phones hide: shown from `sm`. Put it on the head cell and every body
+ * cell, and repeat each value in the same row with phoneLineClass.
+ */
 export const wideCellClass = 'hidden sm:table-cell';
+/**
+ * The value of a hidden column, stacked as a second line in a cell that stays.
+ * Shown below `sm` only, so at no width is a value shown twice.
+ */
+export const phoneLineClass =
+  'block whitespace-normal text-xs font-normal tabular-nums text-muted-foreground sm:hidden';
 /** Head cells sit on the tinted band, set in the condensed width. */
 export const thClass = 'bg-tint px-4 py-2.5 font-condensed text-sm font-semibold text-foreground';
 /** Body cells, including row headers (`<th scope="row">`). */
@@ -216,6 +226,9 @@ export function DezenaChips({ numbers }: { numbers: readonly number[] }): React.
     </span>
   );
 }
+
+const drawOutcome = (draw: DrawRecord): string =>
+  draw.sena.winners === 0 ? 'Acumulou' : countLabel(draw.sena.winners, 'ganhador', 'ganhadores');
 
 /** One row per draw, newest first, each linking to its page. */
 export function DrawsTable({
@@ -253,16 +266,14 @@ export function DrawsTable({
                   <ArchiveLink href={`/concurso/${draw.contestNumber}`} className={inlineLinkClass}>
                     {draw.contestNumber}
                   </ArchiveLink>
+                  <span className={phoneLineClass}>{formatDate(draw.drawDate)}</span>
                 </th>
                 <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
                 <td className={cn(cellClass, 'whitespace-nowrap')}>
                   <DezenaChips numbers={draw.numbers} />
+                  <span className={phoneLineClass}>{drawOutcome(draw)}</span>
                 </td>
-                <td className={cn(cellClass, wideCellClass, 'text-right')}>
-                  {draw.sena.winners === 0
-                    ? 'Acumulou'
-                    : countLabel(draw.sena.winners, 'ganhador', 'ganhadores')}
-                </td>
+                <td className={cn(cellClass, wideCellClass, 'text-right')}>{drawOutcome(draw)}</td>
               </tr>
             ))}
           </tbody>

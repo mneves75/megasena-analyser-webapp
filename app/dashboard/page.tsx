@@ -25,6 +25,7 @@ import {
   rankBy,
   tableClass,
   thClass,
+  phoneLineClass,
   wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
@@ -52,6 +53,9 @@ interface RecentDraw {
   prizeSena: number;
   accumulated: boolean;
 }
+
+const senaPrize = (draw: RecentDraw): string =>
+  draw.accumulated ? 'Acumulou' : formatCurrency(draw.prizeSena);
 
 interface HotNumber {
   number: number;
@@ -300,14 +304,14 @@ export default async function DashboardPage() {
                     >
                       {draw.contestNumber}
                     </ArchiveLink>
+                    <span className={phoneLineClass}>{formatDate(draw.drawDate)}</span>
                   </th>
                   <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
                   <td className={cn(cellClass, 'whitespace-nowrap')}>
                     <DezenaChips numbers={draw.numbers} />
+                    <span className={phoneLineClass}>{senaPrize(draw)}</span>
                   </td>
-                  <td className={cn(cellClass, wideCellClass, 'text-right')}>
-                    {draw.accumulated ? 'Acumulou' : formatCurrency(draw.prizeSena)}
-                  </td>
+                  <td className={cn(cellClass, wideCellClass, 'text-right')}>{senaPrize(draw)}</td>
                 </tr>
               ))}
             </tbody>

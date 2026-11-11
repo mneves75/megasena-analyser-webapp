@@ -30,6 +30,7 @@ import {
   rankBy,
   tableClass,
   thClass,
+  phoneLineClass,
   wideCellClass,
 } from '@/app/_components/archive-ui';
 import { logger } from '@/lib/logger';
@@ -678,6 +679,9 @@ export default async function StatisticsPage() {
                         </td>
                         <td className={cn(cellClass, 'text-right')}>
                           {percentText(decade.percentage)}
+                          <span className={phoneLineClass}>
+                            {countLabel(decade.totalOccurrences, 'ocorrência', 'ocorrências')}
+                          </span>
                         </td>
                         <td className={cn(cellClass, 'text-right')}>
                           {signedPoints(decade.deviation)}

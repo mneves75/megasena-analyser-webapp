@@ -52,4 +52,22 @@ describe('NumbersHubPage table', () => {
     ]);
     expect(head.slice(1).every((cell) => cell.className.includes('text-right'))).toBe(true);
   });
+
+  it('stacks share and rank under the count, and the last contest under the delay, below sm', async () => {
+    render(await NumbersHubPage());
+    const table = screen.getByRole('table', { name: 'Frequência e atraso dos números de 1 a 60' });
+    const rows = within(table).getAllByRole('row').slice(1);
+    expect(rows).toHaveLength(60);
+    for (const row of rows) {
+      const lines = Array.from(row.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'));
+      expect(lines).toHaveLength(2);
+      expect(lines.every((line) => /\bblock\b/.test(line.className))).toBe(true);
+      expect(lines.every((line) => line.className.includes('text-muted-foreground'))).toBe(true);
+    }
+    const ten = rows[9]!;
+    const [share, last] = Array.from(ten.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'));
+    expect(share?.textContent).toBe('20,0% · 1º lugar');
+    expect(last?.textContent).toBe('último no 99');
+    expect(within(last!).getByRole('link', { name: '99' })).toHaveAttribute('href', '/concurso/99');
+  });
 });

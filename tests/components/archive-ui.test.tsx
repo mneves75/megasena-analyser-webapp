@@ -18,6 +18,9 @@ const items = [
   { number: 53, frequency: 60 },
 ];
 const times = (item: { frequency: number }): string => `${item.frequency} vezes`;
+/** The values a row stacks for phones, where their own columns are hidden. */
+const phoneLines = (row: HTMLElement): HTMLElement[] =>
+  Array.from(row.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'));
 
 describe('rankBy', () => {
   it('returns the measure itself as value, even when ranking by a negated score', () => {
@@ -201,7 +204,23 @@ describe('TableFrame', () => {
 });
 
 describe('DrawsTable on phones', () => {
-  it('keeps contest and dezenas, drops date and sena below sm, and never forces a scroll', () => {
+  it('stacks the date under the contest and the outcome under the dezenas below sm', () => {
+    render(<DrawsTable caption="Concursos" draws={[draw(3006, 0), draw(3005, 2)]} />);
+    const rows = within(screen.getByRole('table', { name: 'Concursos' })).getAllByRole('row');
+    const outcomes = ['Acumulou', '2 ganhadores'];
+    rows.slice(1).forEach((row, index) => {
+      const lines = phoneLines(row);
+      expect(lines.map((line) => line.textContent)).toEqual(['12/05/2026', outcomes[index]]);
+      expect(lines[0]?.closest('th')).not.toBeNull();
+      expect(lines[1]?.closest('td')?.className).toContain('whitespace-nowrap');
+      for (const line of lines) {
+        expect(line.className).toMatch(/\bblock\b.*\bsm:hidden\b|\bsm:hidden\b.*\bblock\b/);
+        expect(line.className).toContain('text-muted-foreground');
+      }
+    });
+  });
+
+  it('keeps contest and dezenas as columns, shows date and sena columns from sm, never forces a scroll', () => {
     render(<DrawsTable caption="Concursos" draws={[draw(3006, 0), draw(3005, 2)]} />);
     const table = screen.getByRole('table', { name: 'Concursos' });
     expect(table.className).not.toMatch(/min-w-/);

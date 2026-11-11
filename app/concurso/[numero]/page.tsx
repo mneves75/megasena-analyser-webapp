@@ -28,6 +28,7 @@ import {
   SectionHeading,
   TableFrame,
   inlineLinkClass,
+  phoneLineClass,
   tableClass,
   cellClass,
   thClass,
@@ -258,6 +259,7 @@ export default async function DrawResultPage({
                     <span className="hidden font-normal text-muted-foreground sm:inline">
                       ({hits} acertos)
                     </span>
+                    <span className={phoneLineClass}>{hits} acertos</span>
                   </th>
                   <td className={`${cellClass} text-right`}>
                     {tier.winners === 0 ? 'Nenhuma' : formatNumber(tier.winners)}
@@ -327,6 +329,9 @@ export default async function DrawResultPage({
                         </ArchiveLink>{' '}
                         <span className="hidden text-muted-foreground sm:inline">
                           ({formatDate(entry.previous.drawDate)})
+                        </span>
+                        <span className={phoneLineClass}>
+                          {formatDate(entry.previous.drawDate)}
                         </span>
                       </>
                     ) : (

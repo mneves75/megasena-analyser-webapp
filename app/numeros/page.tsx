@@ -23,6 +23,7 @@ import {
   inlineLinkClass,
   tableClass,
   thClass,
+  phoneLineClass,
   wideCellClass,
 } from '@/app/_components/archive-ui';
 
@@ -177,6 +178,10 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                       <Bar value={summary.frequency} max={maxFrequency} />
                       <span className="text-right">{formatNumber(summary.frequency)}</span>
                     </span>
+                    <span className={cn(phoneLineClass, 'mt-0.5 text-right')}>
+                      {formatPercentPtBr(summary.frequency, archive.totalDraws)} · {summary.rank}º
+                      lugar
+                    </span>
                   </td>
                   <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {formatPercentPtBr(summary.frequency, archive.totalDraws)}
@@ -184,6 +189,17 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
                   <td className={cn(cellClass, wideCellClass, 'text-right')}>{summary.rank}º</td>
                   <td className={cn(cellClass, 'text-right')}>
                     {summary.lastAppearance ? formatNumber(summary.lastAppearance.drawsSince) : '—'}
+                    {summary.lastAppearance ? (
+                      <span className={phoneLineClass}>
+                        último no{' '}
+                        <ArchiveLink
+                          href={`/concurso/${summary.lastAppearance.contestNumber}`}
+                          className={inlineLinkClass}
+                        >
+                          {summary.lastAppearance.contestNumber}
+                        </ArchiveLink>
+                      </span>
+                    ) : null}
                   </td>
                   <td className={cn(cellClass, wideCellClass, 'text-right')}>
                     {summary.lastAppearance ? (

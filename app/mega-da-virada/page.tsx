@@ -23,6 +23,7 @@ import {
   tableClass,
   textLinkClass,
   thClass,
+  phoneLineClass,
   wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
@@ -68,6 +69,16 @@ function highest(
 const senaTotal = (edition: Edition): number => edition.draw.sena.prize * edition.draw.sena.winners;
 
 const timesLabel = (count: number): string => countLabel(count, 'vez', 'vezes');
+
+/** Winners and prize per bet in one line, for phones, where those two columns are hidden. */
+function editionWinners({ sena }: Edition['draw']): string {
+  if (sena.winners === 0) {
+    return 'Nenhuma aposta ganhadora';
+  }
+  return `${countLabel(sena.winners, 'aposta ganhadora', 'apostas ganhadoras')}: ${formatCurrency(
+    sena.prize
+  )}${sena.winners > 1 ? ' cada' : ''}`;
+}
 
 /**
  * "As dezenas 10 e 33 saíram 5 vezes cada; a dezena 05 saiu 4 vezes. Nunca
@@ -252,6 +263,11 @@ export default async function MegaDaViradaPage(): Promise<React.JSX.Element> {
                     <td className={cn(cellClass, wideCellClass)}>{formatDate(draw.drawDate)}</td>
                     <td className={cn(cellClass, 'whitespace-nowrap')}>
                       <DezenaChips numbers={draw.numbers} />
+                      {/* Both under the dezenas: the narrow contest column cannot take a date at 390px. */}
+                      <span className={cn(phoneLineClass, 'mt-0.5')}>
+                        {formatDate(draw.drawDate)}
+                      </span>
+                      <span className={phoneLineClass}>{editionWinners(draw)}</span>
                     </td>
                     <td className={cn(cellClass, wideCellClass, 'text-right')}>
                       {draw.sena.winners === 0 ? 'Nenhuma' : formatNumber(draw.sena.winners)}

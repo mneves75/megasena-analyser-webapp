@@ -110,11 +110,29 @@ describe('DashboardPage', () => {
       'href',
       '/concurso/3005'
     );
-    expect(within(recent).getByText('R$ 50.000.000,00')).toBeInTheDocument();
+    expect(within(recent).getAllByText('R$ 50.000.000,00')[0]).toBeInTheDocument();
 
     const hot = screen.getByRole('table', { name: pt.dashboard.hotNumbersCaption });
     expect(within(hot).getByRole('link', { name: '42' })).toHaveAttribute('href', '/numeros/42');
     expect(within(hot).getByText('2,5×')).toBeInTheDocument();
+  });
+
+  it('stacks each recent draw date and prize in the row on phones, where their columns are hidden', async () => {
+    render(await DashboardPage());
+    const recent = screen.getByRole('table', { name: pt.dashboard.recentDraws });
+    const rows = within(recent).getAllByRole('row').slice(1);
+    const lines = rows.map((row) =>
+      Array.from(row.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'))
+    );
+    expect(lines.map((row) => row.map((line) => line.textContent?.replace(/\s+/g, ' ')))).toEqual([
+      ['12/05/2026', 'Acumulou'],
+      ['09/05/2026', 'R$ 50.000.000,00'],
+    ]);
+    for (const line of lines.flat()) {
+      expect(line.className).toMatch(/\bblock\b/);
+      expect(line.className).toContain('text-muted-foreground');
+    }
+    expect(lines[0]?.[0]?.closest('th')).not.toBeNull();
   });
 
   it('does not repeat the navigation: the header and footer carry the tool links', async () => {

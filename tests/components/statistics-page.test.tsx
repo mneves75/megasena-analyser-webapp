@@ -254,6 +254,20 @@ describe('StatisticsPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('stacks each range count under its share on phones, where the count column is hidden', async () => {
+    render(await StatisticsPage());
+    const table = screen.getByRole('table', { name: pt.statistics.decades.title, hidden: true });
+    const rows = within(table).getAllByRole('row', { hidden: true }).slice(1);
+    expect(rows).toHaveLength(6);
+    for (const row of rows) {
+      const lines = Array.from(row.querySelectorAll<HTMLElement>('[class~="sm:hidden"]'));
+      expect(lines.map((line) => line.textContent)).toEqual(['100 ocorrências']);
+      expect(lines[0]?.className).toMatch(/\bblock\b/);
+      expect(lines[0]?.className).toContain('text-muted-foreground');
+      expect(lines[0]?.closest('td')?.textContent).toMatch(/^\d+,\d{2}%/);
+    }
+  });
+
   it('renders no style attribute anywhere (the CSP has no style-src-attr exception)', async () => {
     const { container } = render(await StatisticsPage());
     expect(container.querySelector('[style]')).toBeNull();
