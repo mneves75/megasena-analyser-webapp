@@ -27,6 +27,7 @@ const compiled = await build({
 });
 let sourceCalls = 0;
 let failSource = false;
+let badPayload = false;
 let networkGate: Promise<void> | undefined;
 let reportNetworkStart: (() => void) | undefined;
 const runtimeLogs: string[] = [];
@@ -40,6 +41,9 @@ const options = (dailyRefreshEnabled = '1') => ({ ...convertV4MiniflareOptions({
     sourceCalls++;
     reportNetworkStart?.();
     if (networkGate) await networkGate;
+    // Accepted by the CAIXA response validator but not storable: fractional Sena winners.
+    if (badPayload) return Response.json({ numero: seed.length + 1, dataApuracao: '02/10/2026',
+      listaDezenas: ['01', '02', '03', '04', '05', '06'], listaRateioPremio: [{ faixa: 1, numeroDeGanhadores: 1.5, valorPremio: 10 }] });
     return failSource ? new Response('Controlled CAIXA outage', { status: 400 }) : Response.json({
       numero: seed.length + 1, dataApuracao: '02/10/2026', listaDezenas: ['01', '02', '03', '04', '05', '06'],
     });
@@ -190,7 +194,16 @@ try {
   const disabledWithAlarm = await state('/due?object=cold-disabled');
   assert(disabledWithAlarm.alarm !== null, 'disabled diagnostic control must contain a real native alarm');
   await assertHealthScheduler(false, disabledWithAlarm.alarm, '?object=cold-disabled');
-  const evidence = { pass: true, autonomousAlarm: true, dailyAfterSuccess: true, dailyAfterExhaustion: true,
+  // A bad CAIXA payload is an upstream failure: recorded as failed with a retry armed, nothing written.
+  await runtime.dispose();
+  runtime = new Miniflare(options());
+  badPayload = true;
+  await state('/due?object=bad-payload');
+  const badRun = await state('/run?object=bad-payload');
+  assert(badRun.ingestion?.status === 'failed' && badRun.ingestion.retry_count === 1 && badRun.schedule?.next_kind === 'retry'
+    && badRun.alarm !== null && badRun.draws === seed.length, `bad payload must become a retried source failure: ${JSON.stringify(badRun)}`);
+  badPayload = false;
+  const evidence = { pass: true, badPayloadRetry: true, autonomousAlarm: true, dailyAfterSuccess: true, dailyAfterExhaustion: true,
     restartPreservesRetry: true, interruptedNetworkRecovery: true, duplicateControl: true,
     storageFailureRollback: true, sqliteFailureEscapes: true, utcDayBoundaries: true,
     disabledCancelsAlarm: true, disabledAlarmInert: true, disabledManualRefresh: true,

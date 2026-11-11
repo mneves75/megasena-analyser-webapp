@@ -4,6 +4,7 @@ import { withDatabaseTransaction } from '../../lib/db-transaction';
 import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloudflare/data-object';
 import seed from '../../db/seed/draws.json';
 import { appendDraws, refreshDraws } from '../../cloudflare/ingestion';
+import { CaixaAPIClient } from '../../lib/api/caixa-client';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
 import { PrimeAnalysisEngine } from '../../lib/analytics/prime-analysis';
@@ -18,6 +19,30 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const draw = { numero: 1, dataApuracao: '11/03/1996', listaDezenas: ['04', '05', '30', '33', '41', '52'] };
+const drawColumns = `contest_number, draw_date, number_1, number_2, number_3, number_4, number_5, number_6,
+  prize_sena, winners_sena, prize_quina, winners_quina, prize_quadra, winners_quadra,
+  total_collection, accumulated, accumulated_value, next_estimated_prize, special_draw`;
+// A CAIXA payload with every stored field distinct, and the row it must produce.
+const caixaPayload = { numero: 3, dataApuracao: '15/03/1996', listaDezenas: ['33', '01', '17', '60', '42', '08'],
+  listaRateioPremio: [
+    { descricaoFaixa: '6 acertos', faixa: 1, numeroDeGanhadores: 1, valorPremio: 1000000.5 },
+    { descricaoFaixa: '5 acertos', faixa: 2, numeroDeGanhadores: 20, valorPremio: 30000.25 },
+    { descricaoFaixa: '4 acertos', faixa: 3, numeroDeGanhadores: 400, valorPremio: 900.75 },
+  ],
+  valorArrecadado: 50000000, acumulado: true, valorAcumuladoProximoConcurso: 2000000,
+  valorEstimadoProximoConcurso: 3000000, indicadorConcursoEspecial: 2 };
+const caixaRow = { contest_number: 3, draw_date: '1996-03-15', number_1: 1, number_2: 8, number_3: 17, number_4: 33,
+  number_5: 42, number_6: 60, prize_sena: 1000000.5, winners_sena: 1, prize_quina: 30000.25, winners_quina: 20,
+  prize_quadra: 900.75, winners_quadra: 400, total_collection: 50000000, accumulated: 1, accumulated_value: 2000000,
+  next_estimated_prize: 3000000, special_draw: 1 };
+
+/** Refresh through the real CAIXA client with the network replaced by one fixed payload. */
+async function refreshFromPayload(db: Parameters<typeof refreshDraws>[0], payload: unknown) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json(payload);
+  try { return await refreshDraws(db, new CaixaAPIClient({ timeoutMs: 10000, maxRetries: 1 }), { maxDraws: 1 }); }
+  finally { globalThis.fetch = originalFetch; }
+}
 
 export class TestData extends DurableObject {
   async verify() {
@@ -72,6 +97,9 @@ export class TestData extends DurableObject {
         },
       }, { maxDraws: 1 });
       assert(networkOutsideTransaction && result.status === 'incomplete' && result.lastContest === 2 && result.latestContest === 3, 'bounded backlog status');
+      await refreshFromPayload(db, caixaPayload);
+      const storedCaixa = db.prepare(`SELECT ${drawColumns} FROM draws WHERE contest_number = 3`).get();
+      assert(JSON.stringify(storedCaixa) === JSON.stringify(caixaRow), `CAIXA payload stored values: ${JSON.stringify(storedCaixa)}`);
       let rejected = false;
       try { appendDraws(db, [{ ...draw, numero: 3, listaDezenas: ['1', '1', '2', '3', '4', '5'] }]); } catch { rejected = true; }
       assert(rejected, 'invalid source control');
@@ -83,13 +111,34 @@ export class TestData extends DurableObject {
       try { await refreshDraws(db, { fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
       assert(rejected && (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === before, 'outage preserves data');
       assert(getDatabase() === db, 'async database scope');
-      return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, boundedBacklog: true };
+      return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };
     });
   }
   count() {
     const db = createDurableDatabase(this.ctx.storage);
     applyMigrations(db);
     return (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count;
+  }
+}
+
+export class TestSeededData extends MegaSenaData {
+  /** First difference between the bootstrapped rows and the public seed, or null. */
+  seedMismatch(): string | null {
+    const rows = this.ctx.storage.sql.exec(`SELECT ${drawColumns} FROM draws ORDER BY contest_number`).toArray();
+    if (rows.length !== seed.length) return `row count ${rows.length}`;
+    for (const [index, row] of rows.entries()) {
+      const stored = {
+        contest: row['contest_number'], date: row['draw_date'],
+        numbers: [row['number_1'], row['number_2'], row['number_3'], row['number_4'], row['number_5'], row['number_6']],
+        prizeSena: row['prize_sena'], winnersSena: row['winners_sena'], prizeQuina: row['prize_quina'],
+        winnersQuina: row['winners_quina'], prizeQuadra: row['prize_quadra'], winnersQuadra: row['winners_quadra'],
+        totalCollection: row['total_collection'], accumulated: row['accumulated'] === 1,
+        accumulatedValue: row['accumulated_value'], nextEstimatedPrize: row['next_estimated_prize'],
+        specialDraw: row['special_draw'] === 1,
+      };
+      if (JSON.stringify(stored) !== JSON.stringify(seed[index])) return `contest ${String(row['contest_number'])}: ${JSON.stringify(row)}`;
+    }
+    return null;
   }
 }
 
@@ -135,7 +184,7 @@ export class TestDisabledRetention extends TestRetryData {
 }
 
 const worker = {
-  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<MegaSenaData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
+  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
     try {
       const first = env.DATA.getByName('first');
       const second = env.DATA.getByName('second');
@@ -145,6 +194,8 @@ const worker = {
       const initial = await seeded.status();
       assert(initial.draws === seed.length, 'public seed bootstrap');
       assert(initial.numberOccurrences === seed.length * 6 && initial.cachedPairs === 1770, 'public seed caches rebuilt');
+      const seedMismatch = await seeded.seedMismatch();
+      assert(seedMismatch === null, `public seed readback: ${seedMismatch}`);
       assert(await seeded.importDraws(seed.slice(0, 10)) === 0, 'seed append duplicate');
       assert((await seeded.status()).draws === seed.length, 'seed not replaced');
       const health = await seeded.handle(new Request('https://example.com/api/health'), { internal: true, clientIp: null, secure: true });
@@ -183,7 +234,7 @@ const worker = {
       const unpruned = await disabled.status();
       assert(unpruned.auditRows === 2 && unpruned.logRows === 2, 'disabled or invalid retention preserves records like Bun');
       return Response.json({ pass: true, ...result, objectIsolation: true, publicSeedDraws: initial.draws,
-        seedOccurrences: initial.numberOccurrences, seedPairs: initial.cachedPairs,
+        seedOccurrences: initial.numberOccurrences, seedReadback: true, seedPairs: initial.cachedPairs,
         auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, disabledRetention: true, nativeBunTransactions: true });
     } catch (error) {
       return Response.json({ pass: false, error: String(error) }, { status: 500 });
