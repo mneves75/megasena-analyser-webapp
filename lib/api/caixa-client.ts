@@ -167,10 +167,13 @@ function toDraw(raw: CaixaRawDrawData): Draw {
   const prizeBreakdown = raw.rateioProcessamento?.length
     ? raw.rateioProcessamento
     : raw.listaRateioPremio ?? [];
-  // The first tier that maps to the name wins.
-  const tier = (name: string) => prizeBreakdown.find(
-    (entry) => normalizePrizeDescription(entry.descricaoFaixa, entry.faixa) === name
-  );
+  // Every tier of the array in use is named, so a malformed one rejects the
+  // payload wherever it sits; the first tier that maps to a name wins.
+  const named = prizeBreakdown.map((entry) => ({
+    ...entry,
+    name: normalizePrizeDescription(entry.descricaoFaixa, entry.faixa),
+  }));
+  const tier = (name: string) => named.find((entry) => entry.name === name);
   const sena = tier('Sena');
   const quina = tier('Quina');
   const quadra = tier('Quadra');
