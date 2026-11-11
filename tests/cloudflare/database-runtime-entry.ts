@@ -5,6 +5,7 @@ import { applyMigrations, MegaSenaData, type DataEnvironment } from '../../cloud
 import seed from '../../db/seed/draws.json';
 import { appendDraws, DrawSourceFailure, refreshDraws, type Draw } from '../../lib/draw-ingestion';
 import { CaixaAPIClient } from '../../lib/api/caixa-client';
+import { deleteExpired, retentionCutoff } from '../../lib/retention';
 import { PairAnalysisEngine } from '../../lib/analytics/pair-analysis';
 import { DecadeAnalysisEngine } from '../../lib/analytics/decade-analysis';
 import { PrimeAnalysisEngine } from '../../lib/analytics/prime-analysis';
@@ -115,6 +116,22 @@ export class TestData extends DurableObject {
       rejected = false;
       try { await refreshDraws({ fetchDraw: async () => { throw new Error('CAIXA outage'); } }); } catch { rejected = true; }
       assert(rejected && (db.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number }).count === before, 'outage preserves data');
+      // Retention boundary is strict: a row exactly at the cutoff is kept.
+      const now = Date.parse('2026-06-01T12:00:00.000Z');
+      const cutoff = retentionCutoff(30, now);
+      assert(cutoff === '2026-05-02T12:00:00.000Z', `retention cutoff: ${cutoff}`);
+      const older = new Date(now - 30 * 86_400_000 - 1).toISOString();
+      const newer = new Date(now - 30 * 86_400_000 + 1).toISOString();
+      for (const [id, timestamp] of [['older', older], ['at-cutoff', cutoff], ['newer', newer]]) {
+        db.prepare('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)').run(id, timestamp, 'test');
+        db.prepare('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)').run(id, timestamp, 'info', 'test');
+      }
+      deleteExpired('audit_logs', 30, now);
+      deleteExpired('log_events', 30, now);
+      for (const table of ['audit_logs', 'log_events']) {
+        const ids = (db.prepare(`SELECT id FROM ${table} ORDER BY id`).all() as { id: string }[]).map(row => row.id).join();
+        assert(ids === 'at-cutoff,newer', `${table} retention boundary: ${ids}`);
+      }
       assert(getDatabase() === db, 'async database scope');
       return { migrations: 10, draws: before, nestedRollback: true, caches: true, invalidControl: true, conflictControl: true, outageControl: true, caixaStoredValues: true, boundedBacklog: true };
     });
@@ -147,6 +164,16 @@ export class TestSeededData extends MegaSenaData {
   }
 }
 
+/** A database that already holds one draw before the object starts: bootstrap must not run. */
+export class TestPreloadedData extends MegaSenaData {
+  constructor(ctx: DurableObjectState, env: DataEnvironment) {
+    const database = createDurableDatabase(ctx.storage);
+    applyMigrations(database);
+    runWithDatabase(database, () => appendDraws([storedDraw]));
+    super(ctx, env);
+  }
+}
+
 export class TestRetryData extends MegaSenaData {
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
     super(ctx, { ...env, DAILY_REFRESH_ENABLED: '1' });
@@ -174,6 +201,38 @@ export class TestRetryData extends MegaSenaData {
   }
 }
 
+/** Retention against tables larger than the expired set, measuring the rows each DELETE reads. */
+export class TestRetentionIndex extends TestRetryData {
+  insertIndexedEvents(retained: number): void {
+    const sql = this.ctx.storage.sql;
+    const now = Date.now();
+    for (let index = 0; index < retained; index++) {
+      const timestamp = new Date(now - index * 60_000).toISOString();
+      sql.exec('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)', `audit-${index}`, timestamp, 'test');
+      sql.exec('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)', `log-${index}`, timestamp, 'info', 'test');
+    }
+    for (const day of ['2000-01-01', '2000-01-02']) {
+      sql.exec('INSERT INTO audit_logs (id,timestamp,event) VALUES (?,?,?)', `expired-audit-${day}`, `${day}T00:00:00.000Z`, 'test');
+      sql.exec('INSERT INTO log_events (id,timestamp,level,event) VALUES (?,?,?,?)', `expired-log-${day}`, `${day}T00:00:00.000Z`, 'info', 'test');
+    }
+  }
+  /** Run the real refresh path and report rowsRead for each retention DELETE. */
+  async refreshMeasuringRetention(): Promise<{ table: string; rowsRead: number }[]> {
+    const sql = this.ctx.storage.sql;
+    const exec = sql.exec.bind(sql);
+    const deletes: { table: string; cursor: SqlStorageCursor<Record<string, SqlStorageValue>> }[] = [];
+    sql.exec = ((query: string, ...bindings: unknown[]) => {
+      const cursor = exec(query, ...bindings);
+      const table = /^\s*DELETE FROM (audit_logs|log_events)\b/.exec(query)?.[1];
+      if (table) deletes.push({ table, cursor });
+      return cursor;
+    }) as typeof sql.exec;
+    try { await this.refreshDue(); } catch { /* Retention runs before the CAIXA outage control. */ }
+    finally { sql.exec = exec; }
+    return deletes.map(({ table, cursor }) => ({ table, rowsRead: cursor.rowsRead }));
+  }
+}
+
 export class TestConfiguredRetention extends TestRetryData {
   constructor(ctx: DurableObjectState, env: DataEnvironment) {
     const configured = { ...env, AUDIT_RETENTION_DAYS: '730', LOG_RETENTION_DAYS: '90' };
@@ -189,7 +248,7 @@ export class TestDisabledRetention extends TestRetryData {
 }
 
 const worker = {
-  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
+  async fetch(_request: Request, env: { DATA: DurableObjectNamespace<TestData>; SEEDED: DurableObjectNamespace<TestSeededData>; PRELOADED: DurableObjectNamespace<TestPreloadedData>; RETRY: DurableObjectNamespace<TestRetryData>; RETENTION: DurableObjectNamespace<TestConfiguredRetention>; RETENTION_INDEX: DurableObjectNamespace<TestRetentionIndex>; DISABLED_RETENTION: DurableObjectNamespace<TestDisabledRetention> }) {
     try {
       const first = env.DATA.getByName('first');
       const second = env.DATA.getByName('second');
@@ -201,6 +260,8 @@ const worker = {
       assert(initial.numberOccurrences === seed.length * 6 && initial.cachedPairs === 1770, 'public seed caches rebuilt');
       const seedMismatch = await seeded.seedMismatch();
       assert(seedMismatch === null, `public seed readback: ${seedMismatch}`);
+      const preloaded = await env.PRELOADED.getByName('preloaded').status();
+      assert(preloaded.draws === 1 && preloaded.lastContest === 1, `bootstrap only on an empty database: ${JSON.stringify(preloaded)}`);
       assert(await seeded.importDraws(seed.slice(0, 10)) === 0, 'seed append duplicate');
       assert((await seeded.status()).draws === seed.length, 'seed not replaced');
       const health = await seeded.handle(new Request('https://example.com/api/health'), { internal: true, clientIp: null, secure: true });
@@ -233,6 +294,13 @@ const worker = {
       try { await retention.refreshDue(); } catch { /* Retention also runs during an upstream outage. */ }
       const retained = await retention.status();
       assert(retained.auditRows === 1 && retained.logRows === 1, 'configured retention preserves eligible history and deletes expired rows');
+      const indexed = env.RETENTION_INDEX.getByName('indexed');
+      await indexed.insertIndexedEvents(50);
+      const reads = await indexed.refreshMeasuringRetention();
+      const afterIndexed = await indexed.status();
+      assert(afterIndexed.auditRows === 50 && afterIndexed.logRows === 50, `indexed retention deletes only expired rows: ${JSON.stringify(afterIndexed)}`);
+      assert(reads.map(read => read.table).join() === 'audit_logs,log_events', `retention deletes both tables: ${JSON.stringify(reads)}`);
+      assert(reads.every(read => read.rowsRead < 52), `retention DELETE reads the timestamp index, not the table (52 rows): ${JSON.stringify(reads)}`);
       const disabled = env.DISABLED_RETENTION.getByName('disabled');
       await disabled.insertRetainedEvents();
       try { await disabled.refreshDue(); } catch { /* Invalid/disabled settings must never trigger fallback deletion. */ }
@@ -240,7 +308,7 @@ const worker = {
       assert(unpruned.auditRows === 2 && unpruned.logRows === 2, 'disabled or invalid retention preserves records like Bun');
       return Response.json({ pass: true, ...result, objectIsolation: true, publicSeedDraws: initial.draws,
         seedOccurrences: initial.numberOccurrences, seedReadback: true, seedPairs: initial.cachedPairs,
-        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, disabledRetention: true, nativeBunTransactions: true });
+        auditRows: afterHealth.auditRows, logRows: afterHealth.logRows, boundedAlarmRetries: true, alarmStorageFailureRecovery: true, outageRetention: true, configuredRetention: true, indexedRetention: true, disabledRetention: true, nativeBunTransactions: true });
     } catch (error) {
       return Response.json({ pass: false, error: String(error) }, { status: 500 });
     }

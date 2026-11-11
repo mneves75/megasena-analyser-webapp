@@ -38,16 +38,24 @@ const policies = {
   },
 } as const satisfies Record<RetentionTable, { events: string; defaultDays: number; countSql: string; deleteSql: string }>;
 
-function isoCutoffFromDays(days: number): string {
-  const cutoffMs = Date.now() - days * 24 * 60 * 60 * 1000;
-  return new Date(cutoffMs).toISOString();
+/**
+ * Every stored timestamp is a 24-character `YYYY-MM-DDTHH:MM:SS.mmmZ` string,
+ * so a text comparison with this cutoff is exact and reads the timestamp index.
+ */
+export function retentionCutoff(days: number, now = Date.now()): string {
+  return new Date(now - days * 86_400_000).toISOString();
+}
+
+/** Delete rows strictly older than the cutoff; the caller owns the transaction (the Durable Object). */
+export function deleteExpired(table: RetentionTable, days: number, now = Date.now()): void {
+  getDatabase().prepare(policies[table].deleteSql).run(retentionCutoff(days, now));
 }
 
 /** Hard-delete rows older than the cutoff (the approved retention exception). */
 export async function runRetention(table: RetentionTable, options: RetentionOptions): Promise<RetentionResult> {
   const policy = policies[table];
   const retentionDays = typeof options.retentionDays === 'number' ? options.retentionDays : policy.defaultDays;
-  const cutoffIso = options.beforeIso ?? isoCutoffFromDays(retentionDays);
+  const cutoffIso = options.beforeIso ?? retentionCutoff(retentionDays);
   const executedAt = new Date().toISOString();
   const reason = options.reason ?? 'manual';
   const dryRun = options.dryRun ?? false;

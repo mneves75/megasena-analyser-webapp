@@ -14,6 +14,7 @@ import { createLogWriter } from '@/lib/log-store';
 import { logger, runWithLogSink } from '@/lib/logger';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
 import { appendDraws, DrawSourceFailure, parseSeedDraws, refreshDraws, type RefreshResult } from '@/lib/draw-ingestion';
+import { deleteExpired } from '@/lib/retention';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
 import migration002 from '../db/migrations/002_add_performance_indexes.sql?raw';
@@ -109,8 +110,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
       next_kind TEXT NOT NULL CHECK(next_kind IN ('daily', 'retry')),
       revision INTEGER NOT NULL
     )`);
-    const stored = this.database.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number };
-    if (env.BOOTSTRAP_PUBLIC_SEED === '1' && stored.count === 0) {
+    if (env.BOOTSTRAP_PUBLIC_SEED === '1' && !this.database.prepare('SELECT 1 FROM draws LIMIT 1').get()) {
       runWithDatabase(this.database, () => appendDraws(parseSeedDraws(publicSeed)));
     }
     this.handler = createApiHandler({
@@ -277,10 +277,10 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     withDatabaseTransaction(this.database, () => {
       // Match Bun: invalid or nonpositive settings disable deletion, never shorten retention.
       if (Number.isFinite(this.auditRetentionDays) && this.auditRetentionDays > 0) {
-        this.database.prepare("DELETE FROM audit_logs WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.auditRetentionDays} days`);
+        deleteExpired('audit_logs', this.auditRetentionDays);
       }
       if (Number.isFinite(this.logRetentionDays) && this.logRetentionDays > 0) {
-        this.database.prepare("DELETE FROM log_events WHERE julianday(timestamp) < julianday('now', ?)").run(`-${this.logRetentionDays} days`);
+        deleteExpired('log_events', this.logRetentionDays);
       }
       this.database.prepare('DELETE FROM rate_limit_windows WHERE reset_at <= ?').run(Date.now());
     });

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { enqueueLogEvent, flushLogQueue, stopLogWriter } from '@/lib/log-store';
 import { getDatabase } from '@/lib/db';
-import { runRetention } from '@/lib/retention';
+import { deleteExpired, retentionCutoff, runRetention } from '@/lib/retention';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -61,5 +61,27 @@ describe('log retention', () => {
       .prepare('SELECT COUNT(*) as count FROM log_events')
       .get() as { count: number };
     expect(remaining.count).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('deleteExpired', () => {
+  it('deletes rows strictly older than the ISO cutoff and keeps the row at it', () => {
+    const db = getDatabase();
+    const now = Date.parse('2026-06-01T12:00:00.000Z');
+    const cutoff = retentionCutoff(30, now);
+    expect(cutoff).toBe('2026-05-02T12:00:00.000Z');
+    const rows = [
+      ['boundary-older', new Date(Date.parse(cutoff) - 1).toISOString()],
+      ['boundary-at', cutoff],
+      ['boundary-newer', new Date(Date.parse(cutoff) + 1).toISOString()],
+    ];
+    for (const [id, timestamp] of rows) {
+      db.prepare('INSERT INTO log_events (id, timestamp, level, event) VALUES (?, ?, ?, ?)').run(id, timestamp, 'info', 'test');
+    }
+
+    deleteExpired('log_events', 30, now);
+
+    const kept = db.prepare("SELECT id FROM log_events WHERE id LIKE 'boundary-%' ORDER BY id").all() as { id: string }[];
+    expect(kept.map(row => row.id)).toEqual(['boundary-at', 'boundary-newer']);
   });
 });
