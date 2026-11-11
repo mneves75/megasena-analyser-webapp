@@ -33,14 +33,44 @@ export interface Draw {
 
 const money = z.number().finite().nonnegative().nullable();
 const winners = z.number().int().nonnegative();
-const seedSchema = z.object({
-  contest: z.number().int().positive(), date: z.string(),
-  numbers: z.array(z.number().int().min(1).max(60)).length(6),
+const isoDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'data deve estar em YYYY-MM-DD')
+  .refine((value) => {
+    // Runs even when the regex failed, so an unparsable value must not throw.
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }, 'data inexistente no calendário');
+const seedDrawSchema = z.object({
+  contest: z.number().int().positive(),
+  date: isoDate,
+  numbers: z
+    .array(z.number().int().min(1).max(60))
+    .length(6)
+    .refine((numbers) => new Set(numbers).size === 6, 'dezenas repetidas')
+    .transform((numbers) => [...numbers].sort((a, b) => a - b)),
   prizeSena: money, winnersSena: winners, prizeQuina: money, winnersQuina: winners,
   prizeQuadra: money, winnersQuadra: winners, totalCollection: money,
   accumulated: z.boolean(), accumulatedValue: money, nextEstimatedPrize: money,
   specialDraw: z.boolean(),
 });
+const seedFileSchema = z
+  .array(seedDrawSchema)
+  .max(10000)
+  .superRefine((draws, context) => {
+    const seen = new Set<number>();
+    draws.forEach((draw, index) => {
+      if (seen.has(draw.contest)) {
+        context.addIssue({ code: 'custom', path: [index, 'contest'], message: `Concurso ${draw.contest} duplicado na entrada.` });
+      }
+      seen.add(draw.contest);
+    });
+  });
+
+/** The seed-file boundary: strict public seed shape, returned storage-ready. Throws `ZodError`. */
+export function parseSeedDraws(input: unknown): Draw[] {
+  return seedFileSchema.parse(input);
+}
 
 export interface DrawSource {
   fetchDraw(contest?: number): Promise<MegaSenaDrawData>;
@@ -139,17 +169,6 @@ export function appendDraws(draws: readonly Draw[]): number {
     }
     return inserted;
   });
-}
-
-/** Binding-only administration: append validated public seed rows without replacing existing data. */
-export function importSeedDraws(input: unknown): number {
-  const draws = z.array(seedSchema).max(10000).parse(input);
-  const seen = new Set<number>();
-  return appendDraws(draws.map(draw => {
-    if (seen.has(draw.contest)) throw new Error(`Duplicate seed contest ${draw.contest}.`);
-    seen.add(draw.contest);
-    return { ...draw, date: toIsoDate(draw.date), numbers: normalizeMegaSenaNumbers(draw.numbers) };
-  }));
 }
 
 export async function refreshDraws(source: DrawSource, options: { maxDraws?: number } = {}): Promise<RefreshResult> {

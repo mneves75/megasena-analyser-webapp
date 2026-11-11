@@ -8,7 +8,8 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import seed from '@/db/seed/draws.json';
 import { closeDatabase, getDatabase } from '@/lib/db';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
-import { DrawSourceFailure, importSeedDraws, refreshDraws } from '@/lib/draw-ingestion';
+import { ZodError } from 'zod';
+import { appendDraws, DrawSourceFailure, parseSeedDraws, refreshDraws } from '@/lib/draw-ingestion';
 
 /**
  * Characterisation of the draw write paths: the Worker ingestion core (seed
@@ -18,7 +19,7 @@ import { DrawSourceFailure, importSeedDraws, refreshDraws } from '@/lib/draw-ing
  */
 
 // Adapter: the only place that names the ingestion module's API.
-const importSeed = (input: unknown): number => importSeedDraws(input);
+const importSeed = (input: unknown): number => appendDraws(parseSeedDraws(input));
 const refresh = () => refreshDraws(new CaixaAPIClient({ maxRetries: 1 }));
 
 const REPO = process.cwd();
@@ -224,9 +225,16 @@ describe('Worker ingestion core', () => {
     expect(storedRows()[0]?.['prize_sena']).toBeNull();
   });
 
-  it('accepts a DD/MM/YYYY seed date and stores it as ISO', () => {
-    expect(importSeed([seedDraw(1, { date: '01/05/2026' })])).toBe(1);
-    expect(storedRows()[0]?.['draw_date']).toBe('2026-05-01');
+  it('parseSeedDraws rejects a DD/MM/YYYY date and an impossible calendar date', () => {
+    expect(() => parseSeedDraws([seedDraw(1, { date: '01/05/2026' })])).toThrow(ZodError);
+    expect(() => parseSeedDraws([seedDraw(1, { date: '2026-02-30' })])).toThrow(ZodError);
+    expect(() => importSeed([seedDraw(1, { date: '01/05/2026' })])).toThrow(ZodError);
+    expect(storedRows()).toEqual([]);
+  });
+
+  it('parseSeedDraws rejects a repeated contest and more than 10,000 draws', () => {
+    expect(() => parseSeedDraws([seedDraw(1), seedDraw(1)])).toThrow(ZodError);
+    expect(() => parseSeedDraws(Array.from({ length: 10001 }, (_, index) => seedDraw(index + 1)))).toThrow(ZodError);
   });
 
   it('stores unsorted seed numbers in ascending order', () => {

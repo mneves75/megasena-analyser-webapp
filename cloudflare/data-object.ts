@@ -13,7 +13,7 @@ import { createAuditWriter } from '@/lib/audit';
 import { createLogWriter } from '@/lib/log-store';
 import { logger, runWithLogSink } from '@/lib/logger';
 import { CaixaAPIClient } from '@/lib/api/caixa-client';
-import { DrawSourceFailure, importSeedDraws, refreshDraws, type RefreshResult } from '@/lib/draw-ingestion';
+import { appendDraws, DrawSourceFailure, parseSeedDraws, refreshDraws, type RefreshResult } from '@/lib/draw-ingestion';
 import publicSeed from '../db/seed/draws.json';
 import migration001 from '../db/migrations/001_initial_schema.sql?raw';
 import migration002 from '../db/migrations/002_add_performance_indexes.sql?raw';
@@ -111,7 +111,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
     )`);
     const stored = this.database.prepare('SELECT COUNT(*) AS count FROM draws').get() as { count: number };
     if (env.BOOTSTRAP_PUBLIC_SEED === '1' && stored.count === 0) {
-      runWithDatabase(this.database, () => importSeedDraws(publicSeed));
+      runWithDatabase(this.database, () => appendDraws(parseSeedDraws(publicSeed)));
     }
     this.handler = createApiHandler({
       environment: env.ENVIRONMENT ?? 'production', appVersion: env.APP_VERSION ?? 'unknown',
@@ -184,7 +184,7 @@ export class MegaSenaData extends DurableObject<DataEnvironment> {
   }
 
   importDraws(input: unknown): number {
-    return runWithDatabase(this.database, () => importSeedDraws(input));
+    return runWithDatabase(this.database, () => appendDraws(parseSeedDraws(input)));
   }
 
   status() {
