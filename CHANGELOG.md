@@ -7,6 +7,20 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-11
+
+Segurança, privacidade e custo no Cloudflare, mais a reorganização do código que grava concursos e apaga registros antigos. Nada muda no que o visitante vê, em nenhuma URL, metadado ou resposta da API.
+
+- Direitos do titular: `bun run privacy:subject` exporta ou elimina os registros de uma pessoa a partir do(s) IP(s) e do período que ela informa. O script calcula o pseudônimo de cada janela de 30 dias com o mesmo HMAC das requisições, apaga só as linhas desse titular em `audit_logs` e `log_events` (com `--dry-run` para contar antes) e gera o lote SQL para o banco do Worker. Antes, a eliminação só acontecia por idade, e `docs/LGPD-COMPLIANCE.md` dizia outra coisa; o documento e o modelo de solicitação (que agora pede o IP) descrevem o procedimento real.
+- Retenção: o Durable Object apaga por um corte ISO (`timestamp < ?`) em vez de `julianday()`, então usa o índice de `timestamp` e lê só as linhas que vai apagar, não as duas tabelas inteiras todo dia.
+- Menos escrita por requisição: cada chamada da API grava um evento de log (`api.request_received` saiu; `api.request_completed` fica) e o registro de auditoria de sempre. Um 429 é registrado só na primeira rejeição de cada janela de limite por titular; as seguintes recebem o mesmo 429 e continuam contando, mas não gravam nada, então uma enxurrada de requisições não vira uma enxurrada de linhas. A migração 011 remove os índices de `audit_logs` e `log_events` que nenhuma consulta lê; ficam os de `timestamp`. A versão 1.20.0 continua compatível com o banco migrado, para rollback.
+- Limite de requisições: as chamadas internas do Worker para a API deixam de pular o limite quando chegam sem o IP do visitante, e Bun e Durable Object encerram a janela no mesmo instante.
+- Cache de borda: a revisão usada na chave inclui a versão do Durable Object, para que, durante um deploy gradual, uma página montada pelo Worker novo com dados da versão anterior não fique guardada sob a chave nova.
+- Ingestão: a CAIXA, o seed público e o `db:import-draws` passam por um único núcleo (`lib/draw-ingestion.ts`). Cada resposta da CAIXA é validada e convertida uma vez no tipo `Draw`; valores monetários negativos e faixas de prêmio malformadas são recusados em todos os caminhos, não só em alguns. O seed rejeita datas com ano abaixo de 0100, como antes.
+- Retenção em um módulo (`lib/retention.ts`) e uma CLI (`scripts/prune-retention.ts`) atrás de `audit:prune` e `log:prune`, com os mesmos padrões de 400 e 30 dias. Quem chamava `scripts/prune-audit-logs.ts` ou `scripts/prune-log-events.ts` pelo nome deve usar os comandos do `package.json`.
+- Cadeia de suprimentos: saem do `trustPolicyExclude` as versões que não estão mais no lockfile; a imagem Docker de recuperação compila com o Node de `.nvmrc`, fixado por digest, e instala o corepack, que as imagens do Node 26 não trazem mais.
+- Repositório público: os IDs de versão do Worker em `docs/perf/` viraram rótulos neutros e um teste reprova IDs desse formato na documentação; `docs/SECURITY.md` descreve a arquitetura atual.
+
 ## [1.20.0] - 2026-11-11
 
 O site ganha figuras, uma moldura única e páginas mais curtas, sem mudar nenhuma URL, metadado ou resposta da API. Junto vão uma limpeza de código, correções de eficiência e a atualização das dependências.

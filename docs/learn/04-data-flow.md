@@ -4,7 +4,7 @@
 
 Produção e staging executam páginas App Router via vinext/Vite em Workers e armazenam SQLite no Durable Object `MegaSenaData`, acessível pelo binding privado `DATA`. Next standalone + API Bun continua disponível localmente e para recuperação. Critérios de implantação: [DEPLOY.md](../DEPLOY.md).
 
-O Cron chama `refresh()` às 06:00 UTC (03:00 Brasília). `cloudflare/ingestion.ts` consulta a CAIXA fora da transação, valida datas/dezenas/prêmios e grava concursos novos/caches atomicamente. Conflitos ou lacunas abortam o lote; repetições são idempotentes. Falhas e lotes incompletos permitem até três alarmes de retry. Seed até 3064 inicializa apenas banco vazio; não comprova frescor da CAIXA.
+O Cron chama `refresh()` às 06:00 UTC (03:00 Brasília). `refreshDraws` (`lib/draw-ingestion.ts`) consulta a CAIXA fora da transação, valida datas/dezenas/prêmios e grava concursos novos/caches atomicamente. Conflitos ou lacunas abortam o lote; repetições são idempotentes. Falhas e lotes incompletos permitem até três alarmes de retry. Seed até 3064 inicializa apenas banco vazio; não comprova frescor da CAIXA.
 
 
 ## O que este capítulo ensina
@@ -41,8 +41,9 @@ caches/auditoria internos) escrevem.
    com **retry exponencial** (`fetchWithRetry`, até `API_CONFIG.MAX_RETRIES = 5`),
    **timeout** de 30s (`AbortController`), **ETag/304** (cache condicional) e
    **rate limiting progressivo** entre requisições.
-3. A resposta crua (`CaixaRawDrawData`) é normalizada por `normalizeMegaSenaDrawData`
-   (campos em português: `numero`, `dataApuracao`, `listaDezenas`, `rateioProcessamento`).
+3. A resposta crua (`CaixaRawDrawData`, campos em português: `numero`, `dataApuracao`,
+   `listaDezenas`, `rateioProcessamento`) é validada e convertida uma única vez, pelo `toDraw`
+   privado do cliente, no `Draw` pronto para gravação (`lib/draw-ingestion.ts`).
 4. `pull-draws.ts` valida os 6 números com `normalizeMegaSenaNumbers`
    (`lib/analytics/draw-validation.ts`: exatamente 6, inteiros 1–60, únicos, ordenados)
    e insere em transação:
@@ -243,7 +244,7 @@ grep -n "DELETE FROM number_pair_frequency\|INSERT INTO number_pair_frequency" l
    são caches. **Gabarito:** `draws`, `number_frequency`*, `number_pair_frequency`*,
    `user_bets`, `audit_logs`, `log_events`, `migrations` (*=cache).
 2. **(Médio / rastreamento)** Siga um sorteio novo da CAIXA até a tela do dashboard.
-   Quais funções o transformam? **Gabarito:** `fetchDraw` → `normalizeMegaSenaDrawData`
+   Quais funções o transformam? **Gabarito:** `fetchDraw` (converte em `Draw`)
    → `normalizeMegaSenaNumbers` → `INSERT` → `updateNumberFrequencies` → `/api/dashboard`
    (`StatisticsEngine.getDrawStatistics` + `getDrawHistory`) → `app/dashboard/page.tsx`.
 3. **(Médio / debug)** Suponha que o dashboard mostra frequências erradas após uma

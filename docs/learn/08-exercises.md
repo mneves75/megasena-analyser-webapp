@@ -1,6 +1,6 @@
 # 08 - Exercícios
 
-Os exercícios de processos/SQLite local descrevem o caminho Bun/VPS. Para o Worker Cloudflare de produção e staging, compare `cloudflare/worker.ts`, `cloudflare/data-object.ts`, `cloudflare/ingestion.ts` e `lib/api/handler.ts`; valide o runtime com `bun run test:cloudflare`. Deploy e dados recentes não podem ser inferidos desses testes locais.
+Os exercícios de processos/SQLite local descrevem o caminho Bun/VPS. Para o Worker Cloudflare de produção e staging, compare `cloudflare/worker.ts`, `cloudflare/data-object.ts`, `lib/draw-ingestion.ts` e `lib/api/handler.ts`; valide o runtime com `bun run test:cloudflare`. Deploy e dados recentes não podem ser inferidos desses testes locais.
 
 ## O que este capítulo ensina
 

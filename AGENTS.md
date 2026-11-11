@@ -159,7 +159,8 @@ silently stops running.
 
 Security/ops helpers: `security:secrets`, `security:secrets:history` (redacted git
 history scan, fails on findings), `security:csp:edge` (verify edge did not replace app
-CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`.
+CSP), `deploy:verify` (public `/api/health` freshness), `audit:prune` / `log:prune`
+(one CLI, `scripts/prune-retention.ts`), `privacy:subject` (per-subject export/erasure).
 
 **Done-when:** `bun run lint`, `bun run lint:ast`, `bun run typecheck`,
 `bun run test -- --run --coverage`, `bun run test:sqlite`, `bun run security:audit-exceptions`, `pnpm audit`, and `bun run build` all pass;

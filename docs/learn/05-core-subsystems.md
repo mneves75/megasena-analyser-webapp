@@ -24,11 +24,11 @@ registrar e apresentar. Cada caixa fala com as vizinhas por contratos pequenos.
 ### 1. Cliente CAIXA — `lib/api/caixa-client.ts`
 
 - **Propósito:** trazer sorteios oficiais com robustez de rede.
-- **Entradas/Saídas:** `fetchDraw(contestNumber?)` → `MegaSenaDrawData`;
-  `fetchAllDraws(start, end?, {allowPartial})` → `MegaSenaDrawData[]`.
+- **Entradas/Saídas:** `fetchDraw(contestNumber?)` → `Draw`;
+  `fetchAllDraws(start, end?, {allowPartial})` → `Draw[]` (tipo de `lib/draw-ingestion.ts`).
 - **Abstrações:** `fetchWithRetry` (backoff exponencial 2^n + jitter, respeita
   `Retry-After`), cache por ETag + tratamento de `304`, `CaixaAPIError` com flag
-  `retryable`. Normalização em `normalizeMegaSenaDrawData`.
+  `retryable`. A resposta é validada e convertida uma vez, no `toDraw` privado do cliente.
 - **Tradeoffs:** simula headers de navegador (User-Agent/Referer) para a API pública;
   rate limiting progressivo deixa a importação lenta de propósito para não ser
   bloqueado. Status retentáveis: 429/500/502/503/504.

@@ -586,7 +586,7 @@ export const pt = {
     ],
     templateTitle: 'Modelo de solicitação',
     templateBody:
-      'Assunto: Solicitação LGPD — [acesso | correção | eliminação | portabilidade | informação]\n\nOlá, em conformidade com o Art. 18 da LGPD, solicito o exercício do seguinte direito:\n[descreva o direito].\n\nDados para correlação:\n- Janela temporal aproximada: [DD/MM/AAAA a DD/MM/AAAA]\n- X-Request-Id (se houver): [valor]\n- Detalhes adicionais: [opcional]\n\nAtenciosamente,',
+      'Assunto: Solicitação LGPD — [acesso | correção | eliminação | portabilidade | informação]\n\nOlá, em conformidade com o Art. 18 da LGPD, solicito o exercício do seguinte direito:\n[descreva o direito].\n\nDados para correlação:\n- Janela temporal aproximada: [DD/MM/AAAA a DD/MM/AAAA]\n- Endereço(s) IP usado(s) nesse período: [valor]\n- X-Request-Id (se houver): [valor]\n- Detalhes adicionais: [opcional]\n\nAtenciosamente,',
     copyTemplate: 'Copiar modelo',
     copiedTemplate: 'Modelo copiado',
     anpdTitle: 'Reclamação à ANPD',
