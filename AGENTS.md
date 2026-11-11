@@ -307,7 +307,7 @@ README.md for the isolated local production fixture and two-pass replay.
   random per-process salt, never an unsalted SHA-256 of the address.
 - **Quota and retention constants are shared, never duplicated.** `RATE_LIMIT_MAX_REQUESTS`
   and `RATE_LIMIT_WINDOW_MS` (`lib/api/handler.ts`) feed both the Bun cache and the
-  Durable Object; `audit:prune`, `runAuditRetention`, the Bun server and the Worker all
+  Durable Object; `audit:prune`, `runRetention`, the Bun server and the Worker all
   default to 400 audit days.
 - **Forwarded-IP trust is an ops contract, not just code.** The header chosen for the
   client IP becomes the rate-limit key, so the public edge must rewrite it on every

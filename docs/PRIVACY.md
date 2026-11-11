@@ -86,7 +86,7 @@ Esses dados são usados para:
 
 O banco SQLite do Durable Object permite à operação restaurá-lo a qualquer ponto dos últimos 30 dias. Por isso, um registro eliminado pela rotina de retenção continua recuperável por esse mecanismo do provedor por até 30 dias e só então deixa de existir.
 
-Retenção é executada por agendadores diários (`runLogRetention` / `runAuditRetention`). Você pode solicitar redução antecipada por meio do canal de privacidade.
+Retenção é executada por agendadores diários (`runRetention`, um por tabela). Você pode solicitar redução antecipada por meio do canal de privacidade.
 
 ---
 

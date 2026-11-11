@@ -89,7 +89,7 @@ Não há consentimento (Art. 7º, I) como base, porque não há tratamento opcio
 | Confirmação da existência de tratamento (I) | E-mail ao DPO | 15 dias | Resposta padrão indicando categorias T1–T6 e que não há cadastro |
 | Acesso aos dados (II) | E-mail com prova de titularidade técnica (mesma faixa de IP / mesma identificação técnica recente) | 15 dias | Consulta via `request_id` ou janela temporal informada; exportação em JSON dos eventos correlacionáveis |
 | Correção de dado incompleto/inexato/desatualizado (III) | E-mail | 15 dias | Não armazenamos identificadores diretos; pedido será respondido com explicação técnica e, se aplicável, anonimização adicional |
-| Anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade (IV) | E-mail | 15 dias | Aplicar `runAuditRetention` / `runLogRetention` com janela específica para o titular; gerar evidência de execução |
+| Anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade (IV) | E-mail | 15 dias | Aplicar `runRetention` (`audit_logs` / `log_events`) com janela específica para o titular; gerar evidência de execução |
 | Portabilidade (V) | E-mail | 15 dias | Export JSON dos eventos correlacionáveis ao titular |
 | Eliminação dos dados tratados com consentimento (VI) | N/A — não tratamos com consentimento | — | Não aplicável; informar a base legal usada |
 | Informação das entidades públicas/privadas com as quais houve compartilhamento (VII) | E-mail | 15 dias | Informar Cloudflare e provedor de hospedagem |
@@ -181,8 +181,8 @@ Não usamos dark patterns, pop-ups bloqueantes injustificados ou linguagem evasi
 
 | Dado | Retenção padrão | Eliminação |
 |------|-----------------|------------|
-| Logs estruturados (`log_events`) | 30 dias | `runLogRetention` agenda diária + script `bun run log:prune` |
-| Auditoria (`audit_logs`) | 400 dias (legítimo interesse para evidência forense; reavaliar para 180 dias se não houver necessidade documentada) | `runAuditRetention` agenda diária + script `bun run audit:prune` |
+| Logs estruturados (`log_events`) | 30 dias | `runRetention('log_events')` agenda diária + script `bun run log:prune` |
+| Auditoria (`audit_logs`) | 400 dias (legítimo interesse para evidência forense; reavaliar para 180 dias se não houver necessidade documentada) | `runRetention('audit_logs')` agenda diária + script `bun run audit:prune` |
 | Recuperação PITR do Durable Object | 30 dias após a alteração ou eliminação | Automática pelo provedor; a restauração é ato manual da operação |
 | Backups do VPS (`db/backups/*`) | 7 dias rolantes | Script de rotação remove arquivos com mtime > 7 dias |
 | Rate limit no Bun/VPS | Janela de 60 s | GC interno a cada 5 minutos |
@@ -270,7 +270,7 @@ O titular sempre pode apresentar reclamação à ANPD em https://www.gov.br/anpd
 | 6 | Endpoint `mailto:` para canal único `privacidade@megasena-analyzer.com.br` com modelo de requisição | Concluído | `app/privacy/direitos/page.tsx`, `components/privacy/rights-request-template.tsx` |
 | 7 | Pseudonimização robusta de IP via HMAC com salt rotativo | Concluído | `lib/api/handler.ts`, `lib/security/pseudonymize.ts` |
 | 8 | Sanitização recursiva de metadados antes da gravação | Já existente, validado | `lib/security/sanitize-metadata.ts` |
-| 9 | Retenção automática agendada (logs 30 d, auditoria 400 d) | Já existente, documentado | `lib/log-retention.ts`, `lib/audit-retention.ts`, `server.ts` |
+| 9 | Retenção automática agendada (logs 30 d, auditoria 400 d) | Já existente, documentado | `lib/retention.ts`, `server.ts` |
 | 10 | Plano de resposta a incidente | Concluído | `docs/INCIDENT-RESPONSE.md`, `docs/INCIDENT-RESPONSE-TEMPLATE.md` |
 | 11 | Link de direitos do titular no rodapé | Concluído | `components/footer.tsx`, `lib/i18n.ts` |
 | 12 | Indicação de transferência internacional (Cloudflare) | Concluído | `docs/PRIVACY.md`, `lib/i18n.ts` |

@@ -3,7 +3,7 @@
 import { closeDatabase } from '@/lib/db';
 import { logger, registerLogSink } from '@/lib/logger';
 import { enqueueLogEvent, stopLogWriter } from '@/lib/log-store';
-import { runAuditRetention } from '@/lib/audit-retention';
+import { runRetention } from '@/lib/retention';
 
 type ParsedArgs = {
   days?: number;
@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   });
 
   try {
-    await runAuditRetention({
+    await runRetention('audit_logs', {
       dryRun: parsed.dryRun,
       reason: 'cli',
       ...(parsed.before ? { beforeIso: parsed.before } : { retentionDays }),

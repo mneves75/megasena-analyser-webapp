@@ -117,8 +117,8 @@ flags de query (`lib/api/handler.ts`). Resumo:
 - **Filas assíncronas:** `log-store.ts` (→ `log_events`) e `audit.ts` (→ `audit_logs`)
   com flush por intervalo (2s) e por limiar, transação em lote e re-enfileiramento em
   erro de DB.
-- **Retenção:** `audit-retention.ts` (default 400; configurável via env) e
-  `log-retention.ts` (30 dias); schedulers de 24h iniciados no boot.
+- **Retenção:** `retention.ts`, uma política por tabela: `audit_logs` (default 400;
+  configurável via env) e `log_events` (30 dias); schedulers de 24h iniciados no boot.
 - **Tradeoff:** `log-store` chama `.unref()` no timer; `audit.ts` não — pequena
   assimetria (ver riscos).
 

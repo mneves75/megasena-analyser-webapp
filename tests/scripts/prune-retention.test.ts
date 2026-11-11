@@ -6,8 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { logger } from '@/lib/logger';
-import { startAuditRetentionScheduler } from '@/lib/audit-retention';
-import { startLogRetentionScheduler } from '@/lib/log-retention';
+import { startRetentionScheduler } from '@/lib/retention';
 
 /**
  * Characterisation of audit/log retention: the two prune CLIs run under Bun
@@ -18,9 +17,7 @@ type Table = 'audit_logs' | 'log_events';
 
 // Adapter: the only place that names the retention module's API.
 const startScheduler = (table: Table, retentionDays: number, intervalMs: number): (() => void) =>
-  table === 'audit_logs'
-    ? startAuditRetentionScheduler(retentionDays, intervalMs)
-    : startLogRetentionScheduler(retentionDays, intervalMs);
+  startRetentionScheduler(table, retentionDays, intervalMs);
 
 const REPO = process.cwd();
 const DAY_MS = 24 * 60 * 60 * 1000;

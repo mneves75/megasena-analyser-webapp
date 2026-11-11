@@ -6,8 +6,7 @@ import './lib/log-context.runtime';
 import { runMigrations, closeDatabase } from './lib/db';
 import { logger } from './lib/logger';
 import { enqueueAuditEvent, startAuditWriter, stopAuditWriter } from './lib/audit';
-import { startAuditRetentionScheduler } from './lib/audit-retention';
-import { startLogRetentionScheduler } from './lib/log-retention';
+import { startRetentionScheduler } from './lib/retention';
 import { stopLogWriter } from './lib/log-store';
 import { isHmacEnabled } from './lib/security/pseudonymize';
 import { isInternalApiRequest, isRateLimitExempt } from './lib/security/internal-api';
@@ -66,7 +65,8 @@ try {
   startAuditWriter();
   logger.info('audit.writer_started');
   if (Number.isFinite(AUDIT_RETENTION_DAYS) && AUDIT_RETENTION_DAYS > 0) {
-    stopAuditRetentionScheduler = startAuditRetentionScheduler(
+    stopAuditRetentionScheduler = startRetentionScheduler(
+      'audit_logs',
       AUDIT_RETENTION_DAYS,
       AUDIT_RETENTION_INTERVAL_MS
     );
@@ -82,7 +82,8 @@ try {
   }
 
   if (Number.isFinite(LOG_RETENTION_DAYS) && LOG_RETENTION_DAYS > 0) {
-    stopLogRetentionScheduler = startLogRetentionScheduler(
+    stopLogRetentionScheduler = startRetentionScheduler(
+      'log_events',
       LOG_RETENTION_DAYS,
       LOG_RETENTION_INTERVAL_MS
     );

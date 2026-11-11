@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { enqueueLogEvent, flushLogQueue, stopLogWriter } from '@/lib/log-store';
 import { getDatabase } from '@/lib/db';
-import { runLogRetention } from '@/lib/log-retention';
+import { runRetention } from '@/lib/retention';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -28,7 +28,7 @@ describe('log retention', () => {
 
     await flushLogQueue('manual');
 
-    const result = await runLogRetention({ beforeIso: cutoffIso, reason: 'test' });
+    const result = await runRetention('log_events', { beforeIso: cutoffIso, reason: 'test' });
 
     expect(result.eligibleCount).toBe(1);
     expect(result.deletedCount).toBe(1);
@@ -52,7 +52,7 @@ describe('log retention', () => {
 
     await flushLogQueue('manual');
 
-    const result = await runLogRetention({ beforeIso: cutoffIso, reason: 'test', dryRun: true });
+    const result = await runRetention('log_events', { beforeIso: cutoffIso, reason: 'test', dryRun: true });
 
     expect(result.eligibleCount).toBe(1);
     expect(result.deletedCount).toBeUndefined();
