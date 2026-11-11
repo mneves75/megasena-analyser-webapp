@@ -6,7 +6,7 @@
  "arms": [
   "current",
   "current",
-  "f5390de4-7db4-4e69-ac75-d6f772802dda"
+  "versão 1.19.3 medida"
  ],
  "profile": "Lighthouse mobile, simulated throttling (Slow 4G, 4x CPU)",
  "summary": [
@@ -202,7 +202,7 @@
   },
   {
    "path": "/",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -487,7 +487,7 @@
   },
   {
    "path": "/dashboard/statistics",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -772,7 +772,7 @@
   },
   {
    "path": "/dashboard/generator",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -1057,7 +1057,7 @@
   },
   {
    "path": "/resultados/2026",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -1342,7 +1342,7 @@
   },
   {
    "path": "/concurso/3079",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -1627,7 +1627,7 @@
   },
   {
    "path": "/about",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "runs": 3,
    "simulatedLcpMs": {
     "n": 3,
@@ -2162,7 +2162,7 @@
   },
   {
    "path": "/",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -2878,7 +2878,7 @@
   },
   {
    "path": "/dashboard/statistics",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -3587,7 +3587,7 @@
   },
   {
    "path": "/dashboard/generator",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -4207,7 +4207,7 @@
   },
   {
    "path": "/resultados/2026",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -4790,7 +4790,7 @@
   },
   {
    "path": "/concurso/3079",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -5401,7 +5401,7 @@
   },
   {
    "path": "/about",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 0,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -6040,7 +6040,7 @@
   },
   {
    "path": "/",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -6756,7 +6756,7 @@
   },
   {
    "path": "/dashboard/statistics",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -7465,7 +7465,7 @@
   },
   {
    "path": "/dashboard/generator",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -8083,7 +8083,7 @@
   },
   {
    "path": "/resultados/2026",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -8666,7 +8666,7 @@
   },
   {
    "path": "/concurso/3079",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -9277,7 +9277,7 @@
   },
   {
    "path": "/about",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 1,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -9916,7 +9916,7 @@
   },
   {
    "path": "/",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -10604,7 +10604,7 @@
   },
   {
    "path": "/dashboard/statistics",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -11313,7 +11313,7 @@
   },
   {
    "path": "/dashboard/generator",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [
     "Clearing the browser cache timed out. Try auditing this page again and file a bug if the issue persists."
@@ -11933,7 +11933,7 @@
   },
   {
    "path": "/resultados/2026",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -12516,7 +12516,7 @@
   },
   {
    "path": "/concurso/3079",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",
@@ -13127,7 +13127,7 @@
   },
   {
    "path": "/about",
-   "arm": "2:f5390de4-7db4-4e69-ac75-d6f772802dda",
+   "arm": "2:versão 1.19.3 medida",
    "run": 2,
    "runWarnings": [],
    "lighthouseVersion": "13.5.0",

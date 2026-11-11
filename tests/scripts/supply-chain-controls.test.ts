@@ -203,3 +203,18 @@ describe('controles de supply chain', () => {
     expect(playwright).not.toContain('IP_HASH_SECRET_AUTOGENERATE');
   });
 });
+
+describe('repositório público', () => {
+  it('não publica IDs de versão/deployment nem hosts workers.dev em docs/', async () => {
+    const { readdir } = await import('node:fs/promises');
+    const files = (await readdir(path.join(repoRoot, 'docs'), { recursive: true, withFileTypes: true }))
+      .filter(entry => entry.isFile() && /\.(md|json)$/.test(entry.name))
+      .map(entry => path.relative(repoRoot, path.join(entry.parentPath, entry.name)));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const text = await read(file);
+      expect(text, file).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+      expect(text, file).not.toMatch(/[a-z0-9-]+\.workers\.dev/);
+    }
+  });
+});
