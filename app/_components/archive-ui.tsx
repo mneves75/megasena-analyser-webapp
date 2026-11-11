@@ -4,6 +4,7 @@ import type { ArchiveState, DrawRecord } from '@/lib/api/archive-contract';
 import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
 import { countLabel, dezena, formatDateInBrasilia, frequencyBand } from '@/app/_lib/format';
+import { Bar } from '@/components/figures';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -257,15 +258,13 @@ export function DrawsTable({
   );
 }
 
-/** All sixty numbers as a linked cartogram, darker for numbers drawn more often. */
+/** All sixty numbers as a linked cartogram, stronger ink for numbers drawn more often. */
 export function FrequencyGrid({
   entries,
   label,
-  through,
 }: {
   entries: readonly { number: number; frequency: number }[];
   label: string;
-  through?: number | null | undefined;
 }): React.JSX.Element {
   const frequencies = entries.map((entry) => entry.frequency);
   const min = Math.min(...frequencies);
@@ -295,11 +294,8 @@ export function FrequencyGrid({
           </li>
         ))}
       </ul>
-      <figcaption className="space-y-1">
-        <p className="text-sm text-muted-foreground">
-          Quanto mais escura a casa, mais vezes a dezena foi sorteada.
-        </p>
-        <SourceLine through={through} />
+      <figcaption className="text-sm text-muted-foreground">
+        Quanto mais forte a cor da casa, mais vezes a dezena foi sorteada.
       </figcaption>
     </figure>
   );
@@ -322,47 +318,93 @@ export interface RankedEntry {
   number: number;
   /** Competition rank: tied values share a position, like the number pages. */
   rank: number;
+  /** The measure itself (times drawn, draws absent), drawn as a bar when the list has one. */
+  value: number;
   detail: string;
 }
 
-/** Top `limit` entries by a score (higher first), with shared positions for ties. */
+/**
+ * Top `limit` entries by a score (higher first), with shared positions for ties.
+ * `value` defaults to the score; pass it when the score is not the measure
+ * (a least-drawn list ranks by the negated frequency).
+ */
 export function rankBy<T extends { number: number }>(
   limit: number,
   items: readonly T[],
   score: (item: T) => number,
-  detail: (item: T) => string
+  detail: (item: T) => string,
+  value: (item: T) => number = score
 ): RankedEntry[] {
   const sorted = [...items].sort((a, b) => score(b) - score(a) || a.number - b.number);
   return sorted.slice(0, limit).map((item) => ({
     number: item.number,
     rank: 1 + sorted.filter((other) => score(other) > score(item)).length,
+    value: value(item),
     detail: detail(item),
   }));
 }
 
-/** Ranked numbers as ruled rows: position, linked dezena, measure. */
+/**
+ * Ranked numbers as ruled rows: position, linked dezena, measure. With `barMax`
+ * each row also draws its value against that maximum; lists that share a
+ * `barMax` are comparable bar for bar. Fixed columns keep every bar on the same
+ * origin and length whatever the detail text.
+ */
 export function RankedList({
   labelId,
   entries,
+  barMax,
 }: {
   labelId: string;
   entries: readonly RankedEntry[];
+  barMax?: number;
 }): React.JSX.Element {
+  if (barMax === undefined) {
+    return (
+      <ol aria-labelledby={labelId} className={rankedListClass}>
+        {entries.map((entry) => (
+          <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
+            <RankedHead entry={entry} />
+            <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+  // One grid for the whole list (rows are subgrids), so the detail column takes
+  // the width of the longest detail and every bar gets the same track.
   return (
-    <ol aria-labelledby={labelId} className="divide-y divide-border border-y-2 border-y-primary">
+    <ol
+      aria-labelledby={labelId}
+      className={cn(rankedListClass, 'grid grid-cols-[1.5rem_auto_minmax(2rem,1fr)_auto]')}
+    >
       {entries.map((entry) => (
-        <li key={entry.number} className="flex items-center gap-3 py-2.5 text-sm">
-          <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
-          <ArchiveLink
-            href={`/numeros/${entry.number}`}
-            className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
-          >
-            {dezena(entry.number)}
-          </ArchiveLink>
-          <span className="ml-auto tabular-nums text-muted-foreground">{entry.detail}</span>
+        <li
+          key={entry.number}
+          className="col-span-4 grid grid-cols-subgrid items-center gap-x-3 py-2.5 text-sm"
+        >
+          <RankedHead entry={entry} />
+          <Bar value={entry.value} max={barMax} />
+          <span className="text-right tabular-nums text-muted-foreground">{entry.detail}</span>
         </li>
       ))}
     </ol>
+  );
+}
+
+const rankedListClass = 'divide-y divide-border border-y-2 border-y-primary';
+
+function RankedHead({ entry }: { entry: RankedEntry }): React.JSX.Element {
+  return (
+    <>
+      <span className="w-6 text-right tabular-nums text-muted-foreground">{entry.rank}º</span>
+      <ArchiveLink
+        href={`/numeros/${entry.number}`}
+        className={cn(inlineLinkClass, 'font-condensed text-base font-semibold')}
+      >
+        {dezena(entry.number)}
+      </ArchiveLink>
+    </>
   );
 }
 

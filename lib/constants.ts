@@ -89,7 +89,7 @@ export const BET_GENERATION_LIMITS = {
 
 // Statistics Display Constants
 export const STATISTICS_DISPLAY = {
-  TOP_NUMBERS_COUNT: 20, // Top N hot/cold numbers to display
+  TOP_NUMBERS_COUNT: 10, // Top N for the statistics page's ranked lists
   DASHBOARD_TOP_COUNT: 10, // Top N for dashboard overview
   RECENT_DRAWS_DEFAULT: 50, // Default number of recent draws to fetch
 } as const;

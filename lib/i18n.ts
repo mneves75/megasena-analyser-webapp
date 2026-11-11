@@ -283,11 +283,18 @@ export const pt = {
   },
   statistics: {
     title: 'Estatísticas Detalhadas',
-    freshness: {
-      descriptionPrefix: 'Dados atualizados até o concurso',
-    },
-    hotNumbersTitle: 'Números Quentes (Top 20)',
-    coldNumbersTitle: 'Números Frios (Top 20)',
+    source: 'Fonte: CAIXA Econômica Federal.',
+    freshness: (contest: number, date: string | null, draws: string) =>
+      `Dados até o concurso ${contest}${date ? ` (${date})` : ''}, ${draws}.`,
+    lead: (draws: string, most: string, least: string, average: string) =>
+      `Em ${draws}, ${most} e ${least}. Se todas saíssem igualmente, cada uma teria saído ${average} vezes.`,
+    fullTable: 'Tabela completa',
+    hotNumbersTitle: 'Dezenas mais sorteadas',
+    coldNumbersTitle: 'Dezenas menos sorteadas',
+    frequencyFigureLabel: (min: string, max: string) =>
+      `Vezes que cada dezena de 01 a 60 foi sorteada: de ${min} a ${max} vezes`,
+    frequencyReference: (average: string) =>
+      `Média se todas as dezenas saíssem igualmente: ${average} vezes`,
     patterns: {
       title: 'Padrões Detectados',
       lastSeenLabel: 'Última ocorrência',
@@ -299,6 +306,7 @@ export const pt = {
     delays: {
       title: 'Análise de Atraso',
       distributionTitle: 'Distribuição de Atrasos',
+      distributionFigureLabel: 'Dezenas por situação de atraso',
     },
     delayCategories: {
       recent: 'Recente',
@@ -308,16 +316,20 @@ export const pt = {
     },
     decades: {
       title: 'Distribuição por Dezena',
+      figureLabel: 'Porcentagem das dezenas sorteadas em cada faixa',
+      reference: (percentage: string) => `Esperado por faixa: ${percentage}%`,
     },
     pairs: {
       title: 'Pares Mais Frequentes',
       correlationLabel: 'Correlação',
+      moreLabel: (from: number, to: number) => `Do ${from}º ao ${to}º par`,
     },
     parity: {
       title: 'Distribuição Par/Ímpar',
       mostCommonLabel: 'Mais Comum',
       balancedLabel: 'Distribuições Balanceadas (2-4, 3-3, 4-2)',
       drawsLabel: 'dos sorteios',
+      figureLabel: 'Concursos por quantidade de pares e ímpares',
     },
     primes: {
       title: 'Análise de Números Primos',
@@ -329,6 +341,7 @@ export const pt = {
       mostCommonSuffix: 'primos por sorteio',
       distributionTitle: 'Distribuição de Primos por Sorteio',
       topTitle: 'Top 10 Números Primos Mais Sorteados',
+      figureLabel: 'Concursos por quantidade de primos sorteados',
     },
     sum: {
       title: 'Distribuição de Soma',
@@ -336,6 +349,10 @@ export const pt = {
       medianLabel: 'Mediana',
       modeLabel: 'Moda',
       stdDevLabel: 'Desvio Padrão',
+      figureLabel: (min: string, median: string, max: string) =>
+        `Soma das seis dezenas: mínima ${min}, mediana ${median}, máxima ${max}`,
+      spread: (middle: string, p25: string, p75: string, outer: string, p5: string, p95: string) =>
+        `${middle} dos concursos somaram entre ${p25} e ${p75}; ${outer} entre ${p5} e ${p95}.`,
     },
     streaks: {
       title: 'Números em Sequência (Últimos 10 Sorteios)',

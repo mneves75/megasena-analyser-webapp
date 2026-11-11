@@ -134,6 +134,7 @@ export default async function NumbersHubPage(): Promise<React.JSX.Element> {
       <section aria-labelledby="grade" className="space-y-4">
         <SectionHeading id="grade">Escolha um número</SectionHeading>
         <FrequencyGrid entries={numbers} label="Frequência de cada número de 01 a 60" />
+        <SourceLine />
       </section>
 
       <section aria-labelledby="tabela" className="space-y-4">
