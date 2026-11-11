@@ -253,6 +253,10 @@ README.md for the isolated local production fixture and two-pass replay.
   Coverage thresholds live in `vitest.config.ts` and ratchet from the measured
   baseline (2026-09-25) toward the 80% target: raise them as coverage grows, never
   lower them.
+- **A compound SELECT has at most five terms in the Durable Object.** The Worker's SQLite
+  rejects a sixth (`too many terms in compound SELECT`), while `node:sqlite` (Vitest) and
+  `bun:sqlite` accept it, so only `bun run test:cloudflare` catches it. Queries that unpivot the
+  six number columns nest the last two in a subquery (`lib/analytics/decade-analysis.ts`).
 - **Hard-delete exception (approved):** audit/log retention deletes rows permanently
   (`audit:prune`, `log:prune`). This overrides the global soft-delete default and is
   the only place hard delete is allowed.

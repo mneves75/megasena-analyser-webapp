@@ -55,7 +55,9 @@ export class StatisticsEngine {
       withDatabaseTransaction(this.db, () => {
 
         // One pass over the six number columns: occurrences and the latest
-        // contest per number, joined back to that contest for its date.
+        // contest per number, joined back to that contest for its date. The last
+        // two columns are nested: the Durable Object's SQLite refuses a compound
+        // SELECT with more than five terms.
         const aggregates = this.db
           .prepare(
             `WITH drawn(number, contest_number) AS (
@@ -63,8 +65,10 @@ export class StatisticsEngine {
                UNION ALL SELECT number_2, contest_number FROM draws
                UNION ALL SELECT number_3, contest_number FROM draws
                UNION ALL SELECT number_4, contest_number FROM draws
-               UNION ALL SELECT number_5, contest_number FROM draws
-               UNION ALL SELECT number_6, contest_number FROM draws
+               UNION ALL SELECT * FROM (
+                 SELECT number_5, contest_number FROM draws
+                 UNION ALL SELECT number_6, contest_number FROM draws
+               )
              ), totals AS (
                SELECT number, COUNT(*) AS frequency, MAX(contest_number) AS last_contest
                FROM drawn GROUP BY number
