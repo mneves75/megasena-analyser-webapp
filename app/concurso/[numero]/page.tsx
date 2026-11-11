@@ -22,7 +22,6 @@ import {
   ArchiveLink,
   Breadcrumbs,
   FactList,
-  LatestDrawFigure,
   PageTitle,
   Pager,
   RandomnessNote,
@@ -34,6 +33,7 @@ import {
   thClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 interface DrawRouteProps {
   params: Promise<{ numero: string }>;

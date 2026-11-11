@@ -12,13 +12,13 @@ import { generateFAQSchema } from '@/lib/seo/schemas';
 import { buildPageMetadata } from '@/lib/seo/metadata';
 import {
   ArchiveLink,
-  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   SectionHeading,
   SourceLine,
   textLinkClass,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const homeFaqs = [
   {

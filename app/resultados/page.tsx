@@ -12,7 +12,6 @@ import {
   Breadcrumbs,
   DrawsTable,
   FactList,
-  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -22,6 +21,7 @@ import {
   tableClass,
   thClass,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const PATH = '/resultados';
 const DESCRIPTION =

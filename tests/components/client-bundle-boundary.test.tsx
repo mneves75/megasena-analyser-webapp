@@ -12,3 +12,14 @@ describe('client module graph', () => {
     await expect(import('@/app/_components/archive-ui')).resolves.toBeDefined();
   });
 });
+
+describe('archive UI in the client graph', () => {
+  // The generator's client rows import DezenaChips and FactList from archive-ui,
+  // so whatever archive-ui imports ships to the browser. The field of sixty is a
+  // server-only figure and must stay out of that graph.
+  it('archive-ui does not import the number field', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync('app/_components/archive-ui.tsx', 'utf8');
+    expect(source).not.toMatch(/from '@\/components\/number-field'/);
+  });
+});

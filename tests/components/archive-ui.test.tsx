@@ -5,11 +5,11 @@ import { render, screen, within } from '@testing-library/react';
 import {
   DrawsTable,
   FrequencyGrid,
-  LatestDrawFigure,
   RankedList,
   TableFrame,
   rankBy,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const items = [
   { number: 4, frequency: 30 },

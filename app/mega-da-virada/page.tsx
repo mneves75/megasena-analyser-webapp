@@ -13,7 +13,6 @@ import {
   Breadcrumbs,
   DezenaChips,
   FactList,
-  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   SectionHeading,
@@ -27,6 +26,7 @@ import {
   wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 
 const PATH = '/mega-da-virada';
 const HEADING = 'Mega da Virada: todos os resultados';

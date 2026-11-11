@@ -5,7 +5,6 @@ import type { BreadcrumbItem } from '@/lib/seo/schemas';
 import { cn, formatDate } from '@/lib/utils';
 import { countLabel, dezena, formatDateInBrasilia, frequencyBand } from '@/app/_lib/format';
 import { Bar } from '@/components/figures';
-import { NumberField } from '@/components/number-field';
 
 const focusRing =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
@@ -177,34 +176,6 @@ export function SectionHeading({
     <h2 id={id} className="text-balance text-2xl font-semibold sm:text-3xl">
       {children}
     </h2>
-  );
-}
-
-/**
- * A draw as the yearbook shows it: the caller's heading and facts on the left,
- * the field of sixty on the right from `lg`, stacked below. The caller passes
- * the heading element, so each page keeps its own outline (h1 on a draw page,
- * h2 where the draw is one section of many).
- */
-export function LatestDrawFigure({
-  heading,
-  numbers,
-  fieldLabel,
-  children,
-}: {
-  heading: ReactNode;
-  numbers: readonly number[];
-  fieldLabel: string;
-  children?: ReactNode;
-}): React.JSX.Element {
-  return (
-    <div className="grid grid-cols-1 items-start gap-8 border-t-2 border-primary pt-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-12">
-      <div className="space-y-4">
-        {heading}
-        {children}
-      </div>
-      <NumberField struck={numbers} linked size="lg" label={fieldLabel} />
-    </div>
   );
 }
 

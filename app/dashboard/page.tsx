@@ -15,7 +15,6 @@ import {
   ArchiveLink,
   DezenaChips,
   FactList,
-  LatestDrawFigure,
   PageTitle,
   RandomnessNote,
   RankedList,
@@ -30,6 +29,7 @@ import {
   wideCellClass,
   type Fact,
 } from '@/app/_components/archive-ui';
+import { LatestDrawFigure } from '@/app/_components/latest-draw-figure';
 import { logger } from '@/lib/logger';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
