@@ -7,6 +7,14 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-11-11
+
+O cache de borda do Worker passa a cobrir as seis páginas públicas que ele ainda renderizava a cada visita: início, painel, estatísticas, índice de resultados, índice de números e Mega da Virada. O conteúdo delas só muda quando entra um concurso novo, então elas saem do cache até a próxima revisão dos sorteios, sem mudar nenhuma URL, metadado ou resposta da API.
+
+- Uma página só é guardada quando foi montada inteira com dados buscados naquela requisição: ela marca isso com um elemento oculto (`data-edge-cache="complete"`), e o cache exige o marcador exatamente uma vez. Respostas de contingência (o último sorteio vazio da página inicial, as cópias de até 10 minutos do painel e das estatísticas), páginas de erro e 404 não levam o marcador e nunca são guardadas. A mesma regra passa a valer para as páginas de concurso, número e ano que já estavam no cache.
+- Continuam fora do cache o gerador e qualquer requisição com query string, `_rsc`, cookie, autorização, cabeçalhos do framework, `Range` ou condicionais. Cada resposta servida do cache recebe um nonce de CSP novo nos cabeçalhos e no HTML, e o navegador continua recebendo `no-store`.
+- Numa requisição que não encontra a página no cache, início, painel e estatísticas chegam inteiros de uma vez, em vez de mostrar primeiro o esqueleto de carregamento.
+
 ## [1.21.0] - 2026-11-11
 
 Segurança, privacidade e custo no Cloudflare, mais a reorganização do código que grava concursos e apaga registros antigos. Nada muda no que o visitante vê, em nenhuma URL, metadado ou resposta da API.
