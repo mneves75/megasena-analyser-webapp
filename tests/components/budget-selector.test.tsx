@@ -20,7 +20,18 @@ describe('BudgetSelector', () => {
   it('names the preset buttons as a group instead of an orphan label', () => {
     const { container } = render(<BudgetSelector value={50} onChange={vi.fn()} />);
     const group = screen.getByRole('group', { name: 'Valores Rápidos' });
-    expect(group.querySelectorAll('button').length).toBe(9);
-    expect([...container.querySelectorAll('label')].every(label => label.htmlFor || label.control)).toBe(true);
+    expect([...group.querySelectorAll('button')].map((button) => button.textContent)).toEqual([
+      'R$ 10',
+      'R$ 20',
+      'R$ 50',
+      'R$ 100',
+      'R$ 200',
+      'R$ 500',
+    ]);
+    // One compact row of six.
+    expect(group.className).toContain('grid-cols-6');
+    expect(
+      [...container.querySelectorAll('label')].every((label) => label.htmlFor || label.control)
+    ).toBe(true);
   });
 });

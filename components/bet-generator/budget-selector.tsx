@@ -96,17 +96,17 @@ export function BudgetSelector({
         <p id={presetsLabelId} className="text-sm font-medium leading-none">
           {pt.betGenerator.budget.quickValues}
         </p>
-        <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-3 gap-2">
-          {BUDGET_PRESETS.slice(0, 9).map((preset) => (
+        <div role="group" aria-labelledby={presetsLabelId} className="grid grid-cols-6 gap-1.5">
+          {BUDGET_PRESETS.map((preset) => (
             <Button
               key={preset}
               variant={value === preset ? 'default' : 'outline'}
               size="sm"
               onClick={() => handlePresetClick(preset)}
               aria-pressed={value === preset}
-              className="tabular-nums transition-smooth"
+              className="px-0 font-condensed tabular-nums"
             >
-              {formatCurrency(preset)}
+              R$ {preset}
             </Button>
           ))}
         </div>

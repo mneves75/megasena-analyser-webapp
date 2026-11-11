@@ -10,7 +10,6 @@ import {
 } from '@/lib/constants';
 import { generateBets } from './actions';
 import { pt } from '@/lib/i18n';
-import { NumberField } from '@/components/number-field';
 
 export function GeneratorForm() {
   const [budget, setBudget] = useState<number>(50);
@@ -130,14 +129,8 @@ export function GeneratorForm() {
         className="mt-8 focus-visible:outline-none"
       >
         {result ? (
-          <div>
-            <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
-          </div>
-        ) : (
-          <div className="border-t-2 border-primary pt-5">
-            <NumberField struck={[]} label="Volante vazio, de 01 a 60" />
-          </div>
-        )}
+          <BetList key={result.bets.map((bet) => bet.id).join('|')} result={result} />
+        ) : null}
       </div>
     </section>
   );

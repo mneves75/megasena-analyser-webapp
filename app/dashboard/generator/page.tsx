@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { GeneratorForm } from './generator-form';
 import { pt } from '@/lib/i18n';
 import { buildPageMetadata } from '@/lib/seo/metadata';
-import { PageTitle, SectionHeading } from '@/app/_components/archive-ui';
+import { PageTitle } from '@/app/_components/archive-ui';
 
 export const metadata: Metadata = buildPageMetadata({
   path: '/dashboard/generator',
@@ -49,18 +49,6 @@ export default function GeneratorPage() {
       </details>
 
       <GeneratorForm />
-
-      <section aria-labelledby="generator-how" className="mt-12 max-w-3xl space-y-4">
-        <SectionHeading id="generator-how">Como funciona o gerador</SectionHeading>
-        <div className="space-y-4 text-sm text-muted-foreground">
-          <p>
-            O sistema utiliza um algoritmo de{' '}
-            <strong className="text-foreground">programação dinâmica</strong> para distribuir seu
-            orçamento de forma ótima entre apostas simples (6 números) e múltiplas (7-20 números),
-            minimizando o valor desperdiçado.
-          </p>
-        </div>
-      </section>
     </div>
   );
 }

@@ -66,9 +66,7 @@ export const BET_GENERATION_MODE = {
 export type BetGenerationMode = (typeof BET_GENERATION_MODE)[keyof typeof BET_GENERATION_MODE];
 
 // Budget Presets (R$)
-export const BUDGET_PRESETS = [
-  10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000,
-] as const;
+export const BUDGET_PRESETS = [10, 20, 50, 100, 200, 500] as const;
 
 // Bet Generation Algorithm Constants
 export const BET_ALLOCATION = {

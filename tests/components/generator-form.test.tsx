@@ -90,7 +90,8 @@ describe('GeneratorForm', () => {
   it('renderiza o estado inicial com os controles principais', () => {
     render(<GeneratorForm />);
 
-    expect(screen.getByRole('list', { name: 'Volante vazio, de 01 a 60' })).toBeInTheDocument();
+    // Before the first generation there is nothing to show: no empty field of sixty.
+    expect(screen.queryByRole('list')).toBeNull();
     expect(screen.getByRole('button', { name: /Gerar Apostas/i })).toBeInTheDocument();
     expect(screen.getByText(/Configurações de Geração/i)).toBeInTheDocument();
   });

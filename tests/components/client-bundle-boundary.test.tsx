@@ -22,4 +22,10 @@ describe('archive UI in the client graph', () => {
     const source = readFileSync('app/_components/archive-ui.tsx', 'utf8');
     expect(source).not.toMatch(/from '@\/components\/number-field'/);
   });
+
+  it('the generator form does not import the number field either', async () => {
+    const { readFileSync } = await import('node:fs');
+    const source = readFileSync('app/dashboard/generator/generator-form.tsx', 'utf8');
+    expect(source).not.toMatch(/from '@\/components\/number-field'/);
+  });
 });
